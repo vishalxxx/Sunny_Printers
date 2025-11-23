@@ -1,0 +1,136 @@
+/* ============= SIDEBAR BACKGROUND ============= */
+.sidebar {
+	-fx-background-color: #212121;   /* dark background */
+	-fx-padding: 10;
+	-fx-background-radius: 20;
+}
+.center-area{
+	-fx-background-radius: 20;
+	-fx-background-insets: 0;
+	-fx-background-color: #F7F7F7;
+}
+
+/* ============= COMMON ITEM STYLE ============= */
+.sidebar-item {
+    -fx-padding: 12 20;
+    -fx-spacing: 12;
+    -fx-alignment: CENTER_LEFT;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+    -fx-min-width: 200;
+    -fx-text-fill: #d4d4d4;  /* grey text like image */
+    -fx-font-size: 15px;
+}
+
+/* icon inside */
+.sidebar-item .label {
+    -fx-text-fill: inherit;
+}
+
+/* ============= HOVER EFFECT ============= */
+.sidebar-item:hover {
+    -fx-background-color: #2d61d1; /* blue hover tile */
+    -fx-text-fill: white;
+}
+
+.sidebar-item:hover .label {
+    -fx-text-fill: white;
+}
+
+/* ============= ACTIVE ITEM (Dashboard) ============= */
+.active {
+    -fx-background-color: #2d61d1; /* same blue as image */
+    -fx-text-fill: white;
+}
+
+.active .label {
+    -fx-text-fill: white;
+}
+
+.icon{
+	-fx-opacity: 0.5;
+}
+
+.sidebar-section-title:hover .icon{
+	
+	-fx-opacity: 1;
+}
+
+/* ============= SECTION TITLE ============= */
+.sidebar-section-title {
+    -fx-text-fill: white;
+    -fx-padding: 10 10 10 10;
+    -fx-font-size: 21px;
+	
+   
+}
+
+.sidebar-section-title:hover {
+	-fx-background-color: #234FAF;
+    -fx-text-fill: white;
+    -fx-padding: 10 10 10 10;
+    -fx-font-size: 21px;
+   
+}
+.root{
+	-fx-background-color: black;
+
+	
+}
+
+
+.card-style{
+	-fx-background-color: white;
+
+	-fx-background-radius: 15;
+	-fx-effect: dropshadow( gaussian , rgba(0,0,0,0.15), 8, 0, 0, 2 );
+}
+
+.content-panel {
+    -fx-background-color: white;
+    -fx-background-radius: 20	;
+}
+
+/* ======================
+   Navigation Tile Button
+   ====================== */
+
+.nav-tile {
+	
+}
+
+/* Hover effect (blue like your theme) */
+.nav-tile:hover {
+    -fx-background-color: #6A7EFC;
+    -fx-text-fill: #FFFCFB;
+	
+    
+}
+
+.nav-tile:hover .label{
+	-fx-text-fill: #FFFCFB;
+	
+	
+}
+.nav-tile:hover .image-view{
+	-fx-opacity: 0.5;
+}
+
+
+
+
+.stat-title {
+	-fx-background-color: white;       /* dark card background */
+	    -fx-background-radius: 18;           /* round corners */
+	    -fx-border-color: rgba(255,255,255,0.15);  /* faint white border */
+	    -fx-border-width: 1.2;               /* thin border */
+	    -fx-border-radius: 18;               /* match background radius */
+	    -fx-padding: 18;      /* Slight spacing for modern look */
+}
+.nav-icon{
+	
+}
+.nav-icon:hover{
+	
+	-fx-opacity: 0.4;
+}

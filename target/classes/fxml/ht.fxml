@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.String?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane maxHeight="1.7976931348623157E308"
+	maxWidth="1.7976931348623157E308" minHeight="-Infinity"
+	minWidth="-Infinity" prefHeight="679.0" prefWidth="916.0"
+	styleClass="root" stylesheets="@dashboard.css"
+	xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
+	<left>
+		<VBox fx:id="sidebar" spacing="0" prefWidth="240"
+			styleClass="sidebar">
+
+			<!-- DASHBOARD -->
+		
+			 <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                     <children>
+                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
+                           <image>
+                              <Image url="@../icons/job.png" />
+                           </image>
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                        </ImageView>
+                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Job Details" textFill="WHITE">
+                           <font>
+                              <Font size="24.0" />
+                           </font>
+                        </Label>
+                     </children>
+                  </HBox>
+
+		</VBox>
+
+	</left>
+
+</BorderPane>
