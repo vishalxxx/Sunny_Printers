@@ -3,6 +3,7 @@
 <?import java.lang.String?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
@@ -14,10 +15,12 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="991.0" prefWidth="1271.0" style="-fx-background-color: black;" styleClass="root" stylesheets="@../css/dashboard.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.MainController">
+<BorderPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="-fx-background-color: black;" styleClass="root" stylesheets="@../css/dashboard.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.MainController">
 
 	<center>
-		<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="754.0" prefWidth="642.0" styleClass="center-area" BorderPane.alignment="CENTER">
+	<ScrollPane fitToWidth="true" BorderPane.alignment="CENTER">
+	<content>
+		<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="center-area" BorderPane.alignment="CENTER">
 			<children>
 				<Label text="Dashboard">
 					<font>
@@ -27,7 +30,7 @@
 						<Insets left="20.0" top="20.0" />
 					</VBox.margin>
 				</Label>
-				<GridPane hgap="20.0" vgap="20.0">
+				<GridPane hgap="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="20.0">
 					<columnConstraints>
 						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
 						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -37,11 +40,11 @@
 						<RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
 					</rowConstraints>
 					<children>
-						<StackPane prefHeight="150.0" prefWidth="200.0" styleClass="card-style">
+						<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style">
 							<children>
-								<VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0">
+								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0">
 									<children>
-										<Label text="Total Clients">
+										<Label maxHeight="1.7976931348623157E308" text="Total Clients">
 											<font>
 												<Font size="26.0" />
 											</font>
@@ -49,7 +52,7 @@
 												<Insets left="20.0" top="30.0" />
 											</VBox.margin>
 										</Label>
-										<HBox prefHeight="100.0" prefWidth="200.0" spacing="5.0">
+										<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
 											<children>
 												<ImageView fitHeight="60.0" fitWidth="60.0" pickOnBounds="true" preserveRatio="true">
 													<image>
@@ -79,11 +82,11 @@
 								<Insets />
 							</GridPane.margin>
 						</StackPane>
-						<StackPane prefHeight="150.0" prefWidth="200.0" styleClass="card-style" GridPane.columnIndex="1">
+						<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style" GridPane.columnIndex="1">
 							<children>
-								<VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0">
+								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0">
 									<children>
-										<Label text="Total Job">
+										<Label maxHeight="1.7976931348623157E308" text="Total Job">
 											<font>
 												<Font size="26.0" />
 											</font>
@@ -91,7 +94,7 @@
 												<Insets left="20.0" top="30.0" />
 											</VBox.margin>
 										</Label>
-										<HBox prefHeight="100.0" prefWidth="200.0" spacing="5.0">
+										<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
 											<children>
 												<ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
 													<image>
@@ -121,11 +124,11 @@
 								</VBox>
 							</children>
 						</StackPane>
-						<StackPane prefHeight="150.0" prefWidth="200.0" styleClass="card-style" GridPane.columnIndex="2">
+						<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style" GridPane.columnIndex="2">
 							<children>
-								<VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0">
+								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0">
 									<children>
-										<Label text="Total Bills">
+										<Label maxHeight="1.7976931348623157E308" text="Total Bills">
 											<font>
 												<Font size="26.0" />
 											</font>
@@ -133,7 +136,7 @@
 												<Insets left="20.0" top="30.0" />
 											</VBox.margin>
 										</Label>
-										<HBox prefHeight="100.0" prefWidth="200.0" spacing="5.0">
+										<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
 											<children>
 												<ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
 													<image>
@@ -168,7 +171,7 @@
 						<Insets bottom="50.0" left="20.0" right="40.0" top="110.0" />
 					</VBox.margin>
 				</GridPane>
-				<GridPane hgap="20.0" vgap="20.0">
+				<GridPane hgap="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="20.0">
 					<columnConstraints>
 						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
 						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -178,11 +181,11 @@
 						<RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
 					</rowConstraints>
 					<children>
-						<StackPane prefHeight="150.0" prefWidth="200.0" styleClass="card-style">
+						<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style">
 							<children>
-								<VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0">
+								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0">
 									<children>
-										<Label text="Total Sales">
+										<Label maxHeight="1.7976931348623157E308" text="Total Sales">
 											<font>
 												<Font size="26.0" />
 											</font>
@@ -190,7 +193,7 @@
 												<Insets left="20.0" top="30.0" />
 											</VBox.margin>
 										</Label>
-										<HBox prefHeight="100.0" prefWidth="200.0" spacing="5.0">
+										<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
 											<children>
 												<ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
 													<image>
@@ -223,11 +226,11 @@
 								<Insets />
 							</GridPane.margin>
 						</StackPane>
-						<StackPane prefHeight="150.0" prefWidth="200.0" styleClass="card-style" GridPane.columnIndex="1">
+						<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style" GridPane.columnIndex="1">
 							<children>
-								<VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0">
+								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0">
 									<children>
-										<Label text="Outstanding Payments">
+										<Label maxHeight="1.7976931348623157E308" text="Outstanding Payments">
 											<font>
 												<Font size="26.0" />
 											</font>
@@ -235,7 +238,7 @@
 												<Insets left="20.0" top="30.0" />
 											</VBox.margin>
 										</Label>
-										<HBox prefHeight="100.0" prefWidth="200.0" spacing="5.0">
+										<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
 											<children>
 												<ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
 													<image>
@@ -265,11 +268,11 @@
 								</VBox>
 							</children>
 						</StackPane>
-						<StackPane prefHeight="150.0" prefWidth="200.0" styleClass="card-style" GridPane.columnIndex="2">
+						<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style" GridPane.columnIndex="2">
 							<children>
-								<VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0">
+								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0">
 									<children>
-										<Label text="Pending Bills">
+										<Label maxHeight="1.7976931348623157E308" text="Pending Bills">
 											<font>
 												<Font size="26.0" />
 											</font>
@@ -277,7 +280,7 @@
 												<Insets left="20.0" top="30.0" />
 											</VBox.margin>
 										</Label>
-										<HBox prefHeight="100.0" prefWidth="200.0" spacing="5.0">
+										<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
 											<children>
 												<ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
 													<image>
@@ -312,9 +315,9 @@
 						<Insets left="20.0" right="40.0" top="90.0" />
 					</VBox.margin>
 				</GridPane>
-				<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="100.0" prefWidth="200.0" spacing="15.0" style="-fx-background-color: #F7F7F7;" VBox.vgrow="ALWAYS">
+				<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="15.0" style="-fx-background-color: #F7F7F7;">
 					<children>
-						<VBox prefHeight="200.0" prefWidth="100.0" styleClass="card-style" HBox.hgrow="ALWAYS">
+						<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style" HBox.hgrow="ALWAYS">
 							<children>
 								<Label text="Recent Activities">
 									<font>
@@ -363,8 +366,11 @@
 									</VBox.margin>
 								</VBox>
 							</children>
+                     <padding>
+                        <Insets right="30.0" />
+                     </padding>
 						</VBox>
-						<VBox prefHeight="200.0" prefWidth="100.0" styleClass="card-style" HBox.hgrow="ALWAYS">
+						<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style" HBox.hgrow="ALWAYS">
 							<children>
 								<Label text="Navigation Tiles">
 									<font>
@@ -374,11 +380,11 @@
 										<Insets left="10.0" top="20.0" />
 									</VBox.margin>
 								</Label>
-								<HBox maxWidth="1.7976931348623157E308" prefHeight="50.0" prefWidth="200.0" spacing="8.0">
+								<HBox maxWidth="1.7976931348623157E308" spacing="8.0">
 									<children>
-										<HBox maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="50.0" prefWidth="500.0" spacing="9.0" HBox.hgrow="ALWAYS">
+										<HBox maxHeight="-Infinity" maxWidth="1.7976931348623157E308" spacing="9.0" HBox.hgrow="ALWAYS">
 											<children>
-												<HBox prefHeight="100.0" prefWidth="200.0">
+												<HBox maxWidth="1.7976931348623157E308">
 													<children>
 														<ImageView fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
 															<image>
@@ -408,7 +414,7 @@
 														<Insets />
 													</HBox.margin>
 												</HBox>
-												<HBox prefHeight="100.0" prefWidth="200.0">
+												<HBox maxWidth="1.7976931348623157E308">
 													<children>
 														<ImageView fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
 															<image>
@@ -438,7 +444,7 @@
 														<Insets />
 													</HBox.margin>
 												</HBox>
-												<HBox prefHeight="100.0" prefWidth="200.0">
+												<HBox maxWidth="1.7976931348623157E308">
 													<children>
 														<ImageView fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
 															<image>
@@ -475,11 +481,11 @@
 										<Insets left="10.0" right="8.0" top="10.0" />
 									</VBox.margin>
 								</HBox>
-								<HBox prefHeight="50.0" prefWidth="500.0">
+								<HBox maxWidth="1.7976931348623157E308">
 									<children>
-										<HBox prefHeight="50.0" prefWidth="330.0" spacing="9.0" HBox.hgrow="NEVER">
+										<HBox maxWidth="1.7976931348623157E308" spacing="9.0" HBox.hgrow="NEVER">
 											<children>
-												<HBox prefHeight="100.0" prefWidth="210.0">
+												<HBox maxWidth="1.7976931348623157E308">
 													<children>
 														<ImageView fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
 															<image>
@@ -506,7 +512,7 @@
 														<String fx:value="nav-tile" />
 													</styleClass>
 												</HBox>
-												<HBox prefHeight="100.0" prefWidth="210.0">
+												<HBox maxWidth="1.7976931348623157E308">
 													<children>
 														<ImageView fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
 															<image>
@@ -555,16 +561,18 @@
 				</HBox>
 			</children>
 		</VBox>
+	</content>
+	</ScrollPane>
 	</center>
 	<padding>
 		<Insets bottom="30.0" left="20.0" right="20.0" top="30.0" />
 	</padding>
    <left>
-      <StackPane prefHeight="150.0" prefWidth="240.0" styleClass="sidebar" BorderPane.alignment="CENTER">
+      <StackPane maxHeight="1.7976931348623157E308" styleClass="sidebar" BorderPane.alignment="CENTER">
          <children>
-            <VBox fx:id="mainSidebar" prefHeight="200.0" prefWidth="100.0">
+            <VBox fx:id="mainSidebar" maxHeight="1.7976931348623157E308">
                <children>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showMainSidebar" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showMainSidebar" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -581,7 +589,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showJobsSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showJobsSubmenu" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -598,7 +606,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox onMouseClicked="#showClientsSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" onMouseClicked="#showClientsSubmenu" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -615,7 +623,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox onMouseClicked="#showBillingSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" onMouseClicked="#showBillingSubmenu" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -632,7 +640,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox onMouseClicked="#showPaymentSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" onMouseClicked="#showPaymentSubmenu" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -649,7 +657,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox onMouseClicked="#showLedgerSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" onMouseClicked="#showLedgerSubmenu" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -669,15 +677,15 @@
                         </Label>
                      </children>
                   </HBox>
-                  <Label graphicTextGap="5.0" text="Quick Links" textFill="#979191">
+                  <Label graphicTextGap="5.0" maxWidth="1.7976931348623157E308" text="Quick Links" textFill="#979191">
                      <font>
                         <Font size="24.0" />
                      </font>
                      <VBox.margin>
-                        <Insets bottom="10.0" left="10.0" top="30.0" />
+                        <Insets bottom="10.0" left="10.0" top="20.0" />
                      </VBox.margin>
                   </Label>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -697,7 +705,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -717,7 +725,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -737,7 +745,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -762,9 +770,9 @@
                   <Insets />
                </StackPane.margin>
             </VBox>
-            <VBox fx:id="jobsSidebar" prefHeight="200.0" prefWidth="100.0" visible="false">
+            <VBox fx:id="jobsSidebar" maxHeight="1.7976931348623157E308" visible="false">
                <children>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -781,7 +789,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showJobsSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showJobsSubmenu" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -798,7 +806,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -818,7 +826,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -838,7 +846,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -858,7 +866,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -883,9 +891,9 @@
                   <Insets top="100.0" />
                </padding>
             </VBox>
-            <VBox fx:id="clientsSidebar" prefHeight="200.0" prefWidth="100.0" visible="false">
+            <VBox fx:id="clientsSidebar" maxHeight="1.7976931348623157E308" visible="false">
                <children>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -902,7 +910,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showJobsSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showJobsSubmenu" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -919,7 +927,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -939,7 +947,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -964,9 +972,9 @@
                   <Insets top="100.0" />
                </padding>
             </VBox>
-            <VBox fx:id="billingSidebar" prefHeight="200.0" prefWidth="100.0" visible="false">
+            <VBox fx:id="billingSidebar" maxHeight="1.7976931348623157E308" visible="false">
                <children>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -983,7 +991,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showJobsSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showJobsSubmenu" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -1000,7 +1008,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -1020,7 +1028,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -1040,7 +1048,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -1065,9 +1073,9 @@
                   <Insets top="100.0" />
                </padding>
             </VBox>
-            <VBox fx:id="paymentSidebar" prefHeight="200.0" prefWidth="100.0" visible="false">
+            <VBox fx:id="paymentSidebar" maxHeight="1.7976931348623157E308" visible="false">
                <children>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -1084,7 +1092,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showJobsSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showJobsSubmenu" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -1101,7 +1109,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -1121,7 +1129,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -1141,7 +1149,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -1166,9 +1174,9 @@
                   <Insets top="100.0" />
                </padding>
             </VBox>
-            <VBox fx:id="ledgerSidebar" prefHeight="200.0" prefWidth="100.0" visible="false">
+            <VBox fx:id="ledgerSidebar" maxHeight="1.7976931348623157E308" visible="false">
                <children>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
@@ -1185,7 +1193,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showJobsSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
+                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showJobsSubmenu" styleClass="sidebar-section-title">
                      <children>
                         <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
                            <image>
