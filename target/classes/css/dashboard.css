@@ -1,8 +1,56 @@
+.root{
+	-fx-background-color: black;
+	-fx-base-font-size: 14pt;
+	
+}
+
+/* ============= SECTION TITLES ============= */
+.sidebar-section-title {
+    -fx-text-fill: white;
+    -fx-padding: 10 10 10 10;
+    -fx-font-size: 1.5em;
+	
+   
+}
+.sidebar-section-title:hover {
+	-fx-background-color: #234FAF;
+    -fx-text-fill: white;
+    -fx-padding: 10 10 10 10;
+    -fx-font-size: 1.5em;
+   
+}
+
+.card-title{
+	
+	-fx-text-fill: black;
+
+	-fx-font-size: 1.9em;
+}
+.card-font{
+	-fx-font-size: 2.5em;
+	-fx-font-weight: bold;
+	-fx-text-fill: black;
+
+}
+.card-icon{
+	
+}
+.para{
+	-fx-font-size: 1.3em;
+
+}
+.main-header{
+	-fx-font-size: 3.0em;
+
+}
+
+
 /* ============= SIDEBAR BACKGROUND ============= */
 .sidebar {
 	-fx-background-color: #212121;   /* dark background */
 	-fx-padding: 10;
 	-fx-background-radius: 20;
+	-fx-base-font-size: 14pt;
 }
 .center-area{
 	-fx-background-radius: 20;
@@ -56,27 +104,10 @@
 	-fx-opacity: 1;
 }
 
-/* ============= SECTION TITLE ============= */
-.sidebar-section-title {
-    -fx-text-fill: white;
-    -fx-padding: 10 10 10 10;
-    -fx-font-size: 21px;
-	
-   
-}
 
-.sidebar-section-title:hover {
-	-fx-background-color: #234FAF;
-    -fx-text-fill: white;
-    -fx-padding: 10 10 10 10;
-    -fx-font-size: 21px;
-   
-}
-.root{
-	-fx-background-color: black;
 
-	
-}
+
+
 
 
 .card-style{

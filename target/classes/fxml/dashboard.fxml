@@ -20,14 +20,14 @@
 	<center>
 	<ScrollPane fitToWidth="true" BorderPane.alignment="CENTER">
 	<content>
-		<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="center-area" BorderPane.alignment="CENTER">
+		<VBox styleClass="center-area" BorderPane.alignment="CENTER">
 			<children>
-				<Label text="Dashboard">
+				<Label styleClass="main-header" text="Dashboard">
 					<font>
 						<Font size="50.0" />
 					</font>
 					<VBox.margin>
-						<Insets left="20.0" top="20.0" />
+						<Insets bottom="30.0" left="20.0" top="20.0" />
 					</VBox.margin>
 				</Label>
 				<GridPane hgap="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="20.0">
@@ -44,7 +44,7 @@
 							<children>
 								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0">
 									<children>
-										<Label maxHeight="1.7976931348623157E308" text="Total Clients">
+										<Label maxHeight="1.7976931348623157E308" styleClass="card-title" text="Total Clients">
 											<font>
 												<Font size="26.0" />
 											</font>
@@ -59,7 +59,7 @@
 														<Image url="@../icons/total_clients.png" />
 													</image>
 												</ImageView>
-												<Label text="345">
+												<Label styleClass="card-font" text="345">
 													<font>
 														<Font name="System Bold" size="40.0" />
 													</font>
@@ -86,7 +86,7 @@
 							<children>
 								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0">
 									<children>
-										<Label maxHeight="1.7976931348623157E308" text="Total Job">
+										<Label maxHeight="1.7976931348623157E308" styleClass="card-title" text="Total Job">
 											<font>
 												<Font size="26.0" />
 											</font>
@@ -104,7 +104,7 @@
 														<Insets top="10.0" />
 													</HBox.margin>
 												</ImageView>
-												<Label text="345">
+												<Label styleClass="card-font" text="345">
 													<font>
 														<Font name="System Bold" size="40.0" />
 													</font>
@@ -128,7 +128,7 @@
 							<children>
 								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0">
 									<children>
-										<Label maxHeight="1.7976931348623157E308" text="Total Bills">
+										<Label maxHeight="1.7976931348623157E308" styleClass="card-title" text="Total Bills">
 											<font>
 												<Font size="26.0" />
 											</font>
@@ -146,7 +146,7 @@
 														<Insets top="10.0" />
 													</HBox.margin>
 												</ImageView>
-												<Label text="345">
+												<Label styleClass="card-font" text="345">
 													<font>
 														<Font name="System Bold" size="40.0" />
 													</font>
@@ -168,7 +168,7 @@
 						</StackPane>
 					</children>
 					<VBox.margin>
-						<Insets bottom="50.0" left="20.0" right="40.0" top="110.0" />
+						<Insets bottom="50.0" left="20.0" right="40.0" top="50.0" />
 					</VBox.margin>
 				</GridPane>
 				<GridPane hgap="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="20.0">
@@ -185,7 +185,7 @@
 							<children>
 								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0">
 									<children>
-										<Label maxHeight="1.7976931348623157E308" text="Total Sales">
+										<Label maxHeight="1.7976931348623157E308" styleClass="card-title" text="Total Sales">
 											<font>
 												<Font size="26.0" />
 											</font>
@@ -203,7 +203,7 @@
 														<Insets top="10.0" />
 													</HBox.margin>
 												</ImageView>
-												<Label text="345">
+												<Label styleClass="card-font" text="345">
 													<font>
 														<Font name="System Bold" size="40.0" />
 													</font>
@@ -230,7 +230,7 @@
 							<children>
 								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0">
 									<children>
-										<Label maxHeight="1.7976931348623157E308" text="Outstanding Payments">
+										<Label maxHeight="1.7976931348623157E308" styleClass="card-title" text="Outstanding Payments">
 											<font>
 												<Font size="26.0" />
 											</font>
@@ -248,7 +248,7 @@
 														<Insets top="10.0" />
 													</HBox.margin>
 												</ImageView>
-												<Label text="345">
+												<Label styleClass="card-font" text="345">
 													<font>
 														<Font name="System Bold" size="40.0" />
 													</font>
@@ -272,7 +272,7 @@
 							<children>
 								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0">
 									<children>
-										<Label maxHeight="1.7976931348623157E308" text="Pending Bills">
+										<Label maxHeight="1.7976931348623157E308" styleClass="card-title" text="Pending Bills">
 											<font>
 												<Font size="26.0" />
 											</font>
@@ -290,7 +290,7 @@
 														<Insets top="10.0" />
 													</HBox.margin>
 												</ImageView>
-												<Label text="345">
+												<Label styleClass="card-font" text="345">
 													<font>
 														<Font name="System Bold" size="40.0" />
 													</font>
@@ -319,7 +319,7 @@
 					<children>
 						<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style" HBox.hgrow="ALWAYS">
 							<children>
-								<Label text="Recent Activities">
+								<Label styleClass="card-title" text="Recent Activities">
 									<font>
 										<Font size="30.0" />
 									</font>
@@ -329,27 +329,27 @@
 								</Label>
 								<VBox prefHeight="200.0" prefWidth="100.0">
 									<children>
-										<Label text="New Bill is genrated">
+										<Label styleClass="para" text="New Bill is genrated">
 											<font>
 												<Font size="18.0" />
 											</font>
 										</Label>
-										<Label text="New Bill is genrated">
+										<Label styleClass="para" text="New Bill is genrated">
 											<font>
 												<Font size="18.0" />
 											</font>
 										</Label>
-										<Label text="New Bill is genrated">
+										<Label styleClass="para" text="New Bill is genrated">
 											<font>
 												<Font size="18.0" />
 											</font>
 										</Label>
-										<Label text="New Bill is genrated">
+										<Label styleClass="para" text="New Bill is genrated">
 											<font>
 												<Font size="18.0" />
 											</font>
 										</Label>
-										<Label text="New Bill is genrated">
+										<Label styleClass="para" text="New Bill is genrated">
 											<font>
 												<Font size="18.0" />
 											</font>
@@ -372,7 +372,7 @@
 						</VBox>
 						<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style" HBox.hgrow="ALWAYS">
 							<children>
-								<Label text="Navigation Tiles">
+								<Label styleClass="card-title" text="Navigation Tiles">
 									<font>
 										<Font size="30.0" />
 									</font>
@@ -394,7 +394,7 @@
 																<Insets left="5.0" top="15.0" />
 															</HBox.margin>
 														</ImageView>
-														<Label maxWidth="1.7976931348623157E308" text="Client Details" HBox.hgrow="ALWAYS">
+														<Label maxWidth="1.7976931348623157E308" styleClass="para" text="Client Details" HBox.hgrow="ALWAYS">
 															<padding>
 																<Insets bottom="10.0" right="10.0" top="4.0" />
 															</padding>
@@ -424,7 +424,7 @@
 																<Insets left="5.0" top="15.0" />
 															</HBox.margin>
 														</ImageView>
-														<Label maxWidth="1.7976931348623157E308" text="Job Details" textFill="#0a0a0a" HBox.hgrow="ALWAYS">
+														<Label maxWidth="1.7976931348623157E308" styleClass="para" text="Job Details" textFill="#0a0a0a" HBox.hgrow="ALWAYS">
 															<padding>
 																<Insets bottom="10.0" right="10.0" top="4.0" />
 															</padding>
@@ -454,7 +454,7 @@
 																<Insets left="5.0" top="15.0" />
 															</HBox.margin>
 														</ImageView>
-														<Label maxWidth="1.7976931348623157E308" text="Bill Creation" HBox.hgrow="ALWAYS">
+														<Label maxWidth="1.7976931348623157E308" styleClass="para" text="Bill Creation" HBox.hgrow="ALWAYS">
 															<padding>
 																<Insets bottom="10.0" right="10.0" top="4.0" />
 															</padding>
@@ -495,7 +495,7 @@
 																<Insets left="5.0" top="15.0" />
 															</HBox.margin>
 														</ImageView>
-														<Label maxWidth="1.7976931348623157E308" text="Payments" HBox.hgrow="ALWAYS">
+														<Label maxWidth="1.7976931348623157E308" styleClass="para" text="Payments" HBox.hgrow="ALWAYS">
 															<padding>
 																<Insets bottom="10.0" right="10.0" top="4.0" />
 															</padding>
@@ -522,7 +522,7 @@
 																<Insets left="5.0" top="15.0" />
 															</HBox.margin>
 														</ImageView>
-														<Label maxWidth="1.7976931348623157E308" text="Client Ledger" HBox.hgrow="ALWAYS">
+														<Label maxWidth="1.7976931348623157E308" styleClass="para" text="Client Ledger" HBox.hgrow="ALWAYS">
 															<padding>
 																<Insets bottom="10.0" right="10.0" top="4.0" />
 															</padding>
@@ -583,9 +583,7 @@
                            </HBox.margin>
                         </ImageView>
                         <Label contentDisplay="CENTER" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Dashboard" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
+                          
                         </Label>
                      </children>
                   </HBox>
