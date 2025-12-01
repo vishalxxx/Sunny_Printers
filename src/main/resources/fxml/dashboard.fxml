@@ -20,302 +20,309 @@
 	<center>
 	<ScrollPane fitToWidth="true" BorderPane.alignment="CENTER">
 	<content>
-		<VBox styleClass="center-area" BorderPane.alignment="CENTER">
+		<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="40.0" styleClass="center-area" BorderPane.alignment="CENTER">
 			<children>
-				<Label styleClass="main-header" text="Dashboard">
+				<Label maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="main-header" text="Dashboard">
 					<font>
 						<Font size="50.0" />
 					</font>
 					<VBox.margin>
-						<Insets bottom="30.0" left="20.0" top="20.0" />
+						<Insets />
 					</VBox.margin>
 				</Label>
-				<GridPane hgap="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="20.0">
-					<columnConstraints>
-						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-					</columnConstraints>
-					<rowConstraints>
-						<RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-					</rowConstraints>
-					<children>
-						<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style">
-							<children>
-								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0">
-									<children>
-										<Label maxHeight="1.7976931348623157E308" styleClass="card-title" text="Total Clients">
-											<font>
-												<Font size="26.0" />
-											</font>
-											<VBox.margin>
-												<Insets left="20.0" top="30.0" />
-											</VBox.margin>
-										</Label>
-										<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
-											<children>
-												<ImageView fitHeight="60.0" fitWidth="60.0" pickOnBounds="true" preserveRatio="true">
-													<image>
-														<Image url="@../icons/total_clients.png" />
-													</image>
-												</ImageView>
-												<Label styleClass="card-font" text="345">
-													<font>
-														<Font name="System Bold" size="40.0" />
-													</font>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</Label>
-											</children>
-											<VBox.margin>
-												<Insets left="10.0" />
-											</VBox.margin>
-										</HBox>
-									</children>
-									<StackPane.margin>
-										<Insets bottom="20.0" />
-									</StackPane.margin>
-								</VBox>
-							</children>
-							<GridPane.margin>
-								<Insets />
-							</GridPane.margin>
-						</StackPane>
-						<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style" GridPane.columnIndex="1">
-							<children>
-								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0">
-									<children>
-										<Label maxHeight="1.7976931348623157E308" styleClass="card-title" text="Total Job">
-											<font>
-												<Font size="26.0" />
-											</font>
-											<VBox.margin>
-												<Insets left="20.0" top="30.0" />
-											</VBox.margin>
-										</Label>
-										<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
-											<children>
-												<ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
-													<image>
-														<Image url="@../icons/total_jobs.png" />
-													</image>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</ImageView>
-												<Label styleClass="card-font" text="345">
-													<font>
-														<Font name="System Bold" size="40.0" />
-													</font>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</Label>
-											</children>
-											<VBox.margin>
-												<Insets left="10.0" />
-											</VBox.margin>
-										</HBox>
-									</children>
-									<StackPane.margin>
-										<Insets bottom="20.0" />
-									</StackPane.margin>
-								</VBox>
-							</children>
-						</StackPane>
-						<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style" GridPane.columnIndex="2">
-							<children>
-								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0">
-									<children>
-										<Label maxHeight="1.7976931348623157E308" styleClass="card-title" text="Total Bills">
-											<font>
-												<Font size="26.0" />
-											</font>
-											<VBox.margin>
-												<Insets left="20.0" top="30.0" />
-											</VBox.margin>
-										</Label>
-										<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
-											<children>
-												<ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
-													<image>
-														<Image url="@../icons/total_bill.png" />
-													</image>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</ImageView>
-												<Label styleClass="card-font" text="345">
-													<font>
-														<Font name="System Bold" size="40.0" />
-													</font>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</Label>
-											</children>
-											<VBox.margin>
-												<Insets left="10.0" />
-											</VBox.margin>
-										</HBox>
-									</children>
-									<StackPane.margin>
-										<Insets bottom="20.0" />
-									</StackPane.margin>
-								</VBox>
-							</children>
-						</StackPane>
-					</children>
-					<VBox.margin>
-						<Insets bottom="50.0" left="20.0" right="40.0" top="50.0" />
-					</VBox.margin>
-				</GridPane>
-				<GridPane hgap="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="20.0">
-					<columnConstraints>
-						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-					</columnConstraints>
-					<rowConstraints>
-						<RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-					</rowConstraints>
-					<children>
-						<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style">
-							<children>
-								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0">
-									<children>
-										<Label maxHeight="1.7976931348623157E308" styleClass="card-title" text="Total Sales">
-											<font>
-												<Font size="26.0" />
-											</font>
-											<VBox.margin>
-												<Insets left="20.0" top="30.0" />
-											</VBox.margin>
-										</Label>
-										<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
-											<children>
-												<ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
-													<image>
-														<Image url="@../icons/total_sales.png" />
-													</image>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</ImageView>
-												<Label styleClass="card-font" text="345">
-													<font>
-														<Font name="System Bold" size="40.0" />
-													</font>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</Label>
-											</children>
-											<VBox.margin>
-												<Insets left="10.0" />
-											</VBox.margin>
-										</HBox>
-									</children>
-									<StackPane.margin>
-										<Insets bottom="20.0" />
-									</StackPane.margin>
-								</VBox>
-							</children>
-							<GridPane.margin>
-								<Insets />
-							</GridPane.margin>
-						</StackPane>
-						<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style" GridPane.columnIndex="1">
-							<children>
-								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0">
-									<children>
-										<Label maxHeight="1.7976931348623157E308" styleClass="card-title" text="Outstanding Payments">
-											<font>
-												<Font size="26.0" />
-											</font>
-											<VBox.margin>
-												<Insets left="20.0" top="30.0" />
-											</VBox.margin>
-										</Label>
-										<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
-											<children>
-												<ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
-													<image>
-														<Image url="@../icons/outstanding_payments.png" />
-													</image>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</ImageView>
-												<Label styleClass="card-font" text="345">
-													<font>
-														<Font name="System Bold" size="40.0" />
-													</font>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</Label>
-											</children>
-											<VBox.margin>
-												<Insets left="10.0" />
-											</VBox.margin>
-										</HBox>
-									</children>
-									<StackPane.margin>
-										<Insets bottom="20.0" />
-									</StackPane.margin>
-								</VBox>
-							</children>
-						</StackPane>
-						<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style" GridPane.columnIndex="2">
-							<children>
-								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0">
-									<children>
-										<Label maxHeight="1.7976931348623157E308" styleClass="card-title" text="Pending Bills">
-											<font>
-												<Font size="26.0" />
-											</font>
-											<VBox.margin>
-												<Insets left="20.0" top="30.0" />
-											</VBox.margin>
-										</Label>
-										<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
-											<children>
-												<ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
-													<image>
-														<Image url="@../icons/total_.png" />
-													</image>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</ImageView>
-												<Label styleClass="card-font" text="345">
-													<font>
-														<Font name="System Bold" size="40.0" />
-													</font>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</Label>
-											</children>
-											<VBox.margin>
-												<Insets left="10.0" />
-											</VBox.margin>
-										</HBox>
-									</children>
-									<StackPane.margin>
-										<Insets bottom="20.0" />
-									</StackPane.margin>
-								</VBox>
-							</children>
-						</StackPane>
-					</children>
-					<VBox.margin>
-						<Insets left="20.0" right="40.0" top="90.0" />
-					</VBox.margin>
-				</GridPane>
-				<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="15.0" style="-fx-background-color: #F7F7F7;">
+                  <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="60.0">
+                     <children>
+      				<GridPane hgap="10.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+      					<columnConstraints>
+      						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+      						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+      						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+      					</columnConstraints>
+      					<rowConstraints>
+      						<RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+      					</rowConstraints>
+      					<children>
+      						<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style">
+      							<children>
+      								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+      									<children>
+      										<Label maxHeight="1.7976931348623157E308" styleClass="card-title" text="Total Clients">
+      											<font>
+      												<Font size="26.0" />
+      											</font>
+      											<VBox.margin>
+      												<Insets left="20.0" />
+      											</VBox.margin>
+      										</Label>
+      										<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+      											<children>
+      												<ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true" HBox.hgrow="ALWAYS">
+      													<image>
+      														<Image url="@../icons/total_clients.png" />
+      													</image>
+      												</ImageView>
+      												<Label maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-font" text="345">
+      													<font>
+      														<Font name="System Bold" size="40.0" />
+      													</font>
+      													<HBox.margin>
+      														<Insets />
+      													</HBox.margin>
+      												</Label>
+      											</children>
+      											<VBox.margin>
+      												<Insets left="10.0" />
+      											</VBox.margin>
+      										</HBox>
+      									</children>
+      									<StackPane.margin>
+      										<Insets />
+      									</StackPane.margin>
+      								</VBox>
+      							</children>
+      							<GridPane.margin>
+      								<Insets />
+      							</GridPane.margin>
+      						</StackPane>
+      						<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style" GridPane.columnIndex="1">
+      							<children>
+      								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+      									<children>
+      										<Label maxHeight="1.7976931348623157E308" styleClass="card-title" text="Total Job">
+      											<font>
+      												<Font size="26.0" />
+      											</font>
+      											<VBox.margin>
+      												<Insets left="20.0" />
+      											</VBox.margin>
+      										</Label>
+      										<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+      											<children>
+      												<ImageView fitHeight="40.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true" HBox.hgrow="ALWAYS">
+      													<image>
+      														<Image url="@../icons/total_jobs.png" />
+      													</image>
+      													<HBox.margin>
+      														<Insets />
+      													</HBox.margin>
+      												</ImageView>
+      												<Label maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-font" text="345">
+      													<font>
+      														<Font name="System Bold" size="40.0" />
+      													</font>
+      													<HBox.margin>
+      														<Insets />
+      													</HBox.margin>
+      												</Label>
+      											</children>
+      											<VBox.margin>
+      												<Insets left="10.0" />
+      											</VBox.margin>
+      										</HBox>
+      									</children>
+      									<StackPane.margin>
+      										<Insets />
+      									</StackPane.margin>
+      								</VBox>
+      							</children>
+      						</StackPane>
+      						<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style" GridPane.columnIndex="2">
+      							<children>
+      								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+      									<children>
+      										<Label maxHeight="1.7976931348623157E308" styleClass="card-title" text="Total Bills">
+      											<font>
+      												<Font size="26.0" />
+      											</font>
+      											<VBox.margin>
+      												<Insets left="20.0" />
+      											</VBox.margin>
+      										</Label>
+      										<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
+      											<children>
+      												<ImageView fitHeight="40.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true">
+      													<image>
+      														<Image url="@../icons/total_bill.png" />
+      													</image>
+      													<HBox.margin>
+      														<Insets />
+      													</HBox.margin>
+      												</ImageView>
+      												<Label maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-font" text="345">
+      													<font>
+      														<Font name="System Bold" size="40.0" />
+      													</font>
+      													<HBox.margin>
+      														<Insets />
+      													</HBox.margin>
+      												</Label>
+      											</children>
+      											<VBox.margin>
+      												<Insets left="10.0" />
+      											</VBox.margin>
+      										</HBox>
+      									</children>
+      									<StackPane.margin>
+      										<Insets />
+      									</StackPane.margin>
+      								</VBox>
+      							</children>
+      						</StackPane>
+      					</children>
+      					<VBox.margin>
+      						<Insets />
+      					</VBox.margin>
+      				</GridPane>
+      				<GridPane hgap="10.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+      					<columnConstraints>
+      						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+      						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+      						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+      					</columnConstraints>
+      					<rowConstraints>
+      						<RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+      					</rowConstraints>
+      					<children>
+      						<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style">
+      							<children>
+      								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+      									<children>
+      										<Label maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-title" text="Total Sales">
+      											<font>
+      												<Font size="26.0" />
+      											</font>
+      											<VBox.margin>
+      												<Insets left="20.0" />
+      											</VBox.margin>
+      										</Label>
+      										<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+      											<children>
+      												<ImageView fitHeight="40.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true">
+      													<image>
+      														<Image url="@../icons/total_sales.png" />
+      													</image>
+      													<HBox.margin>
+      														<Insets />
+      													</HBox.margin>
+      												</ImageView>
+      												<Label maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-font" text="345">
+      													<font>
+      														<Font name="System Bold" size="40.0" />
+      													</font>
+      													<HBox.margin>
+      														<Insets />
+      													</HBox.margin>
+      												</Label>
+      											</children>
+      											<VBox.margin>
+      												<Insets left="10.0" />
+      											</VBox.margin>
+      										</HBox>
+      									</children>
+      									<StackPane.margin>
+      										<Insets />
+      									</StackPane.margin>
+      								</VBox>
+      							</children>
+      							<GridPane.margin>
+      								<Insets />
+      							</GridPane.margin>
+      						</StackPane>
+      						<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style" GridPane.columnIndex="1">
+      							<children>
+      								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+      									<children>
+      										<Label maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-title" text="Outstanding Payments">
+      											<font>
+      												<Font size="26.0" />
+      											</font>
+      											<VBox.margin>
+      												<Insets left="20.0" />
+      											</VBox.margin>
+      										</Label>
+      										<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
+      											<children>
+      												<ImageView fitHeight="40.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true">
+      													<image>
+      														<Image url="@../icons/outstanding_payments.png" />
+      													</image>
+      													<HBox.margin>
+      														<Insets />
+      													</HBox.margin>
+      												</ImageView>
+      												<Label maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-font" text="345">
+      													<font>
+      														<Font name="System Bold" size="40.0" />
+      													</font>
+      													<HBox.margin>
+      														<Insets />
+      													</HBox.margin>
+      												</Label>
+      											</children>
+      											<VBox.margin>
+      												<Insets left="10.0" />
+      											</VBox.margin>
+      										</HBox>
+      									</children>
+      									<StackPane.margin>
+      										<Insets />
+      									</StackPane.margin>
+      								</VBox>
+      							</children>
+      						</StackPane>
+      						<StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style" GridPane.columnIndex="2">
+      							<children>
+      								<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+      									<children>
+      										<Label maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-title" text="Pending Bills">
+      											<font>
+      												<Font size="26.0" />
+      											</font>
+      											<VBox.margin>
+      												<Insets left="20.0" />
+      											</VBox.margin>
+      										</Label>
+      										<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
+      											<children>
+      												<ImageView fitHeight="40.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true">
+      													<image>
+      														<Image url="@../icons/total_.png" />
+      													</image>
+      													<HBox.margin>
+      														<Insets />
+      													</HBox.margin>
+      												</ImageView>
+      												<Label maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-font" text="345" HBox.hgrow="ALWAYS">
+      													<font>
+      														<Font name="System Bold" size="40.0" />
+      													</font>
+      													<HBox.margin>
+      														<Insets />
+      													</HBox.margin>
+      												</Label>
+      											</children>
+      											<VBox.margin>
+      												<Insets left="10.0" />
+      											</VBox.margin>
+      										</HBox>
+      									</children>
+      									<StackPane.margin>
+      										<Insets />
+      									</StackPane.margin>
+      								</VBox>
+      							</children>
+      						</StackPane>
+      					</children>
+      					<VBox.margin>
+      						<Insets />
+      					</VBox.margin>
+      				</GridPane>
+                     </children>
+                     <VBox.margin>
+                        <Insets />
+                     </VBox.margin>
+                  </VBox>
+				<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="10.0" style="-fx-background-color: #F7F7F7;">
 					<children>
 						<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="card-style" HBox.hgrow="ALWAYS">
 							<children>
@@ -556,10 +563,13 @@
 						</VBox>
 					</children>
 					<VBox.margin>
-						<Insets bottom="20.0" left="20.0" right="40.0" top="90.0" />
+						<Insets />
 					</VBox.margin>
 				</HBox>
 			</children>
+               <padding>
+                  <Insets bottom="50.0" left="20.0" right="20.0" />
+               </padding>
 		</VBox>
 	</content>
 	</ScrollPane>

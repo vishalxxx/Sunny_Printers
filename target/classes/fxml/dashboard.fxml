@@ -20,9 +20,9 @@
 	<center>
 	<ScrollPane fitToWidth="true" BorderPane.alignment="CENTER">
 	<content>
-		<VBox styleClass="center-area" BorderPane.alignment="CENTER">
+		<VBox maxHeight="1.7976931348623157E308" styleClass="center-area" BorderPane.alignment="CENTER">
 			<children>
-				<Label styleClass="main-header" text="Dashboard">
+				<Label maxHeight="1.7976931348623157E308" styleClass="main-header" text="Dashboard">
 					<font>
 						<Font size="50.0" />
 					</font>
@@ -560,6 +560,9 @@
 					</VBox.margin>
 				</HBox>
 			</children>
+               <padding>
+                  <Insets bottom="50.0" />
+               </padding>
 		</VBox>
 	</content>
 	</ScrollPane>
