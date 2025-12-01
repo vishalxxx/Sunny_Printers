@@ -8,7 +8,7 @@
 .sidebar-section-title {
     -fx-text-fill: white;
     -fx-padding: 10 10 10 10;
-    -fx-font-size: 1.5em;
+    -fx-font-size: 1.2em;
 	
    
 }
@@ -16,7 +16,7 @@
 	-fx-background-color: #234FAF;
     -fx-text-fill: white;
     -fx-padding: 10 10 10 10;
-    -fx-font-size: 1.5em;
+    -fx-font-size: 1.2em;
    
 }
 
@@ -24,7 +24,7 @@
 	
 	-fx-text-fill: black;
 
-	-fx-font-size: 1.9em;
+	-fx-font-size: 1.5em;
 }
 .card-font{
 	-fx-font-size: 2.5em;
@@ -41,7 +41,8 @@
 }
 .main-header{
 	-fx-font-size: 3.0em;
-
+	
+	-fx-text-fill: white; 
 }
 
 
@@ -50,7 +51,7 @@
 	-fx-background-color: #212121;   /* dark background */
 	-fx-padding: 10;
 	-fx-background-radius: 20;
-	-fx-base-font-size: 14pt;
+	-fx-base-size: 1.3em;
 }
 .center-area{
 	-fx-background-radius: 20;
@@ -112,7 +113,6 @@
 
 .card-style{
 	-fx-background-color: white;
-
 	-fx-background-radius: 15;
 	-fx-effect: dropshadow( gaussian , rgba(0,0,0,0.15), 8, 0, 0, 2 );
 }
