@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.String?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane style="-fx-background-color: WHITE;" styleClass="root" stylesheets="@../css/add_client.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.ClientDetailsController">
+
+    <children>
+        <VBox spacing="20" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20" AnchorPane.rightAnchor="20" AnchorPane.topAnchor="30.0">
+
+            <!-- Page Title -->
+            <Label maxWidth="1.7976931348623157E308" styleClass="page-title" text="ADD NEW CLIENT" VBox.vgrow="ALWAYS">
+            <font>
+               <Font name="System Bold" size="24.0" />
+            </font>
+            <VBox.margin>
+               <Insets left="30.0" />
+            </VBox.margin></Label>
+
+            <!-- Main Card -->
+            <VBox spacing="6.0" styleClass="card">
+            <Label maxWidth="1.7976931348623157E308" styleClass="page-title" text="Client Information">
+               <font>
+                  <Font name="System Bold" size="14.0" />
+               </font>
+            </Label>
+
+                 <!-- Client Name -->
+                 <Label text="Client Name *" />
+                 <TextField fx:id="txtName" promptText="Enter client name" />
+
+                 <!-- Company Name -->
+                 <Label text="Company Name" />
+                 <TextField fx:id="txtCompany" promptText="Optional" />
+
+                 <!-- Client Type -->
+                 <Label text="Client Type" />
+                 <ComboBox fx:id="cmbClientType" maxWidth="1.7976931348623157E308">
+                     <items>
+                         <FXCollections fx:factory="observableArrayList">
+                             <String fx:value="Individual" />
+                             <String fx:value="Business" />
+                         </FXCollections>
+                     </items>
+                 </ComboBox>
+
+                 <!-- Mobile -->
+                 <Label text="Mobile Number" />
+                 <TextField fx:id="txtMobile" promptText="9876543210" />
+
+                 <!-- Email -->
+                 <Label text="Email" />
+                 <TextField fx:id="txtEmail" promptText="example@mail.com" />
+
+                 <!-- Address -->
+                 <Label text="Address" />
+                 <TextArea fx:id="txtAddress" prefRowCount="3" promptText="Enter complete address" />
+
+                 <!-- GST -->
+                 <Label text="GST Number" />
+                 <TextField fx:id="txtGST" promptText="Optional" />
+
+                 <!-- Notes -->
+                 <Label text="Notes" />
+                 <TextArea fx:id="txtNote" prefRowCount="2" promptText="Any special notes" />
+            <padding>
+               <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+            </padding>
+
+                <!-- Buttons 
+                <HBox spacing="12" alignment="center-right">
+                    <padding>
+                        <Insets top="0" right="20" bottom="20" left="20"/>
+                    </padding>
+
+                    <Button text="Save" fx:id="btnSave" styleClass="primary-btn"/>
+                    <Button text="Clear" fx:id="btnClear" styleClass="secondary-btn"/>
+                </HBox>-->
+
+            </VBox>
+        </VBox>
+    </children>
+</AnchorPane>

@@ -1,1228 +1,636 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.String?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="991.0" prefWidth="1271.0" style="-fx-background-color: black;" styleClass="root" stylesheets="@../css/dashboard.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.MainController">
+<BorderPane styleClass="root"
+	stylesheets="@../css/dashboard.css" xmlns="http://javafx.com/javafx/25"
+	xmlns:fx="http://javafx.com/fxml/1"
+	fx:controller="controller.MainController">
 
+	<!-- TOP BAR -->
+	<top>
+		<HBox alignment="CENTER_LEFT" spacing="15" styleClass="top-bar">
+			<!-- Sidebar / Dashboard Button -->
+			<ImageView fitHeight="32" fitWidth="32" pickOnBounds="true"
+				preserveRatio="true" onMouseClicked="#openDashboard">
+				<image>
+					<Image url="@../icons/dashboard.png" />
+				</image>
+			</ImageView>
+
+			<!-- Dynamic Page Title -->
+			<Label fx:id="pageTitle" text="Dashboard"
+				styleClass="page-title" />
+		</HBox>
+	</top>
+
+	<!-- LEFT SIDEBAR -->
+	<left>
+		<ScrollPane fx:id="sidebarScroll" fitToWidth="true"
+			hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="sidebar-scroll"
+			BorderPane.alignment="CENTER_LEFT"
+			style="-fx-background-color: transparent;">
+			<content>
+				<!-- StackPane holds main menu + all submenus -->
+				<StackPane fx:id="sidebarStack"
+					styleClass="sidebar-background">
+
+					<!-- ================= MAIN SIDEBAR ================= -->
+					<VBox fx:id="mainSidebar" fillWidth="true" spacing="4"
+						styleClass="sidebar" VBox.vgrow="ALWAYS">
+
+						<!-- MAIN ITEMS -->
+						<HBox alignment="CENTER_LEFT" onMouseClicked="#openDashboard"
+							styleClass="sidebar-item">
+							<children>
+								<ImageView pickOnBounds="true" preserveRatio="true"
+									fitHeight="20" fitWidth="20">
+									<image>
+										<Image url="@../icons/dashboard.png" />
+									</image>
+								</ImageView>
+								<Label maxWidth="Infinity" text="Dashboard"
+									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
+
+						<HBox alignment="CENTER_LEFT"
+							onMouseClicked="#showJobsSubmenu" styleClass="sidebar-item">
+							<children>
+								<ImageView pickOnBounds="true" preserveRatio="true"
+									fitHeight="20" fitWidth="20">
+									<image>
+										<Image url="@../icons/job.png" />
+									</image>
+								</ImageView>
+								<Label maxWidth="Infinity" text="Job Details"
+									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
+
+						<HBox alignment="CENTER_LEFT"
+							onMouseClicked="#showClientsSubmenu" styleClass="sidebar-item">
+							<children>
+								<ImageView pickOnBounds="true" preserveRatio="true"
+									fitHeight="20" fitWidth="20">
+									<image>
+										<Image url="@../icons/contact.png" />
+									</image>
+								</ImageView>
+								<Label maxWidth="Infinity" text="Client Details"
+									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
+
+						<HBox alignment="CENTER_LEFT"
+							onMouseClicked="#showBillingSubmenu" styleClass="sidebar-item">
+							<children>
+								<ImageView pickOnBounds="true" preserveRatio="true"
+									fitHeight="20" fitWidth="20">
+									<image>
+										<Image url="@../icons/bill.png" />
+									</image>
+								</ImageView>
+								<Label maxWidth="Infinity" text="Bill Creation"
+									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
+
+						<HBox alignment="CENTER_LEFT"
+							onMouseClicked="#showPaymentSubmenu" styleClass="sidebar-item">
+							<children>
+								<ImageView pickOnBounds="true" preserveRatio="true"
+									fitHeight="20" fitWidth="20">
+									<image>
+										<Image url="@../icons/payment.png" />
+									</image>
+								</ImageView>
+								<Label maxWidth="Infinity" text="Payments"
+									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
+
+						<HBox alignment="CENTER_LEFT"
+							onMouseClicked="#showLedgerSubmenu" styleClass="sidebar-item">
+							<children>
+								<ImageView pickOnBounds="true" preserveRatio="true"
+									fitHeight="20" fitWidth="20">
+									<image>
+										<Image url="@../icons/ledger.png" />
+									</image>
+								</ImageView>
+								<Label maxWidth="Infinity" text="Client Ledger"
+									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
+
+						<!-- SECTION HEADER -->
+						<Label text="Quick Links"
+							styleClass="sidebar-section-header" />
+
+						<!-- QUICK LINKS -->
+						<HBox styleClass="sidebar-item">
+							<children>
+								<ImageView pickOnBounds="true" preserveRatio="true"
+									fitHeight="20" fitWidth="20">
+									<image>
+										<Image url="@../icons/add_client.png" />
+									</image>
+								</ImageView>
+								<Label maxWidth="Infinity" text="Add Client"
+									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
+
+						<HBox styleClass="sidebar-item">
+							<children>
+								<ImageView pickOnBounds="true" preserveRatio="true"
+									fitHeight="20" fitWidth="20">
+									<image>
+										<Image url="@../icons/add_bill.png" />
+									</image>
+								</ImageView>
+								<Label maxWidth="Infinity" text="Create Bill"
+									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
+
+						<HBox styleClass="sidebar-item">
+							<children>
+								<ImageView pickOnBounds="true" preserveRatio="true"
+									fitHeight="20" fitWidth="20">
+									<image>
+										<Image url="@../icons/add_job.png" />
+									</image>
+								</ImageView>
+								<Label maxWidth="Infinity" text="Add Job"
+									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
+
+						<HBox styleClass="sidebar-item">
+							<children>
+								<ImageView pickOnBounds="true" preserveRatio="true"
+									fitHeight="20" fitWidth="20">
+									<image>
+										<Image url="@../icons/add_payment.png" />
+									</image>
+								</ImageView>
+								<Label maxWidth="Infinity" text="Record Payment"
+									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
+
+					</VBox>
+
+					<!-- ================= JOBS SUBMENU ================= -->
+					<VBox fx:id="jobsSidebar" visible="false" managed="false"
+						spacing="4" styleClass="sidebar">
+						<children>
+
+							<!-- Back -->
+							<HBox alignment="CENTER_LEFT"
+								onMouseClicked="#openDashboard"
+								styleClass="sidebar-item back-item">
+								<children>
+									<Label text="← Back" styleClass="sidebar-text"
+										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+
+							<Label text="Job Details"
+								styleClass="sidebar-section-header" />
+
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+								<children>
+									<Label text="Add Job" styleClass="sidebar-text"
+										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+								<children>
+									<Label text="View Jobs" styleClass="sidebar-text"
+										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+								<children>
+									<Label text="Job History" styleClass="sidebar-text"
+										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+						</children>
+					</VBox>
+
+					<!-- ================= CLIENTS SUBMENU ================= -->
+					<VBox fx:id="clientsSidebar" visible="false" managed="false"
+						spacing="4" styleClass="sidebar">
+						<children>
+
+							<HBox alignment="CENTER_LEFT"
+								onMouseClicked="#openDashboard"
+								styleClass="sidebar-item back-item">
+								<children>
+									<Label text="← Back" styleClass="sidebar-text"
+										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+
+							<Label text="Client Details"
+								styleClass="sidebar-section-header" />
+
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+								<children>
+									<Label text="Add Client" styleClass="sidebar-text"
+										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+								<children>
+									<Label text="View Clients" styleClass="sidebar-text"
+										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+								<children>
+									<Label text="Client Reports" styleClass="sidebar-text"
+										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+						</children>
+					</VBox>
+
+					<!-- ================= BILLING SUBMENU ================= -->
+					<VBox fx:id="billingSidebar" visible="false" managed="false"
+						spacing="4" styleClass="sidebar">
+						<children>
+
+							<HBox alignment="CENTER_LEFT"
+								onMouseClicked="#openDashboard"
+								styleClass="sidebar-item back-item">
+								<children>
+									<Label text="← Back" styleClass="sidebar-text"
+										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+
+							<Label text="Billing" styleClass="sidebar-section-header" />
+
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+								<children>
+									<Label text="Create Bill" styleClass="sidebar-text"
+										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+								<children>
+									<Label text="View Bills" styleClass="sidebar-text"
+										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+								<children>
+									<Label text="Pending Bills" styleClass="sidebar-text"
+										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+						</children>
+					</VBox>
+
+					<!-- ================= PAYMENTS SUBMENU ================= -->
+					<VBox fx:id="paymentSidebar" visible="false" managed="false"
+						spacing="4" styleClass="sidebar">
+						<children>
+
+							<HBox alignment="CENTER_LEFT"
+								onMouseClicked="#openDashboard"
+								styleClass="sidebar-item back-item">
+								<children>
+									<Label text="← Back" styleClass="sidebar-text"
+										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+
+							<Label text="Payments" styleClass="sidebar-section-header" />
+
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+								<children>
+									<Label text="Record Payment" styleClass="sidebar-text"
+										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+								<children>
+									<Label text="Payment History" styleClass="sidebar-text"
+										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+						</children>
+					</VBox>
+
+					<!-- ================= LEDGER SUBMENU ================= -->
+					<VBox fx:id="ledgerSidebar" visible="false" managed="false"
+						spacing="4" styleClass="sidebar">
+						<children>
+
+							<HBox alignment="CENTER_LEFT"
+								onMouseClicked="#openDashboard"
+								styleClass="sidebar-item back-item">
+								<children>
+									<Label text="← Back" styleClass="sidebar-text"
+										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+
+							<Label text="Ledger" styleClass="sidebar-section-header" />
+
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+								<children>
+									<Label text="Client Ledger" styleClass="sidebar-text"
+										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+								<children>
+									<Label text="Outstanding Ledger Reports"
+										styleClass="sidebar-text" maxWidth="Infinity"
+										HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+						</children>
+					</VBox>
+
+				</StackPane>
+			</content>
+		</ScrollPane>
+	</left>
+
+	<!-- CENTER DASHBOARD AREA -->
 	<center>
-		<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="754.0" prefWidth="642.0" styleClass="center-area" BorderPane.alignment="CENTER">
-			<children>
-				<Label text="Dashboard">
-					<font>
-						<Font size="50.0" />
-					</font>
-					<VBox.margin>
-						<Insets left="20.0" top="20.0" />
-					</VBox.margin>
-				</Label>
-				<GridPane hgap="20.0" vgap="20.0">
-					<columnConstraints>
-						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-					</columnConstraints>
-					<rowConstraints>
-						<RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-					</rowConstraints>
-					<children>
-						<StackPane prefHeight="150.0" prefWidth="200.0" styleClass="card-style">
-							<children>
-								<VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0">
-									<children>
-										<Label text="Total Clients">
-											<font>
-												<Font size="26.0" />
-											</font>
-											<VBox.margin>
-												<Insets left="20.0" top="30.0" />
-											</VBox.margin>
-										</Label>
-										<HBox prefHeight="100.0" prefWidth="200.0" spacing="5.0">
-											<children>
-												<ImageView fitHeight="60.0" fitWidth="60.0" pickOnBounds="true" preserveRatio="true">
-													<image>
-														<Image url="@../icons/total_clients.png" />
-													</image>
-												</ImageView>
-												<Label text="345">
-													<font>
-														<Font name="System Bold" size="40.0" />
-													</font>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</Label>
-											</children>
-											<VBox.margin>
-												<Insets left="10.0" />
-											</VBox.margin>
-										</HBox>
-									</children>
-									<StackPane.margin>
-										<Insets bottom="20.0" />
-									</StackPane.margin>
-								</VBox>
-							</children>
-							<GridPane.margin>
-								<Insets />
-							</GridPane.margin>
-						</StackPane>
-						<StackPane prefHeight="150.0" prefWidth="200.0" styleClass="card-style" GridPane.columnIndex="1">
-							<children>
-								<VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0">
-									<children>
-										<Label text="Total Job">
-											<font>
-												<Font size="26.0" />
-											</font>
-											<VBox.margin>
-												<Insets left="20.0" top="30.0" />
-											</VBox.margin>
-										</Label>
-										<HBox prefHeight="100.0" prefWidth="200.0" spacing="5.0">
-											<children>
-												<ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
-													<image>
-														<Image url="@../icons/total_jobs.png" />
-													</image>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</ImageView>
-												<Label text="345">
-													<font>
-														<Font name="System Bold" size="40.0" />
-													</font>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</Label>
-											</children>
-											<VBox.margin>
-												<Insets left="10.0" />
-											</VBox.margin>
-										</HBox>
-									</children>
-									<StackPane.margin>
-										<Insets bottom="20.0" />
-									</StackPane.margin>
-								</VBox>
-							</children>
-						</StackPane>
-						<StackPane prefHeight="150.0" prefWidth="200.0" styleClass="card-style" GridPane.columnIndex="2">
-							<children>
-								<VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0">
-									<children>
-										<Label text="Total Bills">
-											<font>
-												<Font size="26.0" />
-											</font>
-											<VBox.margin>
-												<Insets left="20.0" top="30.0" />
-											</VBox.margin>
-										</Label>
-										<HBox prefHeight="100.0" prefWidth="200.0" spacing="5.0">
-											<children>
-												<ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
-													<image>
-														<Image url="@../icons/total_bill.png" />
-													</image>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</ImageView>
-												<Label text="345">
-													<font>
-														<Font name="System Bold" size="40.0" />
-													</font>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</Label>
-											</children>
-											<VBox.margin>
-												<Insets left="10.0" />
-											</VBox.margin>
-										</HBox>
-									</children>
-									<StackPane.margin>
-										<Insets bottom="20.0" />
-									</StackPane.margin>
-								</VBox>
-							</children>
-						</StackPane>
-					</children>
-					<VBox.margin>
-						<Insets bottom="50.0" left="20.0" right="40.0" top="110.0" />
-					</VBox.margin>
-				</GridPane>
-				<GridPane hgap="20.0" vgap="20.0">
-					<columnConstraints>
-						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-						<ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-					</columnConstraints>
-					<rowConstraints>
-						<RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-					</rowConstraints>
-					<children>
-						<StackPane prefHeight="150.0" prefWidth="200.0" styleClass="card-style">
-							<children>
-								<VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0">
-									<children>
-										<Label text="Total Sales">
-											<font>
-												<Font size="26.0" />
-											</font>
-											<VBox.margin>
-												<Insets left="20.0" top="30.0" />
-											</VBox.margin>
-										</Label>
-										<HBox prefHeight="100.0" prefWidth="200.0" spacing="5.0">
-											<children>
-												<ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
-													<image>
-														<Image url="@../icons/total_sales.png" />
-													</image>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</ImageView>
-												<Label text="345">
-													<font>
-														<Font name="System Bold" size="40.0" />
-													</font>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</Label>
-											</children>
-											<VBox.margin>
-												<Insets left="10.0" />
-											</VBox.margin>
-										</HBox>
-									</children>
-									<StackPane.margin>
-										<Insets bottom="20.0" />
-									</StackPane.margin>
-								</VBox>
-							</children>
-							<GridPane.margin>
-								<Insets />
-							</GridPane.margin>
-						</StackPane>
-						<StackPane prefHeight="150.0" prefWidth="200.0" styleClass="card-style" GridPane.columnIndex="1">
-							<children>
-								<VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0">
-									<children>
-										<Label text="Outstanding Payments">
-											<font>
-												<Font size="26.0" />
-											</font>
-											<VBox.margin>
-												<Insets left="20.0" top="30.0" />
-											</VBox.margin>
-										</Label>
-										<HBox prefHeight="100.0" prefWidth="200.0" spacing="5.0">
-											<children>
-												<ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
-													<image>
-														<Image url="@../icons/outstanding_payments.png" />
-													</image>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</ImageView>
-												<Label text="345">
-													<font>
-														<Font name="System Bold" size="40.0" />
-													</font>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</Label>
-											</children>
-											<VBox.margin>
-												<Insets left="10.0" />
-											</VBox.margin>
-										</HBox>
-									</children>
-									<StackPane.margin>
-										<Insets bottom="20.0" />
-									</StackPane.margin>
-								</VBox>
-							</children>
-						</StackPane>
-						<StackPane prefHeight="150.0" prefWidth="200.0" styleClass="card-style" GridPane.columnIndex="2">
-							<children>
-								<VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0">
-									<children>
-										<Label text="Pending Bills">
-											<font>
-												<Font size="26.0" />
-											</font>
-											<VBox.margin>
-												<Insets left="20.0" top="30.0" />
-											</VBox.margin>
-										</Label>
-										<HBox prefHeight="100.0" prefWidth="200.0" spacing="5.0">
-											<children>
-												<ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
-													<image>
-														<Image url="@../icons/total_.png" />
-													</image>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</ImageView>
-												<Label text="345">
-													<font>
-														<Font name="System Bold" size="40.0" />
-													</font>
-													<HBox.margin>
-														<Insets top="10.0" />
-													</HBox.margin>
-												</Label>
-											</children>
-											<VBox.margin>
-												<Insets left="10.0" />
-											</VBox.margin>
-										</HBox>
-									</children>
-									<StackPane.margin>
-										<Insets bottom="20.0" />
-									</StackPane.margin>
-								</VBox>
-							</children>
-						</StackPane>
-					</children>
-					<VBox.margin>
-						<Insets left="20.0" right="40.0" top="90.0" />
-					</VBox.margin>
-				</GridPane>
-				<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="100.0" prefWidth="200.0" spacing="15.0" style="-fx-background-color: #F7F7F7;" VBox.vgrow="ALWAYS">
-					<children>
-						<VBox prefHeight="200.0" prefWidth="100.0" styleClass="card-style" HBox.hgrow="ALWAYS">
-							<children>
-								<Label text="Recent Activities">
-									<font>
-										<Font size="30.0" />
-									</font>
-									<VBox.margin>
-										<Insets left="20.0" top="20.0" />
-									</VBox.margin>
-								</Label>
-								<VBox prefHeight="200.0" prefWidth="100.0">
-									<children>
-										<Label text="New Bill is genrated">
-											<font>
-												<Font size="18.0" />
-											</font>
-										</Label>
-										<Label text="New Bill is genrated">
-											<font>
-												<Font size="18.0" />
-											</font>
-										</Label>
-										<Label text="New Bill is genrated">
-											<font>
-												<Font size="18.0" />
-											</font>
-										</Label>
-										<Label text="New Bill is genrated">
-											<font>
-												<Font size="18.0" />
-											</font>
-										</Label>
-										<Label text="New Bill is genrated">
-											<font>
-												<Font size="18.0" />
-											</font>
-										</Label>
-									</children>
-									<opaqueInsets>
-										<Insets />
-									</opaqueInsets>
-									<padding>
-										<Insets left="10.0" />
-									</padding>
-									<VBox.margin>
-										<Insets left="10.0" top="10.0" />
-									</VBox.margin>
-								</VBox>
-							</children>
-						</VBox>
-						<VBox prefHeight="200.0" prefWidth="100.0" styleClass="card-style" HBox.hgrow="ALWAYS">
-							<children>
-								<Label text="Navigation Tiles">
-									<font>
-										<Font size="30.0" />
-									</font>
-									<VBox.margin>
-										<Insets left="10.0" top="20.0" />
-									</VBox.margin>
-								</Label>
-								<HBox maxWidth="1.7976931348623157E308" prefHeight="50.0" prefWidth="200.0" spacing="8.0">
-									<children>
-										<HBox maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="50.0" prefWidth="500.0" spacing="9.0" HBox.hgrow="ALWAYS">
-											<children>
-												<HBox prefHeight="100.0" prefWidth="200.0">
-													<children>
-														<ImageView fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
-															<image>
-																<Image url="@../icons/client_black.png" />
-															</image>
-															<HBox.margin>
-																<Insets left="5.0" top="15.0" />
-															</HBox.margin>
-														</ImageView>
-														<Label maxWidth="1.7976931348623157E308" text="Client Details" HBox.hgrow="ALWAYS">
-															<padding>
-																<Insets bottom="10.0" right="10.0" top="4.0" />
-															</padding>
-															<HBox.margin>
-																<Insets left="5.0" top="15.0" />
-															</HBox.margin>
-															<font>
-																<Font size="18.0" />
-															</font>
-														</Label>
-													</children>
-													<styleClass>
-														<String fx:value="card-style" />
-														<String fx:value="nav-tile" />
-													</styleClass>
-													<HBox.margin>
-														<Insets />
-													</HBox.margin>
-												</HBox>
-												<HBox prefHeight="100.0" prefWidth="200.0">
-													<children>
-														<ImageView fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
-															<image>
-																<Image url="@../icons/job_black.png" />
-															</image>
-															<HBox.margin>
-																<Insets left="5.0" top="15.0" />
-															</HBox.margin>
-														</ImageView>
-														<Label maxWidth="1.7976931348623157E308" text="Job Details" textFill="#0a0a0a" HBox.hgrow="ALWAYS">
-															<padding>
-																<Insets bottom="10.0" right="10.0" top="4.0" />
-															</padding>
-															<HBox.margin>
-																<Insets left="5.0" top="15.0" />
-															</HBox.margin>
-															<font>
-																<Font size="18.0" />
-															</font>
-														</Label>
-													</children>
-													<styleClass>
-														<String fx:value="card-style" />
-														<String fx:value="nav-tile" />
-													</styleClass>
-													<HBox.margin>
-														<Insets />
-													</HBox.margin>
-												</HBox>
-												<HBox prefHeight="100.0" prefWidth="200.0">
-													<children>
-														<ImageView fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
-															<image>
-																<Image url="@../icons/bill_black.png" />
-															</image>
-															<HBox.margin>
-																<Insets left="5.0" top="15.0" />
-															</HBox.margin>
-														</ImageView>
-														<Label maxWidth="1.7976931348623157E308" text="Bill Creation" HBox.hgrow="ALWAYS">
-															<padding>
-																<Insets bottom="10.0" right="10.0" top="4.0" />
-															</padding>
-															<HBox.margin>
-																<Insets top="15.0" />
-															</HBox.margin>
-															<font>
-																<Font size="18.0" />
-															</font>
-														</Label>
-													</children>
-													<styleClass>
-														<String fx:value="card-style" />
-														<String fx:value="nav-tile" />
-													</styleClass>
-												</HBox>
-											</children>
-											<padding>
-												<Insets right="5.0" />
-											</padding>
-										</HBox>
-									</children>
-									<VBox.margin>
-										<Insets left="10.0" right="8.0" top="10.0" />
-									</VBox.margin>
-								</HBox>
-								<HBox prefHeight="50.0" prefWidth="500.0">
-									<children>
-										<HBox prefHeight="50.0" prefWidth="330.0" spacing="9.0" HBox.hgrow="NEVER">
-											<children>
-												<HBox prefHeight="100.0" prefWidth="210.0">
-													<children>
-														<ImageView fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
-															<image>
-																<Image url="@../icons/payment_black.png" />
-															</image>
-															<HBox.margin>
-																<Insets left="5.0" top="15.0" />
-															</HBox.margin>
-														</ImageView>
-														<Label maxWidth="1.7976931348623157E308" text="Payments" HBox.hgrow="ALWAYS">
-															<padding>
-																<Insets bottom="10.0" right="10.0" top="4.0" />
-															</padding>
-															<HBox.margin>
-																<Insets left="5.0" top="15.0" />
-															</HBox.margin>
-															<font>
-																<Font size="18.0" />
-															</font>
-														</Label>
-													</children>
-													<styleClass>
-														<String fx:value="card-style" />
-														<String fx:value="nav-tile" />
-													</styleClass>
-												</HBox>
-												<HBox prefHeight="100.0" prefWidth="210.0">
-													<children>
-														<ImageView fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
-															<image>
-																<Image url="@../icons/ledger_black.png" />
-															</image>
-															<HBox.margin>
-																<Insets left="5.0" top="15.0" />
-															</HBox.margin>
-														</ImageView>
-														<Label maxWidth="1.7976931348623157E308" text="Client Ledger" HBox.hgrow="ALWAYS">
-															<padding>
-																<Insets bottom="10.0" right="10.0" top="4.0" />
-															</padding>
-															<HBox.margin>
-																<Insets top="15.0" />
-															</HBox.margin>
-															<font>
-																<Font size="18.0" />
-															</font>
-														</Label>
-													</children>
-													<styleClass>
-														<String fx:value="card-style" />
-														<String fx:value="nav-tile" />
-													</styleClass>
-												</HBox>
-											</children>
-											<padding>
-												<Insets right="5.0" />
-											</padding>
-										</HBox>
-									</children>
-									<VBox.margin>
-										<Insets left="10.0" right="8.0" top="15.0" />
-									</VBox.margin>
-									<padding>
-										<Insets right="5.0" />
-									</padding>
-								</HBox>
-							</children>
-						</VBox>
-					</children>
-					<VBox.margin>
-						<Insets bottom="20.0" left="20.0" right="40.0" top="90.0" />
-					</VBox.margin>
-				</HBox>
-			</children>
-		</VBox>
-	</center>
-	<padding>
-		<Insets bottom="30.0" left="20.0" right="20.0" top="30.0" />
-	</padding>
-   <left>
-      <StackPane prefHeight="150.0" prefWidth="240.0" styleClass="sidebar" BorderPane.alignment="CENTER">
-         <children>
-            <VBox fx:id="mainSidebar" prefHeight="200.0" prefWidth="100.0">
-               <children>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showMainSidebar" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/dashboard.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Dashboard" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showJobsSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/job.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Job Details" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox onMouseClicked="#showClientsSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/contact.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="10.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Client Details" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox onMouseClicked="#showBillingSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/bill.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="10.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Bill Creation" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox onMouseClicked="#showPaymentSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/payment.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="10.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Payments" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox onMouseClicked="#showLedgerSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/ledger.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="10.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Client Ledger" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                           <padding>
-                              <Insets bottom="15.0" />
-                           </padding>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <Label graphicTextGap="5.0" text="Quick Links" textFill="#979191">
-                     <font>
-                        <Font size="24.0" />
-                     </font>
-                     <VBox.margin>
-                        <Insets bottom="10.0" left="10.0" top="30.0" />
-                     </VBox.margin>
-                  </Label>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/add_client.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="10.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title" text="Add Client" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                           <padding>
-                              <Insets bottom="10.0" top="10.0" />
-                           </padding>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/add_bill.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="10.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title" text="Create Bill" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                           <padding>
-                              <Insets bottom="10.0" top="10.0" />
-                           </padding>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/add_job.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="10.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title" text="Add Job" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                           <padding>
-                              <Insets bottom="10.0" top="10.0" />
-                           </padding>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/add_payment.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="10.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxWidth="1.7976931348623157E308" styleClass="sidebar-section-title" text="Record Payment" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                           <padding>
-                              <Insets bottom="10.0" top="10.0" />
-                           </padding>
-                        </Label>
-                     </children>
-                  </HBox>
-               </children>
-               <StackPane.margin>
-                  <Insets />
-               </StackPane.margin>
-            </VBox>
-            <VBox fx:id="jobsSidebar" prefHeight="200.0" prefWidth="100.0" visible="false">
-               <children>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/bill.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="View All Jobs" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showJobsSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/add_job.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Add New Job" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/contact.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="25.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Update Status" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/bill.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="25.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Job Report" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/add_bill.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="25.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Pending Jobs" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/job.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="25.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Completed Jobs" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
-               </children>
-               <StackPane.margin>
-                  <Insets />
-               </StackPane.margin>
-               <padding>
-                  <Insets top="100.0" />
-               </padding>
-            </VBox>
-            <VBox fx:id="clientsSidebar" prefHeight="200.0" prefWidth="100.0" visible="false">
-               <children>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/bill.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="View All Clients" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showJobsSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/add_job.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Add New Client" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/contact.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="25.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Edit Client Details" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/bill.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="25.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Search Client" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </Label>
-                     </children>
-                  </HBox>
-               </children>
-               <padding>
-                  <Insets top="100.0" />
-               </padding>
-            </VBox>
-            <VBox fx:id="billingSidebar" prefHeight="200.0" prefWidth="100.0" visible="false">
-               <children>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/bill.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="New Bill" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showJobsSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/add_job.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="View Bill" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/contact.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="25.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Edit Bill" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/bill.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="25.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Pending Bills" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/add_bill.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="25.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Paid Bills" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </Label>
-                     </children>
-                  </HBox>
-               </children>
-               <padding>
-                  <Insets top="100.0" />
-               </padding>
-            </VBox>
-            <VBox fx:id="paymentSidebar" prefHeight="200.0" prefWidth="100.0" visible="false">
-               <children>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/bill.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Add Payment" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showJobsSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/add_job.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="View Payment" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/contact.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="25.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Pending Payments" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/bill.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="25.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Payment History" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/add_bill.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets top="25.0" />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Payment Reports" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </Label>
-                     </children>
-                  </HBox>
-               </children>
-               <padding>
-                  <Insets top="100.0" />
-               </padding>
-            </VBox>
-            <VBox fx:id="ledgerSidebar" prefHeight="200.0" prefWidth="100.0" visible="false">
-               <children>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/bill.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="View Ledger" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" onMouseClicked="#showJobsSubmenu" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/add_job.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Outstanding Amount" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
-               </children>
-               <padding>
-                  <Insets top="100.0" />
-               </padding>
-            </VBox>
-         </children>
-         <BorderPane.margin>
-            <Insets right="20.0" />
-         </BorderPane.margin>
-      </StackPane>
-   </left>
-   <top>
-      <ImageView fitHeight="73.0" fitWidth="57.0" onMouseClicked="#showMainSidebar" pickOnBounds="true" preserveRatio="true" BorderPane.alignment="TOP_LEFT">
-         <image>
-            <Image url="@../icons/dashboard.png" />
-         </image>
-         <BorderPane.margin>
-            <Insets bottom="10.0" left="20.0" />
-         </BorderPane.margin>
-      </ImageView>
-   </top>
+		<ScrollPane fx:id="centerScroll" fitToHeight="true"
+			fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+			style="-fx-background-color: transparent;">
+			<content>
+				<VBox fx:id="centerRoot" fillWidth="true" spacing="20"
+					styleClass="center-area">
 
+					<!-- MAIN TITLE (you can also bind this to pageTitle later) -->
+					<Label styleClass="dashboard-title" text="Dashboard" />
+
+					<!-- TOP METRICS GRID -->
+					<GridPane hgap="20" vgap="20" styleClass="metrics-grid">
+						<columnConstraints>
+							<ColumnConstraints percentWidth="33.33" />
+							<ColumnConstraints percentWidth="33.33" />
+							<ColumnConstraints percentWidth="33.33" />
+						</columnConstraints>
+
+						<!-- CARD 1 -->
+						<StackPane styleClass="card-style"
+							GridPane.columnIndex="0">
+							<VBox spacing="10" styleClass="card-content">
+								<Label styleClass="card-title" text="Total Clients" />
+								<HBox spacing="10">
+									<ImageView fitHeight="24" fitWidth="24">
+										<image>
+											<Image url="@../icons/total_clients.png" />
+										</image>
+									</ImageView>
+									<Label styleClass="card-value" text="345" />
+								</HBox>
+							</VBox>
+						</StackPane>
+
+						<!-- CARD 2 -->
+						<StackPane styleClass="card-style"
+							GridPane.columnIndex="1">
+							<VBox spacing="10" styleClass="card-content">
+								<Label styleClass="card-title" text="Total Jobs" />
+								<HBox spacing="10">
+									<ImageView fitHeight="24" fitWidth="24">
+										<image>
+											<Image url="@../icons/total_jobs.png" />
+										</image>
+									</ImageView>
+									<Label styleClass="card-value" text="345" />
+								</HBox>
+							</VBox>
+						</StackPane>
+
+						<!-- CARD 3 -->
+						<StackPane styleClass="card-style"
+							GridPane.columnIndex="2">
+							<VBox spacing="10" styleClass="card-content">
+								<Label styleClass="card-title" text="Total Bills" />
+								<HBox spacing="10">
+									<ImageView fitHeight="24" fitWidth="24">
+										<image>
+											<Image url="@../icons/total_bill.png" />
+										</image>
+									</ImageView>
+									<Label styleClass="card-value" text="345" />
+								</HBox>
+							</VBox>
+						</StackPane>
+					</GridPane>
+
+					<!-- SECOND METRICS GRID -->
+					<GridPane hgap="20" vgap="20" styleClass="metrics-grid">
+						<columnConstraints>
+							<ColumnConstraints percentWidth="33.33" />
+							<ColumnConstraints percentWidth="33.33" />
+							<ColumnConstraints percentWidth="33.33" />
+						</columnConstraints>
+
+						<StackPane styleClass="card-style"
+							GridPane.columnIndex="0">
+							<VBox spacing="10" styleClass="card-content">
+								<Label styleClass="card-title" text="Total Sales" />
+								<HBox spacing="10">
+									<ImageView fitHeight="24" fitWidth="24">
+										<image>
+											<Image url="@../icons/total_sales.png" />
+										</image>
+									</ImageView>
+									<Label styleClass="card-value" text="345" />
+								</HBox>
+							</VBox>
+						</StackPane>
+
+						<StackPane styleClass="card-style"
+							GridPane.columnIndex="1">
+							<VBox spacing="10" styleClass="card-content">
+								<Label styleClass="card-title" text="Outstanding Payments" />
+								<HBox spacing="10">
+									<ImageView fitHeight="24" fitWidth="24">
+										<image>
+											<Image url="@../icons/outstanding_payments.png" />
+										</image>
+									</ImageView>
+									<Label styleClass="card-value" text="345" />
+								</HBox>
+							</VBox>
+						</StackPane>
+
+						<StackPane styleClass="card-style"
+							GridPane.columnIndex="2">
+							<VBox spacing="10" styleClass="card-content">
+								<Label styleClass="card-title" text="Pending Bills" />
+								<HBox spacing="10">
+									<ImageView fitHeight="24" fitWidth="24">
+										<image>
+											<Image url="@../icons/total_.png" />
+										</image>
+									</ImageView>
+									<Label styleClass="card-value" text="345" />
+								</HBox>
+							</VBox>
+						</StackPane>
+					</GridPane>
+
+					<!-- LOWER SECTION (Recent Activities + Navigation Tiles) -->
+					<HBox fillHeight="true" spacing="20"
+						styleClass="bottom-section">
+
+						<!-- Recent Activities -->
+						<VBox spacing="10" styleClass="bottom-card"
+							HBox.hgrow="ALWAYS">
+							<Label styleClass="bottom-title" text="Recent Activities" />
+							<VBox spacing="5" styleClass="activity-list">
+								<Label text="New Bill is generated" />
+								<Label text="New Bill is generated" />
+								<Label text="New Bill is generated" />
+								<Label text="New Bill is generated" />
+							</VBox>
+						</VBox>
+
+						<!-- Navigation Tiles -->
+						<VBox spacing="10" styleClass="bottom-card"
+							HBox.hgrow="ALWAYS">
+							<Label styleClass="bottom-title" text="Navigation Tiles" />
+
+							<FlowPane hgap="12" vgap="12" prefWrapLength="500"
+								maxWidth="Infinity">
+
+								<!-- 1. Client Details -->
+								<HBox styleClass="nav-tile" HBox.hgrow="ALWAYS">
+									<ImageView styleClass="tile-icon">
+										<image>
+											<Image url="@../icons/client_black.png" />
+										</image>
+									</ImageView>
+									<Label text="Client Details" />
+								</HBox>
+
+								<!-- 2. Job Details -->
+								<HBox styleClass="nav-tile" HBox.hgrow="ALWAYS">
+									<ImageView styleClass="tile-icon">
+										<image>
+											<Image url="@../icons/job_black.png" />
+										</image>
+									</ImageView>
+									<Label text="Job Details" />
+								</HBox>
+
+								<!-- 3. Bill Creation -->
+								<HBox styleClass="nav-tile" HBox.hgrow="ALWAYS">
+									<ImageView styleClass="tile-icon">
+										<image>
+											<Image url="@../icons/bill_black.png" />
+										</image>
+									</ImageView>
+									<Label text="Bill Creation" />
+								</HBox>
+
+								<!-- 4. Payment Entry -->
+								<HBox styleClass="nav-tile" HBox.hgrow="ALWAYS">
+									<ImageView styleClass="tile-icon">
+										<image>
+											<Image url="@../icons/payment_black.png" />
+										</image>
+									</ImageView>
+									<Label text="Payment Entry" />
+								</HBox>
+
+								<!-- 5. Ledger -->
+								<HBox styleClass="nav-tile" HBox.hgrow="ALWAYS">
+									<ImageView styleClass="tile-icon">
+										<image>
+											<Image url="@../icons/ledger_black.png" />
+										</image>
+									</ImageView>
+									<Label text="Client Ledger" />
+								</HBox>
+
+								<!-- 6. Outstanding -->
+								<HBox styleClass="nav-tile" HBox.hgrow="ALWAYS">
+									<ImageView styleClass="tile-icon">
+										<image>
+											<Image url="@../icons/outstanding_black.png" />
+										</image>
+									</ImageView>
+									<Label text="Outstanding" />
+								</HBox>
+
+								<!-- 7. Expense Entry -->
+								<HBox styleClass="nav-tile" HBox.hgrow="ALWAYS">
+									<ImageView styleClass="tile-icon">
+										<image>
+											<Image url="@../icons/expense_black.png" />
+										</image>
+									</ImageView>
+									<Label text="Expenses" />
+								</HBox>
+
+								<!-- 8. Reports -->
+								<HBox styleClass="nav-tile" HBox.hgrow="ALWAYS">
+									<ImageView styleClass="tile-icon">
+										<image>
+											<Image url="@../icons/report_black.png" />
+										</image>
+									</ImageView>
+									<Label text="Reports" />
+								</HBox>
+
+								<!-- 9. Settings -->
+								<HBox styleClass="nav-tile" HBox.hgrow="ALWAYS">
+									<ImageView styleClass="tile-icon">
+										<image>
+											<Image url="@../icons/settings_black.png" />
+										</image>
+									</ImageView>
+									<Label text="Settings" />
+								</HBox>
+
+							</FlowPane>
+
+						</VBox>
+
+					</HBox>
+
+				</VBox>
+			</content>
+		</ScrollPane>
+	</center>
 
 </BorderPane>

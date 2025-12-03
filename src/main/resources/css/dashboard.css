@@ -1,136 +1,184 @@
-/* ============= SIDEBAR BACKGROUND ============= */
+/* ======================================================
+   ROOT (Global Scaling with EM)
+   ====================================================== */
+.root {
+    -fx-background-color: #000000;
+    -fx-font-size: 1em;     /* base scalable size */
+    -fx-text-fill: #f5f5f5;
+}
+
+/* ======================================================
+   TOP BAR
+   ====================================================== */
+.top-bar {
+    -fx-padding: 0.75em 1.5em;
+    -fx-spacing: 0.75em;
+    -fx-background-color: #212121;
+}
+
+.page-title {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 1.4em;
+    -fx-font-weight: bold;
+}
+
+/* ======================================================
+   SIDEBAR
+   ====================================================== */
+
+.sidebar-scroll,
+.scroll-pane,
+.scroll-pane .viewport,
+.scroll-pane .corner {
+    -fx-background-color: transparent;
+}
+
+.sidebar-background {
+    -fx-background-color: #191919;
+}
+
 .sidebar {
-	-fx-background-color: #212121;   /* dark background */
-	-fx-padding: 10;
-	-fx-background-radius: 20;
-}
-.center-area{
-	-fx-background-radius: 20;
-	-fx-background-insets: 0;
-	-fx-background-color: #F7F7F7;
+    -fx-padding: 1.2em 0.8em;
+    -fx-spacing: 0.6em;
 }
 
-/* ============= COMMON ITEM STYLE ============= */
 .sidebar-item {
-    -fx-padding: 12 20;
-    -fx-spacing: 12;
+    -fx-padding: 0.7em 1em;
+    -fx-spacing: 0.9em;
     -fx-alignment: CENTER_LEFT;
-    -fx-background-radius: 6;
-    -fx-cursor: hand;
-    -fx-min-width: 200;
-    -fx-text-fill: #d4d4d4;  /* grey text like image */
-    -fx-font-size: 15px;
+    -fx-background-radius: 0.5em;
 }
 
-/* icon inside */
-.sidebar-item .label {
-    -fx-text-fill: inherit;
-}
-
-/* ============= HOVER EFFECT ============= */
 .sidebar-item:hover {
-    -fx-background-color: #2d61d1; /* blue hover tile */
-    -fx-text-fill: white;
+    -fx-background-color: #333333;
 }
 
-.sidebar-item:hover .label {
-    -fx-text-fill: white;
+.back-item {
+    -fx-background-color: #252525;
 }
 
-/* ============= ACTIVE ITEM (Dashboard) ============= */
-.active {
-    -fx-background-color: #2d61d1; /* same blue as image */
-    -fx-text-fill: white;
+.sidebar-text {
+    -fx-text-fill: #f5f5f5;
+    -fx-font-size: 0.95em;
 }
 
-.active .label {
-    -fx-text-fill: white;
+.sidebar-section-header {
+    -fx-padding: 1.1em 0.6em 0.6em 0.6em;
+    -fx-text-fill: #aaaaaa;
+    -fx-font-size: 0.9em;
+    -fx-font-weight: bold;
 }
 
-.icon{
-	-fx-opacity: 0.5;
+/* ======================================================
+   CENTER AREA
+   ====================================================== */
+
+.center-area {
+    -fx-padding: 1.5em;
+    -fx-spacing: 1.2em;
+    -fx-background-color: transparent;
 }
 
-.sidebar-section-title:hover .icon{
-	
-	-fx-opacity: 1;
+.dashboard-title {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 1.6em;
+    -fx-font-weight: bold;
 }
 
-/* ============= SECTION TITLE ============= */
-.sidebar-section-title {
-    -fx-text-fill: white;
-    -fx-padding: 10 10 10 10;
-    -fx-font-size: 21px;
-	
-   
+/* ======================================================
+   METRICS CARDS
+   ====================================================== */
+
+.metrics-grid {
+    -fx-hgap: 1.0em;
+    -fx-vgap: 1.0em;
 }
 
-.sidebar-section-title:hover {
-	-fx-background-color: #234FAF;
-    -fx-text-fill: white;
-    -fx-padding: 10 10 10 10;
-    -fx-font-size: 21px;
-   
-}
-.root{
-	-fx-background-color: black;
-
-	
+.card-style {
+    -fx-background-color: #212121;
+    -fx-background-radius: 0.8em;
+    -fx-padding: 1em;
 }
 
-
-.card-style{
-	-fx-background-color: white;
-
-	-fx-background-radius: 15;
-	-fx-effect: dropshadow( gaussian , rgba(0,0,0,0.15), 8, 0, 0, 2 );
+.card-content {
+    -fx-spacing: 0.6em;
 }
 
-.content-panel {
-    -fx-background-color: white;
-    -fx-background-radius: 20	;
+.card-title {
+    -fx-text-fill: #bbbbbb;
+    -fx-font-size: 1em;
 }
 
-/* ======================
-   Navigation Tile Button
-   ====================== */
-
-.nav-tile {
-	
+.card-value {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 1.5em;
+    -fx-font-weight: bold;
 }
 
-/* Hover effect (blue like your theme) */
-.nav-tile:hover {
-    -fx-background-color: #6A7EFC;
-    -fx-text-fill: #FFFCFB;
-	
-    
+/* ======================================================
+   BOTTOM SECTION
+   ====================================================== */
+
+.bottom-section {
+    -fx-spacing: 1em;
 }
 
-.nav-tile:hover .label{
-	-fx-text-fill: #FFFCFB;
-	
-	
-}
-.nav-tile:hover .image-view{
-	-fx-opacity: 0.5;
+.bottom-card {
+    -fx-background-color: #212121;
+    -fx-background-radius: 0.8em;
+    -fx-padding: 1em;
 }
 
-
-
-
-.stat-title {
-	-fx-background-color: white;       /* dark card background */
-	    -fx-background-radius: 18;           /* round corners */
-	    -fx-border-color: rgba(255,255,255,0.15);  /* faint white border */
-	    -fx-border-width: 1.2;               /* thin border */
-	    -fx-border-radius: 18;               /* match background radius */
-	    -fx-padding: 18;      /* Slight spacing for modern look */
+.bottom-title {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 1.1em;
+    -fx-font-weight: bold;
 }
-.nav-icon{
-	
+
+.activity-list {
+    -fx-spacing: 0.4em;
 }
-.nav-icon:hover{
-	
-	-fx-opacity: 0.4;
+
+.activity-list .label {
+    -fx-text-fill: #dddddd;
+    -fx-font-size: 0.9em;
+}
+
+/* ======================================================
+   NAVIGATION TILES (FIXED)
+   ====================================================== */
+   .nav-tile {
+       -fx-background-color: #e5e5e5;      /* light grey, no more black */
+       -fx-padding: 0.9em 1.1em;
+       -fx-spacing: 0.8em;
+       -fx-background-radius: 0.6em;
+       -fx-alignment: CENTER_LEFT;
+       -fx-cursor: hand;
+
+       -fx-border-color: #d0d0d0;
+       -fx-border-width: 0.12em;
+       -fx-border-radius: 0.6em;
+
+   }
+
+   .nav-tile:hover {
+       -fx-background-color: #f2f2f2;      /* light hover */
+   }
+
+   .nav-tile .label {
+       -fx-text-fill: #303030;
+       -fx-font-size: 1em;
+       -fx-font-weight: bold;
+   }
+
+   .tile-icon {
+       -fx-fit-width: 26;
+       -fx-fit-height: 26;
+   }
+/* ======================================================
+   GLOBAL ICON STYLE
+   ====================================================== */
+
+.icon, .card-icon, .tile-icon {
+    -fx-preserve-ratio: true;
 }

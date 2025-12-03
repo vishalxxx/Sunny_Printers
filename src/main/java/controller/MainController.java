@@ -1,86 +1,135 @@
 package controller;
 
+import java.net.URL;
+import java.util.ResourceBundle;
+
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 
-public class MainController {
+public class MainController implements Initializable {
 
+	// Sidebar containers
 	@FXML
 	private VBox mainSidebar;
+
 	@FXML
 	private VBox jobsSidebar;
+
 	@FXML
 	private VBox clientsSidebar;
+
 	@FXML
 	private VBox billingSidebar;
+
 	@FXML
 	private VBox paymentSidebar;
+
 	@FXML
 	private VBox ledgerSidebar;
 
-	// Hide all sidebars
+	// Center content root (if you need it later)
+	@FXML
+	private VBox centerRoot;
+
+	// Top title
+	@FXML
+	private Label pageTitle;
+
+	// Optional: scroll panes (not mandatory, but ok)
+	@FXML
+	private ScrollPane sidebarScroll;
+
+	@FXML
+	private ScrollPane centerScroll;
+
+	@Override
+	public void initialize(URL location, ResourceBundle resources) {
+		// Make sure only main menu is visible initially
+		showOnly(mainSidebar);
+		setPageTitle("Dashboard");
+	}
+
+	/* ====== Helpers ====== */
+
+	private void setPageTitle(String title) {
+		if (pageTitle != null) {
+			pageTitle.setText(title);
+		}
+	}
+
 	private void hideAllSidebars() {
-		mainSidebar.setVisible(false);
-		mainSidebar.setManaged(false);
-
-		jobsSidebar.setVisible(false);
-		jobsSidebar.setManaged(false);
-
-		clientsSidebar.setVisible(false);
-		clientsSidebar.setManaged(false);
-
-		billingSidebar.setVisible(false);
-		billingSidebar.setManaged(false);
-
-		paymentSidebar.setVisible(false);
-		paymentSidebar.setManaged(false);
-		
-		ledgerSidebar.setVisible(false);
-		ledgerSidebar.setManaged(false);
-		
+		hideSidebar(mainSidebar);
+		hideSidebar(jobsSidebar);
+		hideSidebar(clientsSidebar);
+		hideSidebar(billingSidebar);
+		hideSidebar(paymentSidebar);
+		hideSidebar(ledgerSidebar);
 	}
 
-	// Show main sidebar
-	@FXML
-	private void showMainSidebar() {
-		hideAllSidebars();
-		mainSidebar.setVisible(true);
-		mainSidebar.setManaged(true);
+	private void hideSidebar(VBox box) {
+		if (box != null) {
+			box.setVisible(false);
+			box.setManaged(false);
+		}
 	}
 
-	@FXML
-	private void showJobsSubmenu() {
+	private void showOnly(VBox target) {
 		hideAllSidebars();
-		jobsSidebar.setVisible(true);
-		jobsSidebar.setManaged(true);
-		jobsSidebar.toFront();
+		if (target != null) {
+			target.setVisible(true);
+			target.setManaged(true);
+		}
 	}
 
+	/* ====== Event Handlers (used in FXML) ====== */
+
+	// Called by top-left icon and main "Dashboard" item
 	@FXML
-	private void showClientsSubmenu() {
-		hideAllSidebars();
-		clientsSidebar.setVisible(true);
-		clientsSidebar.setManaged(true);
+	private void openDashboard(MouseEvent event) {
+		showOnly(mainSidebar);
+		setPageTitle("Dashboard");
+
+		// If later you want to change center area when dashboard is clicked,
+		// you can update centerRoot here or load another FXML.
 	}
 
 	@FXML
-	private void showBillingSubmenu() {
-		hideAllSidebars();
-		billingSidebar.setVisible(true);
-		billingSidebar.setManaged(true);
+	private void showJobsSubmenu(MouseEvent event) {
+		showOnly(jobsSidebar);
+		setPageTitle("Job Details");
 	}
 
 	@FXML
-	private void showPaymentSubmenu() {
-		hideAllSidebars();
-		paymentSidebar.setVisible(true);
-		paymentSidebar.setManaged(true);
+	private void showClientsSubmenu(MouseEvent event) {
+		showOnly(clientsSidebar);
+		setPageTitle("Client Details");
 	}
-	
+
 	@FXML
-	private void showLedgerSubmenu() {
-		hideAllSidebars();
-		ledgerSidebar.setVisible(true);
-		ledgerSidebar.setManaged(true);
+	private void showBillingSubmenu(MouseEvent event) {
+		showOnly(billingSidebar);
+		setPageTitle("Billing");
+	}
+
+	@FXML
+	private void showPaymentSubmenu(MouseEvent event) {
+		showOnly(paymentSidebar);
+		setPageTitle("Payments");
+	}
+
+	@FXML
+	private void showLedgerSubmenu(MouseEvent event) {
+		showOnly(ledgerSidebar);
+		setPageTitle("Ledger");
+	}
+
+	// If you ever re-add showMainSidebar in FXML, you can point it to dashboard:
+	@FXML
+	private void showMainSidebar(MouseEvent event) {
+		openDashboard(event);
 	}
 }
