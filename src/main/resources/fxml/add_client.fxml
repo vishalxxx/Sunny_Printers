@@ -1,91 +1,108 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.String?>
-<?import javafx.collections.FXCollections?>
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.control.ComboBox?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.control.TextArea?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 
-<AnchorPane style="-fx-background-color: WHITE;" styleClass="root" stylesheets="@../css/add_client.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.ClientDetailsController">
+<ScrollPane xmlns="http://javafx.com/javafx/25"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="controller.AddClientController"
+            stylesheets="@../css/add_client.css"
+            fitToWidth="true" fitToHeight="true">
 
-    <children>
-        <VBox spacing="20" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20" AnchorPane.rightAnchor="20" AnchorPane.topAnchor="30.0">
 
-            <!-- Page Title -->
-            <Label maxWidth="1.7976931348623157E308" styleClass="page-title" text="ADD NEW CLIENT" VBox.vgrow="ALWAYS">
-            <font>
-               <Font name="System Bold" size="24.0" />
-            </font>
-            <VBox.margin>
-               <Insets left="30.0" />
-            </VBox.margin></Label>
+	<content>
+		<VBox xmlns="http://javafx.com/javafx/21"
+			xmlns:fx="http://javafx.com/fxml/1" spacing="25"
+			styleClass="center-area" 
+			fillWidth="true">
 
-            <!-- Main Card -->
-            <VBox spacing="6.0" styleClass="card">
-            <Label maxWidth="1.7976931348623157E308" styleClass="page-title" text="Client Information">
-               <font>
-                  <Font name="System Bold" size="14.0" />
-               </font>
-            </Label>
+			<!-- PAGE TITLE -->
+			<Label text="Add New Business Client"
+				styleClass="dashboard-title" />
 
-                 <!-- Client Name -->
-                 <Label text="Client Name *" />
-                 <TextField fx:id="txtName" promptText="Enter client name" />
+			<!-- FORM GRID -->
+			<GridPane hgap="18" vgap="18" styleClass="form-grid">
 
-                 <!-- Company Name -->
-                 <Label text="Company Name" />
-                 <TextField fx:id="txtCompany" promptText="Optional" />
+				<columnConstraints>
+					<ColumnConstraints percentWidth="30" />
+					<ColumnConstraints percentWidth="70" />
+				</columnConstraints>
 
-                 <!-- Client Type -->
-                 <Label text="Client Type" />
-                 <ComboBox fx:id="cmbClientType" maxWidth="1.7976931348623157E308">
-                     <items>
-                         <FXCollections fx:factory="observableArrayList">
-                             <String fx:value="Individual" />
-                             <String fx:value="Business" />
-                         </FXCollections>
-                     </items>
-                 </ComboBox>
+				<!-- Business Name -->
+				<Label text="Business Name:" GridPane.rowIndex="0"
+					styleClass="form-label" />
+				<TextField fx:id="businessNameField" GridPane.rowIndex="0"
+					GridPane.columnIndex="1" styleClass="form-input" />
 
-                 <!-- Mobile -->
-                 <Label text="Mobile Number" />
-                 <TextField fx:id="txtMobile" promptText="9876543210" />
+				<!-- Client Name -->
+				<Label text="Client Name:" GridPane.rowIndex="1"
+					styleClass="form-label" />
+				<TextField fx:id="clientNameField" GridPane.rowIndex="1"
+					GridPane.columnIndex="1" styleClass="form-input" />
 
-                 <!-- Email -->
-                 <Label text="Email" />
-                 <TextField fx:id="txtEmail" promptText="example@mail.com" />
+				<!-- Nick Name -->
+				<Label text="Nick Name:" GridPane.rowIndex="2"
+					styleClass="form-label" />
+				<TextField fx:id="nickNameField" GridPane.rowIndex="2"
+					GridPane.columnIndex="1" styleClass="form-input" />
 
-                 <!-- Address -->
-                 <Label text="Address" />
-                 <TextArea fx:id="txtAddress" prefRowCount="3" promptText="Enter complete address" />
+				<!-- Phone Numbers -->
+				<Label text="Phone Number:" GridPane.rowIndex="3"
+					styleClass="form-label" />
+				<TextField fx:id="phoneField" GridPane.rowIndex="3"
+					GridPane.columnIndex="1" styleClass="form-input" />
 
-                 <!-- GST -->
-                 <Label text="GST Number" />
-                 <TextField fx:id="txtGST" promptText="Optional" />
+				<Label text="Alt Phone:" GridPane.rowIndex="4"
+					styleClass="form-label" />
+				<TextField fx:id="altPhoneField" GridPane.rowIndex="4"
+					GridPane.columnIndex="1" styleClass="form-input" />
 
-                 <!-- Notes -->
-                 <Label text="Notes" />
-                 <TextArea fx:id="txtNote" prefRowCount="2" promptText="Any special notes" />
-            <padding>
-               <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
-            </padding>
+				<!-- Email -->
+				<Label text="Email:" GridPane.rowIndex="5"
+					styleClass="form-label" />
+				<TextField fx:id="emailField" GridPane.rowIndex="5"
+					GridPane.columnIndex="1" styleClass="form-input" />
 
-                <!-- Buttons 
-                <HBox spacing="12" alignment="center-right">
-                    <padding>
-                        <Insets top="0" right="20" bottom="20" left="20"/>
-                    </padding>
+				<!-- GST -->
+				<Label text="GST Number:" GridPane.rowIndex="6"
+					styleClass="form-label" />
+				<TextField fx:id="gstField" GridPane.rowIndex="6"
+					GridPane.columnIndex="1" styleClass="form-input" />
 
-                    <Button text="Save" fx:id="btnSave" styleClass="primary-btn"/>
-                    <Button text="Clear" fx:id="btnClear" styleClass="secondary-btn"/>
-                </HBox>-->
+				<!-- PAN -->
+				<Label text="PAN Number:" GridPane.rowIndex="7"
+					styleClass="form-label" />
+				<TextField fx:id="panField" GridPane.rowIndex="7"
+					GridPane.columnIndex="1" styleClass="form-input" />
 
-            </VBox>
-        </VBox>
-    </children>
-</AnchorPane>
+				<!-- Billing Address -->
+				<Label text="Billing Address:" GridPane.rowIndex="8"
+					styleClass="form-label" />
+				<TextArea fx:id="billingAddressField" GridPane.rowIndex="8"
+					GridPane.columnIndex="1" prefRowCount="3"
+					styleClass="form-textarea" />
+
+				<!-- Shipping Address -->
+				<Label text="Shipping Address:" GridPane.rowIndex="9"
+					styleClass="form-label" />
+				<TextArea fx:id="shippingAddressField"
+					GridPane.rowIndex="9" GridPane.columnIndex="1" prefRowCount="3"
+					styleClass="form-textarea" />
+
+				<!-- Notes -->
+				<Label text="Notes / Remarks:" GridPane.rowIndex="10"
+					styleClass="form-label" />
+				<TextArea fx:id="notesField" GridPane.rowIndex="10"
+					GridPane.columnIndex="1" prefRowCount="2"
+					styleClass="form-textarea" />
+			</GridPane>
+
+			<!-- Save Button Centered -->
+			<HBox alignment="CENTER">
+				<Button text="Save Client" styleClass="primary-button"
+					onAction="#handleSaveClient" />
+			</HBox>
+
+		</VBox>
+	</content>
+</ScrollPane>

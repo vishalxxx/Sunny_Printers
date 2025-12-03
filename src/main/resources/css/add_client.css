@@ -1,0 +1,159 @@
+/* ===================== FULL BLACK BACKGROUND ===================== */
+
+.center-area {
+    -fx-background-color: #000000;    /* full black */
+    -fx-padding: 40;                  /* padding around the whole page */
+    -fx-spacing: 30;
+}
+
+/* ===================== GRID (BLACK ALSO) ===================== */
+
+.form-grid {
+    -fx-background-color: transparent;  /* remove grey box */
+    -fx-padding: 10;
+}
+
+/* ===================== LABELS ===================== */
+
+.form-label {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 1.1em;
+}
+
+/* ===================== TEXTFIELDS ===================== */
+
+.form-input {
+    -fx-background-color: #1b1b1b;
+    -fx-text-fill: #ffffff;
+    -fx-padding: 10 14;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-border-color: #333;
+}
+
+.form-input:focused {
+    -fx-border-color: #2d8cff;
+    -fx-background-color: #262626;
+}
+
+
+/* ===================== TEXTAREAS ===================== */
+
+.form-textarea {
+    -fx-background-color: #1b1b1b;
+    -fx-text-fill: white;      /* FIXED */
+    -fx-padding: 12;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-border-color: #333;
+}
+
+
+.form-textarea:focused {
+    -fx-border-color: #2d8cff;
+    -fx-background-color: #262626;
+}
+
+/* ===================== BUTTON ===================== */
+
+.primary-button {
+    -fx-background-color: #2d8cff;
+    -fx-text-fill: white;
+    -fx-font-size: 1.2em;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-padding: 14 30;
+}
+
+.primary-button:hover {
+    -fx-background-color: #1c6ee6;
+}
+
+.primary-button:pressed {
+    -fx-background-color: #1554aa;
+}
+
+.text-area {
+    -fx-background-color: transparent;
+}
+
+.text-area .content {
+    -fx-background-color: #1b1b1b;     /* inner background */
+    -fx-text-fill: white;
+}
+
+.text-area:focused .content {
+    -fx-background-color: #262626;     /* focused color */
+}
+
+.text-area .scroll-pane {
+    -fx-background-color: transparent;
+}
+
+.text-area .scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.dashboard-title {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 1.6em;
+    -fx-font-weight: bold;
+}
+
+
+/*--------------------------ScrollPane--------------------------*/
+
+
+.scroll-pane {
+    -fx-background-color: transparent !important;
+    -fx-padding: 0;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: transparent !important;
+}
+
+.scroll-pane .corner {
+    -fx-background-color: transparent;
+}
+
+
+
+/*--------------------------ScrollBar--------------------------*/
+.scroll-bar:vertical,
+.scroll-bar:horizontal {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+/* Scrollbar track */
+.scroll-bar .track {
+    -fx-background-color: #111;   /* dark track */
+    -fx-background-radius: 5;
+}
+
+/* Scroll thumb (the draggable bar) */
+.scroll-bar .thumb {
+    -fx-background-color: #2d2d2d;  /* stylish gray */
+    -fx-background-radius: 5;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #3a3a3a;
+}
+
+.scroll-bar .thumb:pressed {
+    -fx-background-color: #4b4b4b;
+}
+
+/* Remove increment/decrement arrows */
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-opacity: 0;
+    -fx-padding: 0;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-opacity: 0;
+}

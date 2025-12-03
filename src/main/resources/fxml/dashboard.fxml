@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.image.Image?>
@@ -14,7 +13,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane styleClass="root"
+<BorderPane fx:id="root" styleClass="root"
 	stylesheets="@../css/dashboard.css" xmlns="http://javafx.com/javafx/25"
 	xmlns:fx="http://javafx.com/fxml/1"
 	fx:controller="controller.MainController">
@@ -22,362 +21,349 @@
 	<!-- TOP BAR -->
 	<top>
 		<HBox alignment="CENTER_LEFT" spacing="15" styleClass="top-bar">
-			<!-- Sidebar / Dashboard Button -->
-			<ImageView fitHeight="32" fitWidth="32" pickOnBounds="true"
-				preserveRatio="true" onMouseClicked="#openDashboard">
+			<ImageView fitHeight="32" fitWidth="32"
+				onMouseClicked="#openDashboard" pickOnBounds="true"
+				preserveRatio="true">
 				<image>
 					<Image url="@../icons/dashboard.png" />
 				</image>
 			</ImageView>
-
-			<!-- Dynamic Page Title -->
-			<Label fx:id="pageTitle" text="Dashboard"
-				styleClass="page-title" />
+			<Label fx:id="pageTitle" styleClass="page-title"
+				text="Dashboard" />
 		</HBox>
 	</top>
 
 	<!-- LEFT SIDEBAR -->
 	<left>
-		<ScrollPane fx:id="sidebarScroll" fitToWidth="true"
-			hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="sidebar-scroll"
-			BorderPane.alignment="CENTER_LEFT"
-			style="-fx-background-color: transparent;">
+		
+
+			<ScrollPane xmlns="http://javafx.com/javafx/25"
+            xmlns:fx="http://javafx.com/fxml/1"
+            stylesheets="@../css/dashboard.css"
+            fx:id="sidebarScroll"
+            fitToWidth="true" fitToHeight="true"
+            vbarPolicy="AS_NEEDED" hbarPolicy="NEVER"
+            BorderPane.alignment="CENTER_LEFT">
+            
 			<content>
-				<!-- StackPane holds main menu + all submenus -->
 				<StackPane fx:id="sidebarStack"
 					styleClass="sidebar-background">
 
-					<!-- ================= MAIN SIDEBAR ================= -->
+					<!-- MAIN SIDEBAR -->
 					<VBox fx:id="mainSidebar" fillWidth="true" spacing="4"
 						styleClass="sidebar" VBox.vgrow="ALWAYS">
 
-						<!-- MAIN ITEMS -->
+						<!-- Dashboard -->
 						<HBox alignment="CENTER_LEFT" onMouseClicked="#openDashboard"
 							styleClass="sidebar-item">
 							<children>
-								<ImageView pickOnBounds="true" preserveRatio="true"
-									fitHeight="20" fitWidth="20">
+								<ImageView fitHeight="20" fitWidth="20"
+									preserveRatio="true">
 									<image>
 										<Image url="@../icons/dashboard.png" />
 									</image>
 								</ImageView>
-								<Label maxWidth="Infinity" text="Dashboard"
-									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+								<Label text="Dashboard" styleClass="sidebar-text"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
 							</children>
 						</HBox>
 
+						<!-- Job Details -->
 						<HBox alignment="CENTER_LEFT"
 							onMouseClicked="#showJobsSubmenu" styleClass="sidebar-item">
 							<children>
-								<ImageView pickOnBounds="true" preserveRatio="true"
-									fitHeight="20" fitWidth="20">
+								<ImageView fitHeight="20" fitWidth="20"
+									preserveRatio="true">
 									<image>
 										<Image url="@../icons/job.png" />
 									</image>
 								</ImageView>
-								<Label maxWidth="Infinity" text="Job Details"
-									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+								<Label text="Job Details" styleClass="sidebar-text"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
 							</children>
 						</HBox>
 
+						<!-- Client Details -->
 						<HBox alignment="CENTER_LEFT"
 							onMouseClicked="#showClientsSubmenu" styleClass="sidebar-item">
 							<children>
-								<ImageView pickOnBounds="true" preserveRatio="true"
-									fitHeight="20" fitWidth="20">
+								<ImageView fitHeight="20" fitWidth="20"
+									preserveRatio="true">
 									<image>
 										<Image url="@../icons/contact.png" />
 									</image>
 								</ImageView>
-								<Label maxWidth="Infinity" text="Client Details"
-									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+								<Label text="Client Details" styleClass="sidebar-text"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
 							</children>
 						</HBox>
 
+						<!-- Billing -->
 						<HBox alignment="CENTER_LEFT"
 							onMouseClicked="#showBillingSubmenu" styleClass="sidebar-item">
 							<children>
-								<ImageView pickOnBounds="true" preserveRatio="true"
-									fitHeight="20" fitWidth="20">
+								<ImageView fitHeight="20" fitWidth="20"
+									preserveRatio="true">
 									<image>
 										<Image url="@../icons/bill.png" />
 									</image>
 								</ImageView>
-								<Label maxWidth="Infinity" text="Bill Creation"
-									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+								<Label text="Bill Creation" styleClass="sidebar-text"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
 							</children>
 						</HBox>
 
+						<!-- Payments -->
 						<HBox alignment="CENTER_LEFT"
 							onMouseClicked="#showPaymentSubmenu" styleClass="sidebar-item">
 							<children>
-								<ImageView pickOnBounds="true" preserveRatio="true"
-									fitHeight="20" fitWidth="20">
+								<ImageView fitHeight="20" fitWidth="20"
+									preserveRatio="true">
 									<image>
 										<Image url="@../icons/payment.png" />
 									</image>
 								</ImageView>
-								<Label maxWidth="Infinity" text="Payments"
-									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+								<Label text="Payments" styleClass="sidebar-text"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
 							</children>
 						</HBox>
 
+						<!-- Ledger -->
 						<HBox alignment="CENTER_LEFT"
 							onMouseClicked="#showLedgerSubmenu" styleClass="sidebar-item">
 							<children>
-								<ImageView pickOnBounds="true" preserveRatio="true"
-									fitHeight="20" fitWidth="20">
+								<ImageView fitHeight="20" fitWidth="20"
+									preserveRatio="true">
 									<image>
 										<Image url="@../icons/ledger.png" />
 									</image>
 								</ImageView>
-								<Label maxWidth="Infinity" text="Client Ledger"
-									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+								<Label text="Client Ledger" styleClass="sidebar-text"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
 							</children>
 						</HBox>
 
-						<!-- SECTION HEADER -->
-						<Label text="Quick Links"
-							styleClass="sidebar-section-header" />
-
 						<!-- QUICK LINKS -->
-						<HBox styleClass="sidebar-item">
+						<Label styleClass="sidebar-section-header"
+							text="Quick Links" />
+
+						<HBox styleClass="sidebar-item" onMouseClicked="#loadAddClient">
 							<children>
-								<ImageView pickOnBounds="true" preserveRatio="true"
-									fitHeight="20" fitWidth="20">
+								<ImageView fitHeight="20" fitWidth="20"
+									preserveRatio="true">
 									<image>
 										<Image url="@../icons/add_client.png" />
 									</image>
 								</ImageView>
-								<Label maxWidth="Infinity" text="Add Client"
-									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+								<Label text="Add Client" styleClass="sidebar-text"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
 							</children>
 						</HBox>
 
 						<HBox styleClass="sidebar-item">
 							<children>
-								<ImageView pickOnBounds="true" preserveRatio="true"
-									fitHeight="20" fitWidth="20">
+								<ImageView fitHeight="20" fitWidth="20"
+									preserveRatio="true">
 									<image>
 										<Image url="@../icons/add_bill.png" />
 									</image>
 								</ImageView>
-								<Label maxWidth="Infinity" text="Create Bill"
-									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+								<Label text="Create Bill" styleClass="sidebar-text"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
 							</children>
 						</HBox>
 
 						<HBox styleClass="sidebar-item">
 							<children>
-								<ImageView pickOnBounds="true" preserveRatio="true"
-									fitHeight="20" fitWidth="20">
+								<ImageView fitHeight="20" fitWidth="20"
+									preserveRatio="true">
 									<image>
 										<Image url="@../icons/add_job.png" />
 									</image>
 								</ImageView>
-								<Label maxWidth="Infinity" text="Add Job"
-									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+								<Label text="Add Job" styleClass="sidebar-text"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
 							</children>
 						</HBox>
 
 						<HBox styleClass="sidebar-item">
 							<children>
-								<ImageView pickOnBounds="true" preserveRatio="true"
-									fitHeight="20" fitWidth="20">
+								<ImageView fitHeight="20" fitWidth="20"
+									preserveRatio="true">
 									<image>
 										<Image url="@../icons/add_payment.png" />
 									</image>
 								</ImageView>
-								<Label maxWidth="Infinity" text="Record Payment"
-									styleClass="sidebar-text" HBox.hgrow="ALWAYS" />
+								<Label text="Record Payment" styleClass="sidebar-text"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
 							</children>
 						</HBox>
 
 					</VBox>
 
+					<!-- Sub Menus (all hidden initially) -->
+					<!-- (JobsSidebar, ClientsSidebar, BillingSidebar, PaymentSidebar, LedgerSidebar) 
+						will remain unchanged but visible="false" and managed="false" and we will 
+						apply vgrow only to mainSidebar for auto-height -->
 					<!-- ================= JOBS SUBMENU ================= -->
-					<VBox fx:id="jobsSidebar" visible="false" managed="false"
+					<VBox fx:id="jobsSidebar" managed="false" visible="false"
 						spacing="4" styleClass="sidebar">
-						<children>
 
-							<!-- Back -->
-							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#openDashboard"
-								styleClass="sidebar-item back-item">
-								<children>
-									<Label text="← Back" styleClass="sidebar-text"
-										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
+						<HBox alignment="CENTER_LEFT" onMouseClicked="#openDashboard"
+							styleClass="sidebar-item back-item">
+							<children>
+								<Label styleClass="sidebar-text" text="← Back"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
 
-							<Label text="Job Details"
-								styleClass="sidebar-section-header" />
+						<Label styleClass="sidebar-section-header"
+							text="Job Details" />
 
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
-								<children>
-									<Label text="Add Job" styleClass="sidebar-text"
-										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
-
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
-								<children>
-									<Label text="View Jobs" styleClass="sidebar-text"
-										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
-
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
-								<children>
-									<Label text="Job History" styleClass="sidebar-text"
-										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
-						</children>
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<children>
+								<Label styleClass="sidebar-text" text="Add Job"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<children>
+								<Label styleClass="sidebar-text" text="View Jobs"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<children>
+								<Label styleClass="sidebar-text" text="Job History"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
 					</VBox>
 
 					<!-- ================= CLIENTS SUBMENU ================= -->
-					<VBox fx:id="clientsSidebar" visible="false" managed="false"
+					<VBox fx:id="clientsSidebar" managed="false" visible="false"
 						spacing="4" styleClass="sidebar">
-						<children>
 
-							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#openDashboard"
-								styleClass="sidebar-item back-item">
-								<children>
-									<Label text="← Back" styleClass="sidebar-text"
-										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
+						<HBox alignment="CENTER_LEFT" onMouseClicked="#openDashboard"
+							styleClass="sidebar-item back-item">
+							<children>
+								<Label styleClass="sidebar-text" text="← Back"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
 
-							<Label text="Client Details"
-								styleClass="sidebar-section-header" />
+						<Label styleClass="sidebar-section-header"
+							text="Client Details" />
 
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
-								<children>
-									<Label text="Add Client" styleClass="sidebar-text"
-										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
-
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
-								<children>
-									<Label text="View Clients" styleClass="sidebar-text"
-										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
-
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
-								<children>
-									<Label text="Client Reports" styleClass="sidebar-text"
-										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
-						</children>
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item" onMouseClicked="#loadAddClient">
+							<children>
+								<Label styleClass="sidebar-text" text="Add Client"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<children>
+								<Label styleClass="sidebar-text" text="View Clients"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<children>
+								<Label styleClass="sidebar-text" text="Client Reports"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
 					</VBox>
 
 					<!-- ================= BILLING SUBMENU ================= -->
-					<VBox fx:id="billingSidebar" visible="false" managed="false"
+					<VBox fx:id="billingSidebar" managed="false" visible="false"
 						spacing="4" styleClass="sidebar">
-						<children>
 
-							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#openDashboard"
-								styleClass="sidebar-item back-item">
-								<children>
-									<Label text="← Back" styleClass="sidebar-text"
-										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
+						<HBox alignment="CENTER_LEFT" onMouseClicked="#openDashboard"
+							styleClass="sidebar-item back-item">
+							<children>
+								<Label styleClass="sidebar-text" text="← Back"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
 
-							<Label text="Billing" styleClass="sidebar-section-header" />
+						<Label styleClass="sidebar-section-header" text="Billing" />
 
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
-								<children>
-									<Label text="Create Bill" styleClass="sidebar-text"
-										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
-
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
-								<children>
-									<Label text="View Bills" styleClass="sidebar-text"
-										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
-
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
-								<children>
-									<Label text="Pending Bills" styleClass="sidebar-text"
-										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
-						</children>
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<children>
+								<Label styleClass="sidebar-text" text="Create Bill"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<children>
+								<Label styleClass="sidebar-text" text="View Bills"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<children>
+								<Label styleClass="sidebar-text" text="Pending Bills"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
 					</VBox>
 
 					<!-- ================= PAYMENTS SUBMENU ================= -->
-					<VBox fx:id="paymentSidebar" visible="false" managed="false"
+					<VBox fx:id="paymentSidebar" managed="false" visible="false"
 						spacing="4" styleClass="sidebar">
-						<children>
 
-							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#openDashboard"
-								styleClass="sidebar-item back-item">
-								<children>
-									<Label text="← Back" styleClass="sidebar-text"
-										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
+						<HBox alignment="CENTER_LEFT" onMouseClicked="#openDashboard"
+							styleClass="sidebar-item back-item">
+							<children>
+								<Label styleClass="sidebar-text" text="← Back"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
 
-							<Label text="Payments" styleClass="sidebar-section-header" />
+						<Label styleClass="sidebar-section-header" text="Payments" />
 
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
-								<children>
-									<Label text="Record Payment" styleClass="sidebar-text"
-										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
-
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
-								<children>
-									<Label text="Payment History" styleClass="sidebar-text"
-										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
-						</children>
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<children>
+								<Label styleClass="sidebar-text" text="Record Payment"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<children>
+								<Label styleClass="sidebar-text" text="Payment History"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
 					</VBox>
 
 					<!-- ================= LEDGER SUBMENU ================= -->
-					<VBox fx:id="ledgerSidebar" visible="false" managed="false"
+					<VBox fx:id="ledgerSidebar" managed="false" visible="false"
 						spacing="4" styleClass="sidebar">
-						<children>
 
-							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#openDashboard"
-								styleClass="sidebar-item back-item">
-								<children>
-									<Label text="← Back" styleClass="sidebar-text"
-										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
+						<HBox alignment="CENTER_LEFT" onMouseClicked="#openDashboard"
+							styleClass="sidebar-item back-item">
+							<children>
+								<Label styleClass="sidebar-text" text="← Back"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
 
-							<Label text="Ledger" styleClass="sidebar-section-header" />
+						<Label styleClass="sidebar-section-header" text="Ledger" />
 
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
-								<children>
-									<Label text="Client Ledger" styleClass="sidebar-text"
-										maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
-
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
-								<children>
-									<Label text="Outstanding Ledger Reports"
-										styleClass="sidebar-text" maxWidth="Infinity"
-										HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
-						</children>
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<children>
+								<Label styleClass="sidebar-text" text="Client Ledger"
+									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<children>
+								<Label styleClass="sidebar-text"
+									text="Outstanding Ledger Reports" maxWidth="Infinity"
+									HBox.hgrow="ALWAYS" />
+							</children>
+						</HBox>
 					</VBox>
 
 				</StackPane>
@@ -386,251 +372,242 @@
 	</left>
 
 	<!-- CENTER DASHBOARD AREA -->
-	<center>
-		<ScrollPane fx:id="centerScroll" fitToHeight="true"
-			fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
-			style="-fx-background-color: transparent;">
-			<content>
-				<VBox fx:id="centerRoot" fillWidth="true" spacing="20"
-					styleClass="center-area">
+	
+		<center>
+			
+				<ScrollPane xmlns="http://javafx.com/javafx/25"
+            xmlns:fx="http://javafx.com/fxml/1"
+            stylesheets="@../css/dashboard.css"
+            fitToWidth="true" fitToHeight="true"
+            vbarPolicy="AS_NEEDED" hbarPolicy="NEVER"
+            BorderPane.alignment="CENTER">
 
-					<!-- MAIN TITLE (you can also bind this to pageTitle later) -->
-					<Label styleClass="dashboard-title" text="Dashboard" />
+				<content>
+					<VBox fx:id="centerRoot" fillWidth="true" spacing="20"
+						styleClass="center-area" VBox.vgrow="ALWAYS">
 
-					<!-- TOP METRICS GRID -->
-					<GridPane hgap="20" vgap="20" styleClass="metrics-grid">
-						<columnConstraints>
-							<ColumnConstraints percentWidth="33.33" />
-							<ColumnConstraints percentWidth="33.33" />
-							<ColumnConstraints percentWidth="33.33" />
-						</columnConstraints>
+						<!-- MAIN TITLE -->
+						<Label styleClass="dashboard-title" text="Dashboard" />
 
-						<!-- CARD 1 -->
-						<StackPane styleClass="card-style"
-							GridPane.columnIndex="0">
-							<VBox spacing="10" styleClass="card-content">
-								<Label styleClass="card-title" text="Total Clients" />
-								<HBox spacing="10">
-									<ImageView fitHeight="24" fitWidth="24">
-										<image>
-											<Image url="@../icons/total_clients.png" />
-										</image>
-									</ImageView>
-									<Label styleClass="card-value" text="345" />
-								</HBox>
+						<!-- TOP METRICS GRID -->
+						<GridPane hgap="20" vgap="20" styleClass="metrics-grid">
+							<columnConstraints>
+								<ColumnConstraints percentWidth="33.33" />
+								<ColumnConstraints percentWidth="33.33" />
+								<ColumnConstraints percentWidth="33.33" />
+							</columnConstraints>
+
+							<!-- CARD 1 -->
+							<StackPane styleClass="card-style"
+								GridPane.columnIndex="0">
+								<VBox spacing="10" styleClass="card-content">
+									<Label styleClass="card-title" text="Total Clients" />
+									<HBox spacing="10">
+										<ImageView fitHeight="24" fitWidth="24">
+											<image>
+												<Image url="@../icons/total_clients.png" />
+											</image>
+										</ImageView>
+										<Label styleClass="card-value" text="345" />
+									</HBox>
+								</VBox>
+							</StackPane>
+
+							<!-- CARD 2 -->
+							<StackPane styleClass="card-style"
+								GridPane.columnIndex="1">
+								<VBox spacing="10" styleClass="card-content">
+									<Label styleClass="card-title" text="Total Jobs" />
+									<HBox spacing="10">
+										<ImageView fitHeight="24" fitWidth="24">
+											<image>
+												<Image url="@../icons/total_jobs.png" />
+											</image>
+										</ImageView>
+										<Label styleClass="card-value" text="345" />
+									</HBox>
+								</VBox>
+							</StackPane>
+
+							<!-- CARD 3 -->
+							<StackPane styleClass="card-style"
+								GridPane.columnIndex="2">
+								<VBox spacing="10" styleClass="card-content">
+									<Label styleClass="card-title" text="Total Bills" />
+									<HBox spacing="10">
+										<ImageView fitHeight="24" fitWidth="24">
+											<image>
+												<Image url="@../icons/total_bill.png" />
+											</image>
+										</ImageView>
+										<Label styleClass="card-value" text="345" />
+									</HBox>
+								</VBox>
+							</StackPane>
+						</GridPane>
+
+
+						<!-- SECOND METRICS GRID -->
+						<GridPane hgap="20" vgap="20" styleClass="metrics-grid">
+							<columnConstraints>
+								<ColumnConstraints percentWidth="33.33" />
+								<ColumnConstraints percentWidth="33.33" />
+								<ColumnConstraints percentWidth="33.33" />
+							</columnConstraints>
+
+							<StackPane styleClass="card-style"
+								GridPane.columnIndex="0">
+								<VBox spacing="10" styleClass="card-content">
+									<Label styleClass="card-title" text="Total Sales" />
+									<HBox spacing="10">
+										<ImageView fitHeight="24" fitWidth="24">
+											<image>
+												<Image url="@../icons/total_sales.png" />
+											</image>
+										</ImageView>
+										<Label styleClass="card-value" text="345" />
+									</HBox>
+								</VBox>
+							</StackPane>
+
+							<StackPane styleClass="card-style"
+								GridPane.columnIndex="1">
+								<VBox spacing="10" styleClass="card-content">
+									<Label styleClass="card-title"
+										text="Outstanding Payments" />
+									<HBox spacing="10">
+										<ImageView fitHeight="24" fitWidth="24">
+											<image>
+												<Image url="@../icons/outstanding_payments.png" />
+											</image>
+										</ImageView>
+										<Label styleClass="card-value" text="345" />
+									</HBox>
+								</VBox>
+							</StackPane>
+
+							<StackPane styleClass="card-style"
+								GridPane.columnIndex="2">
+								<VBox spacing="10" styleClass="card-content">
+									<Label styleClass="card-title" text="Pending Bills" />
+									<HBox spacing="10">
+										<ImageView fitHeight="24" fitWidth="24">
+											<image>
+												<Image url="@../icons/total_.png" />
+											</image>
+										</ImageView>
+										<Label styleClass="card-value" text="345" />
+									</HBox>
+								</VBox>
+							</StackPane>
+						</GridPane>
+
+
+						<!-- LOWER SECTION -->
+						<HBox spacing="20" fillHeight="true"
+							styleClass="bottom-section">
+
+							<!-- RECENT ACTIVITIES -->
+							<VBox spacing="10" styleClass="bottom-card"
+								HBox.hgrow="ALWAYS">
+								<Label styleClass="bottom-title" text="Recent Activities" />
+								<VBox spacing="5" styleClass="activity-list">
+									<Label text="New Bill is generated" />
+									<Label text="New Bill is generated" />
+									<Label text="New Bill is generated" />
+									<Label text="New Bill is generated" />
+								</VBox>
 							</VBox>
-						</StackPane>
 
-						<!-- CARD 2 -->
-						<StackPane styleClass="card-style"
-							GridPane.columnIndex="1">
-							<VBox spacing="10" styleClass="card-content">
-								<Label styleClass="card-title" text="Total Jobs" />
-								<HBox spacing="10">
-									<ImageView fitHeight="24" fitWidth="24">
-										<image>
-											<Image url="@../icons/total_jobs.png" />
-										</image>
-									</ImageView>
-									<Label styleClass="card-value" text="345" />
-								</HBox>
+							<!-- NAVIGATION TILES -->
+							<VBox spacing="10" styleClass="bottom-card"
+								HBox.hgrow="ALWAYS">
+								<Label styleClass="bottom-title" text="Navigation Tiles" />
+
+								<FlowPane hgap="12" vgap="12" maxWidth="Infinity"
+									prefWrapLength="500">
+
+									<HBox styleClass="nav-tile">
+										<ImageView styleClass="tile-icon">
+											<image>
+												<Image url="@../icons/client_black.png" />
+											</image>
+										</ImageView>
+										<Label text="Client Details" />
+									</HBox>
+									<HBox styleClass="nav-tile">
+										<ImageView styleClass="tile-icon">
+											<image>
+												<Image url="@../icons/job_black.png" />
+											</image>
+										</ImageView>
+										<Label text="Job Details" />
+									</HBox>
+									<HBox styleClass="nav-tile">
+										<ImageView styleClass="tile-icon">
+											<image>
+												<Image url="@../icons/bill_black.png" />
+											</image>
+										</ImageView>
+										<Label text="Bill Creation" />
+									</HBox>
+									<HBox styleClass="nav-tile">
+										<ImageView styleClass="tile-icon">
+											<image>
+												<Image url="@../icons/payment_black.png" />
+											</image>
+										</ImageView>
+										<Label text="Payment Entry" />
+									</HBox>
+									<HBox styleClass="nav-tile">
+										<ImageView styleClass="tile-icon">
+											<image>
+												<Image url="@../icons/ledger_black.png" />
+											</image>
+										</ImageView>
+										<Label text="Client Ledger" />
+									</HBox>
+									<HBox styleClass="nav-tile">
+										<ImageView styleClass="tile-icon">
+											<image>
+												<Image url="@../icons/outstanding_black.png" />
+											</image>
+										</ImageView>
+										<Label text="Outstanding" />
+									</HBox>
+									<HBox styleClass="nav-tile">
+										<ImageView styleClass="tile-icon">
+											<image>
+												<Image url="@../icons/expense_black.png" />
+											</image>
+										</ImageView>
+										<Label text="Expenses" />
+									</HBox>
+									<HBox styleClass="nav-tile">
+										<ImageView styleClass="tile-icon">
+											<image>
+												<Image url="@../icons/report_black.png" />
+											</image>
+										</ImageView>
+										<Label text="Reports" />
+									</HBox>
+									<HBox styleClass="nav-tile">
+										<ImageView styleClass="tile-icon">
+											<image>
+												<Image url="@../icons/settings_black.png" />
+											</image>
+										</ImageView>
+										<Label text="Settings" />
+									</HBox>
+
+								</FlowPane>
 							</VBox>
-						</StackPane>
 
-						<!-- CARD 3 -->
-						<StackPane styleClass="card-style"
-							GridPane.columnIndex="2">
-							<VBox spacing="10" styleClass="card-content">
-								<Label styleClass="card-title" text="Total Bills" />
-								<HBox spacing="10">
-									<ImageView fitHeight="24" fitWidth="24">
-										<image>
-											<Image url="@../icons/total_bill.png" />
-										</image>
-									</ImageView>
-									<Label styleClass="card-value" text="345" />
-								</HBox>
-							</VBox>
-						</StackPane>
-					</GridPane>
+						</HBox>
 
-					<!-- SECOND METRICS GRID -->
-					<GridPane hgap="20" vgap="20" styleClass="metrics-grid">
-						<columnConstraints>
-							<ColumnConstraints percentWidth="33.33" />
-							<ColumnConstraints percentWidth="33.33" />
-							<ColumnConstraints percentWidth="33.33" />
-						</columnConstraints>
-
-						<StackPane styleClass="card-style"
-							GridPane.columnIndex="0">
-							<VBox spacing="10" styleClass="card-content">
-								<Label styleClass="card-title" text="Total Sales" />
-								<HBox spacing="10">
-									<ImageView fitHeight="24" fitWidth="24">
-										<image>
-											<Image url="@../icons/total_sales.png" />
-										</image>
-									</ImageView>
-									<Label styleClass="card-value" text="345" />
-								</HBox>
-							</VBox>
-						</StackPane>
-
-						<StackPane styleClass="card-style"
-							GridPane.columnIndex="1">
-							<VBox spacing="10" styleClass="card-content">
-								<Label styleClass="card-title" text="Outstanding Payments" />
-								<HBox spacing="10">
-									<ImageView fitHeight="24" fitWidth="24">
-										<image>
-											<Image url="@../icons/outstanding_payments.png" />
-										</image>
-									</ImageView>
-									<Label styleClass="card-value" text="345" />
-								</HBox>
-							</VBox>
-						</StackPane>
-
-						<StackPane styleClass="card-style"
-							GridPane.columnIndex="2">
-							<VBox spacing="10" styleClass="card-content">
-								<Label styleClass="card-title" text="Pending Bills" />
-								<HBox spacing="10">
-									<ImageView fitHeight="24" fitWidth="24">
-										<image>
-											<Image url="@../icons/total_.png" />
-										</image>
-									</ImageView>
-									<Label styleClass="card-value" text="345" />
-								</HBox>
-							</VBox>
-						</StackPane>
-					</GridPane>
-
-					<!-- LOWER SECTION (Recent Activities + Navigation Tiles) -->
-					<HBox fillHeight="true" spacing="20"
-						styleClass="bottom-section">
-
-						<!-- Recent Activities -->
-						<VBox spacing="10" styleClass="bottom-card"
-							HBox.hgrow="ALWAYS">
-							<Label styleClass="bottom-title" text="Recent Activities" />
-							<VBox spacing="5" styleClass="activity-list">
-								<Label text="New Bill is generated" />
-								<Label text="New Bill is generated" />
-								<Label text="New Bill is generated" />
-								<Label text="New Bill is generated" />
-							</VBox>
-						</VBox>
-
-						<!-- Navigation Tiles -->
-						<VBox spacing="10" styleClass="bottom-card"
-							HBox.hgrow="ALWAYS">
-							<Label styleClass="bottom-title" text="Navigation Tiles" />
-
-							<FlowPane hgap="12" vgap="12" prefWrapLength="500"
-								maxWidth="Infinity">
-
-								<!-- 1. Client Details -->
-								<HBox styleClass="nav-tile" HBox.hgrow="ALWAYS">
-									<ImageView styleClass="tile-icon">
-										<image>
-											<Image url="@../icons/client_black.png" />
-										</image>
-									</ImageView>
-									<Label text="Client Details" />
-								</HBox>
-
-								<!-- 2. Job Details -->
-								<HBox styleClass="nav-tile" HBox.hgrow="ALWAYS">
-									<ImageView styleClass="tile-icon">
-										<image>
-											<Image url="@../icons/job_black.png" />
-										</image>
-									</ImageView>
-									<Label text="Job Details" />
-								</HBox>
-
-								<!-- 3. Bill Creation -->
-								<HBox styleClass="nav-tile" HBox.hgrow="ALWAYS">
-									<ImageView styleClass="tile-icon">
-										<image>
-											<Image url="@../icons/bill_black.png" />
-										</image>
-									</ImageView>
-									<Label text="Bill Creation" />
-								</HBox>
-
-								<!-- 4. Payment Entry -->
-								<HBox styleClass="nav-tile" HBox.hgrow="ALWAYS">
-									<ImageView styleClass="tile-icon">
-										<image>
-											<Image url="@../icons/payment_black.png" />
-										</image>
-									</ImageView>
-									<Label text="Payment Entry" />
-								</HBox>
-
-								<!-- 5. Ledger -->
-								<HBox styleClass="nav-tile" HBox.hgrow="ALWAYS">
-									<ImageView styleClass="tile-icon">
-										<image>
-											<Image url="@../icons/ledger_black.png" />
-										</image>
-									</ImageView>
-									<Label text="Client Ledger" />
-								</HBox>
-
-								<!-- 6. Outstanding -->
-								<HBox styleClass="nav-tile" HBox.hgrow="ALWAYS">
-									<ImageView styleClass="tile-icon">
-										<image>
-											<Image url="@../icons/outstanding_black.png" />
-										</image>
-									</ImageView>
-									<Label text="Outstanding" />
-								</HBox>
-
-								<!-- 7. Expense Entry -->
-								<HBox styleClass="nav-tile" HBox.hgrow="ALWAYS">
-									<ImageView styleClass="tile-icon">
-										<image>
-											<Image url="@../icons/expense_black.png" />
-										</image>
-									</ImageView>
-									<Label text="Expenses" />
-								</HBox>
-
-								<!-- 8. Reports -->
-								<HBox styleClass="nav-tile" HBox.hgrow="ALWAYS">
-									<ImageView styleClass="tile-icon">
-										<image>
-											<Image url="@../icons/report_black.png" />
-										</image>
-									</ImageView>
-									<Label text="Reports" />
-								</HBox>
-
-								<!-- 9. Settings -->
-								<HBox styleClass="nav-tile" HBox.hgrow="ALWAYS">
-									<ImageView styleClass="tile-icon">
-										<image>
-											<Image url="@../icons/settings_black.png" />
-										</image>
-									</ImageView>
-									<Label text="Settings" />
-								</HBox>
-
-							</FlowPane>
-
-						</VBox>
-
-					</HBox>
-
-				</VBox>
-			</content>
-		</ScrollPane>
-	</center>
-
+					</VBox>
+				</content>
+			</ScrollPane>
+		</center>
 </BorderPane>
+    

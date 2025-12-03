@@ -38,8 +38,9 @@
 }
 
 .sidebar {
-    -fx-padding: 1.2em 0.8em;
-    -fx-spacing: 0.6em;
+	-fx-pref-width: 18em;
+	    -fx-min-width: 18em;
+	    -fx-max-width: 18em;
 }
 
 .sidebar-item {
@@ -47,6 +48,8 @@
     -fx-spacing: 0.9em;
     -fx-alignment: CENTER_LEFT;
     -fx-background-radius: 0.5em;
+	-fx-wrap-text: true;
+
 }
 
 .sidebar-item:hover {
@@ -182,3 +185,64 @@
 .icon, .card-icon, .tile-icon {
     -fx-preserve-ratio: true;
 }
+
+
+
+/*--------------------------ScrollPane--------------------------*/
+
+
+.scroll-pane {
+    -fx-background-color: transparent !important;
+    -fx-padding: 0;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: transparent !important;
+}
+
+.scroll-pane .corner {
+    -fx-background-color: transparent;
+}
+
+
+
+/*--------------------------ScrollBar--------------------------*/
+.scroll-bar:vertical,
+.scroll-bar:horizontal {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+/* Scrollbar track */
+.scroll-bar .track {
+    -fx-background-color: #111;   /* dark track */
+    -fx-background-radius: 5;
+}
+
+/* Scroll thumb (the draggable bar) */
+.scroll-bar .thumb {
+    -fx-background-color: #2d2d2d;  /* stylish gray */
+    -fx-background-radius: 5;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #3a3a3a;
+}
+
+.scroll-bar .thumb:pressed {
+    -fx-background-color: #4b4b4b;
+}
+
+/* Remove increment/decrement arrows */
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-opacity: 0;
+    -fx-padding: 0;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-opacity: 0;
+}
+
+

@@ -3,133 +3,176 @@ package controller;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Parent;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
 public class MainController implements Initializable {
 
-	// Sidebar containers
-	@FXML
-	private VBox mainSidebar;
+    // Sidebar containers
+    @FXML private VBox mainSidebar;
+    @FXML private VBox jobsSidebar;
+    @FXML private VBox clientsSidebar;
+    @FXML private VBox billingSidebar;
+    @FXML private VBox paymentSidebar;
+    @FXML private VBox ledgerSidebar;
 
-	@FXML
-	private VBox jobsSidebar;
+    // Center content container
+    @FXML private VBox centerRoot;
 
-	@FXML
-	private VBox clientsSidebar;
+    // ScrollPanes
+    @FXML private ScrollPane sidebarScroll;
+    @FXML private ScrollPane centerScroll;
 
-	@FXML
-	private VBox billingSidebar;
+    // Top title
+    @FXML private Label pageTitle;
 
-	@FXML
-	private VBox paymentSidebar;
+    // Root layout container
+    @FXML private BorderPane root;
 
-	@FXML
-	private VBox ledgerSidebar;
 
-	// Center content root (if you need it later)
-	@FXML
-	private VBox centerRoot;
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
 
-	// Top title
-	@FXML
-	private Label pageTitle;
+        // Show only the main sidebar initially
+        showOnly(mainSidebar);
+        setPageTitle("Dashboard");
 
-	// Optional: scroll panes (not mandatory, but ok)
-	@FXML
-	private ScrollPane sidebarScroll;
+        Platform.runLater(() -> {
 
-	@FXML
-	private ScrollPane centerScroll;
+            Stage stage = (Stage) root.getScene().getWindow();
 
-	@Override
-	public void initialize(URL location, ResourceBundle resources) {
-		// Make sure only main menu is visible initially
-		showOnly(mainSidebar);
-		setPageTitle("Dashboard");
-	}
+            // -----------------------
+            // 1. Dynamic UI Scaling
+            // -----------------------
+            ChangeListener<Number> resizeListener = (obs, oldVal, newVal) -> {
 
-	/* ====== Helpers ====== */
+                double w = stage.getWidth();
+                double h = stage.getHeight();
 
-	private void setPageTitle(String title) {
-		if (pageTitle != null) {
-			pageTitle.setText(title);
-		}
-	}
+                // baseline scaling = 900px height = 1.0em
+                double scale = Math.min(w, h) / 900.0;
 
-	private void hideAllSidebars() {
-		hideSidebar(mainSidebar);
-		hideSidebar(jobsSidebar);
-		hideSidebar(clientsSidebar);
-		hideSidebar(billingSidebar);
-		hideSidebar(paymentSidebar);
-		hideSidebar(ledgerSidebar);
-	}
+                scale = Math.max(scale, 0.85); // minimum
+                scale = Math.min(scale, 1.8);  // maximum
 
-	private void hideSidebar(VBox box) {
-		if (box != null) {
-			box.setVisible(false);
-			box.setManaged(false);
-		}
-	}
+                root.setStyle("-fx-font-size: " + scale + "em;");
+            };
 
-	private void showOnly(VBox target) {
-		hideAllSidebars();
-		if (target != null) {
-			target.setVisible(true);
-			target.setManaged(true);
-		}
-	}
+            stage.widthProperty().addListener(resizeListener);
+            stage.heightProperty().addListener(resizeListener);
 
-	/* ====== Event Handlers (used in FXML) ====== */
 
-	// Called by top-left icon and main "Dashboard" item
-	@FXML
-	private void openDashboard(MouseEvent event) {
-		showOnly(mainSidebar);
-		setPageTitle("Dashboard");
+            // ---------------------------------------------------
+            // 2. FINAL FIX: Make center area fill full screen
+            // ---------------------------------------------------
+            // Only set MIN HEIGHT (never prefHeight!)
+            // This avoids binding conflicts inside ScrollPane.
+            if (centerScroll != null && centerRoot != null) {
 
-		// If later you want to change center area when dashboard is clicked,
-		// you can update centerRoot here or load another FXML.
-	}
+                centerScroll.viewportBoundsProperty().addListener((obs, oldB, newB) -> {
+                    if (newB != null && newB.getHeight() > 0) {
+                        centerRoot.setMinHeight(newB.getHeight());
+                    }
+                });
 
-	@FXML
-	private void showJobsSubmenu(MouseEvent event) {
-		showOnly(jobsSidebar);
-		setPageTitle("Job Details");
-	}
+                // Initial set (in case viewport is already available)
+                if (centerScroll.getViewportBounds() != null) {
+                    centerRoot.setMinHeight(centerScroll.getViewportBounds().getHeight());
+                }
+            }
+        });
+    }
 
-	@FXML
-	private void showClientsSubmenu(MouseEvent event) {
-		showOnly(clientsSidebar);
-		setPageTitle("Client Details");
-	}
+    // ---------------------------
+    // Sidebar / Page switching
+    // ---------------------------
 
-	@FXML
-	private void showBillingSubmenu(MouseEvent event) {
-		showOnly(billingSidebar);
-		setPageTitle("Billing");
-	}
+    private void hideSidebar(VBox box) {
+        if (box != null) {
+            box.setVisible(false);
+            box.setManaged(false);
+        }
+    }
 
-	@FXML
-	private void showPaymentSubmenu(MouseEvent event) {
-		showOnly(paymentSidebar);
-		setPageTitle("Payments");
-	}
+    private void hideAllSidebars() {
+        hideSidebar(mainSidebar);
+        hideSidebar(jobsSidebar);
+        hideSidebar(clientsSidebar);
+        hideSidebar(billingSidebar);
+        hideSidebar(paymentSidebar);
+        hideSidebar(ledgerSidebar);
+    }
 
-	@FXML
-	private void showLedgerSubmenu(MouseEvent event) {
-		showOnly(ledgerSidebar);
-		setPageTitle("Ledger");
-	}
+    private void showOnly(VBox target) {
+        hideAllSidebars();
+        if (target != null) {
+            target.setVisible(true);
+            target.setManaged(true);
+        }
+    }
 
-	// If you ever re-add showMainSidebar in FXML, you can point it to dashboard:
-	@FXML
-	private void showMainSidebar(MouseEvent event) {
-		openDashboard(event);
-	}
+    private void setPageTitle(String title) {
+        if (pageTitle != null) {
+            pageTitle.setText(title);
+        }
+    }
+
+    // Event handlers for sidebar menu items
+
+    @FXML private void openDashboard(MouseEvent event) {
+        showOnly(mainSidebar);
+        setPageTitle("Dashboard");
+    }
+
+    @FXML private void showJobsSubmenu(MouseEvent event) {
+        showOnly(jobsSidebar);
+        setPageTitle("Job Details");
+    }
+
+    @FXML private void showClientsSubmenu(MouseEvent event) {
+        showOnly(clientsSidebar);
+        setPageTitle("Client Details");
+    }
+
+    @FXML private void showBillingSubmenu(MouseEvent event) {
+        showOnly(billingSidebar);
+        setPageTitle("Billing");
+    }
+
+    @FXML private void showPaymentSubmenu(MouseEvent event) {
+        showOnly(paymentSidebar);
+        setPageTitle("Payments");
+    }
+
+    @FXML private void showLedgerSubmenu(MouseEvent event) {
+        showOnly(ledgerSidebar);
+        setPageTitle("Ledger");
+    }
+
+    @FXML private void showMainSidebar(MouseEvent event) {
+        openDashboard(event);
+    }
+    
+    @FXML
+    private void loadAddClient(MouseEvent event) {
+        try {
+            Parent addClientView = FXMLLoader.load(getClass().getResource("/fxml/add_client.fxml"));
+            centerRoot.getChildren().setAll(addClientView);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    
+    
 }
