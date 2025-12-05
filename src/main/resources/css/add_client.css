@@ -16,8 +16,9 @@
 /* ===================== LABELS ===================== */
 
 .form-label {
-    -fx-text-fill: #ffffff;
-    -fx-font-size: 1.1em;
+	-fx-text-fill: #dcdcdc;
+	   -fx-font-size: 1.05em;
+	   -fx-font-weight: bold;
 }
 
 /* ===================== TEXTFIELDS ===================== */

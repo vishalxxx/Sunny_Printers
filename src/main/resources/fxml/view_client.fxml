@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+	xmlns:fx="http://javafx.com/fxml"
+	fx:controller="controller.ViewClientsController" spacing="20"
+	stylesheets="@../css/view_client.css" styleClass="view-clients-root">
+
+	<!-- PAGE TITLE -->
+	<Label text="View Business Clients" styleClass="page-heading" />
+
+	<!-- SEARCH BAR -->
+	<HBox spacing="12" alignment="CENTER_LEFT" styleClass="search-bar">
+		<TextField fx:id="searchField"
+			promptText="Search by Business Name, Client, Phone, GST..."
+			styleClass="search-field" HBox.hgrow="ALWAYS" />
+
+		<Button text="Search" styleClass="search-button" />
+	</HBox>
+
+	<!-- TABLE CARD -->
+	<VBox styleClass="table-card">
+	
+		<TableView fx:id="clientTable" styleClass="client-table">
+
+			<columns>
+				<TableColumn fx:id="idCol" text="ID" prefWidth="80" />
+				<TableColumn fx:id="businessCol" text="Business Name"
+					prefWidth="200" />
+				<TableColumn fx:id="clientCol" text="Client Name"
+					prefWidth="180" />
+				<TableColumn fx:id="nickCol" text="Nick Name"
+					prefWidth="150" />
+				<TableColumn fx:id="phoneCol" text="Phone"
+					prefWidth="150" />
+				<TableColumn fx:id="altPhoneCol" text="Alt Phone"
+					prefWidth="150" />
+				<TableColumn fx:id="emailCol" text="Email"
+					prefWidth="240" />
+				<TableColumn fx:id="gstCol" text="GST" prefWidth="140" />
+				<TableColumn fx:id="panCol" text="PAN" prefWidth="140" />
+				<TableColumn fx:id="actionCol" text="Actions"
+					prefWidth="220" />
+			</columns>
+
+		</TableView>
+		
+	</VBox>
+
+</VBox>

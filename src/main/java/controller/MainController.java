@@ -17,162 +17,227 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class MainController implements Initializable {
+	// Center content container
+	@FXML
+	private VBox centerRoot;
 
-    // Sidebar containers
-    @FXML private VBox mainSidebar;
-    @FXML private VBox jobsSidebar;
-    @FXML private VBox clientsSidebar;
-    @FXML private VBox billingSidebar;
-    @FXML private VBox paymentSidebar;
-    @FXML private VBox ledgerSidebar;
+	// singleton-like reference so other controllers can reach MainController
+	private static MainController instance;
 
-    // Center content container
-    @FXML private VBox centerRoot;
+	// no-arg constructor — FXMLLoader will call this when creating the controller
+	public MainController() {
+		instance = this;
+	}
 
-    // ScrollPanes
-    @FXML private ScrollPane sidebarScroll;
-    @FXML private ScrollPane centerScroll;
+	/** Return the MainController instance created by the FXMLLoader */
+	public static MainController getInstance() {
+		return instance;
+	}
 
-    // Top title
-    @FXML private Label pageTitle;
+	public void setCenterContent(Parent view) {
+		centerRoot.getChildren().setAll(view);
+	}
 
-    // Root layout container
-    @FXML private BorderPane root;
+	// Sidebar containers
+	@FXML
+	private VBox mainSidebar;
+	@FXML
+	private VBox jobsSidebar;
+	@FXML
+	private VBox clientsSidebar;
+	@FXML
+	private VBox billingSidebar;
+	@FXML
+	private VBox paymentSidebar;
+	@FXML
+	private VBox ledgerSidebar;
 
+	// ScrollPanes
+	@FXML
+	private ScrollPane sidebarScroll;
+	@FXML
+	private ScrollPane centerScroll;
 
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
+	// Top title
+	@FXML
+	private Label pageTitle;
 
-        // Show only the main sidebar initially
-        showOnly(mainSidebar);
-        setPageTitle("Dashboard");
+	// Root layout container
+	@FXML
+	private BorderPane root;
 
-        Platform.runLater(() -> {
+	public BorderPane getRoot() {
+		return root;
+	}
 
-            Stage stage = (Stage) root.getScene().getWindow();
+	@Override
+	public void initialize(URL location, ResourceBundle resources) {
 
-            // -----------------------
-            // 1. Dynamic UI Scaling
-            // -----------------------
-            ChangeListener<Number> resizeListener = (obs, oldVal, newVal) -> {
+		// Show only the main sidebar initially
+		showOnly(mainSidebar);
+		setPageTitle("Dashboard");
 
-                double w = stage.getWidth();
-                double h = stage.getHeight();
+		Platform.runLater(() -> {
 
-                // baseline scaling = 900px height = 1.0em
-                double scale = Math.min(w, h) / 900.0;
+			Stage stage = (Stage) root.getScene().getWindow();
 
-                scale = Math.max(scale, 0.85); // minimum
-                scale = Math.min(scale, 1.8);  // maximum
+			// -----------------------
+			// 1. Dynamic UI Scaling
+			// -----------------------
+			ChangeListener<Number> resizeListener = (obs, oldVal, newVal) -> {
 
-                root.setStyle("-fx-font-size: " + scale + "em;");
-            };
+				double w = stage.getWidth();
+				double h = stage.getHeight();
 
-            stage.widthProperty().addListener(resizeListener);
-            stage.heightProperty().addListener(resizeListener);
+				// baseline scaling = 900px height = 1.0em
+				// baseline = 900px = 1.0
+				double scale = Math.min(w, h) / 900.0;
 
+				// Never go below 1.0 (never shrink)
+				if (scale < 1.0) {
+					scale = 1.0;
+				}
 
-            // ---------------------------------------------------
-            // 2. FINAL FIX: Make center area fill full screen
-            // ---------------------------------------------------
-            // Only set MIN HEIGHT (never prefHeight!)
-            // This avoids binding conflicts inside ScrollPane.
-            if (centerScroll != null && centerRoot != null) {
+				// Optional: maximum limit
+				if (scale > 1.6) {
+					scale = 1.6;
+				}
 
-                centerScroll.viewportBoundsProperty().addListener((obs, oldB, newB) -> {
-                    if (newB != null && newB.getHeight() > 0) {
-                        centerRoot.setMinHeight(newB.getHeight());
-                    }
-                });
+				root.setStyle("-fx-font-size: " + scale + "em;");
+			};
 
-                // Initial set (in case viewport is already available)
-                if (centerScroll.getViewportBounds() != null) {
-                    centerRoot.setMinHeight(centerScroll.getViewportBounds().getHeight());
-                }
-            }
-        });
-    }
+			stage.widthProperty().addListener(resizeListener);
+			stage.heightProperty().addListener(resizeListener);
 
-    // ---------------------------
-    // Sidebar / Page switching
-    // ---------------------------
+			// ---------------------------------------------------
+			// 2. FINAL FIX: Make center area fill full screen
+			// ---------------------------------------------------
+			// Only set MIN HEIGHT (never prefHeight!)
+			// This avoids binding conflicts inside ScrollPane.
+			if (centerScroll != null && centerRoot != null) {
 
-    private void hideSidebar(VBox box) {
-        if (box != null) {
-            box.setVisible(false);
-            box.setManaged(false);
-        }
-    }
+				centerScroll.viewportBoundsProperty().addListener((obs, oldB, newB) -> {
+					if (newB != null && newB.getHeight() > 0) {
+						centerRoot.setMinHeight(newB.getHeight());
+					}
+				});
 
-    private void hideAllSidebars() {
-        hideSidebar(mainSidebar);
-        hideSidebar(jobsSidebar);
-        hideSidebar(clientsSidebar);
-        hideSidebar(billingSidebar);
-        hideSidebar(paymentSidebar);
-        hideSidebar(ledgerSidebar);
-    }
+				// Initial set (in case viewport is already available)
+				if (centerScroll.getViewportBounds() != null) {
+					centerRoot.setMinHeight(centerScroll.getViewportBounds().getHeight());
+				}
+			}
+		});
+	}
 
-    private void showOnly(VBox target) {
-        hideAllSidebars();
-        if (target != null) {
-            target.setVisible(true);
-            target.setManaged(true);
-        }
-    }
+	// ---------------------------
+	// Sidebar / Page switching
+	// ---------------------------
 
-    private void setPageTitle(String title) {
-        if (pageTitle != null) {
-            pageTitle.setText(title);
-        }
-    }
+	private void hideSidebar(VBox box) {
+		if (box != null) {
+			box.setVisible(false);
+			box.setManaged(false);
+		}
+	}
 
-    // Event handlers for sidebar menu items
+	private void hideAllSidebars() {
+		hideSidebar(mainSidebar);
+		hideSidebar(jobsSidebar);
+		hideSidebar(clientsSidebar);
+		hideSidebar(billingSidebar);
+		hideSidebar(paymentSidebar);
+		hideSidebar(ledgerSidebar);
+	}
 
-    @FXML private void openDashboard(MouseEvent event) {
-        showOnly(mainSidebar);
-        setPageTitle("Dashboard");
-    }
+	private void showOnly(VBox target) {
+		hideAllSidebars();
+		if (target != null) {
+			target.setVisible(true);
+			target.setManaged(true);
+		}
+	}
 
-    @FXML private void showJobsSubmenu(MouseEvent event) {
-        showOnly(jobsSidebar);
-        setPageTitle("Job Details");
-    }
+	private void setPageTitle(String title) {
+		if (pageTitle != null) {
+			pageTitle.setText(title);
+		}
+	}
 
-    @FXML private void showClientsSubmenu(MouseEvent event) {
-        showOnly(clientsSidebar);
-        setPageTitle("Client Details");
-    }
+	// Event handlers for sidebar menu items
 
-    @FXML private void showBillingSubmenu(MouseEvent event) {
-        showOnly(billingSidebar);
-        setPageTitle("Billing");
-    }
+	@FXML
+	private void openDashboard(MouseEvent event) {
+		showOnly(mainSidebar);
+		setPageTitle("Dashboard");
+	}
 
-    @FXML private void showPaymentSubmenu(MouseEvent event) {
-        showOnly(paymentSidebar);
-        setPageTitle("Payments");
-    }
+	@FXML
+	private void showJobsSubmenu(MouseEvent event) {
+		showOnly(jobsSidebar);
+		setPageTitle("Job Details");
+	}
 
-    @FXML private void showLedgerSubmenu(MouseEvent event) {
-        showOnly(ledgerSidebar);
-        setPageTitle("Ledger");
-    }
+	@FXML
+	private void showClientsSubmenu(MouseEvent event) {
+		showOnly(clientsSidebar);
+		setPageTitle("Client Details");
+	}
 
-    @FXML private void showMainSidebar(MouseEvent event) {
-        openDashboard(event);
-    }
-    
-    @FXML
-    private void loadAddClient(MouseEvent event) {
-        try {
-            Parent addClientView = FXMLLoader.load(getClass().getResource("/fxml/add_client.fxml"));
-            centerRoot.getChildren().setAll(addClientView);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    
-    
-    
+	@FXML
+	private void showBillingSubmenu(MouseEvent event) {
+		showOnly(billingSidebar);
+		setPageTitle("Billing");
+	}
+
+	@FXML
+	private void showPaymentSubmenu(MouseEvent event) {
+		showOnly(paymentSidebar);
+		setPageTitle("Payments");
+	}
+
+	@FXML
+	private void showLedgerSubmenu(MouseEvent event) {
+		showOnly(ledgerSidebar);
+		setPageTitle("Ledger");
+	}
+
+	@FXML
+	private void showMainSidebar(MouseEvent event) {
+		openDashboard(event);
+	}
+
+	@FXML
+	private void loadAddClient(MouseEvent event) {
+		try {
+			Parent addClientView = FXMLLoader.load(getClass().getResource("/fxml/add_client.fxml"));
+			centerRoot.getChildren().setAll(addClientView);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	@FXML
+	private void loadViewClients(MouseEvent event) {
+		try {
+			Parent view = FXMLLoader.load(getClass().getResource("/fxml/view_client.fxml"));
+			centerRoot.getChildren().setAll(view);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void loadViewClients() {
+		try {
+			Parent view = FXMLLoader.load(getClass().getResource("/fxml/view_client.fxml"));
+			centerRoot.getChildren().setAll(view);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void setCenterView(Parent view) {
+		centerRoot.getChildren().setAll(view);
+	}
+
 }

@@ -1,0 +1,167 @@
+/* =======================
+   VIEW CLIENTS PAGE
+   ======================= */
+
+.view-clients-root {
+    -fx-padding: 1.5em;
+    -fx-background-color: transparent;
+}
+
+.page-heading {
+    -fx-text-fill: white;
+    -fx-font-size: 1.6em;
+    -fx-font-weight: bold;
+}
+
+.search-bar {
+    -fx-spacing: 1em;
+}
+
+.search-field {
+    -fx-background-color: #1f1f1f;
+    -fx-text-fill: white;
+    -fx-prompt-text-fill: #888;
+    -fx-background-radius: 0.5em;
+    -fx-padding: 0.6em 1em;
+    -fx-border-color: #333;
+    -fx-border-radius: 0.5em;
+}
+
+.table-card {
+    -fx-background-color: #141414;
+    -fx-background-radius: 0.8em;
+    -fx-padding: 1em;
+}
+
+/* ===================== TABLE BASE ===================== */
+
+.client-table {
+    -fx-background-color: transparent;
+    -fx-table-cell-border-color: #333;
+    -fx-padding: 0;
+}
+
+/* ===================== HEADER ===================== */
+/* Background of header row */
+.client-table .column-header-background {
+    -fx-background-color: #111111 !important;   /* deep dark */
+    -fx-border-color: #333333 !important;
+}
+
+/* Individual column header cells */
+.client-table .column-header {
+    -fx-background-color: #111111 !important;
+}
+
+/* Header text */
+.client-table .column-header .label {
+    -fx-text-fill: white !important;
+    -fx-font-size: 1.15em;
+    -fx-font-weight: bold;
+}
+/* ===================== CELL TEXT ===================== */
+
+.client-table .table-cell {
+    -fx-text-fill: #ffffff;        /* full white text (fixed) */
+    -fx-font-size: 1.05em;
+    -fx-alignment: CENTER_LEFT;   /* clean alignment */
+}
+
+/* ===================== ROW BACKGROUND ===================== */
+
+.client-table .table-row-cell {
+    -fx-background-color: #1a1a1a;  /* base row color */
+}
+
+/* Alternate Row */
+.client-table .table-row-cell:odd {
+    -fx-background-color: #1f1f1f;
+}
+
+/* Hover effect */
+.client-table .table-row-cell:hover {
+    -fx-background-color: #333333 !important;    /* clearer hover */
+}
+
+/* Selected Row */
+.client-table .table-row-cell:selected {
+    -fx-background-color: #1e4d57 !important;    /* professional blue selection */
+    -fx-text-fill: white !important;
+}
+
+.client-table .table-row-cell:selected .table-cell {
+    -fx-text-fill: white !important;             /* ensure readable when selected */
+}
+
+
+/* Buttons inside action column */
+.action-view {
+    -fx-background-color: #2d8cff;
+    -fx-text-fill: white;
+    -fx-background-radius: 6;
+    -fx-padding: 4 10;
+    -fx-font-size: 0.95em;
+    -fx-font-weight: bold;
+}
+
+.action-edit {
+    -fx-background-color: #777;
+    -fx-text-fill: white;
+    -fx-background-radius: 6;
+    -fx-padding: 4 10;
+}
+
+.action-delete {
+    -fx-background-color: #c62828;
+    -fx-text-fill: white;
+    -fx-background-radius: 6;
+    -fx-padding: 4 10;
+}
+/* ---------------------- EDIT BUTTON ---------------------- */
+.edit-button {
+    -fx-background-color: transparent;
+    -fx-border-color: #4a90e2;
+    -fx-text-fill: #4a90e2;
+    -fx-border-radius: 6;
+    -fx-padding: 4 12;
+    -fx-font-size: 0.9em;
+}
+
+.edit-button:hover {
+    -fx-background-color: rgba(74, 144, 226, 0.15);
+}
+
+/* ---------------------- DELETE BUTTON ---------------------- */
+.delete-button {
+    -fx-background-color: transparent;
+    -fx-border-color: #e74c3c;
+    -fx-text-fill: #e74c3c;
+    -fx-border-radius: 6;
+    -fx-padding: 4 12;
+    -fx-font-size: 0.9em;
+}
+
+.delete-button:hover {
+    -fx-background-color: rgba(231, 76, 60, 0.15);
+}
+
+/* ---------------------- SEARCH BUTTON ---------------------- */
+.search-button {
+    -fx-background-color: #2c2c2c;
+    -fx-text-fill: #e0e0e0;
+    -fx-background-radius: 8;
+    -fx-padding: 6 18;
+    -fx-font-size: 1em;
+    -fx-border-color: #444;
+    -fx-border-radius: 8;
+}
+
+.search-button:hover {
+    -fx-background-color: #3a3a3a;
+}
+
+.search-button:pressed {
+    -fx-background-color: #1f1f1f;
+}
+
+
