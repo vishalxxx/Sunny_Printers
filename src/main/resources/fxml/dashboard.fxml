@@ -219,7 +219,7 @@
 						<Label styleClass="sidebar-section-header"
 							text="Job Details" />
 
-						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item" onMouseClicked="#loadAddJob">
 							<children>
 								<Label styleClass="sidebar-text" text="Add Job"
 									maxWidth="Infinity" HBox.hgrow="ALWAYS" />

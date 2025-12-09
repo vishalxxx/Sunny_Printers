@@ -1,49 +1,269 @@
-.sidebar {
-    -fx-background-color: #0E121B;
+/* =========================================================
+   GLOBAL ROOT
+   ========================================================= */
+.root-scroll {
+    -fx-background: #0f0f0f;
+    -fx-padding: 0;
+    -fx-border-color: black;
 }
 
-/* MAIN MENU ITEMS */
-.menu-item {
-    -fx-padding: 12 16;
-    -fx-spacing: 12;
-    -fx-alignment: CENTER_LEFT;
+.root-container {
+    -fx-background-color: #0f0f0f;
+    -fx-padding: 20;
+}
+
+/* =========================================================
+   CARD GRID
+   ========================================================= */
+.card-grid {
+    -fx-padding: 10;
+}
+
+/* =========================================================
+   CARD STYLE
+   ========================================================= */
+.card {
+    -fx-background-color: rgba(255,255,255,0.08);
+    -fx-background-radius: 16;
+    -fx-padding: 20;
+    -fx-spacing: 15;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 20, 0.2, 0, 6);
+    -fx-fill-height: true;
+}
+
+.card-title {
+    -fx-font-size: 20px;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+/* =========================================================
+   INPUT ELEMENTS – BLACK THEME
+   ========================================================= */
+.text-field,
+.combo-box,
+.text-area {
+    -fx-background-color: #1a1a1a;
+    -fx-text-fill: white;
+    -fx-prompt-text-fill: #aaaaaa;
+    -fx-background-radius: 6;
+    -fx-border-color: #444;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+}
+
+/* ComboBox arrow button */
+.combo-box .arrow-button {
+    -fx-background-color: #333;
+}
+
+.combo-box .arrow {
+    -fx-background-color: white;
+}
+
+/* ComboBox dropdown list */
+.combo-box-popup .list-view {
+    -fx-background-color: #1a1a1a;
+}
+
+.combo-box-popup .list-view .list-cell {
+    -fx-background-color: #1a1a1a;
+    -fx-text-fill: white;
+}
+
+.combo-box-popup .list-view .list-cell:hover {
+    -fx-background-color: #333333;
+}
+
+/* TextArea content */
+.text-area .content {
+    -fx-background-color: #1a1a1a;
+    -fx-text-fill: white;
+}
+
+/* =========================================================
+   FORM LABELS
+   ========================================================= */
+.form-label {
+    -fx-text-fill: #e0e0e0;
+    -fx-font-size: 12px;
+    -fx-min-width: 80;
+    -fx-max-width: 80;
+}
+
+/* =========================================================
+   PRIMARY BUTTON (Upload / Add Job)
+   ========================================================= */
+.primary-btn {
+    -fx-background-color: #2d8cff;
+    -fx-text-fill: white;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-padding: 10 22;
     -fx-cursor: hand;
 }
 
-.menu-item:hover {
-    -fx-background-color: #6A7EFC;
+.primary-btn:hover {
+    -fx-background-color: #1c6ee6;
 }
 
-.menu-label {
-    -fx-text-fill: white;
+.primary-btn:pressed {
+    -fx-background-color: #1554aa;
+}
+
+/* =========================================================
+   SECONDARY BUTTON (Card Buttons)
+   ========================================================= */
+.card-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #e0e0e0;
+    -fx-border-color: #666;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 16;
+    -fx-cursor: hand;
+}
+
+.card-btn:hover {
+    -fx-border-color: #2d8cff;
+    -fx-text-fill: #2d8cff;
+}
+
+.card-btn:pressed {
+    -fx-background-color: rgba(45,140,255,0.15);
+}
+
+/* =========================================================
+   CENTER ALL CARD BUTTONS + PUSH TO BOTTOM
+   ========================================================= */
+.card > Button,
+.card > HBox > Button {
+    -fx-max-width: Infinity;
+    -fx-alignment: center;
+    -fx-vgrow: ALWAYS;
+}
+
+/* =========================================================
+   IMAGE PREVIEW
+   ========================================================= */
+.image-preview {
+    -fx-background-color: rgba(255,255,255,0.03);
+    -fx-border-color: #444;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 10;
+}
+
+.image-placeholder {
+    -fx-text-fill: #888;
     -fx-font-size: 14px;
 }
 
-/* ICON DEFAULT COLOR */
-.menu-icon {
-    -fx-fill: #b0b0b0;
+/* =========================================================
+   SUMMARY SECTION
+   ========================================================= */
+   /* =============================== */
+   /*      SUMMARY SCROLLPANE         */
+   /* =============================== */
+   .summary-scroll {
+       -fx-background-color: transparent;
+       -fx-padding: 0;
+   }
+
+   .summary-scroll > .viewport {
+       -fx-background-color: #0d0d0d;  /* deep dark black */
+   }
+
+   /* Scrollbar (Dark) */
+   .summary-scroll .scroll-bar:vertical .thumb {
+       -fx-background-color: rgba(255,255,255,0.25);
+       -fx-background-radius: 5;
+   }
+
+   .summary-scroll .scroll-bar:vertical .track {
+       -fx-background-color: #1a1a1a;
+   }
+
+
+   /* =============================== */
+   /*      SUMMARY CONTAINER           */
+   /* =============================== */
+   .summary-container {
+       -fx-background-color: #111111;     /* blackish */
+       -fx-background-radius: 10;
+       -fx-padding: 12;
+
+       -fx-border-color: #222222;
+       -fx-border-radius: 10;
+   }
+
+   /* =============================== */
+   /*       INDIVIDUAL ITEMS          */
+   /* =============================== */
+   .summary-item {
+       -fx-background-color: #1a1a1a;     /* slightly lighter black */
+       -fx-background-radius: 8;
+
+       -fx-text-fill: white;
+       -fx-font-size: 14px;
+       -fx-padding: 10;
+
+       /* Soft shadow for modern UI */
+       -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 10, 0.2, 0, 2);
+   }
+
+   .summary-item:hover {
+       -fx-background-color: #222222;
+       -fx-cursor: hand;
+   }
+
+/* =========================================================
+   SCROLLBAR DARK THEME
+   ========================================================= */
+.scroll-bar:vertical,
+.scroll-bar:horizontal {
+    -fx-background-color: transparent;
+}
+/* =============================== */
+/*       SUMMARY TITLE STYLE       */
+/* =============================== */
+.summary-title {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+
+    /* Soft blue glow for premium feel */
+    -fx-effect: dropshadow(gaussian, rgba(45,140,255,0.35), 12, 0.2, 0, 2);
+
+    /* Slight spacing below */
+    -fx-padding: 0 0 4 0;
 }
 
-/* ON HOVER WHITE ICON */
-.menu-item:hover .menu-icon {
-    -fx-fill: white;
+
+.scroll-bar .thumb {
+    -fx-background-color: #444;
 }
 
-/* SUBMENU */
-.submenu {
-    -fx-background-color: #151A25;
-    -fx-padding: 0 0 0 40;
-    -fx-spacing: 8;
-    -fx-overflow: hidden;
+.scroll-bar .thumb:hover {
+    -fx-background-color: #666;
 }
 
-.submenu-item {
-    -fx-text-fill: #cfcfcf;
-    -fx-padding: 8 0;
-    -fx-font-size: 13px;
-    -fx-cursor: hand;
+.scroll-bar .track {
+    -fx-background-color: #1a1a1a;
 }
 
-.submenu-item:hover {
+/* Remove ugly blue focus */
+* {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+/* Heading */
+.main-heading {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
     -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(45,140,255,0.4), 10, 0.2, 0, 2);
 }

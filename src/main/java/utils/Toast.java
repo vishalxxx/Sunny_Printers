@@ -1,14 +1,20 @@
 package utils;
 
 import javafx.animation.FadeTransition;
+import javafx.animation.PauseTransition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+import javafx.stage.Window;
 import javafx.util.Duration;
 
 public class Toast {
@@ -102,4 +108,44 @@ public class Toast {
 			fade.play();
 		});
 	}
+
+	public static void showUndo(Window owner, String message, Runnable undoAction, Runnable onTimeout) {
+
+		Stage toast = new Stage();
+		toast.initOwner(owner);
+		toast.setAlwaysOnTop(true);
+		toast.initStyle(StageStyle.TRANSPARENT);
+
+		Label msg = new Label(message);
+		msg.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
+
+		Button undoBtn = new Button("UNDO");
+		undoBtn.setStyle("-fx-background-color: #ffca28;" + "-fx-text-fill: black;" + "-fx-font-weight: bold;"
+				+ "-fx-background-radius: 6;");
+
+		undoBtn.setOnAction(e -> {
+			toast.close();
+			undoAction.run();
+		});
+
+		HBox row = new HBox(12, msg, undoBtn);
+		row.setAlignment(Pos.CENTER_LEFT);
+		row.setPadding(new Insets(12));
+		row.setStyle("-fx-background-color: rgba(0,0,0,0.85); -fx-background-radius: 8;");
+
+		Scene scene = new Scene(row);
+		scene.setFill(Color.TRANSPARENT);
+		toast.setScene(scene);
+
+		toast.show();
+
+		// Auto hide after 4 seconds → clears undo memory
+		PauseTransition delay = new PauseTransition(Duration.seconds(4));
+		delay.setOnFinished(e -> {
+			toast.close();
+			onTimeout.run(); // clearing UndoDeleteManager
+		});
+		delay.play();
+	}
+
 }

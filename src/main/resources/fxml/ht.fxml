@@ -1,50 +1,404 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<?import java.lang.String?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
-<?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.ColumnConstraints?>
-<?import javafx.scene.layout.GridPane?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.RowConstraints?>
-<?import javafx.scene.layout.StackPane?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
+<?import javafx.scene.image.Image?>
 
-<BorderPane maxHeight="1.7976931348623157E308"
-	maxWidth="1.7976931348623157E308" minHeight="-Infinity"
-	minWidth="-Infinity" prefHeight="679.0" prefWidth="916.0"
-	styleClass="root" stylesheets="@dashboard.css"
-	xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
-	<left>
-		<VBox fx:id="sidebar" spacing="0" prefWidth="240"
-			styleClass="sidebar">
 
-			<!-- DASHBOARD -->
-		
-			 <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" prefHeight="100.0" prefWidth="200.0" styleClass="sidebar-section-title">
-                     <children>
-                        <ImageView fitHeight="31.0" fitWidth="31.0" pickOnBounds="true" preserveRatio="true" styleClass="icon">
-                           <image>
-                              <Image url="@../icons/job.png" />
-                           </image>
-                           <HBox.margin>
-                              <Insets />
-                           </HBox.margin>
-                        </ImageView>
-                        <Label contentDisplay="CENTER" graphicTextGap="5.0" maxWidth="1.7976931348623157E308" style="r: blue;" styleClass="sidebar-section-title" text="Job Details" textFill="WHITE">
-                           <font>
-                              <Font size="24.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
+<!-- ROOT LAYOUT -->
+<VBox xmlns="http://javafx.com/javafx/23"
+	xmlns:fx="http://javafx.com/fxml/1" spacing="30" alignment="TOP_CENTER"
+	styleClass="root-container" stylesheets="@../css/ht.css"
+	fx:controller="controller.AddJobController">
+	<Label text="Add New Job" styleClass="main-heading" />
 
-		</VBox>
+	<!-- ========================================================= -->
+	<!-- 1️⃣ SCROLLABLE CARD AREA -->
+	<!-- ========================================================= -->
+	<ScrollPane fitToWidth="true" fitToHeight="false"
+		VBox.vgrow="ALWAYS" styleClass="root-scroll">
 
-	</left>
+		<GridPane hgap="30" vgap="30" styleClass="card-grid">
 
-</BorderPane>
+			<!-- Responsive columns -->
+			<columnConstraints>
+				<ColumnConstraints percentWidth="33"
+					hgrow="ALWAYS" />
+				<ColumnConstraints percentWidth="33"
+					hgrow="ALWAYS" />
+				<ColumnConstraints percentWidth="33"
+					hgrow="ALWAYS" />
+			</columnConstraints>
+
+			<!-- 2 rows of cards -->
+
+
+			<!-- ==================== CARDS (1–6) =================== -->
+
+			<!-- CARD 1 -->
+			<!-- ===================== CARD 1 : IMAGE UPLOAD ===================== -->
+
+			<VBox GridPane.columnIndex="0" GridPane.rowIndex="0"
+				spacing="15" styleClass="card" alignment="TOP_CENTER">
+
+				<Label text="Job File (Image / PDF)" styleClass="card-title" />
+
+				<!-- Preview Container -->
+				<StackPane fx:id="previewContainer"
+					styleClass="image-preview" prefHeight="220" maxHeight="220"
+					minHeight="150" VBox.vgrow="NEVER">
+
+					<!-- IMAGE PREVIEW -->
+					<ImageView fx:id="jobImagePreview" preserveRatio="true"
+						fitHeight="200" visible="false" managed="false"
+						StackPane.alignment="CENTER" />
+
+					<!-- PDF PREVIEW BOX -->
+					<VBox fx:id="pdfPreviewBox" spacing="10" alignment="CENTER"
+						visible="false" managed="false" StackPane.alignment="CENTER"
+						styleClass="pdf-preview">
+
+						<Label text="PDF Selected" styleClass="pdf-title" />
+
+						<Label text="📄 PDF File" styleClass="pdf-icon" />
+					</VBox>
+
+					<!-- Placeholder when nothing is uploaded -->
+					<Label text="No File Selected" fx:id="filePlaceholder"
+						styleClass="image-placeholder" visible="true" managed="true"
+						StackPane.alignment="CENTER" />
+
+				</StackPane>
+
+				<!-- Upload Button -->
+				<Button text="Upload Image / PDF" fx:id="uploadJobImageBtn"
+					onAction="#handleUploadFile" styleClass="primary-btn" />
+
+			</VBox>
+
+
+
+
+
+
+
+			<!-- CARD 2 : PRINTING -->
+			<!-- CARD 2 : PRINTING -->
+			<VBox GridPane.columnIndex="1" GridPane.rowIndex="0"
+				spacing="12" styleClass="card" maxWidth="360">
+
+				<Label text="PRINTING" styleClass="card-title" />
+
+				<!-- All fields stacked nicely -->
+				<VBox spacing="10">
+
+					<!-- Qty -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Qty" styleClass="form-label" />
+						<TextField HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Units -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Units" styleClass="form-label" />
+						<ComboBox HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Set -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Set" styleClass="form-label" />
+						<ComboBox HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Color -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Color" styleClass="form-label" />
+						<ComboBox HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Side -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Side" styleClass="form-label" />
+						<ComboBox HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- With CTP -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="With CTP" styleClass="form-label" />
+						<ComboBox HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Notes -->
+					<VBox spacing="5">
+						<Label text="Notes" styleClass="form-label" />
+						<TextArea prefRowCount="2" wrapText="true" maxHeight="80" />
+					</VBox>
+
+				</VBox>
+
+				<!-- Amount -->
+				<HBox spacing="8" alignment="CENTER_LEFT">
+					<Label text="Amount" styleClass="form-label" />
+					<TextField HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+				</HBox>
+
+				<!-- Button -->
+				<Button text="Add Printing" styleClass="card-btn" />
+
+			</VBox>
+
+
+
+			<!-- CARD 3 -->
+			<!-- CARD : CTP PLATE -->
+			<VBox GridPane.columnIndex="2" GridPane.rowIndex="0"
+				spacing="15" styleClass="card" maxWidth="360">
+
+				<Label text="CTP PLATE" styleClass="card-title" />
+
+				<VBox spacing="10">
+					<!-- Quantity -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Qty" styleClass="form-label" />
+						<ComboBox HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Size -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Size" styleClass="form-label" />
+						<ComboBox HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Gauge -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Gauge" styleClass="form-label" />
+						<ComboBox HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Backing -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Backing" styleClass="form-label" />
+						<ComboBox HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Notes -->
+					<VBox spacing="5">
+						<Label text="Notes" styleClass="form-label" />
+						<TextArea prefRowCount="2" wrapText="true" maxHeight="80" />
+					</VBox>
+
+				</VBox>
+
+				<!-- Amount -->
+				<HBox spacing="8" alignment="CENTER_LEFT">
+					<Label text="Amount" styleClass="form-label" />
+					<TextField HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+				</HBox>
+
+				<Button text="Add Plate" styleClass="card-btn" />
+
+			</VBox>
+
+
+			<!-- CARD 4 -->
+			<!-- CARD : PAPER -->
+			<VBox GridPane.columnIndex="0" GridPane.rowIndex="1"
+				spacing="15" styleClass="card" maxWidth="360">
+
+				<Label text="PAPER" styleClass="card-title" />
+
+				<VBox spacing="10">
+
+					<!-- Qty -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Qty" styleClass="form-label" />
+						<TextField HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Units -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Units" styleClass="form-label" />
+						<ComboBox HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Size -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Size" styleClass="form-label" />
+						<ComboBox HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- GSM -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="GSM" styleClass="form-label" />
+						<ComboBox HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Type -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Type" styleClass="form-label" />
+						<ComboBox HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Notes -->
+					<VBox spacing="5">
+						<Label text="Notes" styleClass="form-label" />
+						<TextArea prefRowCount="2" wrapText="true" maxHeight="80" />
+					</VBox>
+
+				</VBox>
+
+				<!-- Amount -->
+				<HBox spacing="8" alignment="CENTER_LEFT">
+					<Label text="Amount" styleClass="form-label" />
+					<TextField HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+				</HBox>
+
+				<Button text="Add Paper" styleClass="card-btn" />
+			</VBox>
+
+
+			<!-- CARD 5 -->
+			<!-- CARD : BINDING -->
+			<VBox GridPane.columnIndex="1" GridPane.rowIndex="1"
+				spacing="15" styleClass="card" maxWidth="360">
+
+				<Label text="BINDING" styleClass="card-title" />
+
+				<VBox spacing="10">
+
+					<!-- Process -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Process" styleClass="form-label" />
+						<ComboBox HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Quantity -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Qty" styleClass="form-label" />
+						<TextField HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Rate -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Rate" styleClass="form-label" />
+						<TextField HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Notes -->
+					<VBox spacing="5">
+						<Label text="Notes" styleClass="form-label" />
+						<TextArea prefRowCount="2" wrapText="true" maxHeight="80" />
+					</VBox>
+
+				</VBox>
+
+				<!-- Amount -->
+				<HBox spacing="8" alignment="CENTER_LEFT">
+					<Label text="Amount" styleClass="form-label" />
+					<TextField HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+				</HBox>
+
+				<Button text="Add Binding" styleClass="card-btn" />
+			</VBox>
+
+
+			<!-- CARD 6 -->
+			<!-- CARD : LAMINATION -->
+			<VBox GridPane.columnIndex="2" GridPane.rowIndex="1"
+				spacing="15" styleClass="card" maxWidth="360">
+
+				<Label text="LAMINATION" styleClass="card-title" />
+
+				<VBox spacing="10">
+
+					<!-- Quantity -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Qty" styleClass="form-label" />
+						<TextField HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Unit -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Unit" styleClass="form-label" />
+						<ComboBox HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Type -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Type" styleClass="form-label" />
+						<ComboBox HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Side -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Side" styleClass="form-label" />
+						<ComboBox HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Size -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Size" styleClass="form-label" />
+						<ComboBox HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					</HBox>
+
+					<!-- Notes -->
+					<VBox spacing="5">
+						<Label text="Notes" styleClass="form-label" />
+						<TextArea prefRowCount="2" wrapText="true" maxHeight="80" />
+					</VBox>
+
+				</VBox>
+
+				<!-- Amount -->
+				<HBox spacing="8" alignment="CENTER_LEFT">
+					<Label text="Amount" styleClass="form-label" />
+					<TextField HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+				</HBox>
+
+				<Button text="Add Lamination" styleClass="card-btn" />
+			</VBox>
+
+
+		</GridPane>
+
+	</ScrollPane>
+
+	<!-- ========================================================= -->
+	<!-- 2️⃣ JOB SUMMARY - FULL WIDTH, RESPONSIVE -->
+	<!-- ========================================================= -->
+	<!-- ========================================================= -->
+	<!-- 2️⃣ JOB SUMMARY - FULL WIDTH, RESPONSIVE -->
+	<!-- ========================================================= -->
+	<VBox spacing="15" styleClass="summary-box" VBox.vgrow="SOMETIMES">
+
+		<padding>
+			<Insets top="20" right="20" bottom="20" left="20" />
+		</padding>
+
+		<!-- Heading + Add Job button on same row -->
+		<HBox alignment="CENTER_LEFT" spacing="10">
+			<Label text="Job Summary" styleClass="summary-title" />
+
+			<!-- Push button to right side -->
+			<Pane HBox.hgrow="ALWAYS" />
+
+			<Button text="Add Job" styleClass="primary-btn" />
+		</HBox>
+
+		<!-- Scrollable Summary Content -->
+		<ScrollPane fitToWidth="true" vbarPolicy="AS_NEEDED"
+			hbarPolicy="NEVER" VBox.vgrow="ALWAYS" styleClass="summary-scroll">
+
+			<VBox spacing="10" styleClass="summary-container">
+				<Label text="No job items added yetNo job items added yet No job items added yet
+				No job items added yet
+				No job items added yet " styleClass="summary-item" />
+			</VBox>
+
+		</ScrollPane>
+
+	</VBox>
+
+
+</VBox>

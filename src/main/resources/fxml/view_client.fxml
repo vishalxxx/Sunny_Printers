@@ -23,7 +23,7 @@
 
 	<!-- TABLE CARD -->
 	<VBox styleClass="table-card">
-	
+
 		<TableView fx:id="clientTable" styleClass="client-table">
 
 			<columns>
@@ -42,12 +42,15 @@
 					prefWidth="240" />
 				<TableColumn fx:id="gstCol" text="GST" prefWidth="140" />
 				<TableColumn fx:id="panCol" text="PAN" prefWidth="140" />
+
+				<!-- ⭐ CORRECT — Do NOT add type attribute -->
 				<TableColumn fx:id="actionCol" text="Actions"
 					prefWidth="220" />
 			</columns>
 
 		</TableView>
-		
+
+
 	</VBox>
 
 </VBox>

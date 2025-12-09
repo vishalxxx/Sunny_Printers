@@ -218,6 +218,16 @@ public class MainController implements Initializable {
 	}
 
 	@FXML
+	private void loadAddJob(MouseEvent event) {
+		try {
+			Parent addJobView = FXMLLoader.load(getClass().getResource("/fxml/ht.fxml"));
+			centerRoot.getChildren().setAll(addJobView);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	@FXML
 	private void loadViewClients(MouseEvent event) {
 		try {
 			Parent view = FXMLLoader.load(getClass().getResource("/fxml/view_client.fxml"));

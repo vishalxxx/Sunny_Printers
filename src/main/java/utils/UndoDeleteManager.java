@@ -27,4 +27,5 @@ public class UndoDeleteManager {
 	public static void clear() {
 		lastDeletedClient = null;
 	}
+
 }
