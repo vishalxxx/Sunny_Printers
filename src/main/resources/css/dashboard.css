@@ -3,8 +3,10 @@
    ====================================================== */
 .root {
     -fx-background-color: #000000;
-    -fx-font-size: 1em;     /* base scalable size */
+	-fx-font-size: 1.15em;    /* Slightly larger */
     -fx-text-fill: #f5f5f5;
+	-fx-padding: 0.5em;
+
 }
 
 /* ======================================================
@@ -18,7 +20,7 @@
 
 .page-title {
     -fx-text-fill: #ffffff;
-    -fx-font-size: 1.4em;
+    -fx-font-size: 1.6em;
     -fx-font-weight: bold;
 }
 
@@ -49,6 +51,8 @@
     -fx-alignment: CENTER_LEFT;
     -fx-background-radius: 0.5em;
 	-fx-wrap-text: true;
+	-fx-font-size: 1.3em;
+	
 
 }
 
@@ -62,13 +66,13 @@
 
 .sidebar-text {
     -fx-text-fill: #f5f5f5;
-    -fx-font-size: 0.95em;
+    -fx-font-size: 1.2em;
 }
 
 .sidebar-section-header {
     -fx-padding: 1.1em 0.6em 0.6em 0.6em;
     -fx-text-fill: #aaaaaa;
-    -fx-font-size: 0.9em;
+    -fx-font-size: 1.15em;
     -fx-font-weight: bold;
 }
 
@@ -84,7 +88,7 @@
 
 .dashboard-title {
     -fx-text-fill: #ffffff;
-    -fx-font-size: 1.6em;
+    -fx-font-size: 1.8em;
     -fx-font-weight: bold;
 }
 
@@ -109,18 +113,44 @@
 
 .card-title {
     -fx-text-fill: #bbbbbb;
-    -fx-font-size: 1em;
+    -fx-font-size: 1.25em;
 }
 
 .card-value {
     -fx-text-fill: #ffffff;
-    -fx-font-size: 1.5em;
+    -fx-font-size: 1.9em;
     -fx-font-weight: bold;
 }
 
 /* ======================================================
    BOTTOM SECTION
    ====================================================== */
+   
+   /*---------------------Recent Activites--------------------------*/
+   .activity-row {
+       -fx-padding: 0.4em 0;
+       -fx-spacing: 0.4em;
+       -fx-alignment: CENTER_LEFT;
+   }
+
+   .activity-row Label {
+       -fx-text-fill: #dddddd;
+       -fx-font-size: 1.1em;
+   }
+
+   /* Make the LEFT label expand */
+   .activity-text {
+       -fx-max-width: 9999; /* allow it to stretch */
+   }
+
+   /* Force TIME label to stay right aligned */
+   .activity-time {
+       -fx-text-fill: #aaaaaa;
+       -fx-font-size: 1em;
+       -fx-alignment: CENTER_RIGHT;
+       -fx-text-alignment: RIGHT;
+   }
+
 
 .bottom-section {
     -fx-spacing: 1em;
@@ -134,7 +164,7 @@
 
 .bottom-title {
     -fx-text-fill: #ffffff;
-    -fx-font-size: 1.1em;
+    -fx-font-size: 1.2em;
     -fx-font-weight: bold;
 }
 
@@ -144,40 +174,56 @@
 
 .activity-list .label {
     -fx-text-fill: #dddddd;
-    -fx-font-size: 0.9em;
+    -fx-font-size: 1.2em;
 }
 
-/* ======================================================
-   NAVIGATION TILES (FIXED)
-   ====================================================== */
-   .nav-tile {
-       -fx-background-color: #e5e5e5;      /* light grey, no more black */
-       -fx-padding: 0.9em 1.1em;
-       -fx-spacing: 0.8em;
-       -fx-background-radius: 0.6em;
-       -fx-alignment: CENTER_LEFT;
-       -fx-cursor: hand;
+/* ================================================
+   NAVIGATION TILE — BLACKISH WITH SHADOW
+   ================================================ */
+.nav-tile {
+    -fx-background-color: linear-gradient(to bottom, #2b2b2b, #1f1f1f); /* smooth black gradient */
+    -fx-padding: 0.65em 0.9em;
+    -fx-spacing: 0.6em;
+    -fx-background-radius: 0.6em;
+    -fx-alignment: CENTER_LEFT;
+    -fx-cursor: hand;
 
-       -fx-border-color: #d0d0d0;
-       -fx-border-width: 0.12em;
-       -fx-border-radius: 0.6em;
+    /* Soft shadow */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 10, 0.15, 0, 2);
 
-   }
+    -fx-border-color: rgba(255,255,255,0.08);
+    -fx-border-width: 0.12em;
+    -fx-border-radius: 0.6em;
+}
 
-   .nav-tile:hover {
-       -fx-background-color: #f2f2f2;      /* light hover */
-   }
+/* Hover Effect */
+.nav-tile:hover {
+    -fx-background-color: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
+	-fx-effect: dropshadow(gaussian, rgba(255,255,255,0.12), 14, 0.20, 0, 0);
+    -fx-translate-y: -1px; /* slight lift effect */
+}
 
-   .nav-tile .label {
-       -fx-text-fill: #303030;
-       -fx-font-size: 1em;
-       -fx-font-weight: bold;
-   }
+/* Clicking effect */
+.nav-tile:pressed {
+    -fx-background-color: linear-gradient(to bottom, #1d1d1d, #141414);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 5, 0.10, 0, 1);
+    -fx-translate-y: 1px; /* press down */
+}
 
-   .tile-icon {
-       -fx-fit-width: 26;
-       -fx-fit-height: 26;
-   }
+/* Tile label (white text) */
+.nav-tile .label {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 1.15em;
+    -fx-font-weight: bold;
+}
+
+/* Tile icon */
+.tile-icon {
+    -fx-fit-width: 26;
+    -fx-fit-height: 26;
+    -fx-opacity: 0.9;
+}
+
 /* ======================================================
    GLOBAL ICON STYLE
    ====================================================== */

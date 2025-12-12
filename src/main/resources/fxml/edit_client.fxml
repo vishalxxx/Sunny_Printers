@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.*?>
+
+<ScrollPane xmlns="http://javafx.com/javafx"
+	xmlns:fx="http://javafx.com/fxml"
+	fx:controller="controller.EditClientController" fitToWidth="true"
+	stylesheets="@../css/edit_client.css" styleClass="center-area">
+
+	<content>
+		<VBox spacing="25" fillWidth="true">
+
+			<!-- TITLE -->
+			<Label text="Edit Client Details" styleClass="dashboard-title" />
+
+			<!-- FORM -->
+			<GridPane hgap="18" vgap="18" styleClass="form-grid">
+
+				<columnConstraints>
+					<ColumnConstraints percentWidth="30" />
+					<ColumnConstraints percentWidth="70" />
+				</columnConstraints>
+
+				<!-- Business Name -->
+				<Label text="Business Name:" GridPane.rowIndex="0"
+					styleClass="form-label" />
+				<TextField fx:id="businessNameField" GridPane.rowIndex="0"
+					GridPane.columnIndex="1" styleClass="form-input" />
+
+				<!-- Client Name -->
+				<Label text="Client Name:" GridPane.rowIndex="1"
+					styleClass="form-label" />
+				<TextField fx:id="clientNameField" GridPane.rowIndex="1"
+					GridPane.columnIndex="1" styleClass="form-input" />
+
+				<!-- Nickname -->
+				<Label text="Nick Name:" GridPane.rowIndex="2"
+					styleClass="form-label" />
+				<TextField fx:id="nickNameField" GridPane.rowIndex="2"
+					GridPane.columnIndex="1" styleClass="form-input" />
+
+				<!-- Phone -->
+				<Label text="Phone Number:" GridPane.rowIndex="3"
+					styleClass="form-label" />
+				<TextField fx:id="phoneField" GridPane.rowIndex="3"
+					GridPane.columnIndex="1" styleClass="form-input" />
+
+				<!-- Alt Phone -->
+				<Label text="Alt Phone:" GridPane.rowIndex="4"
+					styleClass="form-label" />
+				<TextField fx:id="altPhoneField" GridPane.rowIndex="4"
+					GridPane.columnIndex="1" styleClass="form-input" />
+
+				<!-- Email -->
+				<Label text="Email:" GridPane.rowIndex="5"
+					styleClass="form-label" />
+				<TextField fx:id="emailField" GridPane.rowIndex="5"
+					GridPane.columnIndex="1" styleClass="form-input" />
+
+				<!-- GST -->
+				<Label text="GST Number:" GridPane.rowIndex="6"
+					styleClass="form-label" />
+				<TextField fx:id="gstField" GridPane.rowIndex="6"
+					GridPane.columnIndex="1" styleClass="form-input" />
+
+				<!-- PAN -->
+				<Label text="PAN Number:" GridPane.rowIndex="7"
+					styleClass="form-label" />
+				<TextField fx:id="panField" GridPane.rowIndex="7"
+					GridPane.columnIndex="1" styleClass="form-input" />
+
+				<!-- Billing Address -->
+				<Label text="Billing Address:" GridPane.rowIndex="8"
+					styleClass="form-label" />
+				<TextArea fx:id="billingAddressField" GridPane.rowIndex="8"
+					GridPane.columnIndex="1" prefRowCount="3"
+					styleClass="form-textarea" />
+
+				<!-- Shipping Address -->
+				<Label text="Shipping Address:" GridPane.rowIndex="9"
+					styleClass="form-label" />
+				<TextArea fx:id="shippingAddressField"
+					GridPane.rowIndex="9" GridPane.columnIndex="1" prefRowCount="3"
+					styleClass="form-textarea" />
+
+				<!-- Notes -->
+				<Label text="Notes:" GridPane.rowIndex="10"
+					styleClass="form-label" />
+				<TextArea fx:id="notesField" GridPane.rowIndex="10"
+					GridPane.columnIndex="1" prefRowCount="2"
+					styleClass="form-textarea" />
+
+			</GridPane>
+
+			<!-- Update Button -->
+			<HBox alignment="CENTER">
+				<Button text="Update Client" styleClass="primary-button"
+					onAction="#handleUpdateClient" />
+			</HBox>
+
+		</VBox>
+	</content>
+
+</ScrollPane>

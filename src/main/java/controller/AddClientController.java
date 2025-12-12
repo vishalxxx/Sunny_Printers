@@ -1,43 +1,103 @@
 package controller;
 
+import java.net.URL;
+import java.util.ResourceBundle;
+
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
+import javafx.fxml.Initializable;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.stage.Stage;
+import model.Client;
+import repository.ClientRepository;
+import utils.Toast;
 
-public class AddClientController {
+public class AddClientController implements Initializable {
 
-    @FXML private TextField clientNameField;
-    @FXML private TextField clientContactField;
-    @FXML private TextField clientEmailField;
-    @FXML private TextArea clientAddressField;
+	// ---------- FORM FIELDS ----------
+	@FXML
+	private TextField businessNameField;
+	@FXML
+	private TextField clientNameField;
+	@FXML
+	private TextField nickNameField;
+	@FXML
+	private TextField phoneField;
+	@FXML
+	private TextField altPhoneField;
+	@FXML
+	private TextField emailField;
+	@FXML
+	private TextField gstField;
+	@FXML
+	private TextField panField;
 
-    @FXML
-    public void initialize() {
-        // optional init code
-    }
+	@FXML
+	private TextArea billingAddressField;
+	@FXML
+	private TextArea shippingAddressField;
+	@FXML
+	private TextArea notesField;
 
-    @FXML
-    public void handleSaveClient() {
-        String name = clientNameField.getText();
-        String contact = clientContactField.getText();
-        if (name == null || name.isBlank() || contact == null || contact.isBlank()) {
-            showAlert(Alert.AlertType.ERROR, "Validation", "Name and Contact are required.");
-            return;
-        }
-        // For now just show success — hook to DAO later
-        showAlert(Alert.AlertType.INFORMATION, "Saved", "Client saved (stub).");
-        clientNameField.clear();
-        clientContactField.clear();
-        clientEmailField.clear();
-        clientAddressField.clear();
-    }
+	@Override
+	public void initialize(URL location, ResourceBundle resources) {
+		// Nothing required yet
+	}
 
-    private void showAlert(Alert.AlertType type, String title, String msg) {
-        Alert a = new Alert(type);
-        a.setTitle(title);
-        a.setHeaderText(null);
-        a.setContentText(msg);
-        a.showAndWait();
-    }
+	// ============================================================
+	// SAVE CLIENT BUTTON
+	// ============================================================
+	@FXML
+	private void handleSaveClient() {
+
+		// Basic validation
+		if (businessNameField.getText().isEmpty() || clientNameField.getText().isEmpty()
+				|| phoneField.getText().isEmpty()) {
+
+			System.out.println("⚠ Required fields missing!");
+			return;
+		}
+
+		// Create Client object
+		Client client = new Client(businessNameField.getText(), clientNameField.getText(), nickNameField.getText(),
+				phoneField.getText(), altPhoneField.getText(), emailField.getText(), gstField.getText(),
+				panField.getText(), billingAddressField.getText(), shippingAddressField.getText(),
+				notesField.getText());
+
+		// Save to database
+		ClientRepository repo = new ClientRepository();
+		boolean saved = repo.save(client);
+
+		if (saved) {
+			System.out.println("✔ Client saved successfully!");
+
+			// Clear fields after saving
+			clearForm();
+
+			// Future step: show toast
+			// Toast.show("Client saved successfully!");
+			Stage stage = (Stage) businessNameField.getScene().getWindow();
+			Toast.show(stage, "Client saved successfully!");
+		} else {
+			System.out.println("❌ Failed to save client.");
+		}
+	}
+
+	// ============================================================
+	// CLEAR FORM FIELDS
+	// ============================================================
+	private void clearForm() {
+		businessNameField.clear();
+		clientNameField.clear();
+		nickNameField.clear();
+		phoneField.clear();
+		altPhoneField.clear();
+		emailField.clear();
+		gstField.clear();
+		panField.clear();
+
+		billingAddressField.clear();
+		shippingAddressField.clear();
+		notesField.clear();
+	}
 }
