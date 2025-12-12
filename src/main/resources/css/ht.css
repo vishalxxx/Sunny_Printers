@@ -135,6 +135,27 @@
     -fx-background-color: rgba(45,140,255,0.15);
 }
 
+/* Force full-width ComboBoxes inside cards */
+.card .combo-box {
+    -fx-pref-width: 100%;
+    -fx-max-width: Infinity;
+}
+
+/* Fix dark-theme ComboBox selected text */
+.combo-box-base .text {
+    -fx-fill: white;
+}
+.combo-box-popup .list-view .list-cell:hover {
+    -fx-background-color: #2a2a2a;
+}
+
+/* Dropdown: keep text white even when selected */
+.combo-box-popup .list-view .list-cell:selected {
+    -fx-background-color: #333;
+    -fx-text-fill: white;
+}
+
+
 /* =========================================================
    CENTER ALL CARD BUTTONS + PUSH TO BOTTOM
    ========================================================= */
@@ -142,7 +163,6 @@
 .card > HBox > Button {
     -fx-max-width: Infinity;
     -fx-alignment: center;
-    -fx-vgrow: ALWAYS;
 }
 
 /* =========================================================
@@ -267,3 +287,11 @@
     -fx-text-fill: white;
     -fx-effect: dropshadow(gaussian, rgba(45,140,255,0.4), 10, 0.2, 0, 2);
 }
+.summary-box {
+    -fx-background-color: #141414;
+    -fx-padding: 10 15 15 15;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 20, 0.2, 0, 6);
+    -fx-pref-height: 420;   /* ⬅ Add this */
+}
+
