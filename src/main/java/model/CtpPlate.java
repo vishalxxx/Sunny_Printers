@@ -10,7 +10,14 @@ public class CtpPlate implements Serializable {
 	private String notes;
 	private String amount;
 
-	public CtpPlate() {
+	private Supplier supplier;
+
+	public Supplier getSupplier() {
+		return supplier;
+	}
+
+	public void setSupplier(Supplier supplier) {
+		this.supplier = supplier;
 	}
 
 	// getters/setters...
@@ -73,7 +80,10 @@ public class CtpPlate implements Serializable {
 		if (backing != null)
 			s.append(backing).append(" - ");
 		if (amount != null)
-			s.append("₹").append(amount);
+			s.append("₹").append(amount).append(" - ");
+		if (supplier != null)
+			s.append("Supplier: ").append(supplier.getName()).append(" - ");
+
 		return s.toString().trim();
 	}
 

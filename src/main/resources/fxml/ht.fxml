@@ -17,6 +17,12 @@
 	styleClass="root-container" stylesheets="@../css/ht.css"
 	fx:controller="controller.AddJobController">
 
+
+	<ComboBox fx:id="clientCombo"
+          promptText="Search client by Name / GST / Mobile"
+          editable="true"
+          HBox.hgrow="ALWAYS"/>
+
 	<!-- ========================================================= -->
 	<!-- 1️⃣ SCROLLABLE CARD AREA -->
 	<!-- ========================================================= -->
@@ -105,7 +111,7 @@
 					<!-- Units -->
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Units" styleClass="form-label" />
-						<ComboBox fx:id="printUnitsCombo" HBox.hgrow="ALWAYS" >
+						<ComboBox fx:id="printUnitsCombo" HBox.hgrow="ALWAYS">
 							<items>
 								<FXCollections fx:factory="observableArrayList">
 									<String fx:value="Sheet" />
@@ -187,7 +193,7 @@
 				</HBox>
 
 				<Button text="Add Printing" styleClass="card-btn"
-					onAction="#handleAddPrinting" />
+					fx:id="addPrintingBtn" onAction="#handleAddPrinting" />
 
 			</VBox>
 
@@ -205,31 +211,72 @@
 					<!-- Quantity -->
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Qty" styleClass="form-label" />
-						<ComboBox fx:id="ctpQtyCombo" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+						<TextField fx:id="ctpQtyField" HBox.hgrow="ALWAYS"
+							maxWidth="Infinity" />
 					</HBox>
 
 					<!-- Size -->
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Size" styleClass="form-label" />
-						<ComboBox fx:id="ctpSizeCombo" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+						<ComboBox fx:id="ctpSizeCombo" HBox.hgrow="ALWAYS"
+							maxWidth="Infinity">
+							<items>
+								<FXCollections fx:factory="observableArrayList">
+									<String fx:value="19x25" />
+									<String fx:value="20x30" />
+									<String fx:value="23x36" />
+									<String fx:value="25x36" />
+									<String fx:value="28x40" />
+									<String fx:value="30x40" />
+								</FXCollections>
+							</items>
+						</ComboBox>
 					</HBox>
 
 					<!-- Gauge -->
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Gauge" styleClass="form-label" />
-						<ComboBox fx:id="ctpGaugeCombo" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+						<ComboBox fx:id="ctpGaugeCombo" HBox.hgrow="ALWAYS"
+							maxWidth="Infinity">
+							<items>
+								<FXCollections fx:factory="observableArrayList">
+									<String fx:value="0.15 mm" />
+									<String fx:value="0.20 mm" />
+									<String fx:value="0.25 mm" />
+									<String fx:value="0.30 mm" />
+								</FXCollections>
+							</items>
+						</ComboBox>
 					</HBox>
 
 					<!-- Backing -->
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Backing" styleClass="form-label" />
-						<ComboBox fx:id="ctpBackingCombo" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+						<ComboBox fx:id="ctpBackingCombo" HBox.hgrow="ALWAYS"
+							maxWidth="Infinity">
+							<items>
+								<FXCollections fx:factory="observableArrayList">
+									<String fx:value="Positive" />
+									<String fx:value="Negative" />
+									<String fx:value="Thermal" />
+								</FXCollections>
+							</items>
+						</ComboBox>
 					</HBox>
+
+					<!-- Supplier -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Supplier" styleClass="form-label" />
+						<ComboBox fx:id="ctpSupplierCombo" HBox.hgrow="ALWAYS"
+							maxWidth="Infinity" prefWidth="150" />
+					</HBox>
+
 
 					<!-- Notes -->
 					<VBox spacing="5">
 						<Label text="Notes" styleClass="form-label" />
-						<TextArea fx:id="ctpNotesArea" prefRowCount="2" wrapText="true" maxHeight="80" />
+						<TextArea fx:id="ctpNotesArea" prefRowCount="2"
+							wrapText="true" maxHeight="80" />
 					</VBox>
 
 				</VBox>
@@ -237,11 +284,12 @@
 				<!-- Amount -->
 				<HBox spacing="8" alignment="CENTER_LEFT">
 					<Label text="Amount" styleClass="form-label" />
-					<TextField fx:id="ctpAmountField" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					<TextField fx:id="ctpAmountField" HBox.hgrow="ALWAYS"
+						maxWidth="Infinity" />
 				</HBox>
 
 				<Button text="Add Plate" styleClass="card-btn"
-					onAction="#handleAddCtpPlate" />
+					fx:id="addPlateBtn" onAction="#handleAddCtpPlate" />
 
 			</VBox>
 
@@ -258,37 +306,117 @@
 					<!-- Qty -->
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Qty" styleClass="form-label" />
-						<TextField fx:id="paperQtyField" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+						<TextField fx:id="paperQtyField" HBox.hgrow="ALWAYS"
+							maxWidth="Infinity" />
 					</HBox>
 
 					<!-- Units -->
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Units" styleClass="form-label" />
-						<ComboBox fx:id="paperUnitsCombo" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+						<ComboBox fx:id="paperUnitsCombo" HBox.hgrow="ALWAYS"
+							maxWidth="Infinity">
+							<items>
+								<FXCollections fx:factory="observableArrayList">
+									<String fx:value="Sheet" />
+									<String fx:value="Rim" />
+									<String fx:value="Bundle" />
+									<String fx:value="Thousand" />
+									<String fx:value="Kg" />
+									<String fx:value="Roll" />
+									<String fx:value="Packet" />
+								</FXCollections>
+							</items>
+
+
+
+
+						</ComboBox>
 					</HBox>
 
 					<!-- Size -->
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Size" styleClass="form-label" />
-						<ComboBox fx:id="paperSizeCombo" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+						<ComboBox fx:id="paperSizeCombo" HBox.hgrow="ALWAYS"
+							maxWidth="Infinity">
+							<items>
+								<FXCollections fx:factory="observableArrayList">
+									<String fx:value="12x18" />
+									<String fx:value="13x19" />
+									<String fx:value="17x22" />
+									<String fx:value="19x25" />
+									<String fx:value="20x30" />
+									<String fx:value="23x36" />
+									<String fx:value="25x36" />
+									<String fx:value="28x40" />
+								</FXCollections>
+							</items>
+						</ComboBox>
 					</HBox>
 
 					<!-- GSM -->
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="GSM" styleClass="form-label" />
-						<ComboBox fx:id="paperGsmCombo" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+						<ComboBox fx:id="paperGsmCombo" HBox.hgrow="ALWAYS"
+							maxWidth="Infinity">
+							<items>
+								<FXCollections fx:factory="observableArrayList">
+									<String fx:value="54" />
+									<String fx:value="60" />
+									<String fx:value="70" />
+									<String fx:value="80" />
+									<String fx:value="90" />
+									<String fx:value="100" />
+									<String fx:value="120" />
+									<String fx:value="130" />
+									<String fx:value="170" />
+									<String fx:value="200" />
+									<String fx:value="250" />
+									<String fx:value="300" />
+									<String fx:value="350" />
+									<String fx:value="400" />
+								</FXCollections>
+							</items>
+
+						</ComboBox>
 					</HBox>
 
 					<!-- Type -->
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Type" styleClass="form-label" />
-						<ComboBox fx:id="paperTypeCombo" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+						<ComboBox fx:id="paperTypeCombo" HBox.hgrow="ALWAYS"
+							maxWidth="Infinity">
+
+							<items>
+								<FXCollections fx:factory="observableArrayList">
+									<String fx:value="Maplitho" />
+									<String fx:value="Art Paper" />
+									<String fx:value="Art Card" />
+									<String fx:value="Duplex" />
+									<String fx:value="Kraft" />
+									<String fx:value="NCR" />
+									<String fx:value="Sticker" />
+									<String fx:value="Chromo" />
+									<String fx:value="Synthetic" />
+								</FXCollections>
+							</items>
+
+						</ComboBox>
 					</HBox>
+
+					<!-- Paper Source (Our or Client) -->
+					<!-- Paper Source -->
+					<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Paper Source" styleClass="form-label" />
+						<RadioButton fx:id="paperOurRadio" text="Our" />
+						<RadioButton fx:id="paperClientRadio" text="Client" />
+					</HBox>
+
 
 					<!-- Notes -->
 					<VBox spacing="5">
 						<Label text="Notes" styleClass="form-label" />
-						<TextArea fx:id="paperNotesArea"  prefRowCount="2" wrapText="true" maxHeight="80" />
+						<TextArea fx:id="paperNotesArea" prefRowCount="2"
+							wrapText="true" maxHeight="80" />
 					</VBox>
 
 				</VBox>
@@ -296,11 +424,12 @@
 				<!-- Amount -->
 				<HBox spacing="8" alignment="CENTER_LEFT">
 					<Label text="Amount" styleClass="form-label" />
-					<TextField fx:id="paperAmountField" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					<TextField fx:id="paperAmountField" HBox.hgrow="ALWAYS"
+						maxWidth="Infinity" />
 				</HBox>
 
 				<Button text="Add Paper" styleClass="card-btn"
-					onAction="#handleAddPaper" />
+					fx:id="addPaperBtn" onAction="#handleAddPaper" />
 			</VBox>
 
 
@@ -316,25 +445,58 @@
 					<!-- Process -->
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Process" styleClass="form-label" />
-						<ComboBox fx:id="bindingProcessCombo" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+						<ComboBox fx:id="bindingProcessCombo" HBox.hgrow="ALWAYS"
+							maxWidth="Infinity">
+
+							<items>
+								<FXCollections fx:factory="observableArrayList">
+
+									<String fx:value="Center Pin" />
+									<String fx:value="Side Pin" />
+									<String fx:value="Perfect Binding" />
+									<String fx:value="Hardcase Binding" />
+									<String fx:value="Spiral" />
+									<String fx:value="Wire-O" />
+									<String fx:value="Half Binding" />
+									<String fx:value="Full Binding" />
+									<String fx:value="Wiro Calendar" />
+									<String fx:value="Spiral Calendar" />
+									<String fx:value="Thermal Binding" />
+									<String fx:value="Gum / Glue Binding" />
+									<String fx:value="Pad Binding" />
+									<String fx:value="Folding" />
+									<String fx:value="Creasing" />
+									<String fx:value="Perforation" />
+									<String fx:value="Punching" />
+									<String fx:value="Die Cutting" />
+
+								</FXCollections>
+							</items>
+
+
+
+						</ComboBox>
 					</HBox>
 
 					<!-- Quantity -->
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Qty" styleClass="form-label" />
-						<TextField  fx:id="bindingQtyField" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+						<TextField fx:id="bindingQtyField" HBox.hgrow="ALWAYS"
+							maxWidth="Infinity" />
 					</HBox>
 
 					<!-- Rate -->
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Rate" styleClass="form-label" />
-						<TextField fx:id="bindingRateField" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+						<TextField fx:id="bindingRateField" HBox.hgrow="ALWAYS"
+							maxWidth="Infinity" />
 					</HBox>
 
 					<!-- Notes -->
 					<VBox spacing="5">
 						<Label text="Notes" styleClass="form-label" />
-						<TextArea fx:id="bindingNotesArea" prefRowCount="2" wrapText="true" maxHeight="80" />
+						<TextArea fx:id="bindingNotesArea" prefRowCount="2"
+							wrapText="true" maxHeight="80" />
 					</VBox>
 
 				</VBox>
@@ -342,11 +504,12 @@
 				<!-- Amount -->
 				<HBox spacing="8" alignment="CENTER_LEFT">
 					<Label text="Amount" styleClass="form-label" />
-					<TextField fx:id="bindingAmountField" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+					<TextField fx:id="bindingAmountField" HBox.hgrow="ALWAYS"
+						maxWidth="Infinity" />
 				</HBox>
 
 				<Button text="Add Binding" styleClass="card-btn"
-					onAction="#handleAddBinding" />
+					fx:id="addBindingBtn" onAction="#handleAddBinding" />
 			</VBox>
 
 
@@ -369,25 +532,75 @@
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Unit" styleClass="form-label" />
 						<ComboBox fx:id="lamUnitCombo" HBox.hgrow="ALWAYS"
-							maxWidth="Infinity" />
+							maxWidth="Infinity">
+							<items>
+								<FXCollections fx:factory="observableArrayList">
+									<String fx:value="Sheet" />
+									<String fx:value="Thousand" />
+									<String fx:value="Sq. Ft" />
+									<String fx:value="Sq. Meter" />
+									<String fx:value="Roll" />
+									<String fx:value="Packet" />
+								</FXCollections>
+							</items>
+
+						</ComboBox>
 					</HBox>
 
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Type" styleClass="form-label" />
 						<ComboBox fx:id="lamTypeCombo" HBox.hgrow="ALWAYS"
-							maxWidth="Infinity" />
+							maxWidth="Infinity">
+
+							<items>
+								<FXCollections fx:factory="observableArrayList">
+									<String fx:value="Gloss" />
+									<String fx:value="Matte" />
+									<String fx:value="Velvet" />
+									<String fx:value="Thermal Gloss" />
+									<String fx:value="Thermal Matte" />
+									<String fx:value="UV Gloss" />
+									<String fx:value="UV Matte" />
+									<String fx:value="Drip Off" />
+									<String fx:value="Scuff Free Matte" />
+								</FXCollections>
+							</items>
+
+						</ComboBox>
 					</HBox>
 
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Side" styleClass="form-label" />
 						<ComboBox fx:id="lamSideCombo" HBox.hgrow="ALWAYS"
-							maxWidth="Infinity" />
+							maxWidth="Infinity">
+							<items>
+								<FXCollections fx:factory="observableArrayList">
+									<String fx:value="Single Side" />
+									<String fx:value="Both Side" />
+								</FXCollections>
+							</items>
+
+						</ComboBox>
 					</HBox>
 
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Size" styleClass="form-label" />
 						<ComboBox fx:id="lamSizeCombo" HBox.hgrow="ALWAYS"
-							maxWidth="Infinity" />
+							maxWidth="Infinity">
+							<items>
+								<FXCollections fx:factory="observableArrayList">
+									<String fx:value="12x18" />
+									<String fx:value="13x19" />
+									<String fx:value="17x22" />
+									<String fx:value="19x25" />
+									<String fx:value="20x30" />
+									<String fx:value="23x36" />
+									<String fx:value="25x36" />
+									<String fx:value="28x40" />
+								</FXCollections>
+							</items>
+
+						</ComboBox>
 					</HBox>
 
 					<VBox spacing="5">
@@ -405,7 +618,7 @@
 				</HBox>
 
 				<Button text="Add Lamination" styleClass="card-btn"
-					onAction="#handleAddLamination" />
+					fx:id="addLaminationBtn" onAction="#handleAddLamination" />
 			</VBox>
 
 
@@ -416,15 +629,6 @@
 		</GridPane>
 
 	</ScrollPane>
-
-	<!-- ========================================================= -->
-	<!-- 2️⃣ JOB SUMMARY - FULL WIDTH, RESPONSIVE -->
-	<!-- ========================================================= -->
-	<!-- ========================================================= -->
-	<!-- 2️⃣ JOB SUMMARY - FULL WIDTH, RESPONSIVE -->
-	<!-- ========================================================= -->
-	<!-- SUMMARY BOX -->
-	<!-- SUMMARY BOX -->
 
 
 
