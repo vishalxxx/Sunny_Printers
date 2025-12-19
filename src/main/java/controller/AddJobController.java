@@ -26,16 +26,21 @@ import model.CtpPlate;
 import model.Job;
 import model.Lamination;
 import model.Paper;
-import model.Printing;
 import model.Supplier;
 import service.ClientService;
+import service.JobItemService;
 import service.JobService;
 import service.SupplierService;
 
 public class AddJobController {
 	private final ObservableList<Client> clientItems = javafx.collections.FXCollections.observableArrayList();
 
-	private Job currentJob = new Job();
+	private Job currentJob;
+
+	public void setCurrentJob(Job job) {
+		this.currentJob = job;
+	}
+
 	@FXML
 	private RadioButton paperOurRadio;
 	@FXML
@@ -214,15 +219,10 @@ public class AddJobController {
 	@FXML
 	private void handleAddPrinting() {
 
-		Printing p = new Printing();
-		p.setQty(printQtyField.getText());
-		p.setUnits(printUnitsCombo.getValue());
-		p.setSet(printSetField.getText());
-		p.setColor(printColorCombo.getValue());
-		p.setSide(printSideCombo.getValue());
-		p.setWithCtp(printCtpCombo.getValue());
-		p.setNotes(printNotesArea.getText());
-		p.setAmount(printAmountField.getText());
+		JobItemService js = new JobItemService();
+		js.addPrinting(currentJob.getId(), printQtyField.getText(), printUnitsCombo.getValue(), printSetField.getText(),
+				printColorCombo.getValue(), printSideCombo.getValue(), printCtpCombo.getValue(),
+				printNotesArea.getText(), printAmountField.getText());
 
 		// currentJob.addPrinting(p);
 

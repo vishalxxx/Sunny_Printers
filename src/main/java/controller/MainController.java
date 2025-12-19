@@ -19,10 +19,11 @@ import model.Job;
 import service.JobService;
 
 public class MainController implements Initializable {
+
+	Job currentJob = new Job();
 	// Center content container
 	@FXML
 	private VBox centerRoot;
-
 	// singleton-like reference so other controllers can reach MainController
 	private static MainController instance;
 
@@ -223,12 +224,18 @@ public class MainController implements Initializable {
 	private void loadAddJob(MouseEvent event) {
 		try {
 			JobService jobService = new JobService();
-
 			Job currentJob = jobService.createDraftJob();
 
 			System.out.println("Draft job created: " + currentJob.getJobNo());
-			Parent addJobView = FXMLLoader.load(getClass().getResource("/fxml/ht.fxml"));
+
+			FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ht.fxml"));
+			Parent addJobView = loader.load();
+
+			AddJobController addJobController = loader.getController();
+			addJobController.setCurrentJob(currentJob);
+
 			centerRoot.getChildren().setAll(addJobView);
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
