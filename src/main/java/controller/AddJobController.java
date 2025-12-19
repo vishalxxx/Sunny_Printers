@@ -27,10 +27,7 @@ import model.Paper;
 import model.Printing;
 import model.Supplier;
 import service.ClientService;
-import service.JobService;
 import service.SupplierService;
-import utils.JobSummaryFormatter;
-import utils.PopupUtil;
 
 public class AddJobController {
 
@@ -185,16 +182,16 @@ public class AddJobController {
 
 	@FXML
 	private void handleAddJobButton() {
-
-		String summaryText = JobSummaryFormatter.generateSummary(currentJob);
-
-		boolean confirmed = PopupUtil.showJobSummary(summaryText);
-
-		if (confirmed) {
-			JobService.saveJob(currentJob);
-			showSuccessMessage();
-			resetForm();
-		}
+//
+//		String summaryText = JobSummaryFormatter.generateSummary(currentJob);
+//
+//		boolean confirmed = PopupUtil.showJobSummary(summaryText);
+//
+//		if (confirmed) {
+//			// JobService.saveJob(currentJob);
+//			showSuccessMessage();
+//			resetForm();
+//		}
 	}
 
 	@FXML
@@ -210,7 +207,7 @@ public class AddJobController {
 		p.setNotes(printNotesArea.getText());
 		p.setAmount(printAmountField.getText());
 
-		currentJob.addPrinting(p);
+		// currentJob.addPrinting(p);
 
 		clearPrintingFields();
 	}
@@ -238,7 +235,7 @@ public class AddJobController {
 		plate.setAmount(ctpAmountField.getText());
 		plate.setSupplier(ctpSupplierCombo.getValue());
 
-		currentJob.addCtpPlate(plate);
+		// currentJob.addCtpPlate(plate);
 		clearCtpFields();
 	}
 
@@ -269,7 +266,7 @@ public class AddJobController {
 		String source = ((RadioButton) paperSourceGroup.getSelectedToggle()).getText();
 		paper.setSource(source);
 
-		currentJob.addPaper(paper);
+		// currentJob.addPaper(paper);
 		clearPaperFields();
 	}
 
@@ -295,7 +292,7 @@ public class AddJobController {
 		b.setNotes(bindingNotesArea.getText());
 		b.setAmount(bindingAmountField.getText());
 
-		currentJob.addBinding(b);
+		// currentJob.addBinding(b);
 		clearBindingFields();
 	}
 
@@ -319,7 +316,7 @@ public class AddJobController {
 		lam.setNotes(lamNotesArea.getText());
 		lam.setAmount(lamAmountField.getText());
 
-		currentJob.addLamination(lam);
+		// currentJob.addLamination(lam);
 		clearLaminationFields();
 	}
 

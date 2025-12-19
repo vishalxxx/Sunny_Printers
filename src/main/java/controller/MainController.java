@@ -15,6 +15,8 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import model.Job;
+import service.JobService;
 
 public class MainController implements Initializable {
 	// Center content container
@@ -220,6 +222,11 @@ public class MainController implements Initializable {
 	@FXML
 	private void loadAddJob(MouseEvent event) {
 		try {
+			JobService jobService = new JobService();
+
+			Job currentJob = jobService.createDraftJob();
+
+			System.out.println("Draft job created: " + currentJob.getJobNo());
 			Parent addJobView = FXMLLoader.load(getClass().getResource("/fxml/ht.fxml"));
 			centerRoot.getChildren().setAll(addJobView);
 		} catch (Exception e) {
