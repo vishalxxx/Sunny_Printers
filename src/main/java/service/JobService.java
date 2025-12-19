@@ -1,6 +1,7 @@
 package service;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 
 import model.Job;
 import repository.JobRepository;
@@ -31,6 +32,38 @@ public class JobService {
 
 		public static String generate() {
 			return "JOB-" + System.currentTimeMillis();
+		}
+	}
+
+	public void assignClient(Job job, int clientId) {
+
+		if (job == null || job.getId() == 0) {
+			throw new IllegalStateException("Job not initialized");
+		}
+
+		try (Connection con = DBConnection.getConnection()) {
+			con.setAutoCommit(false);
+
+			String sql = """
+					    UPDATE jobs
+					    SET client_id = ?, status = 'OPEN'
+					    WHERE id = ?
+					""";
+
+			try (PreparedStatement ps = con.prepareStatement(sql)) {
+				ps.setInt(1, clientId);
+				ps.setInt(2, job.getId());
+				ps.executeUpdate();
+			}
+
+			con.commit();
+
+			// 🔥 update in-memory job
+			job.setClientId(clientId);
+			job.setStatus("OPEN");
+
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to assign client to job", e);
 		}
 	}
 

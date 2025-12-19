@@ -50,7 +50,7 @@
 			<!-- ===================== CARD 1 : IMAGE UPLOAD ===================== -->
 
 			<VBox GridPane.columnIndex="0" GridPane.rowIndex="0"
-				spacing="15" styleClass="card" alignment="TOP_CENTER">
+				spacing="15" styleClass="card" alignment="TOP_CENTER" fx:id="fileCard">
 
 				<Label text="Job File (Image / PDF)" styleClass="card-title" />
 
@@ -96,7 +96,7 @@
 			<!-- CARD 2 : PRINTING -->
 			<!-- CARD 2 : PRINTING -->
 			<VBox GridPane.columnIndex="1" GridPane.rowIndex="0"
-				spacing="12" styleClass="card" maxWidth="360">
+				spacing="12" styleClass="card" maxWidth="360" fx:id="printingCard">
 
 				<Label text="PRINTING" styleClass="card-title" />
 
@@ -203,7 +203,7 @@
 			<!-- CARD 3 -->
 			<!-- CARD : CTP PLATE -->
 			<VBox GridPane.columnIndex="2" GridPane.rowIndex="0"
-				spacing="15" styleClass="card" maxWidth="360">
+				spacing="15" styleClass="card" maxWidth="360" fx:id="ctpCard">
 
 				<Label text="CTP PLATE" styleClass="card-title" />
 
@@ -297,7 +297,7 @@
 			<!-- CARD 4 -->
 			<!-- CARD : PAPER -->
 			<VBox GridPane.columnIndex="0" GridPane.rowIndex="1"
-				spacing="15" styleClass="card" maxWidth="360">
+				spacing="15" styleClass="card" maxWidth="360" fx:id="paperCard">
 
 				<Label text="PAPER" styleClass="card-title" />
 
@@ -436,7 +436,7 @@
 			<!-- CARD 5 -->
 			<!-- CARD : BINDING -->
 			<VBox GridPane.columnIndex="1" GridPane.rowIndex="1"
-				spacing="15" styleClass="card" maxWidth="360">
+				spacing="15" styleClass="card" maxWidth="360" fx:id="bindingCard">
 
 				<Label text="BINDING" styleClass="card-title" />
 
@@ -517,7 +517,7 @@
 			<!-- CARD : LAMINATION -->
 			<!-- CARD 6 : LAMINATION -->
 			<VBox GridPane.columnIndex="2" GridPane.rowIndex="1"
-				spacing="15" styleClass="card" maxWidth="360">
+				spacing="15" styleClass="card" maxWidth="360" fx:id="laminationCard">
 
 				<Label text="LAMINATION" styleClass="card-title" />
 

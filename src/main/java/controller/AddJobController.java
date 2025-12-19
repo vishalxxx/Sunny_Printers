@@ -2,6 +2,7 @@ package controller; // adjust if needed
 
 import java.io.File;
 
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -18,6 +19,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.util.StringConverter;
 import model.Binding;
 import model.Client;
 import model.CtpPlate;
@@ -27,9 +29,11 @@ import model.Paper;
 import model.Printing;
 import model.Supplier;
 import service.ClientService;
+import service.JobService;
 import service.SupplierService;
 
 public class AddJobController {
+	private final ObservableList<Client> clientItems = javafx.collections.FXCollections.observableArrayList();
 
 	private Job currentJob = new Job();
 	@FXML
@@ -52,6 +56,19 @@ public class AddJobController {
 	private final SupplierService supplierService = new SupplierService();
 
 	/* ========================= PRINTING ========================= */
+	@FXML
+	private VBox fileCard;
+	@FXML
+	private VBox printingCard;
+	@FXML
+	private VBox ctpCard;
+	@FXML
+	private VBox paperCard;
+	@FXML
+	private VBox bindingCard;
+	@FXML
+	private VBox laminationCard;
+
 	@FXML
 	private TextField printQtyField;
 	@FXML
@@ -534,45 +551,120 @@ public class AddJobController {
 		validate.run();
 	}
 
+	// ===== Client ComboBox State =====
+	private final ObservableList<Client> masterClients = javafx.collections.FXCollections.observableArrayList();
+
+	private final javafx.collections.transformation.FilteredList<Client> filteredClients = new javafx.collections.transformation.FilteredList<>(
+			masterClients);
+
+	private boolean clientLocked = false;
+	private Client selectedClient = null;
+
 	// ---------- initialize() wiring ----------
 	@FXML
 	public void initialize() {
+		filteredClients.setPredicate(c -> true);
 
-		clientCombo.getItems().setAll(clientService.getAllClients());
+		/* ================= INITIAL STATE ================= */
+
+		disableAllCards(true);
+
+		masterClients.setAll(clientService.getAllClients());
+		clientCombo.setItems(filteredClients);
+		clientCombo.setEditable(true);
+
+		/* ================= CELL RENDERING ================= */
+
 		clientCombo.setCellFactory(lv -> new ListCell<>() {
 			@Override
 			protected void updateItem(Client c, boolean empty) {
 				super.updateItem(c, empty);
-				if (empty || c == null) {
-					setText(null);
-				} else {
-					setText(c.getBusinessName() + " | " + c.getClientName() + " | " + c.getPhone() + " | "
-							+ c.getGst());
-				}
+				setText(empty || c == null ? null : c.getBusinessName() + " | " + c.getClientName());
 			}
 		});
-		clientCombo.setEditable(true);
 
-		clientCombo.getEditor().textProperty().addListener((obs, oldText, newText) -> {
-			if (newText == null)
-				return;
-
-			// fetch filtered list
-			clientCombo.getItems().setAll(clientService.searchClients(newText));
-
-			// keep dropdown open while typing
-			clientCombo.show();
+		clientCombo.setButtonCell(new ListCell<>() {
+			@Override
+			protected void updateItem(Client c, boolean empty) {
+				super.updateItem(c, empty);
+				setText(empty || c == null ? null : c.getBusinessName() + " | " + c.getClientName());
+			}
 		});
 
-		// this controls what is shown AFTER selection
-		clientCombo.setButtonCell(clientCombo.getCellFactory().call(null));
+		/* ================= STRING CONVERTER ================= */
 
-		// numeric-only
+		clientCombo.setConverter(new StringConverter<>() {
+			@Override
+			public String toString(Client c) {
+				return c == null ? "" : c.getBusinessName() + " | " + c.getClientName();
+			}
+
+			@Override
+			public Client fromString(String s) {
+				// 🔐 NEVER create new objects here
+				return clientCombo.getValue();
+			}
+		});
+
+		/* ================= LIVE SEARCH ================= */
+
+		/* ================= LIVE SEARCH ================= */
+
+		clientCombo.getEditor().textProperty().addListener((obs, oldText, newText) -> {
+
+			// 🚫 stop only after client is locked
+			if (clientLocked)
+				return;
+
+			String search = newText == null ? "" : newText.trim().toLowerCase();
+
+			filteredClients
+					.setPredicate(client -> search.isEmpty() || client.getBusinessName().toLowerCase().contains(search)
+							|| client.getClientName().toLowerCase().contains(search)
+							|| (client.getPhone() != null && client.getPhone().contains(search)));
+
+			// ✅ ensure dropdown is visible while typing
+			if (!clientCombo.isShowing()) {
+				clientCombo.show();
+			}
+		});
+
+		/* ================= SELECTION ================= */
+
+		clientCombo.valueProperty().addListener((obs, oldClient, newClient) -> {
+
+			if (newClient == null) {
+				clientLocked = false;
+				selectedClient = null;
+				disableAllCards(true);
+				return;
+			}
+
+			// 🔐 lock immediately
+			clientLocked = true;
+			selectedClient = newClient;
+
+			if (currentJob != null && currentJob.getId() > 0) {
+				new JobService().assignClient(currentJob, newClient.getId());
+			}
+
+			disableAllCards(false);
+		});
+
+		/* ================= RE-ENABLE SEARCH ON CLICK ================= */
+
+		clientCombo.getEditor().setOnMouseClicked(e -> {
+			clientLocked = false;
+			filteredClients.setPredicate(null);
+		});
+
+		/* ================= NUMERIC SAFETY ================= */
+
 		makeNumeric(printQtyField);
-		makeNumeric(printSetField); // set is numeric per your requirement
+		makeNumeric(printSetField);
 		makeNumeric(printAmountField);
-		makeNumeric(ctpAmountField);
 		makeNumeric(ctpQtyField);
+		makeNumeric(ctpAmountField);
 		makeNumeric(paperQtyField);
 		makeNumeric(paperAmountField);
 		makeNumeric(bindingQtyField);
@@ -581,27 +673,30 @@ public class AddJobController {
 		makeNumeric(lamQtyField);
 		makeNumeric(lamAmountField);
 
-		// setup validators
+		/* ================= VALIDATORS ================= */
+
 		setupPrintingValidation();
 		setupCtpValidation();
 		setupPaperValidation();
 		setupBindingValidation();
 		setupLaminationValidation();
-		loadSuppliers();
-		// ensure initial state (disable all add buttons)
+
 		addPrintingBtn.setDisable(true);
 		addPlateBtn.setDisable(true);
 		addPaperBtn.setDisable(true);
 		addBindingBtn.setDisable(true);
 		addLaminationBtn.setDisable(true);
 
-		// STEP: Create toggle group for paper selection
+		/* ================= SUPPLIERS ================= */
+
+		loadSuppliers();
+
+		/* ================= PAPER SOURCE ================= */
+
 		paperSourceGroup = new ToggleGroup();
 		paperOurRadio.setToggleGroup(paperSourceGroup);
 		paperClientRadio.setToggleGroup(paperSourceGroup);
-
 		paperOurRadio.setSelected(true);
-
 	}
 
 	private void loadSuppliers() {
@@ -624,12 +719,11 @@ public class AddJobController {
 
 	}
 
-	private void lockInvalidClientEntry() {
-		clientCombo.focusedProperty().addListener((obs, old, focused) -> {
-			if (!focused && !clientCombo.getItems().contains(clientCombo.getValue())) {
-				clientCombo.setValue(null);
-			}
-		});
+	private void disableAllCards(boolean disable) {
+		printingCard.setDisable(disable);
+		ctpCard.setDisable(disable);
+		paperCard.setDisable(disable);
+		bindingCard.setDisable(disable);
+		laminationCard.setDisable(disable);
 	}
-
 }
