@@ -22,7 +22,6 @@ import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
 import model.Binding;
 import model.Client;
-import model.CtpPlate;
 import model.Job;
 import model.Lamination;
 import model.Paper;
@@ -36,6 +35,7 @@ public class AddJobController {
 	private final ObservableList<Client> clientItems = javafx.collections.FXCollections.observableArrayList();
 
 	private Job currentJob;
+	private Supplier currentCtpSupplier;
 
 	public void setCurrentJob(Job job) {
 		this.currentJob = job;
@@ -106,6 +106,8 @@ public class AddJobController {
 	private TextField ctpAmountField;
 	@FXML
 	private ComboBox<Supplier> ctpSupplierCombo;
+	@FXML
+	private ComboBox<String> ctpColorCombo;
 
 	/* ========================= PAPER ========================= */
 	@FXML
@@ -243,14 +245,12 @@ public class AddJobController {
 	@FXML
 	private void handleAddCtpPlate() {
 
-		CtpPlate plate = new CtpPlate();
-		plate.setQty(ctpQtyField.getText());
-		plate.setSize(ctpSizeCombo.getValue());
-		plate.setGauge(ctpGaugeCombo.getValue());
-		plate.setBacking(ctpBackingCombo.getValue());
-		plate.setNotes(ctpNotesArea.getText());
-		plate.setAmount(ctpAmountField.getText());
-		plate.setSupplier(ctpSupplierCombo.getValue());
+		JobItemService js = new JobItemService();
+		js.addCtpItem(
+
+				currentJob.getId(), ctpQtyField.getText(), ctpSizeCombo.getValue(), ctpGaugeCombo.getValue(),
+				ctpBackingCombo.getValue(), ctpNotesArea.getText(), ctpAmountField.getText(),
+				ctpSupplierCombo.getValue(), ctpColorCombo.getValue());
 
 		// currentJob.addCtpPlate(plate);
 		clearCtpFields();

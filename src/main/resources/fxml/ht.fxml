@@ -232,7 +232,22 @@
 							</items>
 						</ComboBox>
 					</HBox>
-
+<HBox spacing="8" alignment="CENTER_LEFT">
+						<Label text="Color" styleClass="form-label" />
+						<ComboBox fx:id="ctpColorCombo" HBox.hgrow="ALWAYS">
+							<items>
+								<FXCollections fx:factory="observableArrayList">
+									<String fx:value="1 Color" />
+									<String fx:value="2 Color" />
+									<String fx:value="4 Color" />
+									<String fx:value="4 + 1" />
+									<String fx:value="4 + 4" />
+									<String fx:value="Multicolor" />
+									<String fx:value="Spot Color" />
+								</FXCollections>
+							</items>
+						</ComboBox>
+					</HBox>
 					<!-- Gauge -->
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Gauge" styleClass="form-label" />

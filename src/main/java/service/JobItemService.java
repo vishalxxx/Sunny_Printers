@@ -1,11 +1,15 @@
 package service;
 
+import model.CtpPlate;
 import model.JobItem;
+import model.Supplier;
+import repository.CtpItemRepository;
 import repository.JobItemRepository;
 
 public class JobItemService {
 
 	private final JobItemRepository repo = new JobItemRepository();
+	private final CtpItemRepository ctpRepo = new CtpItemRepository();
 
 	public JobItem addPrinting(int jobId, String qty, String units, String sets, String color, String side, String ctp,
 			String notes, String amountText) {
@@ -57,5 +61,59 @@ public class JobItemService {
 		/* ========= SAVE ========= */
 
 		return repo.save(item);
+
 	}
+
+	public void addCtpItem(int jobId, String qty, String size, String gauge, String backing, String notes,
+			String amount, Supplier supplier, String ctpColor) {
+
+		if (jobId <= 0) {
+			throw new IllegalArgumentException("Job not created");
+		}
+
+		// 2️⃣ Build JOB_ITEM description
+		StringBuilder desc = new StringBuilder();
+
+		desc.append("CTP Plate ");
+		desc.append(qty).append(" pcs");
+
+		if (size != null)
+			desc.append(", Size ").append(size);
+
+		if (gauge != null)
+			desc.append(", Gauge ").append(gauge);
+
+		if (backing != null)
+			desc.append(", ").append(backing);
+
+		if (notes != null && !notes.isBlank())
+			desc.append(" (").append(notes).append(")");
+
+		/* ========= MODEL ========= */
+
+		JobItem item = new JobItem();
+		item.setJobId(jobId);
+		item.setType("CTP");
+		item.setDescription(desc.toString());
+		item.setAmount(Double.valueOf(amount));
+		item.setSortOrder(1);
+
+		repo.save(item);
+
+		/* =========CTP MODEL=========== */
+		CtpPlate ctp = new CtpPlate();
+		ctp.setAmount(Double.valueOf(amount));
+		ctp.setBacking(backing);
+		ctp.setGauge(gauge);
+		ctp.setJobId(jobId);
+		ctp.setNotes(notes);
+		ctp.setQty(Integer.valueOf(qty));
+		ctp.setSize(size);
+		ctp.setSupplierId(supplier.getId());
+		ctp.setSupplierNameSnapshot(supplier.getName());
+		ctp.setColor(ctpColor);
+		ctpRepo.save(ctp);
+
+	}
+
 }
