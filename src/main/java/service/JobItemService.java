@@ -116,4 +116,111 @@ public class JobItemService {
 
 	}
 
+	public void addPaper(int jobId, String qty, String unit, String size, String gsm, String type, String notes,
+			String amount, String source) {
+
+		if (jobId <= 0) {
+			throw new IllegalArgumentException("Job not created");
+		}
+
+		// 2️⃣ Build JOB_ITEM description
+		StringBuilder desc = new StringBuilder();
+
+		desc.append("Paper ");
+
+		desc.append(qty).append(" ").append(unit);
+
+		if (size != null)
+			desc.append(", ").append(size);
+
+		if (gsm != null)
+			desc.append(", ").append(gsm).append(" GSM");
+
+		if (type != null)
+			desc.append(", ").append(type);
+
+		if (source != null)
+			desc.append(" (").append(source).append(")");
+
+		if (notes != null && notes.isBlank())
+			desc.append(" - ").append(notes);
+
+		// 3️⃣ Save job item
+		JobItem ji = new JobItem();
+		ji.setJobId(jobId);
+		ji.setType("PAPER");
+		ji.setDescription(desc.toString());
+		ji.setAmount(Double.valueOf(amount));
+
+		repo.save(ji);
+	}
+
+	public void addBinding(int jobId, String binding_type, String qty, String rate, String notes, String amount) {
+
+		if (jobId <= 0) {
+			throw new IllegalArgumentException("Job not created");
+		}
+
+		// 2️⃣ Build JOB_ITEM description
+		StringBuilder desc = new StringBuilder();
+
+		desc.append("Binding ");
+
+		desc.append(qty).append(" ");
+
+		if (binding_type != null)
+			desc.append(binding_type).append(" ");
+
+		if (rate != null)
+			desc.append("@").append(rate);
+
+		if (notes != null && notes.isBlank())
+			desc.append(" - ").append(notes);
+
+		// 3️⃣ Save job item
+		JobItem ji = new JobItem();
+		ji.setJobId(jobId);
+		ji.setType("BINDING");
+		ji.setDescription(desc.toString());
+		ji.setAmount(Double.valueOf(amount));
+
+		repo.save(ji);
+	}
+
+	public void addLamination(int jobId, String qty, String unit, String type, String side, String size, String notes,
+			String amount) {
+
+		if (jobId <= 0) {
+			throw new IllegalArgumentException("Job not created");
+		}
+
+		// 2️⃣ Build JOB_ITEM description
+		StringBuilder desc = new StringBuilder();
+
+		desc.append("Lamination ");
+
+		if (qty != null && unit != null)
+			desc.append(qty).append(" ").append(unit).append(" ");
+
+		if (type != null)
+			desc.append(type).append(" ");
+
+		if (side != null)
+			desc.append(side).append(" ");
+		if (size != null)
+			desc.append(size).append(" ");
+
+		if (notes != null && notes.isBlank())
+			desc.append(" - ").append(notes);
+
+		// 3️⃣ Save job item
+		JobItem ji = new JobItem();
+		ji.setJobId(jobId);
+		ji.setType("Lamination");
+		ji.setDescription(desc.toString());
+		ji.setAmount(Double.valueOf(amount));
+
+		repo.save(ji);
+	}
+
 }

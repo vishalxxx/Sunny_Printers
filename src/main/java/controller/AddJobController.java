@@ -262,6 +262,7 @@ public class AddJobController {
 		ctpGaugeCombo.setValue(null);
 		ctpBackingCombo.setValue(null);
 		ctpSupplierCombo.setValue(null);
+
 		ctpNotesArea.clear();
 		ctpAmountField.clear();
 
@@ -271,18 +272,14 @@ public class AddJobController {
 	private void handleAddPaper() {
 
 		Paper paper = new Paper();
-		paper.setQty(paperQtyField.getText());
-		paper.setUnits(paperUnitsCombo.getValue());
-		paper.setSize(paperSizeCombo.getValue());
-		paper.setGsm(paperGsmCombo.getValue());
-		paper.setType(paperTypeCombo.getValue());
-		paper.setNotes(paperNotesArea.getText());
-		paper.setAmount(paperAmountField.getText());
+		JobItemService js = new JobItemService();
 
 		// NEW: Set source (Our or Client)
 		String source = ((RadioButton) paperSourceGroup.getSelectedToggle()).getText();
-		paper.setSource(source);
 
+		js.addPaper(currentJob.getId(), paperQtyField.getText(), paperUnitsCombo.getValue(), paperSizeCombo.getValue(),
+				paperGsmCombo.getValue(), paperTypeCombo.getValue(), paperNotesArea.getText(),
+				paperAmountField.getText(), source);
 		// currentJob.addPaper(paper);
 		clearPaperFields();
 	}
@@ -303,11 +300,9 @@ public class AddJobController {
 	private void handleAddBinding() {
 
 		Binding b = new Binding();
-		b.setProcess(bindingProcessCombo.getValue());
-		b.setQty(bindingQtyField.getText());
-		b.setRate(bindingRateField.getText());
-		b.setNotes(bindingNotesArea.getText());
-		b.setAmount(bindingAmountField.getText());
+		JobItemService js = new JobItemService();
+		js.addBinding(currentJob.getId(), bindingProcessCombo.getValue(), bindingQtyField.getText(),
+				bindingRateField.getText(), bindingNotesArea.getText(), bindingAmountField.getText());
 
 		// currentJob.addBinding(b);
 		clearBindingFields();
@@ -325,13 +320,10 @@ public class AddJobController {
 	private void handleAddLamination() {
 
 		Lamination lam = new Lamination();
-		lam.setQty(lamQtyField.getText());
-		lam.setUnit(lamUnitCombo.getValue());
-		lam.setType(lamTypeCombo.getValue());
-		lam.setSide(lamSideCombo.getValue());
-		lam.setSize(lamSizeCombo.getValue());
-		lam.setNotes(lamNotesArea.getText());
-		lam.setAmount(lamAmountField.getText());
+		JobItemService js = new JobItemService();
+
+		js.addLamination(currentJob.getId(), lamQtyField.getText(), lamUnitCombo.getValue(), lamTypeCombo.getValue(),
+				lamSideCombo.getValue(), lamSizeCombo.getValue(), lamNotesArea.getText(), lamAmountField.getText());
 
 		// currentJob.addLamination(lam);
 		clearLaminationFields();

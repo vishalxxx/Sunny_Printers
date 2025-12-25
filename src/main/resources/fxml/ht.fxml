@@ -19,9 +19,8 @@
 
 
 	<ComboBox fx:id="clientCombo"
-          promptText="Search client by Name / GST / Mobile"
-          editable="true"
-          HBox.hgrow="ALWAYS"/>
+		promptText="Search client by Name / GST / Mobile" editable="true"
+		HBox.hgrow="ALWAYS" />
 
 	<!-- ========================================================= -->
 	<!-- 1️⃣ SCROLLABLE CARD AREA -->
@@ -50,7 +49,8 @@
 			<!-- ===================== CARD 1 : IMAGE UPLOAD ===================== -->
 
 			<VBox GridPane.columnIndex="0" GridPane.rowIndex="0"
-				spacing="15" styleClass="card" alignment="TOP_CENTER" fx:id="fileCard">
+				spacing="15" styleClass="card" alignment="TOP_CENTER"
+				fx:id="fileCard">
 
 				<Label text="Job File (Image / PDF)" styleClass="card-title" />
 
@@ -232,7 +232,7 @@
 							</items>
 						</ComboBox>
 					</HBox>
-<HBox spacing="8" alignment="CENTER_LEFT">
+					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Color" styleClass="form-label" />
 						<ComboBox fx:id="ctpColorCombo" HBox.hgrow="ALWAYS">
 							<items>
@@ -422,8 +422,11 @@
 					<!-- Paper Source -->
 					<HBox spacing="8" alignment="CENTER_LEFT">
 						<Label text="Paper Source" styleClass="form-label" />
-						<RadioButton fx:id="paperOurRadio" text="Our" />
-						<RadioButton fx:id="paperClientRadio" text="Client" />
+						<RadioButton fx:id="paperOurRadio" text="Our"
+							toggleGroup="$paperSourceGroup" selected="true" />
+
+						<RadioButton fx:id="paperClientRadio" text="Client"
+							toggleGroup="$paperSourceGroup" />
 					</HBox>
 
 
