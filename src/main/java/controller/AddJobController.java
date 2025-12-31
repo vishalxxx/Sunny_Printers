@@ -22,11 +22,14 @@ import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
 import model.Binding;
 import model.Client;
+import model.Invoice;
 import model.Job;
 import model.Lamination;
 import model.Paper;
 import model.Supplier;
 import service.ClientService;
+import service.InvoiceBuilderService;
+import service.InvoiceGenerationService;
 import service.JobItemService;
 import service.JobService;
 import service.SupplierService;
@@ -216,6 +219,14 @@ public class AddJobController {
 //			showSuccessMessage();
 //			resetForm();
 //		}
+
+		int jobId = currentJob.getId();
+
+		InvoiceBuilderService builder = new InvoiceBuilderService();
+		Invoice invoice = builder.buildInvoiceForJob(jobId);
+
+		InvoiceGenerationService generator = new InvoiceGenerationService();
+		generator.generateExcel(invoice);
 	}
 
 	@FXML

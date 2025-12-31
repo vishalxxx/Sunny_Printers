@@ -10,6 +10,7 @@ public class JobItemService {
 
 	private final JobItemRepository repo = new JobItemRepository();
 	private final CtpItemRepository ctpRepo = new CtpItemRepository();
+	private final InvoiceGenerationService invoiceService = new InvoiceGenerationService();
 
 	public JobItem addPrinting(int jobId, String qty, String units, String sets, String color, String side, String ctp,
 			String notes, String amountText) {
