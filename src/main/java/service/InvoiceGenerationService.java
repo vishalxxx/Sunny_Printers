@@ -9,6 +9,8 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.DataFormat;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.PageMargin;
+import org.apache.poi.ss.usermodel.PrintSetup;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
@@ -28,6 +30,7 @@ public class InvoiceGenerationService {
 	private static final int MAX_ROWS_PER_PAGE = 25;
 	private static final int FOOTER_ROWS = 3;
 
+	@SuppressWarnings("deprecation")
 	public void generateExcel(Invoice invoice) {
 
 		try (Workbook wb = new XSSFWorkbook()) {
@@ -35,19 +38,12 @@ public class InvoiceGenerationService {
 			Sheet sheet = wb.createSheet("Invoice");
 			setupColumns(sheet);
 
-			CellStyle border = borderStyle(wb);
-			CellStyle bold = boldStyle(wb);
-			CellStyle amount = amountStyle(wb);
-			CellStyle boldAmount = boldAmountStyle(wb);
-			CellStyle borderUPDown = borderStyleUpDown(wb);
-
-			int rowIndex = drawHeader(wb, sheet, invoice, bold, border, borderUPDown);
+			int rowIndex = drawHeader(wb, sheet, invoice);
 			int rowsInPage = 0;
 			InvoiceExcelStyles is = new InvoiceExcelStyles(wb);
 
 			// Columns Description ---------- #, DATE, JOB DESCRIPTION, AMOUNT
 			Row descRow = sheet.createRow(rowIndex++);
-			descRow.setRowStyle(border);
 
 			mergeAndStyle(sheet, descRow.getRowNum(), descRow.getRowNum(), 0, 0, "#", is.descText);
 
@@ -58,72 +54,107 @@ public class InvoiceGenerationService {
 			mergeAndStyle(sheet, descRow.getRowNum(), descRow.getRowNum(), 3, 3, "Amount", is.descText);
 
 			/* ================= BODY ================= */
-
+			int serial = 0;
 			for (InvoiceJob job : invoice.getJobs()) {
 
 				// Check page space for job header
 				if (rowsInPage >= MAX_ROWS_PER_PAGE - 4) {
-					sheet.setRowBreak(rowIndex - 1);
 					rowIndex++;
 					rowsInPage = 0;
 				}
 
 				// Job header
 				Row jobRow = sheet.createRow(rowIndex++);
-				Cell jobCell = jobRow.createCell(0);
+				Cell serialCell = jobRow.createCell(0);
+				serialCell.setCellValue(serial += 1);
+				serialCell.setCellStyle(is.serial);
+
+				Cell dateCell = jobRow.createCell(1);
+				dateCell.setCellValue(java.sql.Date.valueOf(job.getJobDate()));
+				dateCell.setCellStyle(is.Date);
+
+				Cell jobCell = jobRow.createCell(2);
 				jobCell.setCellValue("(" + job.getJobNo() + ") - " + job.getJobName());
-				jobCell.setCellStyle(bold);
+				jobCell.setCellStyle(is.jobDesc);
 
-				// merge description + amount columns
-				sheet.addMergedRegion(
-						new org.apache.poi.ss.util.CellRangeAddress(jobRow.getRowNum(), jobRow.getRowNum(), 0, 3));
+				Cell extraCell = jobRow.createCell(3);
+				extraCell.setCellStyle(is.serial);
 
-				applyRowBorder(jobRow, border);
 				rowsInPage++;
 
 				for (InvoiceLine line : job.getLines()) {
-
 					if (rowsInPage >= MAX_ROWS_PER_PAGE) {
-						sheet.setRowBreak(rowIndex - 1);
 						rowIndex++;
 						rowsInPage = 0;
 					}
 
 					Row r = sheet.createRow(rowIndex++);
 
-					Cell desc = r.createCell(0);
+					Cell desc = r.createCell(2);
 					desc.setCellValue(line.getDescription());
-					desc.setCellStyle(border);
-
-					sheet.addMergedRegion(
-							new org.apache.poi.ss.util.CellRangeAddress(r.getRowNum(), r.getRowNum(), 0, 2));
+					desc.setCellStyle(is.jobDesc);
 
 					Cell amt = r.createCell(3);
 					amt.setCellValue(line.getAmount());
-					amt.setCellStyle(amount);
-
-					applyRowBorder(r, border);
+					amt.setCellStyle(is.amount);
 					rowsInPage++;
+
 				}
+				rowIndex++;
+
 			}
 
 			/* ================= FOOTER ================= */
 
 			if (rowsInPage > MAX_ROWS_PER_PAGE - FOOTER_ROWS) {
-				sheet.setRowBreak(rowIndex - 1);
 				rowIndex++;
 			}
 
 			Row totalRow = sheet.createRow(rowIndex++);
-			Cell label = totalRow.createCell(2);
-			label.setCellValue("GRAND TOTAL");
-			label.setCellStyle(bold);
 
 			Cell value = totalRow.createCell(3);
 			value.setCellValue(invoice.getGrandTotal());
-			value.setCellStyle(boldAmount);
+			value.setCellStyle(is.totalAmount);
+			mergeAndStyle(sheet, totalRow.getRowNum(), totalRow.getRowNum(), 0, 2, "GRAND TOTAL", is.totalLabel);
+			
+			outlineInvoice(sheet, 0, totalRow.getRowNum());
 
-			applyRowBorder(totalRow, border);
+			// ================= PRINT FIX (FINAL & CORRECT) =================
+
+			// Margins (inches)
+			sheet.setMargin(PageMargin.LEFT, 0.3);
+			sheet.setMargin(PageMargin.RIGHT, 0.3);
+			sheet.setMargin(PageMargin.TOP, 0.5);
+			sheet.setMargin(PageMargin.BOTTOM, 0.5);
+			sheet.setMargin(PageMargin.HEADER, 0.3);
+			sheet.setMargin(PageMargin.FOOTER, 0.3);
+
+			// Print setup
+			PrintSetup ps = sheet.getPrintSetup();
+			ps.setPaperSize(PrintSetup.A4_PAPERSIZE);
+			ps.setLandscape(false);
+
+			// LOCK WIDTH ONLY
+			ps.setFitWidth((short) 1);
+
+			// 🚫 DO NOT SET FIT HEIGHT AT ALL
+			// ps.setFitHeight(...); <-- NEVER
+
+			// Let rows flow naturally
+			sheet.setAutobreaks(true);
+
+			// Disable centering artifacts
+			sheet.setHorizontallyCenter(false);
+			sheet.setVerticallyCenter(false);
+
+			// Gridlines OFF
+			sheet.setDisplayGridlines(false);
+			sheet.setPrintGridlines(false);
+
+			// Print ONLY A–D
+			int lastRow = sheet.getLastRowNum();
+			wb.setPrintArea(wb.getSheetIndex(sheet), 0, 3, // A–D only
+					0, lastRow);
 
 			/* ================= SAVE ================= */
 
@@ -137,12 +168,12 @@ public class InvoiceGenerationService {
 		} catch (Exception e) {
 			throw new RuntimeException("Invoice generation failed", e);
 		}
+
 	}
 
 	/* ================= HEADER ================= */
 
-	private int drawHeader(Workbook wb, Sheet sheet, Invoice invoice, CellStyle bold, CellStyle border,
-			CellStyle borderUPDown) {
+	private int drawHeader(Workbook wb, Sheet sheet, Invoice invoice) {
 
 		InvoiceExcelStyles is = new InvoiceExcelStyles(wb);
 		// Row 1
@@ -156,79 +187,19 @@ public class InvoiceGenerationService {
 				is.headerText);
 
 		// Row 5
-		CellRangeAddress datemerge = mergeAndStyle(sheet, 5, 5, 0, 1, "Date: " + invoice.getInvoiceDate(), is.text);
-		ExcelRegionUtil.applyBorder(sheet, datemerge, true, true, true, true);
-		CellRangeAddress clientmerge = mergeAndStyle(sheet, 5, 5, 2, 3, "Client: " + invoice.getClientName(),
-				is.clientText);
-		ExcelRegionUtil.applyBorder(sheet, clientmerge, true, true, true, true);
+		mergeAndStyle(sheet, 5, 5, 0, 1, "Date: " + invoice.getInvoiceDate(), is.Date);
+		mergeAndStyle(sheet, 5, 5, 2, 3, "Client: " + invoice.getClientName(), is.clientText);
 		// Row 6
-		CellRangeAddress performa = mergeAndStyle(sheet, 6, 6, 0, 3, "Performa No: " + invoice.getInvoiceNo(), is.text);
-		ExcelRegionUtil.applyBorder(sheet, performa, true, true, true, true);
+		mergeAndStyle(sheet, 6, 6, 0, 3, "Performa No: " + invoice.getInvoiceNo(), is.headerDate);
 
 		return BODY_START_ROW;
 	}
 
-	/* ================= STYLES ================= */
-
-	private CellStyle borderStyle(Workbook wb) {
-		CellStyle s = wb.createCellStyle();
-		s.setBorderTop(BorderStyle.THIN);
-		s.setBorderBottom(BorderStyle.THIN);
-		s.setBorderLeft(BorderStyle.THIN);
-		s.setBorderRight(BorderStyle.THIN);
-		s.setVerticalAlignment(VerticalAlignment.TOP);
-		s.setWrapText(true);
-		return s;
-	}
-
-	private CellStyle borderStyleUpDown(Workbook wb) {
-		CellStyle s = wb.createCellStyle();
-		s.setBorderTop(BorderStyle.THIN);
-		s.setBorderBottom(BorderStyle.THIN);
-		s.setVerticalAlignment(VerticalAlignment.TOP);
-		s.setWrapText(true);
-		return s;
-	}
-
-	private CellStyle boldStyle(Workbook wb) {
-		Font f = wb.createFont();
-		f.setBold(true);
-		CellStyle s = wb.createCellStyle();
-		s.setFont(f);
-		return s;
-	}
-
-	private CellStyle amountStyle(Workbook wb) {
-		CellStyle s = borderStyle(wb);
-		s.setAlignment(HorizontalAlignment.RIGHT);
-		DataFormat df = wb.createDataFormat();
-
-		s.setDataFormat(df.getFormat("#,##0.00"));
-		return s;
-	}
-
-	private CellStyle boldAmountStyle(Workbook wb) {
-		Font f = wb.createFont();
-		f.setBold(true);
-		CellStyle s = amountStyle(wb);
-		s.setFont(f);
-		return s;
-	}
-
 	private void setupColumns(Sheet sheet) {
-		sheet.setColumnWidth(0, 1800); // #
-		sheet.setColumnWidth(1, 3200); // Date
-		sheet.setColumnWidth(2, 12000); // Description
-		sheet.setColumnWidth(3, 4500); // Amount (important)
-	}
-
-	private void applyRowBorder(Row r, CellStyle style) {
-		for (int i = 0; i <= 3; i++) {
-			Cell c = r.getCell(i);
-			if (c == null)
-				c = r.createCell(i);
-			c.setCellStyle(style);
-		}
+		sheet.setColumnWidth(0, 1500); // #
+		sheet.setColumnWidth(1, 3000); // Date
+		sheet.setColumnWidth(2, 11000); // Description
+		sheet.setColumnWidth(3, 4000); // Amount
 	}
 
 	public static CellRangeAddress mergeAndStyle(Sheet sheet, int startRow, int endRow, int startCol, int endCol,
@@ -263,5 +234,22 @@ public class InvoiceGenerationService {
 		}
 		return region;
 	}
+	
+	private void outlineInvoice(Sheet sheet, int startRow, int endRow) {
+	    CellRangeAddress invoiceBox =
+	        new CellRangeAddress(startRow, endRow, 0, 3); // A–D only
+
+	    ExcelRegionUtil.applyBorder(
+	        sheet,
+	        invoiceBox,
+	        true,  // top
+	        true,  // bottom
+	        true,  // left
+	        true   // right
+	    );
+	}
+
+	
+	
 
 }

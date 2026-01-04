@@ -8,12 +8,31 @@ public class Invoice {
 
 	private String invoiceNo;
 	private LocalDate invoiceDate;
+    public LocalDate getFromDate() {
+		return periodFrom;
+	}
+
+	public void setFromDate(LocalDate periodFrom) {
+		this.periodFrom = periodFrom;
+	}
+
+	public LocalDate getToDate() {
+		return periodTo;
+	}
+
+	public void setToDate(LocalDate periodTo) {
+		this.periodTo = periodTo;
+	}
+
+	private LocalDate periodFrom;
+    private LocalDate periodTo;
 
 	private String companyName;
 	private String companyAddress;
 	private String companyContact;
 	private String email;
 	private String clientName;
+	
 
 	public String getEmail() {
 		return email;
@@ -82,7 +101,9 @@ public class Invoice {
 	}
 
 	public double getGrandTotal() {
-		return grandTotal;
+	    return jobs.stream()
+	               .mapToDouble(InvoiceJob::getJobTotal)
+	               .sum();
 	}
 
 	public void setGrandTotal(double grandTotal) {

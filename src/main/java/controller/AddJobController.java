@@ -223,10 +223,10 @@ public class AddJobController {
 		int jobId = currentJob.getId();
 
 		InvoiceBuilderService builder = new InvoiceBuilderService();
-		Invoice invoice = builder.buildInvoiceForJob(jobId);
+		//Invoice invoice = builder.buildInvoiceForJob(jobId);
 
 		InvoiceGenerationService generator = new InvoiceGenerationService();
-		generator.generateExcel(invoice);
+		//generator.generateExcel(invoice);
 	}
 
 	@FXML
