@@ -264,4 +264,13 @@ public class MainController implements Initializable {
 		centerRoot.getChildren().setAll(view);
 	}
 
+	public void loadInvoiceGenration() {
+		try {
+			Parent view = FXMLLoader.load(getClass().getResource("/fxml/invoice_genration.fxml"));
+			centerRoot.getChildren().setAll(view);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 }

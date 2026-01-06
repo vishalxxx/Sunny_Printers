@@ -1,0 +1,179 @@
+/* ================= ROOT ================= */
+.root {
+    -fx-background-color: #0B0F14;
+    -fx-font-family: "Segoe UI", System;
+}
+
+/* ================= LAYOUT ================= */
+.main-container {
+    -fx-padding: 18;
+}
+
+/* ================= TEXT ================= */
+.title {
+    -fx-text-fill: #E5E7EB;
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+}
+
+.subtitle {
+    -fx-text-fill: #9CA3AF;
+    -fx-font-size: 13px;
+}
+
+.card-title {
+    -fx-text-fill: #E5E7EB;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.card-subtitle,
+.hint {
+    -fx-text-fill: #9CA3AF;
+    -fx-font-size: 12px;
+}
+
+.section-title {
+    -fx-text-fill: #E5E7EB;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.field-label {
+    -fx-text-fill: #D1D5DB;
+    -fx-font-size: 13px;
+}
+
+/* ================= CARD ================= */
+.card {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        #111827,
+        #0B1220
+    );
+    -fx-background-radius: 18;
+    -fx-padding: 18;
+
+    -fx-border-color: #1F2937;
+    -fx-border-radius: 18;
+
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.9), 28, 0.35, 0, 12);
+}
+
+/* ================= INPUTS ================= */
+.text-field,
+.combo-box,
+.date-picker {
+    -fx-background-color: #020617;
+    -fx-border-color: #1F2937;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-text-fill: #E5E7EB;
+    -fx-pref-height: 38;
+}
+
+.text-field:focused,
+.combo-box:focused,
+.date-picker:focused {
+    -fx-border-color: #3B82F6;
+}
+
+/* Combo arrow */
+.combo-box .arrow {
+    -fx-background-color: #9CA3AF;
+}
+.combo-box .arrow-button {
+    -fx-background-color: transparent;
+}
+
+/* DatePicker icon */
+.date-picker .arrow-button {
+    -fx-background-color: #020617;
+    -fx-border-color: #1F2937;
+}
+.date-picker .arrow {
+    -fx-background-color: #9CA3AF;
+}
+
+/* ================= BUTTONS ================= */
+.btn {
+    -fx-background-insets: 0;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 14;
+    -fx-pref-height: 44;
+    -fx-cursor: hand;
+
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.8), 12, 0.3, 0, 4);
+}
+
+.btn.primary {
+    -fx-background-color: #3B82F6;
+}
+
+.btn.purple {
+    -fx-background-color: #7C3AED;
+}
+
+.btn.success {
+    -fx-background-color: #10B981;
+}
+
+.btn:hover {
+    -fx-opacity: 0.95;
+}
+
+.button:disabled {
+    -fx-background-color: #374151;
+    -fx-text-fill: #9CA3AF;
+    -fx-opacity: 1;
+}
+
+/* ================= DIVIDER ================= */
+.separator {
+    -fx-background-color: #1F2937;
+}
+
+/* ================= CHIPS ================= */
+.selected-container {
+    -fx-background-color: #020617;
+    -fx-border-color: #1F2937;
+    -fx-border-radius: 14;
+    -fx-padding: 12;
+}
+
+.chip-scroll {
+    -fx-background-color: transparent;
+}
+.chip-scroll .viewport {
+    -fx-background-color: transparent;
+}
+
+.job-chip {
+    -fx-background-color: #064E3B;
+    -fx-background-radius: 16;
+    -fx-padding: 6 14;
+}
+
+.chip-text {
+    -fx-text-fill: #ECFEFF;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.chip-remove {
+    -fx-background-color: transparent;
+    -fx-text-fill: #ECFEFF;
+    -fx-cursor: hand;
+}
+
+.chip-remove:hover {
+    -fx-text-fill: #FCA5A5;
+}
+
+/* ================= TABLE ================= */
+.table-view {
+    -fx-background-color: transparent;
+    -fx-border-color: #1F2937;
+    -fx-border-radius: 14;
+}
