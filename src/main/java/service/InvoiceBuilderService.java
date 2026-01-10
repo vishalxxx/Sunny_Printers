@@ -12,6 +12,16 @@ import model.InvoiceJob;
 import model.InvoiceLine;
 import utils.DBConnection;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.time.YearMonth;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import utils.DBConnection;
+
+
 public class InvoiceBuilderService {
 
 	public Invoice buildInvoiceForClient(String clientName, LocalDate fromDate, LocalDate toDate) {
@@ -68,6 +78,7 @@ public class InvoiceBuilderService {
 				int jobId = rs.getInt("job_id");
 
 				InvoiceJob job = jobMap.get(jobId);
+			
 				if (job == null) {
 					job = new InvoiceJob();
 					job.setJobId(jobId);
@@ -95,8 +106,66 @@ public class InvoiceBuilderService {
 
 		return invoice;
 	}
+	
+	
+
+	public Map<String, Invoice> buildMonthlyInvoicesForAllClients(YearMonth month) {
+
+	    Map<String, Invoice> invoiceMap = new LinkedHashMap<>();
+
+	    LocalDate fromDate = month.atDay(1);
+	    LocalDate toDate   = month.atEndOfMonth();
+
+	    String sql = """
+	        SELECT DISTINCT c.client_name
+	        FROM jobs j
+	        JOIN clients c ON c.id = j.client_id
+	        WHERE DATE(j.job_date) BETWEEN ? AND ?
+	        ORDER BY c.client_name
+	    """;
+
+	    try (
+	        Connection con = DBConnection.getConnection();
+	        PreparedStatement ps = con.prepareStatement(sql)
+	    ) {
+
+	        ps.setString(1, fromDate.toString());
+	        ps.setString(2, toDate.toString());
+
+	        ResultSet rs = ps.executeQuery();
+
+	        while (rs.next()) {
+
+	            String clientName = rs.getString("client_name");
+
+	            Invoice invoice = buildInvoiceForClient(
+	                    clientName,
+	                    fromDate,
+	                    toDate
+	            );
+
+	            // Safety: skip empty invoices
+	            if (!invoice.getJobs().isEmpty()) {
+	                invoiceMap.put(clientName, invoice);
+	            }
+	        }
+
+	    } catch (Exception e) {
+	        throw new RuntimeException(
+	                "Failed to build monthly invoices for " + month,
+	                e
+	        );
+	    }
+
+	    return invoiceMap;
+	}
+
+	
+	
 
 	private String generateInvoiceNo() {
 		return "INV-" + System.currentTimeMillis();
 	}
+	
+	
 }

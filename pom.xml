@@ -54,8 +54,6 @@
 			<artifactId>sqlite-jdbc</artifactId>
 			<version>3.42.0.0</version>
 		</dependency>
-	
-
 
 
 	</dependencies>

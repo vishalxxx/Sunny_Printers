@@ -2,19 +2,11 @@ package service;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.time.YearMonth;
+import java.util.List;
+import java.util.Map;
 
-import org.apache.poi.ss.usermodel.BorderStyle;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.DataFormat;
-import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.ss.usermodel.HorizontalAlignment;
-import org.apache.poi.ss.usermodel.PageMargin;
-import org.apache.poi.ss.usermodel.PrintSetup;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.VerticalAlignment;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -26,230 +18,246 @@ import utils.InvoiceExcelStyles;
 
 public class InvoiceGenerationService {
 
-	private static final int BODY_START_ROW = 8;
-	private static final int MAX_ROWS_PER_PAGE = 25;
-	private static final int FOOTER_ROWS = 3;
+    private static final int BODY_START_ROW = 8;
+    private static final int MAX_ROWS_PER_PAGE = 25;
+    private static final int FOOTER_ROWS = 3;
 
-	@SuppressWarnings("deprecation")
-	public void generateExcel(Invoice invoice) {
+    /* =========================================================
+       PUBLIC API
+       ========================================================= */
 
-		try (Workbook wb = new XSSFWorkbook()) {
+    // Existing single-invoice generator (UNCHANGED usage)
+    public void generateSingleInvoice(Invoice invoice) {
+        try (Workbook wb = new XSSFWorkbook()) {
+            Sheet sheet = wb.createSheet("Invoice");
+            generateInvoiceSheet(wb, sheet, invoice);
+            saveWorkbook(wb, "output/invoice.xlsx");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-			Sheet sheet = wb.createSheet("Invoice");
-			setupColumns(sheet);
+    // ✅ NEW: Monthly client-wise workbook
+    public void generateMonthlyClientWorkbook(
+            YearMonth month,
+            Map<String, List<InvoiceJob>> clientJobsMap
+    ) {
 
-			int rowIndex = drawHeader(wb, sheet, invoice);
-			int rowsInPage = 0;
-			InvoiceExcelStyles is = new InvoiceExcelStyles(wb);
+        try (Workbook wb = new XSSFWorkbook()) {
 
-			// Columns Description ---------- #, DATE, JOB DESCRIPTION, AMOUNT
-			Row descRow = sheet.createRow(rowIndex++);
+            for (Map.Entry<String, List<InvoiceJob>> entry : clientJobsMap.entrySet()) {
 
-			mergeAndStyle(sheet, descRow.getRowNum(), descRow.getRowNum(), 0, 0, "#", is.descText);
+                String clientName = entry.getKey();
+                List<InvoiceJob> jobs = entry.getValue();
 
-			mergeAndStyle(sheet, descRow.getRowNum(), descRow.getRowNum(), 1, 1, "DATE", is.descText);
+                Invoice invoice = new Invoice();
+                invoice.setClientName(clientName);
+                invoice.setInvoiceDate(month.atEndOfMonth());
 
-			mergeAndStyle(sheet, descRow.getRowNum(), descRow.getRowNum(), 2, 2, "Description", is.descText);
+                // ✅ add jobs correctly (NO setJobs)
+                for (InvoiceJob job : jobs) {
+                    if (YearMonth.from(job.getJobDate()).equals(month)) {
+                        invoice.addJob(job);
+                    }
+                }
 
-			mergeAndStyle(sheet, descRow.getRowNum(), descRow.getRowNum(), 3, 3, "Amount", is.descText);
+                if (invoice.getJobs().isEmpty()) continue;
 
-			/* ================= BODY ================= */
-			int serial = 0;
-			for (InvoiceJob job : invoice.getJobs()) {
+                Sheet sheet = wb.createSheet(clientName);
+                generateInvoiceSheet(wb, sheet, invoice);
+            }
 
-				// Check page space for job header
-				if (rowsInPage >= MAX_ROWS_PER_PAGE - 4) {
-					rowIndex++;
-					rowsInPage = 0;
-				}
+            saveWorkbook(
+                    wb,
+                    "output/invoices-" + month + ".xlsx"
+            );
 
-				// Job header
-				Row jobRow = sheet.createRow(rowIndex++);
-				Cell serialCell = jobRow.createCell(0);
-				serialCell.setCellValue(serial += 1);
-				serialCell.setCellStyle(is.serial);
+        } catch (Exception e) {
+            throw new RuntimeException("Monthly invoice generation failed", e);
+        }
+    }
 
-				Cell dateCell = jobRow.createCell(1);
-				dateCell.setCellValue(java.sql.Date.valueOf(job.getJobDate()));
-				dateCell.setCellStyle(is.Date);
+    /* =========================================================
+       CORE SHEET GENERATOR (REUSED)
+       ========================================================= */
 
-				Cell jobCell = jobRow.createCell(2);
-				jobCell.setCellValue("(" + job.getJobNo() + ") - " + job.getJobName());
-				jobCell.setCellStyle(is.jobDesc);
+    private void generateInvoiceSheet(
+            Workbook wb,
+            Sheet sheet,
+            Invoice invoice
+    ) {
 
-				Cell extraCell = jobRow.createCell(3);
-				extraCell.setCellStyle(is.serial);
+        setupColumns(sheet);
 
-				rowsInPage++;
+        int rowIndex = drawHeader(wb, sheet, invoice);
+        int rowsInPage = 0;
 
-				for (InvoiceLine line : job.getLines()) {
-					if (rowsInPage >= MAX_ROWS_PER_PAGE) {
-						rowIndex++;
-						rowsInPage = 0;
-					}
+        InvoiceExcelStyles is = new InvoiceExcelStyles(wb);
 
-					Row r = sheet.createRow(rowIndex++);
+        // Column header
+        Row header = sheet.createRow(rowIndex++);
+        rowsInPage++;
 
-					Cell desc = r.createCell(2);
-					desc.setCellValue(line.getDescription());
-					desc.setCellStyle(is.jobDesc);
+        mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 0, 0, "#", is.descText);
+        mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 1, 1, "DATE", is.descText);
+        mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 2, 2, "Description", is.descText);
+        mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 3, 3, "Amount", is.descText);
 
-					Cell amt = r.createCell(3);
-					amt.setCellValue(line.getAmount());
-					amt.setCellStyle(is.amount);
-					rowsInPage++;
+        int serial = 0;
 
-				}
-				rowIndex++;
+        for (InvoiceJob job : invoice.getJobs()) {
 
-			}
+            int jobRowsNeeded =
+                    1 + job.getLines().size() + 1;
 
-			/* ================= FOOTER ================= */
+            if (rowsInPage + jobRowsNeeded + FOOTER_ROWS > MAX_ROWS_PER_PAGE) {
+                rowIndex++;
+                rowsInPage = 0;
+            }
 
-			if (rowsInPage > MAX_ROWS_PER_PAGE - FOOTER_ROWS) {
-				rowIndex++;
-			}
+            Row jobRow = sheet.createRow(rowIndex++);
+            rowsInPage++;
 
-			Row totalRow = sheet.createRow(rowIndex++);
+            jobRow.createCell(0).setCellValue(++serial);
+            jobRow.getCell(0).setCellStyle(is.serial);
 
-			Cell value = totalRow.createCell(3);
-			value.setCellValue(invoice.getGrandTotal());
-			value.setCellStyle(is.totalAmount);
-			mergeAndStyle(sheet, totalRow.getRowNum(), totalRow.getRowNum(), 0, 2, "GRAND TOTAL", is.totalLabel);
-			
-			outlineInvoice(sheet, 0, totalRow.getRowNum());
+            jobRow.createCell(1).setCellValue(java.sql.Date.valueOf(job.getJobDate()));
+            jobRow.getCell(1).setCellStyle(is.Date);
 
-			// ================= PRINT FIX (FINAL & CORRECT) =================
+            jobRow.createCell(2).setCellValue("(" + job.getJobNo() + ") - " + job.getJobName());
+            jobRow.getCell(2).setCellStyle(is.jobDesc);
 
-			// Margins (inches)
-			sheet.setMargin(PageMargin.LEFT, 0.3);
-			sheet.setMargin(PageMargin.RIGHT, 0.3);
-			sheet.setMargin(PageMargin.TOP, 0.5);
-			sheet.setMargin(PageMargin.BOTTOM, 0.5);
-			sheet.setMargin(PageMargin.HEADER, 0.3);
-			sheet.setMargin(PageMargin.FOOTER, 0.3);
+            jobRow.createCell(3).setCellStyle(is.serial);
 
-			// Print setup
-			PrintSetup ps = sheet.getPrintSetup();
-			ps.setPaperSize(PrintSetup.A4_PAPERSIZE);
-			ps.setLandscape(false);
+            for (InvoiceLine line : job.getLines()) {
 
-			// LOCK WIDTH ONLY
-			ps.setFitWidth((short) 1);
+                if (rowsInPage + FOOTER_ROWS >= MAX_ROWS_PER_PAGE) {
+                    rowIndex++;
+                    rowsInPage = 0;
+                }
 
-			// 🚫 DO NOT SET FIT HEIGHT AT ALL
-			// ps.setFitHeight(...); <-- NEVER
+                Row r = sheet.createRow(rowIndex++);
+                rowsInPage++;
 
-			// Let rows flow naturally
-			sheet.setAutobreaks(true);
+                r.createCell(2).setCellValue(line.getDescription());
+                r.getCell(2).setCellStyle(is.jobDesc);
 
-			// Disable centering artifacts
-			sheet.setHorizontallyCenter(false);
-			sheet.setVerticallyCenter(false);
+                r.createCell(3).setCellValue(line.getAmount());
+                r.getCell(3).setCellStyle(is.amount);
+            }
 
-			// Gridlines OFF
-			sheet.setDisplayGridlines(false);
-			sheet.setPrintGridlines(false);
+            // spacer (only if safe)
+            if (rowsInPage < MAX_ROWS_PER_PAGE - 1) {
+                rowIndex++;
+                rowsInPage++;
+            }
+        }
 
-			// Print ONLY A–D
-			int lastRow = sheet.getLastRowNum();
-			wb.setPrintArea(wb.getSheetIndex(sheet), 0, 3, // A–D only
-					0, lastRow);
+        if (rowsInPage + FOOTER_ROWS > MAX_ROWS_PER_PAGE) {
+            rowIndex++;
+        }
 
-			/* ================= SAVE ================= */
+        Row totalRow = sheet.createRow(rowIndex++);
+        totalRow.createCell(3).setCellValue(invoice.getGrandTotal());
+        totalRow.getCell(3).setCellStyle(is.totalAmount);
 
-			File file = new File("output/invoice.xlsx");
-			file.getParentFile().mkdirs();
+        mergeAndStyle(sheet, totalRow.getRowNum(), totalRow.getRowNum(),
+                0, 2, "GRAND TOTAL", is.totalLabel);
 
-			try (FileOutputStream fos = new FileOutputStream(file)) {
-				wb.write(fos);
-			}
+        outlineInvoice(sheet, 0, totalRow.getRowNum());
+        setupPrint(sheet, wb);
+    }
 
-		} catch (Exception e) {
-			throw new RuntimeException("Invoice generation failed", e);
-		}
+    /* =========================================================
+       HELPERS
+       ========================================================= */
 
-	}
+    private void setupColumns(Sheet sheet) {
+        sheet.setColumnWidth(0, 1500);
+        sheet.setColumnWidth(1, 3000);
+        sheet.setColumnWidth(2, 11000);
+        sheet.setColumnWidth(3, 4000);
+    }
 
-	/* ================= HEADER ================= */
+    private void setupPrint(Sheet sheet, Workbook wb) {
+        sheet.setMargin(PageMargin.LEFT, 0.3);
+        sheet.setMargin(PageMargin.TOP, 0.5);
+        sheet.setMargin(PageMargin.BOTTOM, 0.5);
 
-	private int drawHeader(Workbook wb, Sheet sheet, Invoice invoice) {
+        PrintSetup ps = sheet.getPrintSetup();
+        ps.setPaperSize(PrintSetup.A4_PAPERSIZE);
+        ps.setFitWidth((short) 1);
 
-		InvoiceExcelStyles is = new InvoiceExcelStyles(wb);
-		// Row 1
-		mergeAndStyle(sheet, 1, 1, 0, 3, invoice.getCompanyName(), is.headerTitle);
+        wb.setPrintArea(wb.getSheetIndex(sheet), 0, 3, 0, sheet.getLastRowNum());
+    }
 
-		// Row 2
-		mergeAndStyle(sheet, 2, 2, 0, 3, invoice.getCompanyAddress(), is.headerText);
+    private void saveWorkbook(Workbook wb, String path) throws Exception {
+        File file = new File(path);
+        file.getParentFile().mkdirs();
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            wb.write(fos);
+        }
+    }
 
-		// Row 3
-		mergeAndStyle(sheet, 3, 3, 0, 3, "Email: " + invoice.getEmail() + "| Ph: " + invoice.getCompanyContact(),
-				is.headerText);
+    private int drawHeader(Workbook wb, Sheet sheet, Invoice invoice) {
+        InvoiceExcelStyles is = new InvoiceExcelStyles(wb);
 
-		// Row 5
-		mergeAndStyle(sheet, 5, 5, 0, 1, "Date: " + invoice.getInvoiceDate(), is.Date);
-		mergeAndStyle(sheet, 5, 5, 2, 3, "Client: " + invoice.getClientName(), is.clientText);
-		// Row 6
-		mergeAndStyle(sheet, 6, 6, 0, 3, "Performa No: " + invoice.getInvoiceNo(), is.headerDate);
+        mergeAndStyle(sheet, 1, 1, 0, 3, invoice.getCompanyName(), is.headerTitle);
+        mergeAndStyle(sheet, 2, 2, 0, 3, invoice.getCompanyAddress(), is.headerText);
+        mergeAndStyle(sheet, 3, 3, 0, 3,
+                "Email: " + invoice.getEmail() + " | Ph: " + invoice.getCompanyContact(),
+                is.headerText);
 
-		return BODY_START_ROW;
-	}
+        mergeAndStyle(sheet, 5, 5, 0, 1,
+                "Date: " + invoice.getInvoiceDate(), is.Date);
 
-	private void setupColumns(Sheet sheet) {
-		sheet.setColumnWidth(0, 1500); // #
-		sheet.setColumnWidth(1, 3000); // Date
-		sheet.setColumnWidth(2, 11000); // Description
-		sheet.setColumnWidth(3, 4000); // Amount
-	}
+        mergeAndStyle(sheet, 5, 5, 2, 3,
+                "Client: " + invoice.getClientName(), is.clientText);
 
-	public static CellRangeAddress mergeAndStyle(Sheet sheet, int startRow, int endRow, int startCol, int endCol,
-			Object value, CellStyle style) {
-		CellRangeAddress region = null;
+        mergeAndStyle(sheet, 6, 6, 0, 3,
+                "Performa No: " + invoice.getInvoiceNo(), is.headerDate);
 
-		if (startRow != endRow || startCol != endCol) {
-			region = new CellRangeAddress(startRow, endRow, startCol, endCol);
-			sheet.addMergedRegion(region);
-		}
+        return BODY_START_ROW;
+    }
 
-		for (int r = startRow; r <= endRow; r++) {
-			Row row = sheet.getRow(r);
-			if (row == null)
-				row = sheet.createRow(r);
+    public static CellRangeAddress mergeAndStyle(
+            Sheet sheet, int startRow, int endRow,
+            int startCol, int endCol,
+            Object value, CellStyle style) {
 
-			for (int c = startCol; c <= endCol; c++) {
-				Cell cell = row.getCell(c);
-				if (cell == null)
-					cell = row.createCell(c);
-				cell.setCellStyle(style);
-			}
-		}
+        CellRangeAddress region = null;
 
-		if (value != null) {
-			Cell cell = sheet.getRow(startRow).getCell(startCol);
-			if (value instanceof Number) {
-				cell.setCellValue(((Number) value).doubleValue());
-			} else {
-				cell.setCellValue(value.toString());
-			}
-		}
-		return region;
-	}
-	
-	private void outlineInvoice(Sheet sheet, int startRow, int endRow) {
-	    CellRangeAddress invoiceBox =
-	        new CellRangeAddress(startRow, endRow, 0, 3); // A–D only
+        if (startRow != endRow || startCol != endCol) {
+            region = new CellRangeAddress(startRow, endRow, startCol, endCol);
+            sheet.addMergedRegion(region);
+        }
 
-	    ExcelRegionUtil.applyBorder(
-	        sheet,
-	        invoiceBox,
-	        true,  // top
-	        true,  // bottom
-	        true,  // left
-	        true   // right
-	    );
-	}
+        for (int r = startRow; r <= endRow; r++) {
+            Row row = sheet.getRow(r);
+            if (row == null) row = sheet.createRow(r);
 
-	
-	
+            for (int c = startCol; c <= endCol; c++) {
+                Cell cell = row.getCell(c);
+                if (cell == null) cell = row.createCell(c);
+                cell.setCellStyle(style);
+            }
+        }
 
+        if (value != null) {
+            Cell cell = sheet.getRow(startRow).getCell(startCol);
+            if (value instanceof Number)
+                cell.setCellValue(((Number) value).doubleValue());
+            else
+                cell.setCellValue(value.toString());
+        }
+        return region;
+    }
+
+    private void outlineInvoice(Sheet sheet, int startRow, int endRow) {
+        ExcelRegionUtil.applyBorder(
+                sheet,
+                new CellRangeAddress(startRow, endRow, 0, 3),
+                true, true, true, true
+        );
+    }
 }

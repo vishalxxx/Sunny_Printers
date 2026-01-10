@@ -109,4 +109,9 @@ public class Invoice {
 	public void setGrandTotal(double grandTotal) {
 		this.grandTotal = grandTotal;
 	}
+	
+	public void addJob(InvoiceJob job) {
+	    if (job == null) return;
+	    this.jobs.add(job);
+	}
 }

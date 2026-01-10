@@ -10,6 +10,7 @@ public class Main extends Application {
 
 	public static void main(String[] args) throws Throwable {
 
+<<<<<<< Updated upstream
 		launch(args);
 //		InvoiceBuilderService ib = new InvoiceBuilderService();
 //		Invoice in = ib.buildInvoiceForClient(
@@ -19,6 +20,21 @@ public class Main extends Application {
 //		);
 //		InvoiceGenerationService ig = new InvoiceGenerationService();
 //		ig.generateExcel(in);
+=======
+		// launch(args);
+		InvoiceBuilderService ib = new InvoiceBuilderService();
+		Invoice in = ib.buildInvoiceForClient(
+		        "Tarun Shah",
+		        LocalDate.of(2024, 1, 1),
+	            LocalDate.of(2026, 1, 10)
+	           
+		);
+		InvoiceGenerationService ig = new InvoiceGenerationService();
+		ig.generateSingleInvoice(in);
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 
 	}
 
