@@ -19,7 +19,7 @@ import utils.InvoiceExcelStyles;
 public class InvoiceGenerationService {
 
     private static final int BODY_START_ROW = 8;
-    private static final int MAX_ROWS_PER_PAGE = 25;
+    private static final int MAX_ROWS_PER_PAGE = 22;
     private static final int FOOTER_ROWS = 3;
 
     /* =========================================================
@@ -81,92 +81,91 @@ public class InvoiceGenerationService {
        CORE SHEET GENERATOR (REUSED)
        ========================================================= */
 
-    private void generateInvoiceSheet(
-            Workbook wb,
-            Sheet sheet,
-            Invoice invoice
-    ) {
+  private void generateInvoiceSheet(
+        Workbook wb,
+        Sheet sheet,
+        Invoice invoice
+) {
 
-        setupColumns(sheet);
+    setupColumns(sheet);
 
-        int rowIndex = drawHeader(wb, sheet, invoice);
-        int rowsInPage = 0;
+    int rowIndex = drawHeader(wb, sheet, invoice);
 
-        InvoiceExcelStyles is = new InvoiceExcelStyles(wb);
+    InvoiceExcelStyles is = new InvoiceExcelStyles(wb);
 
-        // Column header
-        Row header = sheet.createRow(rowIndex++);
-        rowsInPage++;
+    /* =========================
+       COLUMN HEADER
+       ========================= */
+    Row header = sheet.createRow(rowIndex++);
 
-        mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 0, 0, "#", is.descText);
-        mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 1, 1, "DATE", is.descText);
-        mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 2, 2, "Description", is.descText);
-        mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 3, 3, "Amount", is.descText);
+    mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 0, 0, "#", is.descText);
+    mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 1, 1, "DATE", is.descText);
+    mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 2, 2, "Description", is.descText);
+    mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 3, 3, "Amount", is.descText);
 
-        int serial = 0;
+    int serial = 0;
 
-        for (InvoiceJob job : invoice.getJobs()) {
+    /* =========================
+       JOB LOOP (CONTINUOUS)
+       ========================= */
+    for (InvoiceJob job : invoice.getJobs()) {
 
-            int jobRowsNeeded =
-                    1 + job.getLines().size() + 1;
+        /* ---- Job Header ---- */
+        Row jobRow = sheet.createRow(rowIndex++);
 
-            if (rowsInPage + jobRowsNeeded + FOOTER_ROWS > MAX_ROWS_PER_PAGE) {
-                rowIndex++;
-                rowsInPage = 0;
-            }
+        jobRow.createCell(0).setCellValue(++serial);
+        jobRow.getCell(0).setCellStyle(is.serial);
 
-            Row jobRow = sheet.createRow(rowIndex++);
-            rowsInPage++;
+        jobRow.createCell(1).setCellValue(
+                java.sql.Date.valueOf(job.getJobDate())
+        );
+        jobRow.getCell(1).setCellStyle(is.Date);
 
-            jobRow.createCell(0).setCellValue(++serial);
-            jobRow.getCell(0).setCellStyle(is.serial);
+        jobRow.createCell(2).setCellValue(
+                "(" + job.getJobNo() + ") - " + job.getJobName()
+        );
+        jobRow.getCell(2).setCellStyle(is.jobDesc);
 
-            jobRow.createCell(1).setCellValue(java.sql.Date.valueOf(job.getJobDate()));
-            jobRow.getCell(1).setCellStyle(is.Date);
+        jobRow.createCell(3).setCellStyle(is.serial);
 
-            jobRow.createCell(2).setCellValue("(" + job.getJobNo() + ") - " + job.getJobName());
-            jobRow.getCell(2).setCellStyle(is.jobDesc);
+        /* ---- Job Lines ---- */
+        for (InvoiceLine line : job.getLines()) {
 
-            jobRow.createCell(3).setCellStyle(is.serial);
+            Row r = sheet.createRow(rowIndex++);
 
-            for (InvoiceLine line : job.getLines()) {
+            r.createCell(2).setCellValue(line.getDescription());
+            r.getCell(2).setCellStyle(is.jobDesc);
 
-                if (rowsInPage + FOOTER_ROWS >= MAX_ROWS_PER_PAGE) {
-                    rowIndex++;
-                    rowsInPage = 0;
-                }
-
-                Row r = sheet.createRow(rowIndex++);
-                rowsInPage++;
-
-                r.createCell(2).setCellValue(line.getDescription());
-                r.getCell(2).setCellStyle(is.jobDesc);
-
-                r.createCell(3).setCellValue(line.getAmount());
-                r.getCell(3).setCellStyle(is.amount);
-            }
-
-            // spacer (only if safe)
-            if (rowsInPage < MAX_ROWS_PER_PAGE - 1) {
-                rowIndex++;
-                rowsInPage++;
-            }
+            r.createCell(3).setCellValue(line.getAmount());
+            r.getCell(3).setCellStyle(is.amount);
         }
 
-        if (rowsInPage + FOOTER_ROWS > MAX_ROWS_PER_PAGE) {
-            rowIndex++;
-        }
-
-        Row totalRow = sheet.createRow(rowIndex++);
-        totalRow.createCell(3).setCellValue(invoice.getGrandTotal());
-        totalRow.getCell(3).setCellStyle(is.totalAmount);
-
-        mergeAndStyle(sheet, totalRow.getRowNum(), totalRow.getRowNum(),
-                0, 2, "GRAND TOTAL", is.totalLabel);
-
-        outlineInvoice(sheet, 0, totalRow.getRowNum());
-        setupPrint(sheet, wb);
+        /* ---- EXACTLY ONE spacer row after each job ---- */
+        sheet.createRow(rowIndex++);
     }
+
+    /* =========================
+       GRAND TOTAL
+       ========================= */
+    Row totalRow = sheet.createRow(rowIndex++);
+
+    totalRow.createCell(3).setCellValue(invoice.getGrandTotal());
+    totalRow.getCell(3).setCellStyle(is.totalAmount);
+
+    mergeAndStyle(
+            sheet,
+            totalRow.getRowNum(),
+            totalRow.getRowNum(),
+            0,
+            2,
+            "GRAND TOTAL",
+            is.totalLabel
+    );
+
+    outlineInvoice(sheet, 0, totalRow.getRowNum());
+    setupPrint(sheet, wb);
+}
+
 
     /* =========================================================
        HELPERS
@@ -219,7 +218,7 @@ public class InvoiceGenerationService {
 
         return BODY_START_ROW;
     }
-
+    
     public static CellRangeAddress mergeAndStyle(
             Sheet sheet, int startRow, int endRow,
             int startCol, int endCol,

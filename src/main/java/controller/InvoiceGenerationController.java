@@ -71,4 +71,10 @@ public class InvoiceGenerationController {
 		createJobInvoiceBtn.setDisable(!hasJobs);
 		selectedLabel.setVisible(hasJobs);
 	}
+	
+	@FXML
+	private void chooseSaveLocation(){
+		
+		
+	}
 }

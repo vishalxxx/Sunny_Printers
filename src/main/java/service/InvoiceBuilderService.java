@@ -161,6 +161,29 @@ public class InvoiceBuilderService {
 	}
 
 	
+
+	public class InvoiceFileNamer {
+
+	    public static String buildFileName(
+	            String businessName,
+	            String clientName,
+	            YearMonth month
+	    ) {
+
+	        return sanitize(businessName) + "_"
+	             + sanitize(clientName) + "_"
+	             + month + "_Invoice.xlsx";
+	    }
+
+	    private static String sanitize(String input) {
+	        return input
+	                .trim()
+	                .replaceAll("[^a-zA-Z0-9-_]", "_");
+	    }
+	}
+
+	
+	
 	
 
 	private String generateInvoiceNo() {

@@ -10,13 +10,32 @@
 
 	<VBox spacing="24" styleClass="main-container">
 
-		<!-- HEADER -->
-		<VBox spacing="6">
-			<Label text="Invoice Generation" styleClass="title" />
-			<Label
-				text="Select a method below to generate invoices for your clients."
-				styleClass="subtitle" />
-		</VBox>
+		<HBox spacing="24" alignment="CENTER_LEFT">
+
+			<!-- LEFT: HEADER -->
+			<VBox spacing="8" styleClass="save-box">
+
+				<Label text="SAVE GENERATED INVOICES TO:"
+					styleClass="save-label" />
+
+				<HBox spacing="0.8em" alignment="CENTER_LEFT">
+
+					<TextField fx:id="savePathField" editable="false"
+						HBox.hgrow="ALWAYS" promptText="Select folder to save invoices"
+						styleClass="save-path" />
+
+					<Button text="📁" onAction="#chooseSaveLocation"
+						styleClass="icon-btn" />
+				</HBox>
+
+				<CheckBox fx:id="rememberPathCheck"
+					text="Remember this location and never ask again"
+					styleClass="save-check" />
+
+			</VBox>
+
+
+		</HBox>
 
 		<!-- CARDS ROW -->
 		<GridPane hgap="22" vgap="22">

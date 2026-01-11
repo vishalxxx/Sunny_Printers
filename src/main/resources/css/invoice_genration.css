@@ -177,3 +177,55 @@
     -fx-border-color: #1F2937;
     -fx-border-radius: 14;
 }
+/* Save location container */
+.save-box {
+    -fx-font-size: 1.05em;          /* 🔑 em scaling base */
+    -fx-padding: 1.4em 1.6em;       /* Bigger box */
+    -fx-background-color: #141414;
+    -fx-background-radius: 1em;
+    -fx-border-radius: 1em;
+    -fx-border-color: #2a2a2a;
+
+    -fx-min-width: 28em;            /* Responsive width */
+    -fx-max-width: 34em;
+
+    -fx-margin-bottom: 1.5em;       /* Space below box */
+}
+
+/* Label */
+.save-label {
+    -fx-text-fill: #9fa3aa;
+    -fx-font-size: 0.85em;
+    -fx-font-weight: bold;
+}
+
+/* Path field */
+.save-path {
+    -fx-font-size: 1em;
+    -fx-padding: 0.75em 1em;
+    -fx-background-color: #0f0f0f;
+    -fx-text-fill: #dcdcdc;
+    -fx-border-color: #303030;
+    -fx-background-radius: 0.8em;
+    -fx-border-radius: 0.8em;
+}
+
+/* Icon button */
+.icon-btn {
+    -fx-font-size: 1.1em;
+    -fx-min-width: 3em;
+    -fx-min-height: 3em;
+    -fx-background-radius: 0.8em;
+    -fx-background-color: #1f1f1f;
+}
+
+.icon-btn:hover {
+    -fx-background-color: #2b2b2b;
+}
+
+/* Checkbox */
+.save-check {
+    -fx-text-fill: #b0b0b0;
+    -fx-font-size: 0.9em;
+}
+
