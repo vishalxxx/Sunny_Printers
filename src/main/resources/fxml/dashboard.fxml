@@ -289,7 +289,7 @@
 
 						<Label styleClass="sidebar-section-header" text="Billing" />
 
-						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item" onMouseClicked="#loadInvoiceGenration">
 							<children>
 								<Label styleClass="sidebar-text" text="Create Bill"
 									maxWidth="Infinity" HBox.hgrow="ALWAYS" />

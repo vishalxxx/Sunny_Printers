@@ -1,24 +1,43 @@
 package model;
 
-import java.io.Serializable;
+public class CtpPlate {
 
-public class CtpPlate implements Serializable {
-	private String qty;
+	private int jobId;
+
+	private int qty;
 	private String size;
 	private String gauge;
-	private String backing; // Yes/No
-	private String notes;
-	private String amount;
+	private String backing;
 
-	public CtpPlate() {
+	private Integer supplierId;
+	private String supplierNameSnapshot;
+
+	private String notes;
+	private double amount;
+
+	public String getColor() {
+		return color;
 	}
 
-	// getters/setters...
-	public String getQty() {
+	public void setColor(String color) {
+		this.color = color;
+	}
+
+	private String color;
+
+	public int getJobId() {
+		return jobId;
+	}
+
+	public void setJobId(int jobId) {
+		this.jobId = jobId;
+	}
+
+	public int getQty() {
 		return qty;
 	}
 
-	public void setQty(String qty) {
+	public void setQty(int qty) {
 		this.qty = qty;
 	}
 
@@ -46,6 +65,22 @@ public class CtpPlate implements Serializable {
 		this.backing = backing;
 	}
 
+	public Integer getSupplierId() {
+		return supplierId;
+	}
+
+	public void setSupplierId(Integer supplierId) {
+		this.supplierId = supplierId;
+	}
+
+	public String getSupplierNameSnapshot() {
+		return supplierNameSnapshot;
+	}
+
+	public void setSupplierNameSnapshot(String supplierNameSnapshot) {
+		this.supplierNameSnapshot = supplierNameSnapshot;
+	}
+
 	public String getNotes() {
 		return notes;
 	}
@@ -54,31 +89,13 @@ public class CtpPlate implements Serializable {
 		this.notes = notes;
 	}
 
-	public String getAmount() {
+	public double getAmount() {
 		return amount;
 	}
 
-	public void setAmount(String amount) {
+	public void setAmount(double amount) {
 		this.amount = amount;
 	}
 
-	public String toShortText() {
-		StringBuilder s = new StringBuilder();
-		if (qty != null)
-			s.append(qty).append(" ");
-		if (size != null)
-			s.append(size).append(" - ");
-		if (gauge != null)
-			s.append(gauge).append(" - ");
-		if (backing != null)
-			s.append(backing).append(" - ");
-		if (amount != null)
-			s.append("₹").append(amount);
-		return s.toString().trim();
-	}
-
-	@Override
-	public String toString() {
-		return toShortText();
-	}
+	// getters & setters
 }

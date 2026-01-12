@@ -149,4 +149,10 @@ public class Client {
 		return notes;
 	}
 
+	@Override
+	public String toString() {
+		// This is what shows when selected
+		return businessName + " (" + clientName + ")";
+	}
+
 }

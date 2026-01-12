@@ -15,12 +15,15 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import model.Job;
+import service.JobService;
 
 public class MainController implements Initializable {
+
+	Job currentJob = new Job();
 	// Center content container
 	@FXML
 	private VBox centerRoot;
-
 	// singleton-like reference so other controllers can reach MainController
 	private static MainController instance;
 
@@ -220,8 +223,19 @@ public class MainController implements Initializable {
 	@FXML
 	private void loadAddJob(MouseEvent event) {
 		try {
-			Parent addJobView = FXMLLoader.load(getClass().getResource("/fxml/ht.fxml"));
+			JobService jobService = new JobService();
+			Job currentJob = jobService.createDraftJob();
+
+			System.out.println("Draft job created: " + currentJob.getJobNo());
+
+			FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ht.fxml"));
+			Parent addJobView = loader.load();
+
+			AddJobController addJobController = loader.getController();
+			addJobController.setCurrentJob(currentJob);
+
 			centerRoot.getChildren().setAll(addJobView);
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -248,6 +262,15 @@ public class MainController implements Initializable {
 
 	public void setCenterView(Parent view) {
 		centerRoot.getChildren().setAll(view);
+	}
+
+	public void loadInvoiceGenration() {
+		try {
+			Parent view = FXMLLoader.load(getClass().getResource("/fxml/invoice_genration.fxml"));
+			centerRoot.getChildren().setAll(view);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 }

@@ -2,30 +2,57 @@ package controller; // adjust if needed
 
 import java.io.File;
 
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.util.StringConverter;
 import model.Binding;
-import model.CtpPlate;
+import model.Client;
+import model.Invoice;
 import model.Job;
 import model.Lamination;
 import model.Paper;
-import model.Printing;
+import model.Supplier;
+import service.ClientService;
+import service.InvoiceBuilderService;
+import service.InvoiceGenerationService;
+import service.JobItemService;
 import service.JobService;
-import utils.JobSummaryFormatter;
-import utils.PopupUtil;
+import service.SupplierService;
 
 public class AddJobController {
+	private final ObservableList<Client> clientItems = javafx.collections.FXCollections.observableArrayList();
 
-	private Job currentJob = new Job();
+	private Job currentJob;
+	private Supplier currentCtpSupplier;
+
+	public void setCurrentJob(Job job) {
+		this.currentJob = job;
+	}
+
+	@FXML
+	private RadioButton paperOurRadio;
+	@FXML
+	private RadioButton paperClientRadio;
+	@FXML
+	private ComboBox<Client> clientCombo;
+	private final ClientService clientService = new ClientService();
+
+	private ToggleGroup paperSourceGroup;
 
 	@FXML
 	private ImageView jobImagePreview;
@@ -34,7 +61,22 @@ public class AddJobController {
 	@FXML
 	private Label filePlaceholder;
 
+	private final SupplierService supplierService = new SupplierService();
+
 	/* ========================= PRINTING ========================= */
+	@FXML
+	private VBox fileCard;
+	@FXML
+	private VBox printingCard;
+	@FXML
+	private VBox ctpCard;
+	@FXML
+	private VBox paperCard;
+	@FXML
+	private VBox bindingCard;
+	@FXML
+	private VBox laminationCard;
+
 	@FXML
 	private TextField printQtyField;
 	@FXML
@@ -54,7 +96,7 @@ public class AddJobController {
 
 	/* ========================= CTP PLATE ========================= */
 	@FXML
-	private ComboBox<String> ctpQtyCombo;
+	private TextField ctpQtyField;
 	@FXML
 	private ComboBox<String> ctpSizeCombo;
 	@FXML
@@ -65,6 +107,10 @@ public class AddJobController {
 	private TextArea ctpNotesArea;
 	@FXML
 	private TextField ctpAmountField;
+	@FXML
+	private ComboBox<Supplier> ctpSupplierCombo;
+	@FXML
+	private ComboBox<String> ctpColorCombo;
 
 	/* ========================= PAPER ========================= */
 	@FXML
@@ -163,32 +209,35 @@ public class AddJobController {
 
 	@FXML
 	private void handleAddJobButton() {
+//
+//		String summaryText = JobSummaryFormatter.generateSummary(currentJob);
+//
+//		boolean confirmed = PopupUtil.showJobSummary(summaryText);
+//
+//		if (confirmed) {
+//			// JobService.saveJob(currentJob);
+//			showSuccessMessage();
+//			resetForm();
+//		}
 
-		String summaryText = JobSummaryFormatter.generateSummary(currentJob);
+		int jobId = currentJob.getId();
 
-		boolean confirmed = PopupUtil.showJobSummary(summaryText);
+		InvoiceBuilderService builder = new InvoiceBuilderService();
+		//Invoice invoice = builder.buildInvoiceForJob(jobId);
 
-		if (confirmed) {
-			JobService.saveJob(currentJob);
-			showSuccessMessage();
-			resetForm();
-		}
+		InvoiceGenerationService generator = new InvoiceGenerationService();
+		//generator.generateExcel(invoice);
 	}
 
 	@FXML
 	private void handleAddPrinting() {
 
-		Printing p = new Printing();
-		p.setQty(printQtyField.getText());
-		p.setUnits(printUnitsCombo.getValue());
-		p.setSet(printSetField.getText());
-		p.setColor(printColorCombo.getValue());
-		p.setSide(printSideCombo.getValue());
-		p.setWithCtp(printCtpCombo.getValue());
-		p.setNotes(printNotesArea.getText());
-		p.setAmount(printAmountField.getText());
+		JobItemService js = new JobItemService();
+		js.addPrinting(currentJob.getId(), printQtyField.getText(), printUnitsCombo.getValue(), printSetField.getText(),
+				printColorCombo.getValue(), printSideCombo.getValue(), printCtpCombo.getValue(),
+				printNotesArea.getText(), printAmountField.getText());
 
-		currentJob.addPrinting(p);
+		// currentJob.addPrinting(p);
 
 		clearPrintingFields();
 	}
@@ -207,40 +256,42 @@ public class AddJobController {
 	@FXML
 	private void handleAddCtpPlate() {
 
-		CtpPlate plate = new CtpPlate();
-		plate.setQty(ctpQtyCombo.getValue());
-		plate.setSize(ctpSizeCombo.getValue());
-		plate.setGauge(ctpGaugeCombo.getValue());
-		plate.setBacking(ctpBackingCombo.getValue());
-		plate.setNotes(ctpNotesArea.getText());
-		plate.setAmount(ctpAmountField.getText());
+		JobItemService js = new JobItemService();
+		js.addCtpItem(
 
-		currentJob.addCtpPlate(plate);
+				currentJob.getId(), ctpQtyField.getText(), ctpSizeCombo.getValue(), ctpGaugeCombo.getValue(),
+				ctpBackingCombo.getValue(), ctpNotesArea.getText(), ctpAmountField.getText(),
+				ctpSupplierCombo.getValue(), ctpColorCombo.getValue());
+
+		// currentJob.addCtpPlate(plate);
 		clearCtpFields();
 	}
 
 	private void clearCtpFields() {
-		ctpQtyCombo.setValue(null);
+		ctpQtyField.setText(null);
 		ctpSizeCombo.setValue(null);
 		ctpGaugeCombo.setValue(null);
 		ctpBackingCombo.setValue(null);
+		ctpSupplierCombo.setValue(null);
+
 		ctpNotesArea.clear();
 		ctpAmountField.clear();
+
 	}
 
 	@FXML
 	private void handleAddPaper() {
 
 		Paper paper = new Paper();
-		paper.setQty(paperQtyField.getText());
-		paper.setUnits(paperUnitsCombo.getValue());
-		paper.setSize(paperSizeCombo.getValue());
-		paper.setGsm(paperGsmCombo.getValue());
-		paper.setType(paperTypeCombo.getValue());
-		paper.setNotes(paperNotesArea.getText());
-		paper.setAmount(paperAmountField.getText());
+		JobItemService js = new JobItemService();
 
-		currentJob.addPaper(paper);
+		// NEW: Set source (Our or Client)
+		String source = ((RadioButton) paperSourceGroup.getSelectedToggle()).getText();
+
+		js.addPaper(currentJob.getId(), paperQtyField.getText(), paperUnitsCombo.getValue(), paperSizeCombo.getValue(),
+				paperGsmCombo.getValue(), paperTypeCombo.getValue(), paperNotesArea.getText(),
+				paperAmountField.getText(), source);
+		// currentJob.addPaper(paper);
 		clearPaperFields();
 	}
 
@@ -252,19 +303,19 @@ public class AddJobController {
 		paperTypeCombo.setValue(null);
 		paperNotesArea.clear();
 		paperAmountField.clear();
+		paperOurRadio.setSelected(true);
+
 	}
 
 	@FXML
 	private void handleAddBinding() {
 
 		Binding b = new Binding();
-		b.setProcess(bindingProcessCombo.getValue());
-		b.setQty(bindingQtyField.getText());
-		b.setRate(bindingRateField.getText());
-		b.setNotes(bindingNotesArea.getText());
-		b.setAmount(bindingAmountField.getText());
+		JobItemService js = new JobItemService();
+		js.addBinding(currentJob.getId(), bindingProcessCombo.getValue(), bindingQtyField.getText(),
+				bindingRateField.getText(), bindingNotesArea.getText(), bindingAmountField.getText());
 
-		currentJob.addBinding(b);
+		// currentJob.addBinding(b);
 		clearBindingFields();
 	}
 
@@ -280,15 +331,12 @@ public class AddJobController {
 	private void handleAddLamination() {
 
 		Lamination lam = new Lamination();
-		lam.setQty(lamQtyField.getText());
-		lam.setUnit(lamUnitCombo.getValue());
-		lam.setType(lamTypeCombo.getValue());
-		lam.setSide(lamSideCombo.getValue());
-		lam.setSize(lamSizeCombo.getValue());
-		lam.setNotes(lamNotesArea.getText());
-		lam.setAmount(lamAmountField.getText());
+		JobItemService js = new JobItemService();
 
-		currentJob.addLamination(lam);
+		js.addLamination(currentJob.getId(), lamQtyField.getText(), lamUnitCombo.getValue(), lamTypeCombo.getValue(),
+				lamSideCombo.getValue(), lamSizeCombo.getValue(), lamNotesArea.getText(), lamAmountField.getText());
+
+		// currentJob.addLamination(lam);
 		clearLaminationFields();
 	}
 
@@ -316,7 +364,7 @@ public class AddJobController {
 		printAmountField.clear();
 
 		// Clear CTP fields
-		ctpQtyCombo.setValue(null);
+		ctpQtyField.setText(null);
 		ctpSizeCombo.setValue(null);
 		ctpGaugeCombo.setValue(null);
 		ctpBackingCombo.setValue(null);
@@ -368,4 +416,317 @@ public class AddJobController {
 		alert.showAndWait();
 	}
 
+	// <=====================Validation Logics =======================>
+
+	// ---------- Add these FXML fields (if not already present) ----------
+	@FXML
+	private Button addPrintingBtn;
+	@FXML
+	private Button addPlateBtn;
+	@FXML
+	private Button addPaperBtn;
+	@FXML
+	private Button addBindingBtn;
+	@FXML
+	private Button addLaminationBtn;
+
+	// ---------- Helper: allow only digits in TextField ----------
+	private void makeNumeric(TextField tf) {
+		tf.setTextFormatter(new TextFormatter<>(change -> {
+			// allow empty or digits only
+			return change.getControlNewText().matches("\\d*") ? change : null;
+		}));
+	}
+
+	// ---------- Small helper ----------
+	private boolean notEmpty(String s) {
+		return s != null && !s.trim().isEmpty();
+	}
+
+	// ---------- PRINTING validation ----------
+	private boolean isPrintingValid() {
+		boolean fullEntry = notEmpty(printQtyField.getText()) && printUnitsCombo.getValue() != null
+				&& notEmpty(printSetField.getText()) && notEmpty(printAmountField.getText());
+
+		boolean notesEntry = notEmpty(printNotesArea.getText()) && notEmpty(printAmountField.getText());
+
+		return fullEntry || notesEntry;
+	}
+
+	private void setupPrintingValidation() {
+		Runnable validate = () -> addPrintingBtn.setDisable(!isPrintingValid());
+
+		// watch relevant properties
+		printQtyField.textProperty().addListener((a, b, c) -> validate.run());
+		printSetField.textProperty().addListener((a, b, c) -> validate.run());
+		printAmountField.textProperty().addListener((a, b, c) -> validate.run());
+		printNotesArea.textProperty().addListener((a, b, c) -> validate.run());
+		printUnitsCombo.valueProperty().addListener((a, b, c) -> validate.run());
+
+		// initial
+		validate.run();
+	}
+
+	// ---------- CTP validation ----------
+	private boolean isCtpValid() {
+		boolean fullEntry = notEmpty(ctpQtyField.getText()) && ctpSizeCombo.getValue() != null
+				&& notEmpty(ctpAmountField.getText()) && ctpSupplierCombo.getValue() != null;
+
+		boolean notesEntry = notEmpty(ctpNotesArea.getText()) && notEmpty(ctpAmountField.getText());
+
+		return fullEntry || notesEntry;
+	}
+
+	private void setupCtpValidation() {
+		Runnable validate = () -> addPlateBtn.setDisable(!isCtpValid());
+
+		ctpQtyField.textProperty().addListener((a, b, c) -> validate.run());
+		ctpSizeCombo.valueProperty().addListener((a, b, c) -> validate.run());
+		ctpAmountField.textProperty().addListener((a, b, c) -> validate.run());
+		ctpNotesArea.textProperty().addListener((a, b, c) -> validate.run());
+
+		validate.run();
+	}
+
+	// ---------- PAPER validation ----------
+	private boolean isPaperValid() {
+		boolean fullEntry = notEmpty(paperQtyField.getText()) && paperUnitsCombo.getValue() != null
+				&& paperSizeCombo.getValue() != null && notEmpty(paperAmountField.getText());
+
+		boolean notesEntry = notEmpty(paperNotesArea.getText()) && notEmpty(paperAmountField.getText());
+
+		return fullEntry || notesEntry;
+	}
+
+	private void setupPaperValidation() {
+		Runnable validate = () -> addPaperBtn.setDisable(!isPaperValid());
+
+		paperQtyField.textProperty().addListener((a, b, c) -> validate.run());
+		paperAmountField.textProperty().addListener((a, b, c) -> validate.run());
+		paperNotesArea.textProperty().addListener((a, b, c) -> validate.run());
+		paperUnitsCombo.valueProperty().addListener((a, b, c) -> validate.run());
+		paperSizeCombo.valueProperty().addListener((a, b, c) -> validate.run());
+
+		validate.run();
+	}
+
+	// ---------- BINDING validation ----------
+	private boolean isBindingValid() {
+		boolean fullEntry = bindingProcessCombo.getValue() != null && notEmpty(bindingQtyField.getText())
+				&& notEmpty(bindingRateField.getText()) && notEmpty(bindingAmountField.getText());
+
+		boolean notesEntry = notEmpty(bindingNotesArea.getText()) && notEmpty(bindingAmountField.getText());
+
+		return fullEntry || notesEntry;
+	}
+
+	private void setupBindingValidation() {
+		Runnable validate = () -> addBindingBtn.setDisable(!isBindingValid());
+
+		bindingProcessCombo.valueProperty().addListener((a, b, c) -> validate.run());
+		bindingQtyField.textProperty().addListener((a, b, c) -> validate.run());
+		bindingRateField.textProperty().addListener((a, b, c) -> validate.run());
+		bindingAmountField.textProperty().addListener((a, b, c) -> validate.run());
+		bindingNotesArea.textProperty().addListener((a, b, c) -> validate.run());
+
+		validate.run();
+	}
+
+	// ---------- LAMINATION validation ----------
+	private boolean isLaminationValid() {
+		boolean fullEntry = notEmpty(lamQtyField.getText()) && lamUnitCombo.getValue() != null
+				&& lamTypeCombo.getValue() != null && notEmpty(lamAmountField.getText());
+
+		boolean notesEntry = notEmpty(lamNotesArea.getText()) && notEmpty(lamAmountField.getText());
+
+		return fullEntry || notesEntry;
+	}
+
+	private void setupLaminationValidation() {
+		Runnable validate = () -> addLaminationBtn.setDisable(!isLaminationValid());
+
+		lamQtyField.textProperty().addListener((a, b, c) -> validate.run());
+		lamUnitCombo.valueProperty().addListener((a, b, c) -> validate.run());
+		lamTypeCombo.valueProperty().addListener((a, b, c) -> validate.run());
+		lamAmountField.textProperty().addListener((a, b, c) -> validate.run());
+		lamNotesArea.textProperty().addListener((a, b, c) -> validate.run());
+
+		validate.run();
+	}
+
+	// ===== Client ComboBox State =====
+	private final ObservableList<Client> masterClients = javafx.collections.FXCollections.observableArrayList();
+
+	private final javafx.collections.transformation.FilteredList<Client> filteredClients = new javafx.collections.transformation.FilteredList<>(
+			masterClients);
+
+	private boolean clientLocked = false;
+	private Client selectedClient = null;
+
+	// ---------- initialize() wiring ----------
+	@FXML
+	public void initialize() {
+		filteredClients.setPredicate(c -> true);
+
+		/* ================= INITIAL STATE ================= */
+
+		disableAllCards(true);
+
+		masterClients.setAll(clientService.getAllClients());
+		clientCombo.setItems(filteredClients);
+		clientCombo.setEditable(true);
+
+		/* ================= CELL RENDERING ================= */
+
+		clientCombo.setCellFactory(lv -> new ListCell<>() {
+			@Override
+			protected void updateItem(Client c, boolean empty) {
+				super.updateItem(c, empty);
+				setText(empty || c == null ? null : c.getBusinessName() + " | " + c.getClientName());
+			}
+		});
+
+		clientCombo.setButtonCell(new ListCell<>() {
+			@Override
+			protected void updateItem(Client c, boolean empty) {
+				super.updateItem(c, empty);
+				setText(empty || c == null ? null : c.getBusinessName() + " | " + c.getClientName());
+			}
+		});
+
+		/* ================= STRING CONVERTER ================= */
+
+		clientCombo.setConverter(new StringConverter<>() {
+			@Override
+			public String toString(Client c) {
+				return c == null ? "" : c.getBusinessName() + " | " + c.getClientName();
+			}
+
+			@Override
+			public Client fromString(String s) {
+				// 🔐 NEVER create new objects here
+				return clientCombo.getValue();
+			}
+		});
+
+		/* ================= LIVE SEARCH ================= */
+
+		/* ================= LIVE SEARCH ================= */
+
+		clientCombo.getEditor().textProperty().addListener((obs, oldText, newText) -> {
+
+			// 🚫 stop only after client is locked
+			if (clientLocked)
+				return;
+
+			String search = newText == null ? "" : newText.trim().toLowerCase();
+
+			filteredClients
+					.setPredicate(client -> search.isEmpty() || client.getBusinessName().toLowerCase().contains(search)
+							|| client.getClientName().toLowerCase().contains(search)
+							|| (client.getPhone() != null && client.getPhone().contains(search)));
+
+			// ✅ ensure dropdown is visible while typing
+			if (!clientCombo.isShowing()) {
+				clientCombo.show();
+			}
+		});
+
+		/* ================= SELECTION ================= */
+
+		clientCombo.valueProperty().addListener((obs, oldClient, newClient) -> {
+
+			if (newClient == null) {
+				clientLocked = false;
+				selectedClient = null;
+				disableAllCards(true);
+				return;
+			}
+
+			// 🔐 lock immediately
+			clientLocked = true;
+			selectedClient = newClient;
+
+			if (currentJob != null && currentJob.getId() > 0) {
+				new JobService().assignClient(currentJob, newClient.getId());
+			}
+
+			disableAllCards(false);
+		});
+
+		/* ================= RE-ENABLE SEARCH ON CLICK ================= */
+
+		clientCombo.getEditor().setOnMouseClicked(e -> {
+			clientLocked = false;
+			filteredClients.setPredicate(null);
+		});
+
+		/* ================= NUMERIC SAFETY ================= */
+
+		makeNumeric(printQtyField);
+		makeNumeric(printSetField);
+		makeNumeric(printAmountField);
+		makeNumeric(ctpQtyField);
+		makeNumeric(ctpAmountField);
+		makeNumeric(paperQtyField);
+		makeNumeric(paperAmountField);
+		makeNumeric(bindingQtyField);
+		makeNumeric(bindingRateField);
+		makeNumeric(bindingAmountField);
+		makeNumeric(lamQtyField);
+		makeNumeric(lamAmountField);
+
+		/* ================= VALIDATORS ================= */
+
+		setupPrintingValidation();
+		setupCtpValidation();
+		setupPaperValidation();
+		setupBindingValidation();
+		setupLaminationValidation();
+
+		addPrintingBtn.setDisable(true);
+		addPlateBtn.setDisable(true);
+		addPaperBtn.setDisable(true);
+		addBindingBtn.setDisable(true);
+		addLaminationBtn.setDisable(true);
+
+		/* ================= SUPPLIERS ================= */
+
+		loadSuppliers();
+
+		/* ================= PAPER SOURCE ================= */
+
+		paperSourceGroup = new ToggleGroup();
+		paperOurRadio.setToggleGroup(paperSourceGroup);
+		paperClientRadio.setToggleGroup(paperSourceGroup);
+		paperOurRadio.setSelected(true);
+	}
+
+	private void loadSuppliers() {
+		ctpSupplierCombo.getItems().setAll(supplierService.getSuppliersByType("CTP"));
+		ctpSupplierCombo.setCellFactory(cb -> new ListCell<>() {
+			@Override
+			protected void updateItem(Supplier s, boolean empty) {
+				super.updateItem(s, empty);
+				setText(empty || s == null ? null : s.getbusinessName() + " | " + s.getName());
+			}
+		});
+
+		ctpSupplierCombo.setButtonCell(new ListCell<>() {
+			@Override
+			protected void updateItem(Supplier s, boolean empty) {
+				super.updateItem(s, empty);
+				setText(empty || s == null ? null : s.getbusinessName() + " | " + s.getName());
+			}
+		});
+
+	}
+
+	private void disableAllCards(boolean disable) {
+		printingCard.setDisable(disable);
+		ctpCard.setDisable(disable);
+		paperCard.setDisable(disable);
+		bindingCard.setDisable(disable);
+		laminationCard.setDisable(disable);
+	}
 }

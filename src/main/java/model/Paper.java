@@ -10,6 +10,15 @@ public class Paper implements Serializable {
 	private String type; // e.g., Art Paper
 	private String notes;
 	private String amount;
+	private String source; // eg our paper or client
+
+	public void setSource(String source) {
+		this.source = source;
+	}
+
+	public String getSource() {
+		return source;
+	}
 
 	public Paper() {
 	}
