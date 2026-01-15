@@ -2,8 +2,10 @@ package service;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.util.List;
 
 import model.Job;
+import model.JobSummary;
 import repository.JobRepository;
 import utils.DBConnection;
 
@@ -67,4 +69,7 @@ public class JobService {
 		}
 	}
 
+	  public List<JobSummary> getJobsByClientId(int clientId) {
+	        return repo.findJobsByClientId(clientId);
+	    }
 }

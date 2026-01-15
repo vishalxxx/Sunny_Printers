@@ -2,141 +2,230 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
 
 <StackPane xmlns="http://javafx.com/javafx/23"
-	xmlns:fx="http://javafx.com/fxml/1"
-	fx:controller="controller.InvoiceGenerationController"
-	stylesheets="@../css/invoice_genration.css" styleClass="root">
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="controller.InvoiceGenerationController"
+           stylesheets="@../css/invoice_genration.css"
+           styleClass="root">
 
-	<VBox spacing="24" styleClass="main-container">
+    <VBox styleClass="page"
+          spacing="24"
+          maxWidth="Infinity"
+          maxHeight="Infinity">
 
-		<HBox spacing="24" alignment="CENTER_LEFT">
+        <!-- PAGE PADDING -->
+        <padding>
+            <Insets top="28" right="28" bottom="28" left="28"/>
+        </padding>
 
-			<!-- LEFT: HEADER -->
-			<VBox spacing="8" styleClass="save-box">
+        <!-- HEADER -->
+        <VBox spacing="6">
+            <Label text="Invoice Generation" styleClass="page-title"/>
+            <Label text="Select a method below to generate invoices for your clients."
+                   styleClass="page-subtitle"/>
+        </VBox>
 
-				<Label text="SAVE GENERATED INVOICES TO:"
-					styleClass="save-label" />
+        <!-- CARDS GRID -->
+        <GridPane hgap="22" vgap="22" maxWidth="Infinity">
+            <columnConstraints>
+                <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33"/>
+                <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33"/>
+                <ColumnConstraints hgrow="ALWAYS" percentWidth="33.34"/>
+            </columnConstraints>
 
-				<HBox spacing="0.8em" alignment="CENTER_LEFT">
+            <!-- ================= CARD 1 : DATE RANGE ================= -->
+            <VBox GridPane.columnIndex="0"
+                  spacing="14"
+                  styleClass="card">
 
-					<TextField fx:id="savePathField" editable="false"
-						HBox.hgrow="ALWAYS" promptText="Select folder to save invoices"
-						styleClass="save-path" />
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="📅" styleClass="card-icon"/>
+                    <VBox spacing="2">
+                        <Label text="By Date Range" styleClass="card-title"/>
+                        <Label text="Generate for a specific client" styleClass="hint"/>
+                    </VBox>
+                </HBox>
 
-					<Button text="📁" onAction="#chooseSaveLocation"
-						styleClass="icon-btn" />
-				</HBox>
+                <Label text="Select Client" styleClass="field-label"/>
+                <ComboBox fx:id="clientComboBox"
+                          promptText="Select a client..."
+                          maxWidth="Infinity"/>
 
-				<CheckBox fx:id="rememberPathCheck"
-					text="Remember this location and never ask again"
-					styleClass="save-check" />
+                <HBox spacing="12">
+                    <VBox spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="Start Date" styleClass="field-label"/>
+                        <DatePicker fx:id="startDatePicker"
+                                    promptText="mm/dd/yy"
+                                    maxWidth="Infinity"/>
+                    </VBox>
 
-			</VBox>
+                    <VBox spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="End Date" styleClass="field-label"/>
+                        <DatePicker fx:id="endDatePicker"
+                                    promptText="mm/dd/yy"
+                                    maxWidth="Infinity"/>
+                    </VBox>
+                </HBox>
+
+                <Region VBox.vgrow="ALWAYS"/>
+
+                <!-- ✅ HBOX BUTTON -->
+               <Button fx:id="generateInvoiceBtn"
+        maxWidth="Infinity"
+        onMouseClicked="#onGenerateDateInvoiceClicked"
+        styleClass="btn-primary"
+        text="Generate Invoice">
+    <graphic>
+        <Label text="➤"
+               style="-fx-text-fill: white; -fx-font-size: 1.05em; -fx-font-weight: 900;"/>
+    </graphic>
+</Button>
 
 
-		</HBox>
+            </VBox>
 
-		<!-- CARDS ROW -->
-		<GridPane hgap="22" vgap="22">
+            <!-- ================= CARD 2 : MONTHLY BULK ================= -->
+          <!-- ================= CARD 2 ================= -->
+<VBox GridPane.columnIndex="1"
+      spacing="14"
+      styleClass="card">
 
-			<columnConstraints>
-				<ColumnConstraints hgrow="ALWAYS"
-					percentWidth="33.33" />
-				<ColumnConstraints hgrow="ALWAYS"
-					percentWidth="33.33" />
-				<ColumnConstraints hgrow="ALWAYS"
-					percentWidth="33.34" />
-			</columnConstraints>
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Label text="📦" styleClass="card-icon"/>
+        <VBox spacing="2">
+            <Label text="Monthly Bulk" styleClass="card-title"/>
+            <Label text="All clients for a specific month" styleClass="hint"/>
+        </VBox>
+    </HBox>
 
-			<!-- CARD 1 -->
-			<VBox GridPane.columnIndex="0" spacing="14" styleClass="card">
-				<Label text="By Date Range" styleClass="card-title" />
+    <Label text="This will generate individual invoices for all active clients for the selected month."
+           wrapText="true"
+           styleClass="hint"/>
 
-				<ComboBox promptText="Select a client..."
-					maxWidth="Infinity" />
+    <Label text="Select Month" styleClass="field-label"/>
 
-				<HBox spacing="10">
-					<DatePicker maxWidth="Infinity" />
-					<DatePicker maxWidth="Infinity" />
-				</HBox>
+    <!-- ✅ Month + Year Picker -->
+    <HBox fx:id="monthYearRow" spacing="4" alignment="CENTER_LEFT">
 
-				<Region VBox.vgrow="ALWAYS" />
+        <ComboBox fx:id="monthComboBox"
+                  promptText="Month"
+                  maxWidth="Infinity"
+                  HBox.hgrow="ALWAYS"/>
 
-				<Button text="Generate Invoice" maxWidth="Infinity"
-					styleClass="btn primary" />
-			</VBox>
+        <ComboBox fx:id="yearComboBox"
+                  promptText="Year"
+                  maxWidth="Infinity"
+                  HBox.hgrow="ALWAYS"/>
 
-			<!-- CARD 2 -->
-			<VBox GridPane.columnIndex="1" spacing="14" styleClass="card">
-				<Label text="Monthly Bulk" styleClass="card-title" />
-				<Label text="All clients for a specific month"
-					styleClass="hint" />
+    </HBox>
 
-				<TextField promptText="Select Month" maxWidth="Infinity" />
-				<CheckBox text="Auto-email invoices to clients" />
+    <CheckBox fx:id="autoEmailCheck"
+              text="Auto-email invoices to clients"/>
 
-				<Region VBox.vgrow="ALWAYS" />
+    <Region VBox.vgrow="ALWAYS"/>
 
-				<Button text="Run Batch Process" maxWidth="Infinity"
-					styleClass="btn purple" />
-			</VBox>
+    <!-- ✅ Button (your existing one) -->
+    <Button fx:id="runBatchBtn"
+            text="Run Batch Process"
+            maxWidth="Infinity"
+            onMouseClicked="#onRunMonthlyBulkClicked"
+            styleClass="btn-purple"/>
+</VBox>
 
-			<!-- CARD 3 -->
-			<VBox GridPane.columnIndex="2" spacing="14" styleClass="card">
+            <!-- ================= CARD 3 : SPECIFIC JOBS ================= -->
+        <VBox GridPane.columnIndex="2"
+      spacing="14"
+      styleClass="card">
 
-				<!-- Header -->
-				<HBox spacing="10" alignment="CENTER_LEFT">
-					<StackPane styleClass="icon-badge" />
-					<VBox>
-						<Label text="Specific Jobs" styleClass="card-title" />
-						<Label text="Invoice by Job IDs" styleClass="card-subtitle" />
-					</VBox>
-				</HBox>
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Label text="🧾" styleClass="card-icon"/>
+        <VBox spacing="2">
+            <Label text="Specific Jobs" styleClass="card-title"/>
+            <Label text="Invoice by Job IDs" styleClass="hint"/>
+        </VBox>
+    </HBox>
 
-				<Label text="Select Job(s)" styleClass="field-label" />
+    <!-- ✅ CLIENT -->
+    <Label text="Select Client" styleClass="field-label"/>
+    <ComboBox fx:id="jobClientComboBox"
+              promptText="Select a client..."
+              maxWidth="Infinity"/>
 
-				<TextField fx:id="jobSearchField"
-					promptText="Search Job ID or Name..." onAction="#onJobEntered"
-					maxWidth="Infinity" />
+    <!-- ✅ JOBS -->
+    <Label text="Select Job(s)" styleClass="field-label"/>
+    <ComboBox fx:id="jobComboBox"
+              promptText="Select jobs..."
+              maxWidth="Infinity"
+              disable="true"/>
 
-				<!-- Chips area -->
-				<VBox spacing="6" styleClass="selected-container"
-					VBox.vgrow="ALWAYS">
+    <!-- ✅ CHIPS AREA -->
+    <VBox spacing="10" styleClass="selected-box" VBox.vgrow="ALWAYS">
 
-					<Label fx:id="selectedLabel" text="Selected Jobs:"
-						styleClass="hint" />
+        <Label fx:id="selectedLabel"
+               text="Selected Jobs:"
+               visible="false"
+               styleClass="hint"/>
 
-					<ScrollPane fx:id="selectedJobsScroll" fitToWidth="true"
-						hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="chip-scroll"
-						prefViewportHeight="100">
+        <ScrollPane fx:id="selectedJobsScroll"
+                    fitToWidth="true"
+                    VBox.vgrow="ALWAYS"
+                    hbarPolicy="NEVER"
+                    vbarPolicy="AS_NEEDED"
+                    styleClass="chip-scroll">
 
-						<!-- IMPORTANT: maxWidth prevents horizontal expansion -->
-						<FlowPane fx:id="selectedJobsPane" hgap="8" vgap="8"
-							maxWidth="Infinity" />
-					</ScrollPane>
-				</VBox>
+            <FlowPane fx:id="selectedJobsPane"
+                      hgap="8"
+                      vgap="8"
+                      maxWidth="Infinity"/>
+        </ScrollPane>
+    </VBox>
 
-				<Region VBox.vgrow="ALWAYS" />
+    <!-- ✅ BUTTON -->
+    <Button fx:id="createJobInvoiceBtn"
+            maxWidth="Infinity"
+            onMouseClicked="#onCreateJobInvoiceClicked"
+            styleClass="btn-green"
+            text="Create Job Invoice">
+        <graphic>
+            <Label text="🧾"
+                   style="-fx-text-fill: white; -fx-font-size: 1.05em; -fx-font-weight: 900;"/>
+        </graphic>
+    </Button>
 
-				<Button fx:id="createJobInvoiceBtn" text="Create Job Invoice"
-					maxWidth="Infinity" styleClass="btn success" disable="true"
-					minHeight="42" />
-			</VBox>
+</VBox>
 
-		</GridPane>
+        </GridPane>
 
-		<!-- RECENT INVOICES -->
-		<VBox spacing="12" styleClass="card">
-			<HBox>
-				<Label text="Recent Invoices Generated"
-					styleClass="section-title" />
-				<Region HBox.hgrow="ALWAYS" />
-				<Hyperlink text="View All History" />
-			</HBox>
+        <!-- SAVE LOCATION -->
+        <HBox spacing="14" alignment="CENTER_LEFT" styleClass="save-bar">
+            <Label text="SAVE LOCATION:" styleClass="save-label"/>
 
-			<TableView VBox.vgrow="ALWAYS" />
-		</VBox>
+            <TextField fx:id="savePathField"
+                       editable="false"
+                       promptText="Select folder to save invoices"
+                       HBox.hgrow="ALWAYS"
+                       styleClass="save-path"/>
 
-	</VBox>
+            <!-- Browse pill -->
+            <Button text="Browse"
+        fx:id="browseSavePathBtn"
+        onAction="#chooseSaveLocation"
+        styleClass="btn-primary"/>
+
+        </HBox>
+
+        <!-- TABLE -->
+        <VBox spacing="10" styleClass="table-card" VBox.vgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT">
+                <Label text="Recent Invoices Generated" styleClass="section-title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Hyperlink text="View All History"/>
+            </HBox>
+
+            <TableView fx:id="recentInvoicesTable" VBox.vgrow="ALWAYS"/>
+        </VBox>
+
+    </VBox>
 </StackPane>
