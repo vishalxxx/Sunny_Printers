@@ -336,21 +336,31 @@
 
 /* chips */
 .job-chip {
-    -fx-background-color: rgba(5,150,105,0.25);
-    -fx-background-radius: 2em;
-    -fx-padding: 0.35em 0.75em;
+    -fx-background-color: #1f3a33;
+    -fx-border-color: #2f5a4f;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+
+    -fx-padding: 4 8;         /* ✅ smaller */
+    -fx-spacing: 6;           /* ✅ gap between text + X */
+    -fx-alignment: CENTER_LEFT;
+
+    -fx-max-height: 28;       /* ✅ important */
 }
 
-.chip-text {
-    -fx-text-fill: #a7f3d0;
-    -fx-font-size: 0.88em;
+.job-chip-text {
+    -fx-text-fill: #e6fff6;
+    -fx-font-size: 11px;      /* ✅ smaller */
     -fx-font-weight: 700;
 }
 
-.chip-remove {
+.job-chip-remove {
     -fx-background-color: transparent;
-    -fx-text-fill: #34d399;
+    -fx-text-fill: #ff8080;
+    -fx-font-size: 11px;
     -fx-font-weight: 900;
+
+    -fx-padding: 0 4;         /* ✅ small click area */
     -fx-cursor: hand;
 }
 

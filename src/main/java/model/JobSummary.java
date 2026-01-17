@@ -8,6 +8,15 @@ public class JobSummary {
     private String jobNo;
     private String jobTitle;
     private LocalDate jobDate;
+    private int jobId;
+
+    public int getJobId() {
+        return jobId;
+    }
+
+    public void setJobId(int jobId) {
+        this.jobId = jobId;
+    }
 
     public JobSummary() {}
 

@@ -2,10 +2,13 @@ package controller;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -13,12 +16,16 @@ import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 import model.Client;
+import model.Invoice;
+import model.JobSummary;
 import service.ClientService;
 import service.InvoiceBuilderService;
 import service.InvoiceGenerationService;
 import service.InvoiceStorageService;
+import service.JobService;
 import utils.Toast;
 import java.io.File;
 import javafx.stage.DirectoryChooser;
@@ -27,6 +34,8 @@ public class InvoiceGenerationController {
 
 	private InvoiceBuilderService invoicebuilder = new InvoiceBuilderService();
 	private InvoiceGenerationService invoicegeneration = new InvoiceGenerationService();
+	private JobService js = new JobService();
+	private final Map<String, JobSummary> selectedJobsMap = new LinkedHashMap<>();
 
 	// ---------------- CARD 1 ----------------
 	@FXML
@@ -53,13 +62,17 @@ public class InvoiceGenerationController {
 
 	// ---------------- CARD 3 ----------------
 	@FXML
-	private TextField jobSearchField;
+	private ComboBox<Client> jobClientComboBox;
 	@FXML
-	private FlowPane selectedJobsPane;
+	private ComboBox<JobSummary> jobComboBox;
+
+	@FXML
+	private Label selectedLabel;
 	@FXML
 	private ScrollPane selectedJobsScroll;
 	@FXML
-	private Label selectedLabel;
+	private FlowPane selectedJobsPane;
+
 	@FXML
 	private Button createJobInvoiceBtn;
 
@@ -76,18 +89,65 @@ public class InvoiceGenerationController {
 
 	@FXML
 	private void initialize() {
+
+		setupClientComboBoxUI(clientComboBox);
+		setupClientComboBoxUI(jobClientComboBox);
+		setupJobComboBoxUI();
+
 		loadClients();
-		setupClientComboBoxUI();
+
+		jobComboBox.setDisable(true);
+		selectedLabel.setVisible(false);
+
+		// ✅ Client change => reset + load jobs
+		jobClientComboBox.valueProperty().addListener((obs, oldV, newClient) -> {
+
+			// ✅ safe reset
+			selectedJobsMap.clear();
+			selectedJobsPane.getChildren().clear();
+			selectedLabel.setVisible(false);
+
+			jobComboBox.getSelectionModel().clearSelection();
+			jobComboBox.setValue(null);
+			jobComboBox.getItems().clear();
+
+			if (newClient == null) {
+				jobComboBox.setDisable(true);
+				return;
+			}
+
+			jobComboBox.setDisable(false);
+			loadJobsForClient(newClient.getId());
+		});
+
+		// ✅ Job selection => store + add chip
+		jobComboBox.setOnAction(e -> {
+			JobSummary selectedJob = jobComboBox.getValue();
+			if (selectedJob != null) {
+
+				// ✅ prevent duplicate
+				if (!selectedJobsMap.containsKey(selectedJob.getJobNo())) {
+					selectedJobsMap.put(selectedJob.getJobNo(), selectedJob);
+
+					selectedJobsPane.getChildren().add(createChip(selectedJob));
+					selectedLabel.setVisible(true);
+				}
+
+				// ✅ clear selection safely
+				Platform.runLater(() -> jobComboBox.getSelectionModel().clearSelection());
+			}
+		});
 
 		setupAutoPopupDatePicker(startDatePicker);
 		setupAutoPopupDatePicker(endDatePicker);
 
 		setupMonthYearPicker();
+
 		String savedPath = InvoiceStorageService.getSavePath();
 		if (savedPath != null) {
 			savePathField.setText(savedPath);
 		}
-		
+
 		updateState();
 	}
 
@@ -120,12 +180,51 @@ public class InvoiceGenerationController {
 	private void loadClients() {
 		List<Client> clients = clientService.getAllClients();
 		clientComboBox.getItems().setAll(clients);
+		jobClientComboBox.getItems().setAll(clients);
+
 	}
 
-	private void setupClientComboBoxUI() {
+	private void loadJobsForClient(int clientId) {
+
+		List<JobSummary> jobs = js.getJobsByClientId(clientId); // pending jobs only
+
+		jobComboBox.getItems().setAll(jobs);
+		jobComboBox.setDisable(jobs.isEmpty());
+	}
+
+	private void setupJobComboBoxUI() {
+
+		jobComboBox.setButtonCell(new ListCell<>() {
+			@Override
+			protected void updateItem(JobSummary item, boolean empty) {
+				super.updateItem(item, empty);
+
+				if (empty || item == null) {
+					setText("Select jobs...");
+				} else {
+					setText(item.getJobDate() + " | " + item.getJobNo() + " | " + item.getJobTitle());
+				}
+			}
+		});
+
+		jobComboBox.setCellFactory(cb -> new ListCell<>() {
+			@Override
+			protected void updateItem(JobSummary item, boolean empty) {
+				super.updateItem(item, empty);
+
+				if (empty || item == null) {
+					setText(null);
+				} else {
+					setText(item.getJobDate() + " | " + item.getJobNo() + " | " + item.getJobTitle());
+				}
+			}
+		});
+	}
+
+	private void setupClientComboBoxUI(ComboBox<Client> clientCombo) {
 
 		// ✅ Selected value display
-		clientComboBox.setButtonCell(new ListCell<>() {
+		clientCombo.setButtonCell(new ListCell<>() {
 			@Override
 			protected void updateItem(Client item, boolean empty) {
 				super.updateItem(item, empty);
@@ -139,7 +238,7 @@ public class InvoiceGenerationController {
 		});
 
 		// ✅ Dropdown format
-		clientComboBox.setCellFactory(cb -> new ListCell<>() {
+		clientCombo.setCellFactory(cb -> new ListCell<>() {
 			@Override
 			protected void updateItem(Client item, boolean empty) {
 				super.updateItem(item, empty);
@@ -156,41 +255,69 @@ public class InvoiceGenerationController {
 	// ==========================================================
 	// JOB CHIPS
 	// ==========================================================
-	@FXML
-	private void onJobEntered() {
-		String job = jobSearchField.getText().trim();
+//	@FXML
+//	private void onJobEntered() {
+//		String job = jobSearchField.getText().trim();
+//
+//		if (job.isEmpty() || selectedJobs.contains(job)) {
+//			jobSearchField.clear();
+//			return;
+//		}
+//
+//		selectedJobs.add(job);
+//		selectedJobsPane.getChildren().add(createChip(job));
+//		jobSearchField.clear();
+//
+//		updateState();
+//	}
 
-		if (job.isEmpty() || selectedJobs.contains(job)) {
-			jobSearchField.clear();
-			return;
-		}
+	private HBox createChip(JobSummary job) {
 
-		selectedJobs.add(job);
-		selectedJobsPane.getChildren().add(createChip(job));
-		jobSearchField.clear();
-
-		updateState();
-	}
-
-	private HBox createChip(String job) {
-		Label text = new Label(job);
-		text.getStyleClass().add("chip-text");
-
-		Button remove = new Button("×");
-		remove.getStyleClass().add("chip-remove");
-
-		HBox chip = new HBox(6, text, remove);
+		HBox chip = new HBox(6);
 		chip.setAlignment(Pos.CENTER_LEFT);
 		chip.getStyleClass().add("job-chip");
 
-		remove.setOnAction(e -> {
-			selectedJobs.remove(job);
+		chip.setMaxWidth(Region.USE_PREF_SIZE);
+		chip.setPrefWidth(Region.USE_COMPUTED_SIZE);
+
+		Label chipText = new Label(job.getJobNo() + " | " + job.getJobTitle());
+		chipText.getStyleClass().add("job-chip-text");
+
+		Button removeBtn = new Button("✖");
+		removeBtn.getStyleClass().add("job-chip-remove");
+
+		removeBtn.setOnAction(e -> {
+			selectedJobsMap.remove(job.getJobNo());
 			selectedJobsPane.getChildren().remove(chip);
-			updateState();
+
+			if (selectedJobsMap.isEmpty()) {
+				selectedLabel.setVisible(false);
+			}
 		});
 
+		chip.getChildren().addAll(chipText, removeBtn);
 		return chip;
 	}
+
+//	private HBox createChip(String job) {
+//		Label text = new Label(job);
+//		text.getStyleClass().add("chip-text");
+//
+//		Button remove = new Button("×");
+//		remove.getStyleClass().add("chip-remove");
+//
+//		HBox chip = new HBox(6, text, remove);
+//		chip.setAlignment(Pos.CENTER_LEFT);
+//		chip.getStyleClass().add("job-chip");
+//
+//		remove.setOnAction(e -> {
+//			selectedJobs.remove(job);
+//			selectedJobsPane.getChildren().remove(chip);
+//			updateState();
+//		});
+//
+//		return chip;
+//	}
 
 	private void updateState() {
 		boolean hasJobs = !selectedJobs.isEmpty();
@@ -204,54 +331,48 @@ public class InvoiceGenerationController {
 	@FXML
 	private void onGenerateDateInvoiceClicked(MouseEvent e) {
 
-	    if (InvoiceStorageService.getSavePath() == null) {
-	        toast("Please choose Save Location first.");
-	        return;
-	    }
+		if (InvoiceStorageService.getSavePath() == null) {
+			toast("Please choose Save Location first.");
+			return;
+		}
 
-	    if (clientComboBox.getValue() == null) {
-	        toast("Please select a client.");
-	        return;
-	    }
+		if (clientComboBox.getValue() == null) {
+			toast("Please select a client.");
+			return;
+		}
 
-	    if (startDatePicker.getValue() == null) {
-	        toast("Please select Start Date.");
-	        return;
-	    }
+		if (startDatePicker.getValue() == null) {
+			toast("Please select Start Date.");
+			return;
+		}
 
-	    if (endDatePicker.getValue() == null) {
-	        toast("Please select End Date.");
-	        return;
-	    }
+		if (endDatePicker.getValue() == null) {
+			toast("Please select End Date.");
+			return;
+		}
 
-	    // ✅ Start must be <= End
-	    if (startDatePicker.getValue().isAfter(endDatePicker.getValue())) {
-	        toast("End Date must be greater than Start Date ❌");
-	        return;
-	    }
+		// ✅ Start must be <= End
+		if (startDatePicker.getValue().isAfter(endDatePicker.getValue())) {
+			toast("End Date must be greater than Start Date ❌");
+			return;
+		}
 
-	    Client client = clientComboBox.getValue();
+		Client client = clientComboBox.getValue();
 
-	    toast("Generating invoice for " + client.getBusinessName() + " ✅");
+		toast("Generating invoice for " + client.getBusinessName() + " ✅");
 
-	    var invoice = invoicebuilder.buildInvoiceForClient(
-	            client.getId(),
-	            client.getClientName(),
-	            client.getBusinessName(),
-	            startDatePicker.getValue(),
-	            endDatePicker.getValue()
-	    );
+		var invoice = invoicebuilder.buildInvoiceForClient(client.getId(), client.getClientName(),
+				client.getBusinessName(), startDatePicker.getValue(), endDatePicker.getValue());
 
-	    if (invoice.getJobs().isEmpty()) {
-	        toast("No jobs found for selected date range ❌");
-	        return;
-	    }
+		if (invoice.getJobs().isEmpty()) {
+			toast("No jobs found for selected date range ❌");
+			return;
+		}
 
-	    invoicegeneration.generateSingleInvoice(invoice);
+		invoicegeneration.generateSingleInvoice(invoice);
 
-	    toast("Invoice generated successfully ✅");
+		toast("Invoice generated successfully ✅");
 	}
-
 
 	@FXML
 	private void onRunMonthlyBulkClicked(MouseEvent e) {
@@ -293,19 +414,79 @@ public class InvoiceGenerationController {
 	}
 
 	@FXML
-	private void onCreateJobInvoiceClicked(MouseEvent e) {
-		if (InvoiceStorageService.getSavePath() == null) {
-			toast("Please choose Save Location first.");
+	private void onCreateJobInvoiceClicked(MouseEvent event) {
+
+		Client client = jobClientComboBox.getValue();
+		if (client == null) {
+			toast("Please select a client first.");
 			return;
 		}
 
-		if (selectedJobs.isEmpty()) {
-			toast("Please enter at least 1 Job ID.");
+		if (selectedJobsMap.isEmpty()) {
+			toast("Please select at least 1 job.");
 			return;
 		}
 
-		toast("Creating Job Invoice for " + selectedJobs.size() + " job(s) ✅");
-		System.out.println("Selected Jobs: " + selectedJobs);
+		// ✅ 0) Ensure save location is set (auto choose if not)
+		String savedPath = InvoiceStorageService.getSavePath();
+
+		if (savedPath == null || savedPath.isBlank()) {
+
+			DirectoryChooser chooser = new DirectoryChooser();
+			chooser.setTitle("Select Folder to Save Invoices");
+
+			Stage stage = (Stage) ((Node) createJobInvoiceBtn).getScene().getWindow();
+			File selectedDir = chooser.showDialog(stage);
+
+			if (selectedDir == null) {
+				toast("Please select a folder to save invoices ❌");
+				return;
+			}
+
+			// ✅ Save in Preferences + update UI field
+			InvoiceStorageService.setSavePath(selectedDir.getAbsolutePath(), false);
+			savePathField.setText(selectedDir.getAbsolutePath());
+
+			toast("✅ Save location updated!");
+		}
+
+		try {
+			// ✅ 1) Collect job IDs
+			List<Integer> jobIds = selectedJobsMap.values().stream().map(JobSummary::getId).distinct().toList();
+
+			if (jobIds.isEmpty()) {
+				toast("Selected job list is empty.");
+				return;
+			}
+
+			// ✅ 2) Build invoice
+			Invoice invoice = invoicebuilder.buildInvoiceForClientByJobs(client.getId(), client.getClientName(),
+					client.getBusinessName(), jobIds);
+
+			if (invoice.getJobs().isEmpty()) {
+				toast("No invoice lines found for selected jobs.");
+				return;
+			}
+
+			// ✅ 3) Generate + Save invoice excel
+			invoicegeneration.generateSingleInvoice(invoice);
+
+			toast("✅ Invoice Generated & Saved!");
+			clearCard3();
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			toast("❌ Failed to generate invoice: " + ex.getMessage());
+		}
+	}
+
+	private void clearCard3() {
+		jobComboBox.getSelectionModel().clearSelection();
+		jobComboBox.setValue(null);
+
+		selectedJobsMap.clear();
+		selectedJobsPane.getChildren().clear();
+		selectedLabel.setVisible(false);
 	}
 
 	@FXML
@@ -334,42 +515,44 @@ public class InvoiceGenerationController {
 	// ==========================================================
 	private void setupAutoPopupDatePicker(DatePicker dp) {
 
-	    dp.setEditable(false);
+		dp.setEditable(false);
 
-	    // ✅ Disable future dates from calendar
-	    dp.setDayCellFactory(picker -> new DateCell() {
-	        @Override
-	        public void updateItem(java.time.LocalDate date, boolean empty) {
-	            super.updateItem(date, empty);
+		// ✅ Disable future dates from calendar
+		dp.setDayCellFactory(picker -> new DateCell() {
+			@Override
+			public void updateItem(java.time.LocalDate date, boolean empty) {
+				super.updateItem(date, empty);
 
-	            if (empty || date == null) return;
+				if (empty || date == null)
+					return;
 
-	            // ✅ future dates disabled
-	            if (date.isAfter(java.time.LocalDate.now())) {
-	                setDisable(true);
-	                setStyle("-fx-opacity: 0.35;"); // faded look
-	            }
-	        }
-	    });
+				// ✅ future dates disabled
+				if (date.isAfter(java.time.LocalDate.now())) {
+					setDisable(true);
+					setStyle("-fx-opacity: 0.35;"); // faded look
+				}
+			}
+		});
 
-	    // ✅ extra safety: if value becomes future somehow, reset and show toast
-	    dp.valueProperty().addListener((obs, oldVal, newVal) -> {
-	        if (newVal != null && newVal.isAfter(java.time.LocalDate.now())) {
-	            dp.setValue(oldVal); // revert
-	            toast("Future dates are not allowed ❌");
-	        }
-	    });
+		// ✅ extra safety: if value becomes future somehow, reset and show toast
+		dp.valueProperty().addListener((obs, oldVal, newVal) -> {
+			if (newVal != null && newVal.isAfter(java.time.LocalDate.now())) {
+				dp.setValue(oldVal); // revert
+				toast("Future dates are not allowed ❌");
+			}
+		});
 
-	    // ✅ Auto open popup on click
-	    dp.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
-	        if (!dp.isShowing()) dp.show();
-	    });
+		// ✅ Auto open popup on click
+		dp.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
+			if (!dp.isShowing())
+				dp.show();
+		});
 
-	    dp.focusedProperty().addListener((obs, oldV, newV) -> {
-	        if (newV && !dp.isShowing()) dp.show();
-	    });
+		dp.focusedProperty().addListener((obs, oldV, newV) -> {
+			if (newV && !dp.isShowing())
+				dp.show();
+		});
 	}
-
 
 	// ==========================================================
 	// TOAST
