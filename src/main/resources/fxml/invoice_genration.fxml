@@ -216,16 +216,29 @@
 
         </HBox>
 
-        <!-- TABLE -->
-        <VBox spacing="10" styleClass="table-card" VBox.vgrow="ALWAYS">
-            <HBox alignment="CENTER_LEFT">
-                <Label text="Recent Invoices Generated" styleClass="section-title"/>
-                <Region HBox.hgrow="ALWAYS"/>
-                <Hyperlink text="View All History"/>
-            </HBox>
+       <VBox spacing="10" styleClass="history-card">
 
-            <TableView fx:id="recentInvoicesTable" VBox.vgrow="ALWAYS"/>
-        </VBox>
+    <HBox alignment="CENTER_LEFT">
+        <Label text="Recent Invoices Generated" styleClass="history-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Hyperlink text="View All History" onAction="#onViewAllHistoryClicked" styleClass="history-link"/>
+    </HBox>
+
+    <TableView fx:id="recentInvoicesTable" prefHeight="210" styleClass="history-table">
+
+        <columns>
+            <TableColumn fx:id="colInvNo" text="INVOICE #" prefWidth="150"/>
+            <TableColumn fx:id="colClient" text="CLIENT" prefWidth="160"/>
+            <TableColumn fx:id="colDate" text="DATE" prefWidth="120"/>
+            <TableColumn fx:id="colAmount" text="AMOUNT" prefWidth="120"/>
+            <TableColumn fx:id="colType" text="TYPE" prefWidth="140"/>
+            <TableColumn fx:id="colStatus" text="STATUS" prefWidth="110"/>
+        </columns>
+
+    </TableView>
+
+</VBox>
+
 
     </VBox>
 </StackPane>

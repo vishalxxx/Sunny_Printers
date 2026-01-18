@@ -40,6 +40,10 @@ public class InvoiceBuilderService {
         invoice.setClientName(businessName + " (" + clientName + ")");
         invoice.setFromDate(fromDate);
         invoice.setToDate(toDate);
+        invoice.setClientId(clientId);
+        invoice.setInvoiceType("DATE_RANGE");
+        invoice.setStatus("SENT");
+
 
         String sql = """
                 SELECT
@@ -122,9 +126,13 @@ public class InvoiceBuilderService {
         invoice.setCompanyAddress("B-234, Naraina Industrial Area,\nPhase-1, New Delhi-110028");
         invoice.setCompanyContact("9811269375 9999662547");
         invoice.setEmail("sunny.printers@gmail.com");
-
         // ✅ Client details
         invoice.setClientName(businessName + " (" + clientName + ")");
+        invoice.setClientId(clientId);
+        invoice.setClientId(clientId);
+        invoice.setInvoiceType("JOB_SPECIFIC");
+        invoice.setStatus("SENT");
+
 
         if (jobIds == null || jobIds.isEmpty()) {
             return invoice;
@@ -244,6 +252,10 @@ public class InvoiceBuilderService {
 
                 if (invoice.getJobs().isEmpty()) continue;
 
+                invoice.setClientId(clientId);
+                invoice.setInvoiceType("MONTHLY_BULK");
+                invoice.setStatus("SENT");
+                
                 // ✅ Sheet name should be business name
                 String sheetKey = businessName;
 

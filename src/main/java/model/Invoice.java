@@ -8,7 +8,21 @@ public class Invoice {
 
 	private String invoiceNo;
 	private LocalDate invoiceDate;
-    public LocalDate getFromDate() {
+	private LocalDate periodFrom;
+	private LocalDate periodTo;
+
+	private String companyName;
+	private String companyAddress;
+	private String companyContact;
+	private String email;
+	private String clientName;
+	private int clientId;
+	private String invoiceType; // JOB_SPECIFIC / DATE_RANGE / MONTHLY_BULK
+	private String status; // SENT / DRAFT / PAID
+
+
+
+	public LocalDate getFromDate() {
 		return periodFrom;
 	}
 
@@ -24,15 +38,31 @@ public class Invoice {
 		this.periodTo = periodTo;
 	}
 
-	private LocalDate periodFrom;
-    private LocalDate periodTo;
 
-	private String companyName;
-	private String companyAddress;
-	private String companyContact;
-	private String email;
-	private String clientName;
-	
+
+	public String getInvoiceType() {
+		return invoiceType;
+	}
+
+	public void setInvoiceType(String invoiceType) {
+		this.invoiceType = invoiceType;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
+	public int getClientId() {
+		return clientId;
+	}
+
+	public void setClientId(int clientId) {
+		this.clientId = clientId;
+	}
 
 	public String getEmail() {
 		return email;
@@ -101,17 +131,16 @@ public class Invoice {
 	}
 
 	public double getGrandTotal() {
-	    return jobs.stream()
-	               .mapToDouble(InvoiceJob::getJobTotal)
-	               .sum();
+		return jobs.stream().mapToDouble(InvoiceJob::getJobTotal).sum();
 	}
 
 	public void setGrandTotal(double grandTotal) {
 		this.grandTotal = grandTotal;
 	}
-	
+
 	public void addJob(InvoiceJob job) {
-	    if (job == null) return;
-	    this.jobs.add(job);
+		if (job == null)
+			return;
+		this.jobs.add(job);
 	}
 }

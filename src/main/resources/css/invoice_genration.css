@@ -43,7 +43,6 @@
     -fx-border-radius: 1.2em;
     -fx-border-color: #27272a;
     -fx-padding: 1.4em;
-
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 22, 0.25, 0, 8);
 }
 
@@ -69,11 +68,9 @@
 .text-field {
     -fx-background-color: #0b0b0c;
     -fx-text-fill: #ffffff;
-
     -fx-background-radius: 0.85em;
     -fx-border-radius: 0.85em;
     -fx-border-color: #3f3f46;
-
     -fx-padding: 0.8em 1em;
     -fx-font-size: 0.95em;
 }
@@ -84,7 +81,7 @@
 }
 
 /* =========================================================
-   COMBO BOX (Like reference UI)
+   COMBO BOX
    ========================================================= */
 .combo-box-base {
     -fx-background-color: #0b0b0c;
@@ -98,17 +95,14 @@
     -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.18), 14, 0.25, 0, 0);
 }
 
-/* ✅ selected text area */
 .combo-box-base > .list-cell {
     -fx-background-color: transparent;
     -fx-text-fill: #ffffff;
     -fx-padding: 0.8em 1em;
     -fx-font-size: 0.95em;
-	-fx-text-overrun: CLIP;
-
+    -fx-text-overrun: CLIP;
 }
 
-/* dropdown arrow */
 .combo-box-base .arrow-button {
     -fx-background-color: transparent;
     -fx-padding: 0.3em 0.85em;
@@ -118,7 +112,6 @@
     -fx-background-color: #9ca3af;
 }
 
-/* dropdown popup */
 .combo-box-popup .list-view {
     -fx-background-color: #18181b;
     -fx-border-color: #27272a;
@@ -143,7 +136,7 @@
 }
 
 /* =========================================================
-   DATE PICKER (dark field, no double border)
+   DATE PICKER
    ========================================================= */
 .date-picker {
     -fx-background-color: #0b0b0c;
@@ -157,7 +150,6 @@
     -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.18), 14, 0.25, 0, 0);
 }
 
-/* ✅ remove inner border of date text-field */
 .date-picker > .text-field {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
@@ -165,7 +157,6 @@
     -fx-padding: 0.8em 1em;
 }
 
-/* keep icon hidden */
 .date-picker .arrow-button {
     -fx-background-color: transparent;
     -fx-padding: 0;
@@ -176,7 +167,7 @@
 }
 
 /* =========================================================
-   DATE PICKER POPUP (FIXED FULL DARK THEME)
+   DATE PICKER POPUP
    ========================================================= */
 .date-picker-popup {
     -fx-background-color: #18181b;
@@ -185,7 +176,6 @@
     -fx-background-radius: 0.9em;
 }
 
-/* main popup container */
 .date-picker-popup > .month-year-pane {
     -fx-background-color: #111827;
     -fx-border-color: #27272a;
@@ -196,56 +186,36 @@
     -fx-font-weight: 700;
 }
 
-/* arrows */
-.date-picker-popup .spinner .button {
-    -fx-background-color: transparent;
-}
-.date-picker-popup .spinner .button:hover {
-    -fx-background-color: rgba(255,255,255,0.08);
-}
-.date-picker-popup .spinner .left-arrow,
-.date-picker-popup .spinner .right-arrow {
-    -fx-background-color: #ffffff;
-}
-
-/* Week day header row (Sun Mon...) */
 .date-picker-popup .day-name-cell {
     -fx-background-color: #18181b;
     -fx-text-fill: #e5e7eb;
     -fx-font-weight: 700;
 }
 
-/* Calendar background */
 .date-picker-popup .calendar-grid {
     -fx-background-color: #18181b;
 }
 
-/* Day cells (numbers) */
 .date-picker-popup .day-cell {
     -fx-background-color: transparent;
-    -fx-text-fill: #ffffff;   /* ✅ IMPORTANT FIX */
+    -fx-text-fill: #ffffff;
     -fx-font-weight: 600;
     -fx-background-radius: 0.6em;
 }
 
-/* hover */
 .date-picker-popup .day-cell:hover {
     -fx-background-color: rgba(59,130,246,0.25);
-    -fx-text-fill: #ffffff;
 }
 
-/* selected day */
 .date-picker-popup .day-cell:selected {
     -fx-background-color: #3b82f6;
     -fx-text-fill: white;
 }
 
-/* days outside month (dim) */
 .date-picker-popup .day-cell:previous-month,
 .date-picker-popup .day-cell:next-month {
     -fx-text-fill: rgba(255,255,255,0.35);
 }
-
 
 /* =========================================================
    CHECKBOX
@@ -266,56 +236,43 @@
 }
 
 /* =========================================================
-   ✅ BUTTONS (FINAL FIXED LIKE YOUR REFERENCE IMAGE)
+   BUTTONS
    ========================================================= */
 .button {
-    -fx-background-insets: 0;  /* ✅ IMPORTANT: removes default grey layer */
+    -fx-background-insets: 0;
     -fx-background-radius: 0.85em;
     -fx-border-radius: 0.85em;
-
     -fx-padding: 0.85em 1.2em;
     -fx-min-height: 3.1em;
-
     -fx-font-size: 1em;
     -fx-font-weight: 700;
-
     -fx-text-fill: white;
     -fx-cursor: hand;
-
-    -fx-content-display: LEFT;     /* icon left */
-    -fx-graphic-text-gap: 0.6em;   /* icon spacing */
+    -fx-content-display: LEFT;
+    -fx-graphic-text-gap: 0.6em;
     -fx-alignment: CENTER;
 }
 
-/* Blue */
-.btn-primary {
-    -fx-background-color: #3b82f6;
-}
+.btn-primary { -fx-background-color: #3b82f6; }
 .btn-primary:hover {
     -fx-background-color: #2563eb;
     -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.55), 18, 0.35, 0, 0);
 }
 
-/* Purple */
-.btn-purple {
-    -fx-background-color: #7c3aed;
-}
+.btn-purple { -fx-background-color: #7c3aed; }
 .btn-purple:hover {
     -fx-background-color: #6d28d9;
     -fx-effect: dropshadow(gaussian, rgba(124,58,237,0.55), 18, 0.35, 0, 0);
 }
 
-/* Green */
-.btn-green {
-    -fx-background-color: #059669;
-}
+.btn-green { -fx-background-color: #059669; }
 .btn-green:hover {
     -fx-background-color: #047857;
     -fx-effect: dropshadow(gaussian, rgba(5,150,105,0.55), 18, 0.35, 0, 0);
 }
 
 /* =========================================================
-   SELECTED JOBS BOX
+   SELECTED JOBS BOX + CHIPS
    ========================================================= */
 .selected-box {
     -fx-background-color: #0b0b0c;
@@ -325,32 +282,29 @@
     -fx-padding: 1em;
 }
 
-/* scroll pane */
 .chip-scroll {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
 }
+
 .chip-scroll > .viewport {
     -fx-background-color: transparent;
 }
 
-/* chips */
 .job-chip {
     -fx-background-color: #1f3a33;
     -fx-border-color: #2f5a4f;
     -fx-border-radius: 14;
     -fx-background-radius: 14;
-
-    -fx-padding: 4 8;         /* ✅ smaller */
-    -fx-spacing: 6;           /* ✅ gap between text + X */
+    -fx-padding: 4 8;
+    -fx-spacing: 6;
     -fx-alignment: CENTER_LEFT;
-
-    -fx-max-height: 28;       /* ✅ important */
+    -fx-max-height: 28;
 }
 
 .job-chip-text {
     -fx-text-fill: #e6fff6;
-    -fx-font-size: 11px;      /* ✅ smaller */
+    -fx-font-size: 11px;
     -fx-font-weight: 700;
 }
 
@@ -359,8 +313,7 @@
     -fx-text-fill: #ff8080;
     -fx-font-size: 11px;
     -fx-font-weight: 900;
-
-    -fx-padding: 0 4;         /* ✅ small click area */
+    -fx-padding: 0 4;
     -fx-cursor: hand;
 }
 
@@ -391,36 +344,158 @@
 }
 
 /* =========================================================
-   TABLE CARD
+   ✅ RECENT INVOICE HISTORY TABLE (NO DUPLICATES)
    ========================================================= */
-.table-card {
-    -fx-background-color: #18181b;
-    -fx-border-color: #27272a;
-    -fx-background-radius: 1em;
-    -fx-border-radius: 1em;
-    -fx-padding: 1.1em;
+.history-card {
+    -fx-background-color: rgba(25, 25, 25, 0.60);
+    -fx-background-radius: 18;
+    -fx-border-radius: 18;
+    -fx-border-color: rgba(255, 255, 255, 0.06);
+    -fx-padding: 18;
 }
 
-.section-title {
-    -fx-text-fill: #ffffff;
-    -fx-font-size: 1.05em;
+.history-title {
+    -fx-text-fill: #e8e8e8;
+    -fx-font-size: 15px;
     -fx-font-weight: 800;
 }
 
-.table-view {
+.history-link {
+    -fx-text-fill: #4da3ff;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.history-link:hover {
+    -fx-text-fill: #78b8ff;
+    -fx-underline: true;
+}
+
+.history-table {
+    -fx-background-color: rgba(10, 10, 10, 0.65);
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-border-color: rgba(255, 255, 255, 0.07);
+    -fx-padding: 0;
+    -fx-control-inner-background: transparent;
+    -fx-table-cell-border-color: transparent;
+}
+
+.history-table .virtual-flow,
+.history-table .corner {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
 }
 
-/* =========================================================
-   HYPERLINK
-   ========================================================= */
-.hyperlink {
-    -fx-text-fill: #38bdf8;
-    -fx-font-weight: 800;
+/* Header */
+.history-table .column-header-background {
+    -fx-background-color: rgba(35, 35, 35, 0.85);
+    -fx-background-radius: 14 14 0 0;
+    -fx-padding: 10 0 10 0;
     -fx-border-color: transparent;
 }
-.hyperlink:hover {
-    -fx-text-fill: #0ea5e9;
-    -fx-underline: true;
+
+.history-table .column-header,
+.history-table .filler {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.history-table .column-header {
+    -fx-alignment: CENTER;
+}
+
+.history-table .column-header .label {
+    -fx-text-fill: #cfcfcf;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-alignment: CENTER;
+    -fx-text-alignment: CENTER;
+}
+.history-table .table-column {
+    -fx-alignment: CENTER;
+}
+
+
+/* Rows */
+.history-table .table-row-cell {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.history-table .table-row-cell:filled:odd {
+    -fx-background-color: rgba(255, 255, 255, 0.02);
+}
+
+.history-table .table-row-cell:filled:even {
+    -fx-background-color: rgba(255, 255, 255, 0.04);
+}
+
+.history-table .table-row-cell:filled:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+}
+
+.history-table .table-row-cell:filled:selected {
+    -fx-background-color: rgba(77, 163, 255, 0.18);
+}
+
+/* Cells */
+.history-table .table-cell {
+    -fx-text-fill: #e8eefb;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+    -fx-padding: 10 12;
+	-fx-alignment: CENTER;
+	-fx-text-alignment: CENTER;
+    -fx-border-color: transparent;
+    -fx-background-color: transparent;
+}
+
+/* Placeholder */
+.history-table .placeholder {
+    -fx-background-color: transparent;
+}
+
+.history-table .placeholder .label {
+    -fx-text-fill: rgba(255, 255, 255, 0.35);
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+
+/* Scrollbar */
+.history-table .scroll-bar:vertical,
+.history-table .scroll-bar:horizontal {
+    -fx-background-color: transparent;
+}
+
+.history-table .scroll-bar .track {
+    -fx-background-color: transparent;
+}
+
+.history-table .scroll-bar .thumb {
+    -fx-background-color: rgba(255, 255, 255, 0.15);
+    -fx-background-radius: 10;
+}
+
+.history-table .scroll-bar .thumb:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.25);
+}
+
+.history-table .increment-button,
+.history-table .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.history-table .increment-arrow,
+.history-table .decrement-arrow {
+    -fx-background-color: transparent;
+}
+
+/* Remove focus border lines */
+.history-table:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
 }

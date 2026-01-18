@@ -1,6 +1,8 @@
 package service;
 
 import model.Invoice;
+import repository.InvoiceHistoryRepo;
+
 import org.apache.poi.ss.usermodel.Workbook;
 
 import java.io.File;
@@ -22,10 +24,7 @@ public class InvoiceStorageService {
        PUBLIC API
        ======================= */
 
-    public static File saveInvoice(
-            Workbook workbook,
-            Invoice invoice
-    ) {
+    public static File saveInvoice(Workbook workbook, Invoice invoice) {
 
         File baseDir = resolveBaseDirectory();
 
@@ -47,8 +46,10 @@ public class InvoiceStorageService {
             throw new RuntimeException("Failed to save invoice", e);
         }
 
+
         return output;
     }
+
 
     /* =======================
        PATH PREFERENCES

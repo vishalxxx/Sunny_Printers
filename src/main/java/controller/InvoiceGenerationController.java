@@ -9,6 +9,9 @@ import java.util.Map;
 import java.util.Set;
 
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -20,10 +23,12 @@ import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 import model.Client;
 import model.Invoice;
+import model.InvoiceHistoryRow;
 import model.JobSummary;
 import service.ClientService;
 import service.InvoiceBuilderService;
 import service.InvoiceGenerationService;
+import service.InvoiceHistoryRowService;
 import service.InvoiceStorageService;
 import service.JobService;
 import utils.Toast;
@@ -36,6 +41,9 @@ public class InvoiceGenerationController {
 	private InvoiceGenerationService invoicegeneration = new InvoiceGenerationService();
 	private JobService js = new JobService();
 	private final Map<String, JobSummary> selectedJobsMap = new LinkedHashMap<>();
+	private final Set<String> selectedJobs = new LinkedHashSet<>();
+	private final ClientService clientService = new ClientService();
+	private final InvoiceHistoryRowService historyService = new InvoiceHistoryRowService();
 
 	// ---------------- CARD 1 ----------------
 	@FXML
@@ -81,11 +89,23 @@ public class InvoiceGenerationController {
 	private TextField savePathField;
 
 	// ---------------- TABLE ----------------
-	@FXML
-	private TableView<?> recentInvoicesTable;
 
-	private final Set<String> selectedJobs = new LinkedHashSet<>();
-	private final ClientService clientService = new ClientService();
+	@FXML
+	private TableView<InvoiceHistoryRow> recentInvoicesTable;
+	@FXML
+	private TableColumn<InvoiceHistoryRow, String> colInvNo;
+	@FXML
+	private TableColumn<InvoiceHistoryRow, String> colClient;
+	@FXML
+	private TableColumn<InvoiceHistoryRow, String> colDate;
+	@FXML
+	private TableColumn<InvoiceHistoryRow, Number> colAmount;
+	@FXML
+	private TableColumn<InvoiceHistoryRow, String> colType;
+	@FXML
+	private TableColumn<InvoiceHistoryRow, String> colStatus;
+
+	private final ObservableList<InvoiceHistoryRow> recentInvoiceRows = FXCollections.observableArrayList();
 
 	@FXML
 	private void initialize() {
@@ -147,6 +167,8 @@ public class InvoiceGenerationController {
 		if (savedPath != null) {
 			savePathField.setText(savedPath);
 		}
+		setupRecentInvoiceTable();
+		loadRecentInvoiceHistory();
 
 		updateState();
 	}
@@ -320,9 +342,10 @@ public class InvoiceGenerationController {
 //	}
 
 	private void updateState() {
-		boolean hasJobs = !selectedJobs.isEmpty();
-		selectedLabel.setVisible(hasJobs);
+	    boolean hasJobs = !selectedJobsMap.isEmpty();
+	    selectedLabel.setVisible(hasJobs);
 	}
+
 
 	// ==========================================================
 	// BUTTON ACTIONS
@@ -369,7 +392,17 @@ public class InvoiceGenerationController {
 			return;
 		}
 
-		invoicegeneration.generateSingleInvoice(invoice);
+		File file = invoicegeneration.generateSingleInvoice(invoice);
+
+		if (file == null || !file.exists()) {
+		    toast("❌ Invoice file not generated.");
+		    return;
+		}
+
+		historyService.saveHistory(invoice, "DATE_RANGE", "SENT", file.getAbsolutePath());
+		loadRecentInvoiceHistory();
+
+
 
 		toast("Invoice generated successfully ✅");
 	}
@@ -377,41 +410,58 @@ public class InvoiceGenerationController {
 	@FXML
 	private void onRunMonthlyBulkClicked(MouseEvent e) {
 
-		if (InvoiceStorageService.getSavePath() == null) {
-			toast("Please choose Save Location first.");
-			return;
-		}
+	    if (InvoiceStorageService.getSavePath() == null) {
+	        toast("Please choose Save Location first.");
+	        return;
+	    }
 
-		String month = monthComboBox.getValue(); // "JANUARY"
-		Integer year = yearComboBox.getValue(); // 2026
+	    String month = monthComboBox.getValue();
+	    Integer year = yearComboBox.getValue();
 
-		if (month == null || year == null) {
-			toast("Please select Month and Year.");
-			return;
-		}
+	    if (month == null || year == null) {
+	        toast("Please select Month and Year.");
+	        return;
+	    }
 
-		// ✅ Convert "JANUARY" -> Month.JANUARY -> 1
-		java.time.Month selectedMonth = java.time.Month.valueOf(month.toUpperCase());
-		int monthValue = selectedMonth.getValue(); // 1 to 12
+	    java.time.Month selectedMonth = java.time.Month.valueOf(month.toUpperCase());
+	    int monthValue = selectedMonth.getValue();
+	    YearMonth ym = YearMonth.of(year, selectedMonth);
 
-		YearMonth ym = YearMonth.of(year, selectedMonth);
+	    toast("Running Monthly Bulk for: " + selectedMonth + " " + year + " ✅");
 
-		toast("Running Monthly Bulk for: " + selectedMonth + " " + year + " ✅");
-		System.out.println("Monthly Bulk Selected: " + selectedMonth + " " + year);
+	    // ✅ 1) Build invoices for all clients
+	    Map<String, Invoice> invoiceMap = invoicebuilder.buildMonthlyInvoicesForAllClients(year, monthValue);
 
-		// ✅ Build invoice map using int year + int month
-		var invoiceMap = invoicebuilder.buildMonthlyInvoicesForAllClients(year, monthValue);
+	    if (invoiceMap.isEmpty()) {
+	        toast("No jobs found for selected Month and Year.");
+	        return;
+	    }
 
-		if (invoiceMap.isEmpty()) {
-			toast("No jobs found for selected Month and Year.");
-			return;
-		}
+	    // ✅ 2) Save workbook FIRST
+	    File bulkFile = invoicegeneration.generateMonthlyClientWorkbook(ym, invoiceMap);
 
-		// ✅ Generate workbook (PASS SAME SIGNATURE)
-		invoicegeneration.generateMonthlyClientWorkbook(ym, invoiceMap);
+	    if (bulkFile == null || !bulkFile.exists()) {
+	        toast("❌ Bulk workbook not generated.");
+	        return;
+	    }
 
-		toast("Monthly invoices generated successfully ✅");
+	    // ✅ 3) Save history for ONLY client invoices (inside workbook)
+	    for (Invoice inv : invoiceMap.values()) {
+
+	        if (inv.getJobs() == null || inv.getJobs().isEmpty()) continue; // extra safety
+
+	        historyService.saveHistory(
+	                inv,
+	                "MONTHLY_BULK",
+	                "SENT",
+	                bulkFile.getAbsolutePath()
+	        );
+	    }
+
+	    loadRecentInvoiceHistory();
+	    toast("Monthly invoices generated successfully ✅");
 	}
+
 
 	@FXML
 	private void onCreateJobInvoiceClicked(MouseEvent event) {
@@ -469,7 +519,18 @@ public class InvoiceGenerationController {
 			}
 
 			// ✅ 3) Generate + Save invoice excel
-			invoicegeneration.generateSingleInvoice(invoice);
+			File file = invoicegeneration.generateSingleInvoice(invoice);
+
+			if (file == null || !file.exists()) {
+			    toast("❌ Invoice file not generated.");
+			    return;
+			}
+
+			historyService.saveHistory(invoice, "JOB_SPECIFIC", "SENT", file.getAbsolutePath());
+			loadRecentInvoiceHistory();
+
+
+
 
 			toast("✅ Invoice Generated & Saved!");
 			clearCard3();
@@ -553,6 +614,39 @@ public class InvoiceGenerationController {
 				dp.show();
 		});
 	}
+	private void setupRecentInvoiceTable() {
+
+		recentInvoicesTable.setFixedCellSize(42);
+		recentInvoicesTable.setPrefHeight(42 * 6);
+		recentInvoicesTable.setMinHeight(42 * 6);
+		recentInvoicesTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+		colInvNo.setCellValueFactory(data -> data.getValue().invoiceNoProperty());
+	    colClient.setCellValueFactory(data -> data.getValue().clientNameProperty());
+	    colDate.setCellValueFactory(data -> data.getValue().dateProperty());
+	    colAmount.setCellValueFactory(data -> data.getValue().amountProperty());
+	    colType.setCellValueFactory(data -> data.getValue().typeProperty());
+	    colStatus.setCellValueFactory(data -> data.getValue().statusProperty());
+
+	    recentInvoicesTable.setItems(recentInvoiceRows);
+	}
+
+
+	@FXML
+	private void onViewAllHistoryClicked(ActionEvent event) {
+		toast("History page coming soon ✅");
+	}
+	private void loadRecentInvoiceHistory() {
+	    var rows = historyService.getRecentHistory(10);
+
+	    System.out.println("✅ Loaded invoice rows = " + rows.size());
+
+	    recentInvoiceRows.setAll(rows);
+
+	    System.out.println("✅ Table items = " + recentInvoicesTable.getItems().size());
+	}
+
+
 
 	// ==========================================================
 	// TOAST
