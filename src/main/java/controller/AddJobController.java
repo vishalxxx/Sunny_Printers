@@ -36,7 +36,7 @@ import service.SupplierService;
 
 public class AddJobController {
 	private final ObservableList<Client> clientItems = javafx.collections.FXCollections.observableArrayList();
-
+	private boolean editMode = false;	
 	private Job currentJob;
 	private Supplier currentCtpSupplier;
 
@@ -62,6 +62,7 @@ public class AddJobController {
 	private Label filePlaceholder;
 
 	private final SupplierService supplierService = new SupplierService();
+	
 
 	/* ========================= PRINTING ========================= */
 	@FXML
@@ -156,6 +157,22 @@ public class AddJobController {
 	@FXML
 	private TextField lamAmountField;
 
+	
+	
+
+	public void startNewJob() {
+
+	    JobService jobService = new JobService();
+	    this.currentJob = jobService.createDraftJob();
+
+	    System.out.println("✅ Draft job created: " + currentJob.getJobNo());
+
+	    // ✅ optional: show job no in UI label if you have
+	    // jobNoLabel.setText(currentJob.getJobNo());
+	}
+
+
+
 	@FXML
 	private void handleUploadFile(ActionEvent event) {
 		try {
@@ -220,12 +237,12 @@ public class AddJobController {
 //			resetForm();
 //		}
 
-		int jobId = currentJob.getId();
-
-		InvoiceBuilderService builder = new InvoiceBuilderService();
-		//Invoice invoice = builder.buildInvoiceForJob(jobId);
-
-		InvoiceGenerationService generator = new InvoiceGenerationService();
+//		int jobId = currentJob.getId();
+//
+//		InvoiceBuilderService builder = new InvoiceBuilderService();
+//		//Invoice invoice = builder.buildInvoiceForJob(jobId);
+//
+//		InvoiceGenerationService generator = new InvoiceGenerationService();
 		//generator.generateExcel(invoice);
 	}
 
@@ -574,7 +591,7 @@ public class AddJobController {
 
 		masterClients.setAll(clientService.getAllClients());
 		clientCombo.setItems(filteredClients);
-		clientCombo.setEditable(true);
+		clientCombo.setEditable(false);
 
 		/* ================= CELL RENDERING ================= */
 

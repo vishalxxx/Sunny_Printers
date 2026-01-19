@@ -223,16 +223,11 @@ public class MainController implements Initializable {
 	@FXML
 	private void loadAddJob(MouseEvent event) {
 		try {
-			JobService jobService = new JobService();
-			Job currentJob = jobService.createDraftJob();
-
-			System.out.println("Draft job created: " + currentJob.getJobNo());
-
 			FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ht.fxml"));
 			Parent addJobView = loader.load();
 
 			AddJobController addJobController = loader.getController();
-			addJobController.setCurrentJob(currentJob);
+			addJobController.startNewJob();
 
 			centerRoot.getChildren().setAll(addJobView);
 
@@ -241,14 +236,12 @@ public class MainController implements Initializable {
 		}
 	}
 	
+	
 	@FXML
 	private void loadViewJob(MouseEvent event) {
 	    try {
 	        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/view_job.fxml"));
 	        Parent viewJobView = loader.load();
-
-	        ViewJobsController controller = loader.getController();
-	        controller.loadAllJobs(); // example method
 
 	        centerRoot.getChildren().setAll(viewJobView);
 
