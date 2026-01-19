@@ -69,7 +69,20 @@ public class JobService {
 		}
 	}
 
-	  public List<JobSummary> getJobsByClientId(int clientId) {
-	        return repo.findJobsByClientId(clientId);
-	    }
+	public List<Job> getFullJobsByClientId(int clientId) {
+	    return repo.findFullJobsByClientId(clientId);
+	}
+
+	public List<Job> searchJobs(String keyword) {
+	    return repo.searchJobs(keyword);
+	}
+
+	
+	public List<JobSummary> getJobsByClientId(int clientId) {
+		return repo.findJobsByClientId(clientId);
+	}
+
+	public List<Job> getAllJobs() {
+		return repo.findAllJobs();
+	}
 }

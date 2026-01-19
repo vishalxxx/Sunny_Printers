@@ -240,6 +240,23 @@ public class MainController implements Initializable {
 			e.printStackTrace();
 		}
 	}
+	
+	@FXML
+	private void loadViewJob(MouseEvent event) {
+	    try {
+	        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/view_job.fxml"));
+	        Parent viewJobView = loader.load();
+
+	        ViewJobsController controller = loader.getController();
+	        controller.loadAllJobs(); // example method
+
+	        centerRoot.getChildren().setAll(viewJobView);
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
+	}
+
 
 	@FXML
 	private void loadViewClients(MouseEvent event) {

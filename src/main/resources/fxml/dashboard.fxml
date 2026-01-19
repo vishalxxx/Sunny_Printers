@@ -225,7 +225,7 @@
 									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
 							</children>
 						</HBox>
-						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item"  onMouseClicked="#loadViewJob">
 							<children>
 								<Label styleClass="sidebar-text" text="View Jobs"
 									maxWidth="Infinity" HBox.hgrow="ALWAYS" />

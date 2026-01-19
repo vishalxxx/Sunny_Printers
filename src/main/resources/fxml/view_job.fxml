@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+	xmlns:fx="http://javafx.com/fxml"
+	fx:controller="controller.ViewJobsController" spacing="20"
+	stylesheets="@../css/view_job.css" >
+
+	<!-- PAGE TITLE -->
+	<Label text="Job Management" styleClass="page-heading" />
+
+	<!-- SEARCH BAR -->
+	<HBox spacing="12" alignment="CENTER_LEFT" styleClass="search-bar">
+		<TextField fx:id="searchField"
+			promptText="Search by Job Name, Job Title..."
+			styleClass="search-field" HBox.hgrow="ALWAYS" />
+
+		<Button text="Search" styleClass="search-button"   onAction="#onSearchClicked"/>
+	</HBox>
+	<!--Filter Bar-->
+	<HBox spacing="12" alignment="CENTER">
+
+    <ComboBox fx:id="clientComboBox"
+              promptText="Select Client..."
+              styleClass="combo-box-base"
+              prefWidth="320"/>
+
+    <DatePicker fx:id="fromDatePicker"
+                promptText="From Date"
+                styleClass="date-picker"
+                prefWidth="160"/>
+
+    <DatePicker fx:id="toDatePicker"
+                promptText="To Date"
+                styleClass="date-picker"
+                prefWidth="160"/>
+
+    <Button text="Clear Filters"
+            onAction="#onClearFilters"
+            styleClass="search-button"/>
+            
+           
+
+	</HBox>
+
+<Label fx:id="resultLabel"
+       text="Showing 0 jobs"
+       styleClass="page-heading" />
+
+
+	<!-- TABLE CARD -->
+	<VBox styleClass="table-card">
+
+		<TableView fx:id="jobsTable" styleClass="history-table">
+
+    <columns>
+        <TableColumn fx:id="idCol" text="ID" prefWidth="70" />
+
+        <TableColumn fx:id="jobNoCol" text="Job No" prefWidth="140" />
+
+        <TableColumn fx:id="clientIdCol" text="Client ID" prefWidth="110" />
+        <TableColumn fx:id="clientNameCol" text="Client Name" prefWidth="240" />
+
+
+        <TableColumn fx:id="titleCol" text="Job Title" prefWidth="240" />
+
+        <TableColumn fx:id="dateCol" text="Job Date" prefWidth="120" />
+
+        <TableColumn fx:id="statusCol" text="Status" prefWidth="120" />
+
+        <TableColumn fx:id="remarksCol" text="Remarks" prefWidth="220" />
+
+        <TableColumn fx:id="createdAtCol" text="Created At" prefWidth="170" />
+
+        <TableColumn fx:id="updatedAtCol" text="Updated At" prefWidth="170" />
+
+
+        <!-- ✅ Actions column -->
+        <TableColumn fx:id="actionCol" text="Actions" prefWidth="220" />
+    </columns>
+
+</TableView>
+
+
+
+	</VBox>
+
+</VBox>
