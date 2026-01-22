@@ -36,20 +36,28 @@
 	<!-- LEFT SIDEBAR -->
 	<left>
 
+		<ScrollPane fx:id="sidebarScroll"
+            fitToWidth="true"
+            pannable="false"
+            hbarPolicy="NEVER"
+            vbarPolicy="AS_NEEDED"
+            minWidth="70"
+            maxWidth="240"
+            BorderPane.alignment="CENTER_LEFT"
+            stylesheets="@../css/sidebar.css">
 
-		<ScrollPane xmlns="http://javafx.com/javafx/25"
-			xmlns:fx="http://javafx.com/fxml/1"
-			stylesheets="@../css/dashboard.css" fx:id="sidebarScroll"
-			fitToWidth="true" fitToHeight="true" vbarPolicy="AS_NEEDED"
-			hbarPolicy="NEVER" BorderPane.alignment="CENTER_LEFT">
 
 			<content>
 				<StackPane fx:id="sidebarStack"
-					styleClass="sidebar-background">
+           styleClass="sidebar-background"
+           minWidth="70"
+           maxWidth="240">
+
 
 					<!-- MAIN SIDEBAR -->
 					<VBox fx:id="mainSidebar" fillWidth="true" spacing="4"
-						styleClass="sidebar" VBox.vgrow="ALWAYS">
+						styleClass="sidebar" maxWidth="Infinity">
+
 
 						<!-- Dashboard -->
 						<HBox alignment="CENTER_LEFT" onMouseClicked="#openDashboard"
@@ -208,24 +216,29 @@
 					<VBox fx:id="jobsSidebar" managed="false" visible="false"
 						spacing="4" styleClass="sidebar">
 
-						<HBox alignment="CENTER_LEFT" onMouseClicked="#openDashboard"
-							styleClass="sidebar-item back-item">
-							<children>
-								<Label styleClass="sidebar-text" text="← Back"
-									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-							</children>
+						<HBox alignment="CENTER_LEFT" spacing="10"
+							onMouseClicked="#openDashboard" styleClass="back-row">
+
+							<StackPane styleClass="back-circle">
+								<Label text="←" styleClass="back-arrow" />
+							</StackPane>
+
+							<Label text="Back" styleClass="back-text" />
 						</HBox>
+
 
 						<Label styleClass="sidebar-section-header"
 							text="Job Details" />
 
-						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item" onMouseClicked="#loadAddJob">
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item"
+							onMouseClicked="#loadAddJob">
 							<children>
 								<Label styleClass="sidebar-text" text="Add Job"
 									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
 							</children>
 						</HBox>
-						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item"  onMouseClicked="#loadViewJob">
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item"
+							onMouseClicked="#loadViewJob">
 							<children>
 								<Label styleClass="sidebar-text" text="View Jobs"
 									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
@@ -243,13 +256,16 @@
 					<VBox fx:id="clientsSidebar" managed="false" visible="false"
 						spacing="4" styleClass="sidebar">
 
-						<HBox alignment="CENTER_LEFT" onMouseClicked="#openDashboard"
-							styleClass="sidebar-item back-item">
-							<children>
-								<Label styleClass="sidebar-text" text="← Back"
-									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-							</children>
+						<HBox alignment="CENTER_LEFT" spacing="10"
+							onMouseClicked="#openDashboard" styleClass="back-row">
+
+							<StackPane styleClass="back-circle">
+								<Label text="←" styleClass="back-arrow" />
+							</StackPane>
+
+							<Label text="Back" styleClass="back-text" />
 						</HBox>
+
 
 						<Label styleClass="sidebar-section-header"
 							text="Client Details" />
@@ -261,7 +277,8 @@
 									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
 							</children>
 						</HBox>
-						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item" onMouseClicked="#loadViewClients">
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item"
+							onMouseClicked="#loadViewClients">
 							<children>
 								<Label styleClass="sidebar-text" text="View Clients"
 									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
@@ -279,17 +296,21 @@
 					<VBox fx:id="billingSidebar" managed="false" visible="false"
 						spacing="4" styleClass="sidebar">
 
-						<HBox alignment="CENTER_LEFT" onMouseClicked="#openDashboard"
-							styleClass="sidebar-item back-item">
-							<children>
-								<Label styleClass="sidebar-text" text="← Back"
-									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-							</children>
+						<HBox alignment="CENTER_LEFT" spacing="10"
+							onMouseClicked="#openDashboard" styleClass="back-row">
+
+							<StackPane styleClass="back-circle">
+								<Label text="←" styleClass="back-arrow" />
+							</StackPane>
+
+							<Label text="Back" styleClass="back-text" />
 						</HBox>
+
 
 						<Label styleClass="sidebar-section-header" text="Billing" />
 
-						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item" onMouseClicked="#loadInvoiceGenration">
+						<HBox alignment="CENTER_LEFT" styleClass="sidebar-item"
+							onMouseClicked="#loadInvoiceGenration">
 							<children>
 								<Label styleClass="sidebar-text" text="Create Bill"
 									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
@@ -313,13 +334,16 @@
 					<VBox fx:id="paymentSidebar" managed="false" visible="false"
 						spacing="4" styleClass="sidebar">
 
-						<HBox alignment="CENTER_LEFT" onMouseClicked="#openDashboard"
-							styleClass="sidebar-item back-item">
-							<children>
-								<Label styleClass="sidebar-text" text="← Back"
-									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-							</children>
+						<HBox alignment="CENTER_LEFT" spacing="10"
+							onMouseClicked="#openDashboard" styleClass="back-row">
+
+							<StackPane styleClass="back-circle">
+								<Label text="←" styleClass="back-arrow" />
+							</StackPane>
+
+							<Label text="Back" styleClass="back-text" />
 						</HBox>
+
 
 						<Label styleClass="sidebar-section-header" text="Payments" />
 
@@ -341,13 +365,16 @@
 					<VBox fx:id="ledgerSidebar" managed="false" visible="false"
 						spacing="4" styleClass="sidebar">
 
-						<HBox alignment="CENTER_LEFT" onMouseClicked="#openDashboard"
-							styleClass="sidebar-item back-item">
-							<children>
-								<Label styleClass="sidebar-text" text="← Back"
-									maxWidth="Infinity" HBox.hgrow="ALWAYS" />
-							</children>
+						<HBox alignment="CENTER_LEFT" spacing="10"
+							onMouseClicked="#openDashboard" styleClass="back-row">
+
+							<StackPane styleClass="back-circle">
+								<Label text="←" styleClass="back-arrow" />
+							</StackPane>
+
+							<Label text="Back" styleClass="back-text" />
 						</HBox>
+
 
 						<Label styleClass="sidebar-section-header" text="Ledger" />
 

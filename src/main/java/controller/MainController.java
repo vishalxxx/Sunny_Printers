@@ -1,7 +1,9 @@
 package controller;
+import javafx.scene.shape.Rectangle;
 
 import java.net.URL;
 import java.util.ResourceBundle;
+
 
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -13,36 +15,30 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import model.Job;
 import service.JobService;
-
-
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
+import javafx.fxml.FXML;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 public class MainController implements Initializable {
 
+	private final double COLLAPSED_WIDTH = 82;
+	private final double EXPANDED_WIDTH = 260;
 	
-	
+	    @FXML private StackPane sidebarStack;
+	private Timeline anim;
 
 	Job currentJob = new Job();
-	
-	private boolean sidebarVisible = true;
-
-	private void hideSidebar() {
-	    sidebarVisible = false;
-	    sidebarScroll.setVisible(false);
-	    sidebarScroll.setManaged(false);  // ✅ this makes center expand
-	}
-
-	private void showSidebar() {
-	    sidebarVisible = true;
-	    sidebarScroll.setManaged(true);
-	    sidebarScroll.setVisible(true);
-	}
-
-	
 	// Center content container
+
 	@FXML
 	private VBox centerRoot;
 	// singleton-like reference so other controllers can reach MainController
@@ -96,7 +92,40 @@ public class MainController implements Initializable {
 
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
+		
+		Rectangle clip = new Rectangle();
+	    clip.widthProperty().bind(sidebarScroll.widthProperty());
+	    clip.heightProperty().bind(sidebarScroll.heightProperty());
 
+	    sidebarScroll.setClip(clip);
+		sidebarStack.prefWidthProperty().bind(sidebarScroll.widthProperty());
+		sidebarStack.minWidthProperty().bind(sidebarScroll.widthProperty());
+		sidebarStack.maxWidthProperty().bind(sidebarScroll.widthProperty());
+
+		mainSidebar.prefWidthProperty().bind(sidebarScroll.widthProperty());
+		mainSidebar.minWidthProperty().bind(sidebarScroll.widthProperty());
+		mainSidebar.maxWidthProperty().bind(sidebarScroll.widthProperty());
+
+
+			//Collapsable Sidebar Code
+		  // ✅ Start in collapsed state
+        sidebarScroll.setPrefWidth(COLLAPSED_WIDTH);
+        mainSidebar.getStyleClass().add("sidebar-collapsed");
+        sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
+        sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
+        // ✅ Hover expand
+        sidebarScroll.setOnMouseEntered(e -> expandSidebar());
+
+        // ✅ Mouse exit collapse
+        sidebarScroll.setOnMouseExited(e -> collapseSidebar());
+		
+		
+		//Collapsable sidebar Code END
+		
+		
+		
+		
+		
 		// Show only the main sidebar initially
 		showOnly(mainSidebar);
 		setPageTitle("Dashboard");
@@ -153,6 +182,46 @@ public class MainController implements Initializable {
 			}
 		});
 	}
+
+	
+	
+	
+	 private void expandSidebar() {
+	        mainSidebar.getStyleClass().remove("sidebar-collapsed");
+
+	        sidebarStack.getStyleClass().remove("sidebar-collapsed-bg");
+	        sidebarStack.getStyleClass().add("sidebar-expanded-bg");
+
+	        animateSidebarWidth(EXPANDED_WIDTH);
+	    }
+
+	    private void collapseSidebar() {
+	        animateSidebarWidth(COLLAPSED_WIDTH);
+
+	        if (anim != null) anim.setOnFinished(e -> {
+	            if (!mainSidebar.getStyleClass().contains("sidebar-collapsed")) {
+	                mainSidebar.getStyleClass().add("sidebar-collapsed");
+	            }
+
+	            sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
+	            sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
+	        });
+	    }
+
+	    private void animateSidebarWidth(double width) {
+	        if (anim != null) anim.stop();
+
+	        anim = new Timeline(
+	                new KeyFrame(Duration.millis(180),
+	                        new KeyValue(sidebarScroll.prefWidthProperty(), width)
+	                )
+	        );
+	        anim.play();
+	    }
+
+
+
+
 
 	// ---------------------------
 	// Sidebar / Page switching
@@ -256,21 +325,19 @@ public class MainController implements Initializable {
 			e.printStackTrace();
 		}
 	}
-	
-	
+
 	@FXML
 	private void loadViewJob(MouseEvent event) {
-	    try {
-	        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/view_job.fxml"));
-	        Parent viewJobView = loader.load();
+		try {
+			FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/view_job.fxml"));
+			Parent viewJobView = loader.load();
 
-	        centerRoot.getChildren().setAll(viewJobView);
+			centerRoot.getChildren().setAll(viewJobView);
 
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	    }
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
-
 
 	@FXML
 	private void loadViewClients(MouseEvent event) {
