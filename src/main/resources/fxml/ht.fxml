@@ -18,9 +18,30 @@
 	fx:controller="controller.AddJobController">
 
 
-	<ComboBox fx:id="clientCombo"
-		promptText="Search client by Name / GST / Mobile" editable="true"
-		HBox.hgrow="ALWAYS" />
+	
+   <VBox alignment="CENTER" maxWidth="1150">
+
+    <GridPane alignment="CENTER" hgap="10" maxWidth="Infinity" styleClass="card-grid">
+        <columnConstraints>
+            <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+            <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+        </columnConstraints>
+
+        <ComboBox fx:id="clientCombo"
+                  promptText="Search client by Name / GST / Mobile"
+                  GridPane.columnIndex="0"
+                  maxWidth="Infinity"/>
+
+        
+
+        <TextField fx:id="jobName"
+                   promptText="Enter Job Title Here"
+                   GridPane.columnIndex="1"
+                   maxWidth="Infinity"/>
+    </GridPane>
+
+</VBox>
+	
 
 	<!-- ========================================================= -->
 	<!-- 1️⃣ SCROLLABLE CARD AREA -->
@@ -656,8 +677,11 @@
 
 	<HBox alignment="CENTER_RIGHT" spacing="5">
 
-		<Button text="Add Job" styleClass="primary-btn"
-			onAction="#handleAddJobButton" />
+		<Button fx:id="addJobBtn"
+        text="Add Job"
+        styleClass="primary-btn"
+        onAction="#handleAddJobButton" />
+
 	</HBox>
 
 

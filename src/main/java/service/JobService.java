@@ -69,6 +69,39 @@ public class JobService {
 		}
 	}
 
+	public void updateJobName(int jobId, String jobName) {
+
+		if (jobId <= 0) {
+			throw new IllegalArgumentException("Invalid job id");
+		}
+
+		if (jobName == null || jobName.trim().isEmpty()) {
+			throw new IllegalArgumentException("Job name cannot be empty");
+		}
+
+		try (Connection con = DBConnection.getConnection()) {
+			con.setAutoCommit(false);
+
+			String sql = """
+					UPDATE jobs
+					SET job_title = ?
+					WHERE id = ?
+					""";
+
+			try (PreparedStatement ps = con.prepareStatement(sql)) {
+				ps.setString(1, jobName.trim());
+				ps.setInt(2, jobId);
+				ps.executeUpdate();
+			}
+
+			con.commit();
+
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to update job name", e);
+		}
+	}
+
+	
 	public List<Job> getFullJobsByClientId(int clientId) {
 	    return repo.findFullJobsByClientId(clientId);
 	}
@@ -85,4 +118,8 @@ public class JobService {
 	public List<Job> getAllJobs() {
 		return repo.findAllJobs();
 	}
+	public Job getJobById(int jobId) {
+	    return repo.findJobById(jobId);
+	}
+
 }

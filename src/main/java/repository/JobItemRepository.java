@@ -15,15 +15,14 @@ public class JobItemRepository {
 
 	/* ================= INSERT ================= */
 
-	public JobItem save(JobItem item) {
+	public JobItem save(Connection con, JobItem item) {
 
 		String sql = """
 				    INSERT INTO job_items (job_id, type, description, amount, sort_order)
 				    VALUES (?, ?, ?, ?, ?)
 				""";
 
-		try (Connection con = DBConnection.getConnection();
-				PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+		try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
 			ps.setInt(1, item.getJobId());
 			ps.setString(2, item.getType());

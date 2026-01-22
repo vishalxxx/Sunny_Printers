@@ -10,7 +10,9 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
@@ -378,8 +380,20 @@ public class ViewJobsController {
     // ✅ EDIT / DELETE
     // =========================================================
     private void onEditJob(Job job) {
-        System.out.println("✏ Edit job: " + job.getJobNo());
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ht.fxml"));
+            Parent view = loader.load();
+
+            AddJobController ctrl = loader.getController();
+            ctrl.openForEdit(job.getId());
+
+            MainController.getInstance().setCenterView(view);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
+
 
     private void onDeleteJob(Job job) {
 
@@ -394,6 +408,7 @@ public class ViewJobsController {
             System.out.println("🗑 Delete job: " + job.getJobNo());
         }
     }
+    
     private void toast(String message) {
 		Stage stage = (Stage) ((Node) clientComboBox).getScene().getWindow();
 		Toast.show(stage, message);

@@ -4,37 +4,34 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 
 import model.CtpPlate;
-import utils.DBConnection;
 
 public class CtpItemRepository {
 
-	public void save(CtpPlate item) {
+    public void save(Connection con, CtpPlate ctp) {
 
-		String sql = """
-				    INSERT INTO ctp_plate
-				    (job_id, qty, plate_size, gauge, backing,
-				     supplier_id, supplier_name,
-				     notes, amount, color)
-				    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,?)
-				""";
+        String sql = """
+            INSERT INTO ctp_plate
+            (job_item_id, supplier_id, supplier_name, qty, plate_size, gauge, backing, color, notes, amount)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """;
 
-		try (Connection con = DBConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
 
-			ps.setInt(1, item.getJobId());
-			ps.setInt(2, item.getQty());
-			ps.setString(3, item.getSize());
-			ps.setString(4, item.getGauge());
-			ps.setString(5, item.getBacking());
-			ps.setObject(6, item.getSupplierId());
-			ps.setString(7, item.getSupplierNameSnapshot());
-			ps.setString(8, item.getNotes());
-			ps.setDouble(9, item.getAmount());
-			ps.setString(10, item.getColor());
+            ps.setInt(1, ctp.getJobItemId());
+            ps.setInt(2, ctp.getSupplierId());
+            ps.setString(3, ctp.getSupplierName());
+            ps.setInt(4, ctp.getQty());
+            ps.setString(5, ctp.getPlateSize());
+            ps.setString(6, ctp.getGauge());
+            ps.setString(7, ctp.getBacking());
+            ps.setString(8, ctp.getColor());
+            ps.setString(9, ctp.getNotes());
+            ps.setDouble(10, ctp.getAmount());
 
-			ps.executeUpdate();
-		} catch (Exception e) {
-			throw new RuntimeException("Failed to save CTP item", e);
-		}
-	}
+            ps.executeUpdate();
 
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to save CTP plate item", e);
+        }
+    }
 }

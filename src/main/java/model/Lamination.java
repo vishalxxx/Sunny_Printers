@@ -3,23 +3,23 @@ package model;
 import java.io.Serializable;
 
 public class Lamination implements Serializable {
-	private String qty;
+	private int qty;
 	private String unit;
 	private String type;
 	private String side;
 	private String size;
 	private String notes;
-	private String amount;
+	private double amount;
 
 	public Lamination() {
 	}
 
 	// getters/setters...
-	public String getQty() {
+	public int getQty() {
 		return qty;
 	}
 
-	public void setQty(String qty) {
+	public void setQty(int qty) {
 		this.qty = qty;
 	}
 
@@ -63,17 +63,17 @@ public class Lamination implements Serializable {
 		this.notes = notes;
 	}
 
-	public String getAmount() {
+	public double getAmount() {
 		return amount;
 	}
 
-	public void setAmount(String amount) {
+	public void setAmount(double amount) {
 		this.amount = amount;
 	}
 
 	public String toShortText() {
 		StringBuilder s = new StringBuilder();
-		if (qty != null)
+		if (qty != 0)
 			s.append(qty).append(" ");
 		if (unit != null)
 			s.append(unit).append(" - ");
@@ -81,7 +81,7 @@ public class Lamination implements Serializable {
 			s.append(type).append(" - ");
 		if (side != null)
 			s.append(side).append(" - ");
-		if (amount != null)
+		if (amount != 0.0)
 			s.append("₹").append(amount);
 		return s.toString().trim();
 	}

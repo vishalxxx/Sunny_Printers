@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import model.Job;
+import model.JobItem;
 import model.JobSummary;
 import utils.DBConnection;
 
@@ -209,6 +210,81 @@ public class JobRepository {
 
 	    } catch (Exception e) {
 	        throw new RuntimeException("Failed to search jobs", e);
+	    }
+
+	    return list;
+	}
+
+	public Job findJobById(int jobId) {
+
+	    String sql = """
+	        SELECT id, job_no, client_id, job_title, job_date, status, remarks, created_at, updated_at
+	        FROM jobs
+	        WHERE id = ?
+	    """;
+
+	    try (Connection con = DBConnection.getConnection();
+	         PreparedStatement ps = con.prepareStatement(sql)) {
+
+	        ps.setInt(1, jobId);
+	        ResultSet rs = ps.executeQuery();
+
+	        if (rs.next()) {
+	            Job job = new Job();
+	            job.setId(rs.getInt("id"));
+	            job.setJobNo(rs.getString("job_no"));
+
+	            int cid = rs.getInt("client_id");
+	            job.setClientId(rs.wasNull() ? null : cid);
+
+	            job.setJobTitle(rs.getString("job_title"));
+
+	            String dateStr = rs.getString("job_date");
+	            job.setJobDate(dateStr == null ? null : LocalDate.parse(dateStr));
+
+	            job.setStatus(rs.getString("status"));
+	            job.setRemarks(rs.getString("remarks"));
+	            job.setCreatedAt(rs.getString("created_at"));
+	            job.setUpdatedAt(rs.getString("updated_at"));
+
+	            return job;
+	        }
+
+	    } catch (Exception e) {
+	        throw new RuntimeException("Failed to fetch job by id=" + jobId, e);
+	    }
+
+	    return null;
+	}
+	public List<JobItem> findJobItemsByJobId(int jobId) {
+	    List<JobItem> list = new ArrayList<>();
+
+	    String sql = """
+	        SELECT id, job_id, type, description, amount, sort_order
+	        FROM job_items
+	        WHERE job_id = ?
+	        ORDER BY sort_order ASC, id ASC
+	    """;
+
+	    try(Connection con = DBConnection.getConnection();
+	        PreparedStatement ps = con.prepareStatement(sql)) {
+
+	        ps.setInt(1, jobId);
+	        ResultSet rs = ps.executeQuery();
+
+	        while(rs.next()) {
+	            JobItem item = new JobItem();
+	            item.setId(rs.getInt("id"));
+	            item.setJobId(rs.getInt("job_id"));
+	            item.setType(rs.getString("type"));
+	            item.setDescription(rs.getString("description"));
+	            item.setAmount(rs.getDouble("amount"));
+	            item.setSortOrder(rs.getInt("sort_order"));
+	            list.add(item);
+	        }
+
+	    } catch(Exception e) {
+	        throw new RuntimeException("Failed to load job_items for jobId=" + jobId, e);
 	    }
 
 	    return list;

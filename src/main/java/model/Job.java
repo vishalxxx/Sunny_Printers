@@ -6,7 +6,7 @@ public class Job {
 
     private int id;
     private String jobNo;
-    private Integer clientId;
+    private Integer clientId; // nullable for draft
 
     private String jobTitle;
     private LocalDate jobDate;
@@ -16,6 +16,8 @@ public class Job {
 
     private String createdAt;
     private String updatedAt;
+
+    public Job() {}
 
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }

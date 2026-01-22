@@ -5,7 +5,7 @@ import java.io.File;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -19,52 +19,68 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import javafx.util.StringConverter;
 import model.Binding;
 import model.Client;
-import model.Invoice;
+import model.CtpPlate;
 import model.Job;
 import model.Lamination;
 import model.Paper;
+import model.Printing;
 import model.Supplier;
 import service.ClientService;
-import service.InvoiceBuilderService;
-import service.InvoiceGenerationService;
 import service.JobItemService;
 import service.JobService;
 import service.SupplierService;
+import utils.Toast;
 
 public class AddJobController {
-	private final ObservableList<Client> clientItems = javafx.collections.FXCollections.observableArrayList();
-	private boolean editMode = false;	
+
+	/* ========================= STATE ========================= */
+
+	private boolean editMode = false;
 	private Job currentJob;
-	private Supplier currentCtpSupplier;
 
 	public void setCurrentJob(Job job) {
 		this.currentJob = job;
 	}
 
+	/* ========================= TOP FIELDS ========================= */
+
 	@FXML
-	private RadioButton paperOurRadio;
+	private Button addJobBtn;
+
 	@FXML
-	private RadioButton paperClientRadio;
+	private TextField jobName;
+
 	@FXML
 	private ComboBox<Client> clientCombo;
-	private final ClientService clientService = new ClientService();
+
+	@FXML
+	private RadioButton paperOurRadio;
+
+	@FXML
+	private RadioButton paperClientRadio;
 
 	private ToggleGroup paperSourceGroup;
 
 	@FXML
 	private ImageView jobImagePreview;
+
 	@FXML
 	private VBox pdfPreviewBox;
+
 	@FXML
 	private Label filePlaceholder;
 
-	private final SupplierService supplierService = new SupplierService();
-	
+	/* ========================= SERVICES ========================= */
 
-	/* ========================= PRINTING ========================= */
+	private final ClientService clientService = new ClientService();
+	private final SupplierService supplierService = new SupplierService();
+
+	/* ========================= CARDS ========================= */
+
 	@FXML
 	private VBox fileCard;
 	@FXML
@@ -77,6 +93,8 @@ public class AddJobController {
 	private VBox bindingCard;
 	@FXML
 	private VBox laminationCard;
+
+	/* ========================= PRINTING ========================= */
 
 	@FXML
 	private TextField printQtyField;
@@ -96,6 +114,7 @@ public class AddJobController {
 	private TextField printAmountField;
 
 	/* ========================= CTP PLATE ========================= */
+
 	@FXML
 	private TextField ctpQtyField;
 	@FXML
@@ -114,6 +133,7 @@ public class AddJobController {
 	private ComboBox<String> ctpColorCombo;
 
 	/* ========================= PAPER ========================= */
+
 	@FXML
 	private TextField paperQtyField;
 	@FXML
@@ -130,6 +150,7 @@ public class AddJobController {
 	private TextField paperAmountField;
 
 	/* ========================= BINDING ========================= */
+
 	@FXML
 	private ComboBox<String> bindingProcessCombo;
 	@FXML
@@ -142,6 +163,7 @@ public class AddJobController {
 	private TextField bindingAmountField;
 
 	/* ========================= LAMINATION ========================= */
+
 	@FXML
 	private TextField lamQtyField;
 	@FXML
@@ -157,21 +179,134 @@ public class AddJobController {
 	@FXML
 	private TextField lamAmountField;
 
-	
-	
+	/* ========================= ADD BUTTONS ========================= */
 
-	public void startNewJob() {
+	@FXML
+	private Button addPrintingBtn;
+	@FXML
+	private Button addPlateBtn;
+	@FXML
+	private Button addPaperBtn;
+	@FXML
+	private Button addBindingBtn;
+	@FXML
+	private Button addLaminationBtn;
 
-	    JobService jobService = new JobService();
-	    this.currentJob = jobService.createDraftJob();
+	/* ========================= CLIENT COMBO STATE ========================= */
 
-	    System.out.println("✅ Draft job created: " + currentJob.getJobNo());
+	private final ObservableList<Client> masterClients = javafx.collections.FXCollections.observableArrayList();
 
-	    // ✅ optional: show job no in UI label if you have
-	    // jobNoLabel.setText(currentJob.getJobNo());
+	private final javafx.collections.transformation.FilteredList<Client> filteredClients =
+			new javafx.collections.transformation.FilteredList<>(masterClients);
+
+	private boolean clientLocked = false;
+	private Client selectedClient = null;
+
+	/* =============================================================
+	   ✅ MAIN FEATURE:
+	   Cards + buttons disabled until:
+	   - client selected
+	   - jobName entered
+	   ============================================================= */
+	private void updateFormState() {
+
+		boolean hasClient = selectedClient != null;
+		boolean hasJobName = jobName.getText() != null && !jobName.getText().trim().isEmpty();
+
+		boolean allowCards = hasClient && hasJobName;
+
+		disableAllCards(!allowCards);
+
+		// ✅ disable all "Add ..." buttons until both are ready
+		if (!allowCards) {
+			addPrintingBtn.setDisable(true);
+			addPlateBtn.setDisable(true);
+			addPaperBtn.setDisable(true);
+			addBindingBtn.setDisable(true);
+			addLaminationBtn.setDisable(true);
+		} else {
+			// ✅ enable based on per-card validation
+			addPrintingBtn.setDisable(!isPrintingValid());
+			addPlateBtn.setDisable(!isCtpValid());
+			addPaperBtn.setDisable(!isPaperValid());
+			addBindingBtn.setDisable(!isBindingValid());
+			addLaminationBtn.setDisable(!isLaminationValid());
+		}
 	}
 
+	/* ========================= JOB FLOW ========================= */
 
+	public void startNewJob() {
+		JobService jobService = new JobService();
+		this.currentJob = jobService.createDraftJob();
+		this.editMode = false;
+		addJobBtn.setText("Add Job ✅");
+
+		System.out.println("✅ Draft job created: " + currentJob.getJobNo());
+
+		// ✅ reset UI state
+		clientCombo.setDisable(false);
+		clientLocked = false;
+		selectedClient = null;
+
+		jobName.clear();
+		clientCombo.getSelectionModel().clearSelection();
+
+		updateFormState();
+	}
+
+	public void openForEdit(int jobId) {
+
+		JobService jobService = new JobService();
+		Job job = jobService.getJobById(jobId);
+
+		if (job == null) {
+			System.out.println("❌ Job not found: " + jobId);
+			return;
+		}
+
+		this.currentJob = job;
+		this.editMode = true;
+
+		System.out.println("✏ Edit Mode ON for Job: " + currentJob.getJobNo());
+
+		addJobBtn.setText("Update Job ✅");
+
+		// ✅ load client and lock it
+		preloadClientIntoCombo();
+
+		// ✅ Prefill job name (if you have it in Job model)
+		// If your Job model doesn't have getJobName(), comment this line.
+		try {
+			jobName.setText(currentJob.getJobTitle());
+		} catch (Exception ignore) {
+		}
+
+		// ✅ now allow cards only if both are filled
+		updateFormState();
+	}
+
+	private void preloadClientIntoCombo() {
+
+		if (currentJob == null || currentJob.getClientId() == null)
+			return;
+
+		Integer cid = currentJob.getClientId();
+
+		Client match = masterClients.stream().filter(c -> c.getId() == cid).findFirst().orElse(null);
+
+		if (match != null) {
+			clientCombo.getSelectionModel().select(match);
+
+			clientLocked = true;
+			selectedClient = match;
+
+			// optional (recommended)
+			clientCombo.setDisable(true);
+		}
+	}
+
+	/* ========================= UPLOAD FILE ========================= */
 
 	@FXML
 	private void handleUploadFile(ActionEvent event) {
@@ -179,7 +314,8 @@ public class AddJobController {
 			FileChooser chooser = new FileChooser();
 			chooser.setTitle("Select Image or PDF");
 
-			chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg"),
+			chooser.getExtensionFilters().addAll(
+					new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg"),
 					new FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
 
 			File file = chooser.showOpenDialog(null);
@@ -224,39 +360,85 @@ public class AddJobController {
 		filePlaceholder.setManaged(false);
 	}
 
+	/* ========================= FINAL SAVE / UPDATE ========================= */
+
 	@FXML
 	private void handleAddJobButton() {
-//
-//		String summaryText = JobSummaryFormatter.generateSummary(currentJob);
-//
-//		boolean confirmed = PopupUtil.showJobSummary(summaryText);
-//
-//		if (confirmed) {
-//			// JobService.saveJob(currentJob);
-//			showSuccessMessage();
-//			resetForm();
-//		}
 
-//		int jobId = currentJob.getId();
-//
-//		InvoiceBuilderService builder = new InvoiceBuilderService();
-//		//Invoice invoice = builder.buildInvoiceForJob(jobId);
-//
-//		InvoiceGenerationService generator = new InvoiceGenerationService();
-		//generator.generateExcel(invoice);
+	    if (currentJob == null || currentJob.getId() == 0) {
+	        toast("❌ Job not created properly");
+	        return;
+	    }
+
+	    if (selectedClient == null) {
+	        toast("Please Select Client..");
+	        return;
+	    }
+
+	    if (jobName.getText() == null || jobName.getText().isBlank()) {
+	        toast("Please Enter Job Name..");
+	        return;
+	    }
+
+	    String title = jobName.getText().trim();
+
+	    // ✅ 1) set in currentJob object
+	    currentJob.setJobTitle(title);
+
+	    // ✅ 2) save into database (important)
+	    new JobService().updateJobName(currentJob.getId(), title);
+
+	    if (!editMode) {
+	        System.out.println("✅ Finalizing NEW job: " + currentJob.getJobNo());
+	        toast("✅ Job Created Successfully!");
+	    } else {
+	        System.out.println("✅ Updating existing job: " + currentJob.getJobNo());
+	        toast("✅ Job Updated Successfully!");
+	    }
 	}
+
+
+	/* ========================= ADD ITEMS ========================= */
 
 	@FXML
 	private void handleAddPrinting() {
 
+		if (currentJob == null || currentJob.getId() <= 0) {
+			toast("Job not created ❌");
+			return;
+		}
+
+		Printing p = new Printing();
+
+		try {
+			if (printQtyField.getText() != null && !printQtyField.getText().isBlank())
+				p.setQty(Integer.parseInt(printQtyField.getText()));
+		} catch (Exception e) {
+			toast("Printing Qty must be number ❌");
+			return;
+		}
+
+		p.setUnits(printUnitsCombo.getValue());
+		p.setSets(printSetField.getText());
+		p.setColor(printColorCombo.getValue());
+		p.setSide(printSideCombo.getValue());
+		p.setWithCtp("Yes".equalsIgnoreCase(printCtpCombo.getValue()));
+		p.setNotes(printNotesArea.getText());
+
+		try {
+			if (printAmountField.getText() != null && !printAmountField.getText().isBlank())
+				p.setAmount(Double.parseDouble(printAmountField.getText()));
+		} catch (Exception e) {
+			toast("Printing Amount must be number ❌");
+			return;
+		}
+
 		JobItemService js = new JobItemService();
-		js.addPrinting(currentJob.getId(), printQtyField.getText(), printUnitsCombo.getValue(), printSetField.getText(),
-				printColorCombo.getValue(), printSideCombo.getValue(), printCtpCombo.getValue(),
-				printNotesArea.getText(), printAmountField.getText());
+		js.addJobItem(currentJob.getId(), p);
 
-		// currentJob.addPrinting(p);
-
+		toast("Printing Added ✅");
 		clearPrintingFields();
+		updateFormState();
 	}
 
 	private void clearPrintingFields() {
@@ -273,15 +455,47 @@ public class AddJobController {
 	@FXML
 	private void handleAddCtpPlate() {
 
+		if (currentJob == null || currentJob.getId() <= 0) {
+			toast("Job not created ❌");
+			return;
+		}
+
+		CtpPlate c = new CtpPlate();
+
+		try {
+			if (ctpQtyField.getText() != null && !ctpQtyField.getText().isBlank())
+				c.setQty(Integer.parseInt(ctpQtyField.getText()));
+		} catch (Exception e) {
+			toast("CTP Qty must be number ❌");
+			return;
+		}
+
+		c.setPlateSize(ctpSizeCombo.getValue());
+		c.setGauge(ctpGaugeCombo.getValue());
+		c.setBacking(ctpBackingCombo.getValue());
+		c.setColor(ctpColorCombo.getValue());
+		c.setNotes(ctpNotesArea.getText());
+
+		Supplier supplier = ctpSupplierCombo.getValue();
+		if (supplier != null) {
+			c.setSupplierId(supplier.getId());
+			c.setSupplierName(supplier.getName());
+		}
+
+		try {
+			if (ctpAmountField.getText() != null && !ctpAmountField.getText().isBlank())
+				c.setAmount(Double.parseDouble(ctpAmountField.getText()));
+		} catch (Exception e) {
+			toast("CTP Amount must be number ❌");
+			return;
+		}
+
 		JobItemService js = new JobItemService();
-		js.addCtpItem(
+		js.addJobItem(currentJob.getId(), c);
 
-				currentJob.getId(), ctpQtyField.getText(), ctpSizeCombo.getValue(), ctpGaugeCombo.getValue(),
-				ctpBackingCombo.getValue(), ctpNotesArea.getText(), ctpAmountField.getText(),
-				ctpSupplierCombo.getValue(), ctpColorCombo.getValue());
-
-		// currentJob.addCtpPlate(plate);
+		toast("CTP Plate Added ✅");
 		clearCtpFields();
+		updateFormState();
 	}
 
 	private void clearCtpFields() {
@@ -293,23 +507,51 @@ public class AddJobController {
 
 		ctpNotesArea.clear();
 		ctpAmountField.clear();
-
 	}
 
 	@FXML
 	private void handleAddPaper() {
 
-		Paper paper = new Paper();
+		if (currentJob == null || currentJob.getId() <= 0) {
+			toast("Job not created ❌");
+			return;
+		}
+
+		Paper p = new Paper();
+
+		try {
+			if (paperQtyField.getText() != null && !paperQtyField.getText().isBlank())
+				p.setQty(Integer.parseInt(paperQtyField.getText()));
+		} catch (Exception e) {
+			toast("Paper Qty must be number ❌");
+			return;
+		}
+
+		p.setUnits(paperUnitsCombo.getValue());
+		p.setSize(paperSizeCombo.getValue());
+		p.setGsm(paperGsmCombo.getValue());
+		p.setType(paperTypeCombo.getValue());
+		p.setNotes(paperNotesArea.getText());
+
+		String source = "Our";
+		if (paperClientRadio.isSelected())
+			source = "Client";
+		p.setSource(source);
+
+		try {
+			if (paperAmountField.getText() != null && !paperAmountField.getText().isBlank())
+				p.setAmount(Double.parseDouble(paperAmountField.getText()));
+		} catch (Exception e) {
+			toast("Paper Amount must be number ❌");
+			return;
+		}
+
 		JobItemService js = new JobItemService();
+		js.addJobItem(currentJob.getId(), p);
 
-		// NEW: Set source (Our or Client)
-		String source = ((RadioButton) paperSourceGroup.getSelectedToggle()).getText();
-
-		js.addPaper(currentJob.getId(), paperQtyField.getText(), paperUnitsCombo.getValue(), paperSizeCombo.getValue(),
-				paperGsmCombo.getValue(), paperTypeCombo.getValue(), paperNotesArea.getText(),
-				paperAmountField.getText(), source);
-		// currentJob.addPaper(paper);
+		toast("Paper Added ✅");
 		clearPaperFields();
+		updateFormState();
 	}
 
 	private void clearPaperFields() {
@@ -321,19 +563,51 @@ public class AddJobController {
 		paperNotesArea.clear();
 		paperAmountField.clear();
 		paperOurRadio.setSelected(true);
-
 	}
 
 	@FXML
 	private void handleAddBinding() {
 
-		Binding b = new Binding();
-		JobItemService js = new JobItemService();
-		js.addBinding(currentJob.getId(), bindingProcessCombo.getValue(), bindingQtyField.getText(),
-				bindingRateField.getText(), bindingNotesArea.getText(), bindingAmountField.getText());
+		if (currentJob == null || currentJob.getId() <= 0) {
+			toast("Job not created ❌");
+			return;
+		}
 
-		// currentJob.addBinding(b);
+		Binding b = new Binding();
+		b.setProcess(bindingProcessCombo.getValue());
+
+		try {
+			if (bindingQtyField.getText() != null && !bindingQtyField.getText().isBlank())
+				b.setQty(Integer.parseInt(bindingQtyField.getText()));
+		} catch (Exception e) {
+			toast("Binding Qty must be number ❌");
+			return;
+		}
+
+		try {
+			if (bindingRateField.getText() != null && !bindingRateField.getText().isBlank())
+				b.setRate(Double.parseDouble(bindingRateField.getText()));
+		} catch (Exception e) {
+			toast("Binding Rate must be number ❌");
+			return;
+		}
+
+		b.setNotes(bindingNotesArea.getText());
+
+		try {
+			if (bindingAmountField.getText() != null && !bindingAmountField.getText().isBlank())
+				b.setAmount(Double.parseDouble(bindingAmountField.getText()));
+		} catch (Exception e) {
+			toast("Binding Amount must be number ❌");
+			return;
+		}
+
+		JobItemService js = new JobItemService();
+		js.addJobItem(currentJob.getId(), b);
+
+		toast("Binding Added ✅");
 		clearBindingFields();
+		updateFormState();
 	}
 
 	private void clearBindingFields() {
@@ -347,14 +621,41 @@ public class AddJobController {
 	@FXML
 	private void handleAddLamination() {
 
-		Lamination lam = new Lamination();
+		if (currentJob == null || currentJob.getId() <= 0) {
+			toast("Job not created ❌");
+			return;
+		}
+
+		Lamination l = new Lamination();
+
+		try {
+			if (lamQtyField.getText() != null && !lamQtyField.getText().isBlank())
+				l.setQty(Integer.parseInt(lamQtyField.getText()));
+		} catch (Exception e) {
+			toast("Lamination Qty must be number ❌");
+			return;
+		}
+
+		l.setUnit(lamUnitCombo.getValue());
+		l.setType(lamTypeCombo.getValue());
+		l.setSide(lamSideCombo.getValue());
+		l.setSize(lamSizeCombo.getValue());
+		l.setNotes(lamNotesArea.getText());
+
+		try {
+			if (lamAmountField.getText() != null && !lamAmountField.getText().isBlank())
+				l.setAmount(Double.parseDouble(lamAmountField.getText()));
+		} catch (Exception e) {
+			toast("Lamination Amount must be number ❌");
+			return;
+		}
+
 		JobItemService js = new JobItemService();
+		js.addJobItem(currentJob.getId(), l);
 
-		js.addLamination(currentJob.getId(), lamQtyField.getText(), lamUnitCombo.getValue(), lamTypeCombo.getValue(),
-				lamSideCombo.getValue(), lamSizeCombo.getValue(), lamNotesArea.getText(), lamAmountField.getText());
-
-		// currentJob.addLamination(lam);
+		toast("Lamination Added ✅");
 		clearLaminationFields();
+		updateFormState();
 	}
 
 	private void clearLaminationFields() {
@@ -367,100 +668,20 @@ public class AddJobController {
 		lamAmountField.clear();
 	}
 
-	private void resetForm() {
-		currentJob = new Job(); // fresh job
+	/* ========================= VALIDATION HELPERS ========================= */
 
-		// Clear Printing fields
-		printQtyField.clear();
-		printUnitsCombo.setValue(null);
-		printSetField.setText(null);
-		printColorCombo.setValue(null);
-		printSideCombo.setValue(null);
-		printCtpCombo.setValue(null);
-		printNotesArea.clear();
-		printAmountField.clear();
-
-		// Clear CTP fields
-		ctpQtyField.setText(null);
-		ctpSizeCombo.setValue(null);
-		ctpGaugeCombo.setValue(null);
-		ctpBackingCombo.setValue(null);
-		ctpNotesArea.clear();
-		ctpAmountField.clear();
-
-		// Clear Paper fields
-		paperQtyField.clear();
-		paperUnitsCombo.setValue(null);
-		paperSizeCombo.setValue(null);
-		paperGsmCombo.setValue(null);
-		paperTypeCombo.setValue(null);
-		paperNotesArea.clear();
-		paperAmountField.clear();
-
-		// Clear Binding fields
-		bindingProcessCombo.setValue(null);
-		bindingQtyField.clear();
-		bindingRateField.clear();
-		bindingNotesArea.clear();
-		bindingAmountField.clear();
-
-		// Clear Lamination fields
-		lamQtyField.clear();
-		lamUnitCombo.setValue(null);
-		lamTypeCombo.setValue(null);
-		lamSideCombo.setValue(null);
-		lamSizeCombo.setValue(null);
-		lamNotesArea.clear();
-		lamAmountField.clear();
-
-		// Clear image/pdf preview
-		jobImagePreview.setImage(null);
-		jobImagePreview.setVisible(false);
-		jobImagePreview.setManaged(false);
-
-		pdfPreviewBox.setVisible(false);
-		pdfPreviewBox.setManaged(false);
-
-		filePlaceholder.setVisible(true);
-		filePlaceholder.setManaged(true);
-	}
-
-	private void showSuccessMessage() {
-		Alert alert = new Alert(Alert.AlertType.INFORMATION);
-		alert.setTitle("Success");
-		alert.setHeaderText(null);
-		alert.setContentText("Job added successfully!");
-		alert.showAndWait();
-	}
-
-	// <=====================Validation Logics =======================>
-
-	// ---------- Add these FXML fields (if not already present) ----------
-	@FXML
-	private Button addPrintingBtn;
-	@FXML
-	private Button addPlateBtn;
-	@FXML
-	private Button addPaperBtn;
-	@FXML
-	private Button addBindingBtn;
-	@FXML
-	private Button addLaminationBtn;
-
-	// ---------- Helper: allow only digits in TextField ----------
 	private void makeNumeric(TextField tf) {
 		tf.setTextFormatter(new TextFormatter<>(change -> {
-			// allow empty or digits only
 			return change.getControlNewText().matches("\\d*") ? change : null;
 		}));
 	}
 
-	// ---------- Small helper ----------
 	private boolean notEmpty(String s) {
 		return s != null && !s.trim().isEmpty();
 	}
 
-	// ---------- PRINTING validation ----------
+	/* ========================= PRINTING VALIDATION ========================= */
+
 	private boolean isPrintingValid() {
 		boolean fullEntry = notEmpty(printQtyField.getText()) && printUnitsCombo.getValue() != null
 				&& notEmpty(printSetField.getText()) && notEmpty(printAmountField.getText());
@@ -471,20 +692,19 @@ public class AddJobController {
 	}
 
 	private void setupPrintingValidation() {
-		Runnable validate = () -> addPrintingBtn.setDisable(!isPrintingValid());
+		Runnable validate = () -> updateFormState();
 
-		// watch relevant properties
 		printQtyField.textProperty().addListener((a, b, c) -> validate.run());
 		printSetField.textProperty().addListener((a, b, c) -> validate.run());
 		printAmountField.textProperty().addListener((a, b, c) -> validate.run());
 		printNotesArea.textProperty().addListener((a, b, c) -> validate.run());
 		printUnitsCombo.valueProperty().addListener((a, b, c) -> validate.run());
 
-		// initial
 		validate.run();
 	}
 
-	// ---------- CTP validation ----------
+	/* ========================= CTP VALIDATION ========================= */
+
 	private boolean isCtpValid() {
 		boolean fullEntry = notEmpty(ctpQtyField.getText()) && ctpSizeCombo.getValue() != null
 				&& notEmpty(ctpAmountField.getText()) && ctpSupplierCombo.getValue() != null;
@@ -495,17 +715,19 @@ public class AddJobController {
 	}
 
 	private void setupCtpValidation() {
-		Runnable validate = () -> addPlateBtn.setDisable(!isCtpValid());
+		Runnable validate = () -> updateFormState();
 
 		ctpQtyField.textProperty().addListener((a, b, c) -> validate.run());
 		ctpSizeCombo.valueProperty().addListener((a, b, c) -> validate.run());
 		ctpAmountField.textProperty().addListener((a, b, c) -> validate.run());
 		ctpNotesArea.textProperty().addListener((a, b, c) -> validate.run());
+		ctpSupplierCombo.valueProperty().addListener((a, b, c) -> validate.run());
 
 		validate.run();
 	}
 
-	// ---------- PAPER validation ----------
+	/* ========================= PAPER VALIDATION ========================= */
+
 	private boolean isPaperValid() {
 		boolean fullEntry = notEmpty(paperQtyField.getText()) && paperUnitsCombo.getValue() != null
 				&& paperSizeCombo.getValue() != null && notEmpty(paperAmountField.getText());
@@ -516,7 +738,7 @@ public class AddJobController {
 	}
 
 	private void setupPaperValidation() {
-		Runnable validate = () -> addPaperBtn.setDisable(!isPaperValid());
+		Runnable validate = () -> updateFormState();
 
 		paperQtyField.textProperty().addListener((a, b, c) -> validate.run());
 		paperAmountField.textProperty().addListener((a, b, c) -> validate.run());
@@ -527,7 +749,8 @@ public class AddJobController {
 		validate.run();
 	}
 
-	// ---------- BINDING validation ----------
+	/* ========================= BINDING VALIDATION ========================= */
+
 	private boolean isBindingValid() {
 		boolean fullEntry = bindingProcessCombo.getValue() != null && notEmpty(bindingQtyField.getText())
 				&& notEmpty(bindingRateField.getText()) && notEmpty(bindingAmountField.getText());
@@ -538,7 +761,7 @@ public class AddJobController {
 	}
 
 	private void setupBindingValidation() {
-		Runnable validate = () -> addBindingBtn.setDisable(!isBindingValid());
+		Runnable validate = () -> updateFormState();
 
 		bindingProcessCombo.valueProperty().addListener((a, b, c) -> validate.run());
 		bindingQtyField.textProperty().addListener((a, b, c) -> validate.run());
@@ -549,7 +772,8 @@ public class AddJobController {
 		validate.run();
 	}
 
-	// ---------- LAMINATION validation ----------
+	/* ========================= LAMINATION VALIDATION ========================= */
+
 	private boolean isLaminationValid() {
 		boolean fullEntry = notEmpty(lamQtyField.getText()) && lamUnitCombo.getValue() != null
 				&& lamTypeCombo.getValue() != null && notEmpty(lamAmountField.getText());
@@ -560,7 +784,7 @@ public class AddJobController {
 	}
 
 	private void setupLaminationValidation() {
-		Runnable validate = () -> addLaminationBtn.setDisable(!isLaminationValid());
+		Runnable validate = () -> updateFormState();
 
 		lamQtyField.textProperty().addListener((a, b, c) -> validate.run());
 		lamUnitCombo.valueProperty().addListener((a, b, c) -> validate.run());
@@ -571,35 +795,24 @@ public class AddJobController {
 		validate.run();
 	}
 
-	// ===== Client ComboBox State =====
-	private final ObservableList<Client> masterClients = javafx.collections.FXCollections.observableArrayList();
+	/* ========================= INITIALIZE ========================= */
 
-	private final javafx.collections.transformation.FilteredList<Client> filteredClients = new javafx.collections.transformation.FilteredList<>(
-			masterClients);
-
-	private boolean clientLocked = false;
-	private Client selectedClient = null;
-
-	// ---------- initialize() wiring ----------
 	@FXML
 	public void initialize() {
+
 		filteredClients.setPredicate(c -> true);
 
-		/* ================= INITIAL STATE ================= */
-
-		disableAllCards(true);
-
+		// ✅ Load clients
 		masterClients.setAll(clientService.getAllClients());
 		clientCombo.setItems(filteredClients);
-		clientCombo.setEditable(false);
+		clientCombo.setEditable(true);
 
-		/* ================= CELL RENDERING ================= */
-
+		// ✅ UI setup
 		clientCombo.setCellFactory(lv -> new ListCell<>() {
 			@Override
 			protected void updateItem(Client c, boolean empty) {
 				super.updateItem(c, empty);
-				setText(empty || c == null ? null : c.getBusinessName() + " | " + c.getClientName());
+				setText(empty || c == null ? null : c.getBusinessName() + " | " + c.getClientName() + " | " + c.getGst()+ " | " +c.getPhone()) ;
 			}
 		});
 
@@ -607,60 +820,50 @@ public class AddJobController {
 			@Override
 			protected void updateItem(Client c, boolean empty) {
 				super.updateItem(c, empty);
-				setText(empty || c == null ? null : c.getBusinessName() + " | " + c.getClientName());
+				setText(empty || c == null ? null :c.getBusinessName() + " | " + c.getClientName() + " | " + c.getGst()+ " | " +c.getPhone()) ;
 			}
 		});
-
-		/* ================= STRING CONVERTER ================= */
 
 		clientCombo.setConverter(new StringConverter<>() {
 			@Override
 			public String toString(Client c) {
-				return c == null ? "" : c.getBusinessName() + " | " + c.getClientName();
+				return c == null ? "" : c.getBusinessName() + " | " + c.getClientName() + " | " + c.getGst()+ " | " +c.getPhone();
 			}
 
 			@Override
 			public Client fromString(String s) {
-				// 🔐 NEVER create new objects here
 				return clientCombo.getValue();
 			}
 		});
 
-		/* ================= LIVE SEARCH ================= */
-
-		/* ================= LIVE SEARCH ================= */
-
+		// ✅ Live search
 		clientCombo.getEditor().textProperty().addListener((obs, oldText, newText) -> {
 
-			// 🚫 stop only after client is locked
 			if (clientLocked)
 				return;
 
 			String search = newText == null ? "" : newText.trim().toLowerCase();
 
-			filteredClients
-					.setPredicate(client -> search.isEmpty() || client.getBusinessName().toLowerCase().contains(search)
-							|| client.getClientName().toLowerCase().contains(search)
-							|| (client.getPhone() != null && client.getPhone().contains(search)));
+			filteredClients.setPredicate(client -> search.isEmpty()
+					|| client.getBusinessName().toLowerCase().contains(search)
+					|| client.getClientName().toLowerCase().contains(search)
+					|| (client.getPhone() != null && client.getPhone().contains(search)));
 
-			// ✅ ensure dropdown is visible while typing
 			if (!clientCombo.isShowing()) {
 				clientCombo.show();
 			}
 		});
 
-		/* ================= SELECTION ================= */
-
+		// ✅ selection listener
 		clientCombo.valueProperty().addListener((obs, oldClient, newClient) -> {
 
 			if (newClient == null) {
 				clientLocked = false;
 				selectedClient = null;
-				disableAllCards(true);
+				updateFormState();
 				return;
 			}
 
-			// 🔐 lock immediately
 			clientLocked = true;
 			selectedClient = newClient;
 
@@ -668,18 +871,19 @@ public class AddJobController {
 				new JobService().assignClient(currentJob, newClient.getId());
 			}
 
-			disableAllCards(false);
+			updateFormState();
 		});
 
-		/* ================= RE-ENABLE SEARCH ON CLICK ================= */
-
+		// ✅ re-enable search click
 		clientCombo.getEditor().setOnMouseClicked(e -> {
 			clientLocked = false;
 			filteredClients.setPredicate(null);
 		});
 
-		/* ================= NUMERIC SAFETY ================= */
+		// ✅ Job name listener (IMPORTANT)
+		jobName.textProperty().addListener((obs, oldVal, newVal) -> updateFormState());
 
+		// ✅ numeric restrictions
 		makeNumeric(printQtyField);
 		makeNumeric(printSetField);
 		makeNumeric(printAmountField);
@@ -693,34 +897,29 @@ public class AddJobController {
 		makeNumeric(lamQtyField);
 		makeNumeric(lamAmountField);
 
-		/* ================= VALIDATORS ================= */
-
+		// ✅ validations
 		setupPrintingValidation();
 		setupCtpValidation();
 		setupPaperValidation();
 		setupBindingValidation();
 		setupLaminationValidation();
 
-		addPrintingBtn.setDisable(true);
-		addPlateBtn.setDisable(true);
-		addPaperBtn.setDisable(true);
-		addBindingBtn.setDisable(true);
-		addLaminationBtn.setDisable(true);
-
-		/* ================= SUPPLIERS ================= */
-
+		// ✅ suppliers
 		loadSuppliers();
 
-		/* ================= PAPER SOURCE ================= */
-
+		// ✅ paper source
 		paperSourceGroup = new ToggleGroup();
 		paperOurRadio.setToggleGroup(paperSourceGroup);
 		paperClientRadio.setToggleGroup(paperSourceGroup);
 		paperOurRadio.setSelected(true);
+
+		// ✅ initial lock state
+		updateFormState();
 	}
 
 	private void loadSuppliers() {
 		ctpSupplierCombo.getItems().setAll(supplierService.getSuppliersByType("CTP"));
+
 		ctpSupplierCombo.setCellFactory(cb -> new ListCell<>() {
 			@Override
 			protected void updateItem(Supplier s, boolean empty) {
@@ -736,7 +935,6 @@ public class AddJobController {
 				setText(empty || s == null ? null : s.getbusinessName() + " | " + s.getName());
 			}
 		});
-
 	}
 
 	private void disableAllCards(boolean disable) {
@@ -745,5 +943,10 @@ public class AddJobController {
 		paperCard.setDisable(disable);
 		bindingCard.setDisable(disable);
 		laminationCard.setDisable(disable);
+	}
+
+	private void toast(String message) {
+		Stage stage = (Stage) ((Node) clientCombo).getScene().getWindow();
+		Toast.show(stage, message);
 	}
 }

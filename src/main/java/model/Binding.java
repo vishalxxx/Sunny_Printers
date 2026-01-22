@@ -3,71 +3,32 @@ package model;
 import java.io.Serializable;
 
 public class Binding implements Serializable {
-	private String process;
-	private String qty;
-	private String rate;
-	private String notes;
-	private String amount;
 
-	public Binding() {
-	}
+    private String process;   // Perfect Binding / Spiral...
+    private int qty;          // optional
+    private double rate;      // optional
+    private String notes;     // optional
+    private double amount;    // required
 
-	// getters/setters...
-	public String getProcess() {
-		return process;
-	}
+    public Binding() {}
 
-	public void setProcess(String process) {
-		this.process = process;
-	}
+    public String getProcess() { return process; }
+    public void setProcess(String process) { this.process = process; }
 
-	public String getQty() {
-		return qty;
-	}
+    public int getQty() { return qty; }
+    public void setQty(int qty) { this.qty = qty; }
 
-	public void setQty(String qty) {
-		this.qty = qty;
-	}
+    public double getRate() { return rate; }
+    public void setRate(double rate) { this.rate = rate; }
 
-	public String getRate() {
-		return rate;
-	}
+    public String getNotes() { return notes; }
+    public void setNotes(String notes) { this.notes = notes; }
 
-	public void setRate(String rate) {
-		this.rate = rate;
-	}
+    public double getAmount() { return amount; }
+    public void setAmount(double amount) { this.amount = amount; }
 
-	public String getNotes() {
-		return notes;
-	}
-
-	public void setNotes(String notes) {
-		this.notes = notes;
-	}
-
-	public String getAmount() {
-		return amount;
-	}
-
-	public void setAmount(String amount) {
-		this.amount = amount;
-	}
-
-	public String toShortText() {
-		StringBuilder s = new StringBuilder();
-		if (process != null)
-			s.append(process).append(" - ");
-		if (qty != null)
-			s.append(qty).append(" - ");
-		if (rate != null)
-			s.append("₹").append(rate).append(" - ");
-		if (amount != null)
-			s.append("₹").append(amount);
-		return s.toString().trim();
-	}
-
-	@Override
-	public String toString() {
-		return toShortText();
-	}
+    @Override
+    public String toString() {
+        return "Binding{process=" + process + ", qty=" + qty + ", amount=" + amount + "}";
+    }
 }

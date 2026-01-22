@@ -18,9 +18,30 @@ import javafx.stage.Stage;
 import model.Job;
 import service.JobService;
 
+
+
 public class MainController implements Initializable {
 
+	
+	
+
 	Job currentJob = new Job();
+	
+	private boolean sidebarVisible = true;
+
+	private void hideSidebar() {
+	    sidebarVisible = false;
+	    sidebarScroll.setVisible(false);
+	    sidebarScroll.setManaged(false);  // ✅ this makes center expand
+	}
+
+	private void showSidebar() {
+	    sidebarVisible = true;
+	    sidebarScroll.setManaged(true);
+	    sidebarScroll.setVisible(true);
+	}
+
+	
 	// Center content container
 	@FXML
 	private VBox centerRoot;

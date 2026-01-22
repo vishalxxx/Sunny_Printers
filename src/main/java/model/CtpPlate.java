@@ -2,100 +2,64 @@ package model;
 
 public class CtpPlate {
 
-	private int jobId;
+    private int id;
+    private int jobItemId;          // 🔥 important: link to job_items.id
 
-	private int qty;
-	private String size;
-	private String gauge;
-	private String backing;
+    private int supplierId;
+    private String supplierName;    // snapshot
 
-	private Integer supplierId;
-	private String supplierNameSnapshot;
+    private int qty;
+    private String plateSize;
+    private String gauge;
+    private String backing;
+    private String color;
+    private String notes;
 
-	private String notes;
-	private double amount;
+    private double amount;
 
-	public String getColor() {
-		return color;
-	}
+    private String createdAt;
+    private String updatedAt;
 
-	public void setColor(String color) {
-		this.color = color;
-	}
+    public CtpPlate() {}
 
-	private String color;
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
 
-	public int getJobId() {
-		return jobId;
-	}
+    public int getJobItemId() { return jobItemId; }
+    public void setJobItemId(int jobItemId) { this.jobItemId = jobItemId; }
 
-	public void setJobId(int jobId) {
-		this.jobId = jobId;
-	}
+    public int getSupplierId() { return supplierId; }
+    public void setSupplierId(int supplierId) { this.supplierId = supplierId; }
 
-	public int getQty() {
-		return qty;
-	}
+    public String getSupplierName() { return supplierName; }
+    public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
 
-	public void setQty(int qty) {
-		this.qty = qty;
-	}
+    public int getQty() { return qty; }
+    public void setQty(int qty) { this.qty = qty; }
 
-	public String getSize() {
-		return size;
-	}
+    public String getPlateSize() { return plateSize; }
+    public void setPlateSize(String plateSize) { this.plateSize = plateSize; }
 
-	public void setSize(String size) {
-		this.size = size;
-	}
+    public String getGauge() { return gauge; }
+    public void setGauge(String gauge) { this.gauge = gauge; }
 
-	public String getGauge() {
-		return gauge;
-	}
+    public String getBacking() { return backing; }
+    public void setBacking(String backing) { this.backing = backing; }
 
-	public void setGauge(String gauge) {
-		this.gauge = gauge;
-	}
+    public String getColor() { return color; }
+    public void setColor(String color) { this.color = color; }
 
-	public String getBacking() {
-		return backing;
-	}
+    public String getNotes() { return notes; }
+    public void setNotes(String notes) { this.notes = notes; }
 
-	public void setBacking(String backing) {
-		this.backing = backing;
-	}
+    public double getAmount() { return amount; }
+    public void setAmount(double amount) { this.amount = amount; }
 
-	public Integer getSupplierId() {
-		return supplierId;
-	}
+    public String getCreatedAt() { return createdAt; }
+    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
 
-	public void setSupplierId(Integer supplierId) {
-		this.supplierId = supplierId;
-	}
+    public String getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
 
-	public String getSupplierNameSnapshot() {
-		return supplierNameSnapshot;
-	}
-
-	public void setSupplierNameSnapshot(String supplierNameSnapshot) {
-		this.supplierNameSnapshot = supplierNameSnapshot;
-	}
-
-	public String getNotes() {
-		return notes;
-	}
-
-	public void setNotes(String notes) {
-		this.notes = notes;
-	}
-
-	public double getAmount() {
-		return amount;
-	}
-
-	public void setAmount(double amount) {
-		this.amount = amount;
-	}
-
-	// getters & setters
+	
 }

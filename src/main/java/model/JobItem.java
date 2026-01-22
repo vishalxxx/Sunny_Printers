@@ -2,88 +2,34 @@ package model;
 
 public class JobItem {
 
-	/* ================= BASIC FIELDS ================= */
+    private int id;
+    private int jobId;           // jobs.id
+    private String type;         // PRINTING | PAPER | BINDING | LAMINATION | CTP
+    private String description;  // summary
+    private double amount;
+    private int sortOrder;
+    private String createdAt;
 
-	private int id;
-	private int jobId;
+    public JobItem() {}
 
-	private String type;
-	// PRINTING | CTP | PAPER | BINDING | LAMINATION | OTHER
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
 
-	private String description;
-	// Human readable summary (used for bill & UI)
+    public int getJobId() { return jobId; }
+    public void setJobId(int jobId) { this.jobId = jobId; }
 
-	private double amount;
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
 
-	private int sortOrder;
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-	/* ================= CONSTRUCTORS ================= */
+    public double getAmount() { return amount; }
+    public void setAmount(double amount) { this.amount = amount; }
 
-	public JobItem() {
-	}
+    public int getSortOrder() { return sortOrder; }
+    public void setSortOrder(int sortOrder) { this.sortOrder = sortOrder; }
 
-	public JobItem(int jobId, String type, String description, double amount, int sortOrder) {
-		this.jobId = jobId;
-		this.type = type;
-		this.description = description;
-		this.amount = amount;
-		this.sortOrder = sortOrder;
-	}
-
-	/* ================= GETTERS / SETTERS ================= */
-
-	public int getId() {
-		return id;
-	}
-
-	public void setId(int id) {
-		this.id = id;
-	}
-
-	public int getJobId() {
-		return jobId;
-	}
-
-	public void setJobId(int jobId) {
-		this.jobId = jobId;
-	}
-
-	public String getType() {
-		return type;
-	}
-
-	public void setType(String type) {
-		this.type = type;
-	}
-
-	public String getDescription() {
-		return description;
-	}
-
-	public void setDescription(String description) {
-		this.description = description;
-	}
-
-	public double getAmount() {
-		return amount;
-	}
-
-	public void setAmount(double amount) {
-		this.amount = amount;
-	}
-
-	public int getSortOrder() {
-		return sortOrder;
-	}
-
-	public void setSortOrder(int sortOrder) {
-		this.sortOrder = sortOrder;
-	}
-
-	/* ================= UTIL ================= */
-
-	@Override
-	public String toString() {
-		return type + " | " + description + " | ₹" + amount;
-	}
+    public String getCreatedAt() { return createdAt; }
+    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
 }
