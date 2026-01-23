@@ -13,10 +13,15 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
+<StackPane fx:id="appRoot"
+           xmlns="http://javafx.com/javafx/23"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="controller.MainController">
+           
 <BorderPane fx:id="root" styleClass="root"
 	stylesheets="@../css/dashboard.css" xmlns="http://javafx.com/javafx/25"
 	xmlns:fx="http://javafx.com/fxml/1"
-	fx:controller="controller.MainController">
+	>
 
 	<!-- TOP BAR -->
 	<top>
@@ -402,6 +407,10 @@
 	<!-- CENTER DASHBOARD AREA -->
 
 	<center>
+		    <StackPane fx:id="centerWrapper" BorderPane.alignment="CENTER">
+
+
+
 
 		<ScrollPane xmlns="http://javafx.com/javafx/25"
 			xmlns:fx="http://javafx.com/fxml/1"
@@ -644,6 +653,9 @@
 				</VBox>
 			</content>
 		</ScrollPane>
+		
+		</StackPane>
 	</center>
 </BorderPane>
     
+</StackPane>

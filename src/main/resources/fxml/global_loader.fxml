@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.text.Font?>
+
+<StackPane xmlns="http://javafx.com/javafx/23"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="controller.GlobalLoaderController"
+           fx:id="overlayRoot"
+           styleClass="loader-overlay">
+
+    <!-- Dark glass background -->
+    <StackPane styleClass="loader-glass"/>
+
+    <!-- Center content -->
+    <VBox alignment="CENTER" spacing="16" maxWidth="520" styleClass="loader-card">
+
+        <!-- Big Spinner -->
+        <ProgressIndicator fx:id="spinner" progress="-1" styleClass="loader-spinner"/>
+
+        <!-- Text -->
+        <Label fx:id="titleLabel" text="Setting up your workspace" styleClass="loader-title"/>
+        <Label fx:id="subtitleLabel"
+               text="Please wait while we prepare the high-resolution interface and premium assets."
+               wrapText="true"
+               styleClass="loader-subtitle"/>
+
+        <!-- Progress row -->
+        <VBox spacing="8" maxWidth="420">
+            <HBox alignment="CENTER_LEFT">
+                <Label fx:id="statusLabel" text="INITIALIZING MODULES..." styleClass="loader-status"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="percentLabel" text="68%" styleClass="loader-percent"/>
+            </HBox>
+
+            <ProgressBar fx:id="progressBar" progress="0.68" styleClass="loader-progress"/>
+
+            <Label fx:id="hintLabel"
+                   text="Establishing secure connection to core servers..."
+                   styleClass="loader-hint"/>
+        </VBox>
+
+    </VBox>
+
+</StackPane>

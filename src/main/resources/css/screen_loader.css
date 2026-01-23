@@ -1,0 +1,39 @@
+/* ✅ overlay covers only its parent container */
+.screen-loader-overlay {
+    -fx-background-color: rgba(0, 0, 0, 0.45);
+    -fx-alignment: center;
+}
+
+/* ✅ card */
+.screen-loader-card {
+    -fx-background-color: rgba(15, 18, 28, 0.96);
+    -fx-background-radius: 18;
+    -fx-padding: 22 26;
+    -fx-min-width: 240;
+    -fx-max-width: 320;
+
+    -fx-border-radius: 18;
+    -fx-border-width: 1;
+    -fx-border-color: rgba(255, 255, 255, 0.06);
+
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 28, 0.25, 0, 6);
+}
+
+/* ✅ spinner */
+.screen-loader-spinner {
+    -fx-progress-color: white;
+}
+
+/* ✅ title */
+.screen-loader-title {
+    -fx-text-fill: white;
+    -fx-font-size: 15px;
+    -fx-font-weight: 700;
+}
+
+/* ✅ subtitle */
+.screen-loader-subtitle {
+    -fx-text-fill: rgba(255,255,255,0.70);
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+}

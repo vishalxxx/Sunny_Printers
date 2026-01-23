@@ -1,0 +1,81 @@
+/* Full screen overlay */
+.loader-overlay {
+    -fx-background-color: transparent;
+}
+
+/* Dark background blur style */
+.loader-glass {
+    -fx-background-color: radial-gradient(
+        focus-angle 0deg,
+        focus-distance 0%,
+        center 50% 45%,
+        radius 85%,
+        rgba(20,32,60,0.92),
+        rgba(5,8,16,0.96)
+    );
+}
+
+/* Center card layout (no visible borders) */
+.loader-card {
+    -fx-padding: 24;
+}
+
+/* Spinner ring */
+.loader-spinner {
+    -fx-pref-width: 96;
+    -fx-pref-height: 96;
+}
+
+/* Title */
+.loader-title {
+    -fx-text-fill: white;
+    -fx-font-size: 26px;
+    -fx-font-weight: 800;
+}
+
+/* Subtitle */
+.loader-subtitle {
+    -fx-text-fill: rgba(255,255,255,0.65);
+    -fx-font-size: 13.5px;
+    -fx-font-weight: 500;
+    -fx-alignment: center;
+    -fx-text-alignment: center;
+}
+
+/* Status row */
+.loader-status {
+    -fx-text-fill: rgba(255,255,255,0.55);
+    -fx-font-size: 11.5px;
+    -fx-font-weight: 700;
+    -fx-letter-spacing: 0.8px;
+}
+
+.loader-percent {
+    -fx-text-fill: #2d6cff;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+}
+
+/* Progress bar */
+.loader-progress {
+    -fx-pref-height: 6px;
+    -fx-background-radius: 30;
+    -fx-border-radius: 30;
+}
+
+.loader-progress .track {
+    -fx-background-color: rgba(255,255,255,0.10);
+    -fx-background-radius: 30;
+}
+
+.loader-progress .bar {
+    -fx-background-color: #2d6cff;
+    -fx-background-radius: 30;
+}
+
+/* Hint text */
+.loader-hint {
+    -fx-text-fill: rgba(255,255,255,0.35);
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+}

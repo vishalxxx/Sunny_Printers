@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane xmlns="http://javafx.com/javafx/23"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:id="overlayRoot"
+           styleClass="screen-loader-overlay"
+           pickOnBounds="true">
+
+    <!-- ✅ Center Card -->
+    <VBox fx:id="loaderCard"
+          alignment="CENTER"
+          spacing="10"
+          styleClass="screen-loader-card">
+
+        <ProgressIndicator fx:id="spinner"
+                           prefWidth="42"
+                           prefHeight="42"
+                           styleClass="screen-loader-spinner"/>
+
+        <Label fx:id="titleLabel"
+               text="Loading Screen..."
+               styleClass="screen-loader-title"/>
+
+        <Label fx:id="subLabel"
+               text="Please wait"
+               styleClass="screen-loader-subtitle"/>
+
+    </VBox>
+</StackPane>

@@ -12,6 +12,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
@@ -32,8 +33,11 @@ public class MainController implements Initializable {
 
 	private final double COLLAPSED_WIDTH = 82;
 	private final double EXPANDED_WIDTH = 260;
+	@FXML private StackPane appRoot;
+	@FXML private StackPane centerWrapper;
+
 	
-	    @FXML private StackPane sidebarStack;
+	@FXML private StackPane sidebarStack;
 	private Timeline anim;
 
 	Job currentJob = new Job();
@@ -62,6 +66,26 @@ public class MainController implements Initializable {
 	public void setCenterContent(Parent view) {
 		centerRoot.getChildren().setAll(view);
 	}
+	
+	@FXML private VBox globalLoader;
+	@FXML private Label loaderTitle;
+	@FXML private Label loaderSubtitle;
+	@FXML private ProgressBar loaderBar;
+
+	public void showGlobalLoader(String title, String subtitle) {
+	    loaderTitle.setText(title);
+	    loaderSubtitle.setText(subtitle);
+
+	    globalLoader.setVisible(true);
+	    globalLoader.setManaged(true);
+	}
+
+	public void hideGlobalLoader() {
+	    globalLoader.setVisible(false);
+	    globalLoader.setManaged(false);
+	}
+
+	
 
 	// Sidebar containers
 	@FXML
@@ -98,6 +122,8 @@ public class MainController implements Initializable {
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
 		
+		setPageTitle("Dashboard");
+		    
 		Rectangle clip = new Rectangle();
 	    clip.widthProperty().bind(sidebarScroll.widthProperty());
 	    clip.heightProperty().bind(sidebarScroll.heightProperty());
@@ -307,6 +333,23 @@ public class MainController implements Initializable {
 
 	@FXML
 	private void loadAddClient(MouseEvent event) {
+		utils.LoaderManager.showScreenLoader(centerRoot, "Loading Add Client...", "Please wait");
+
+	    new Thread(() -> {
+	        try {
+	            Parent view = FXMLLoader.load(getClass().getResource("/fxml/add_client.fxml"));
+
+	            Platform.runLater(() -> {
+	                centerRoot.getChildren().setAll(view);
+	                utils.LoaderManager.hideScreenLoader();
+	            });
+
+	        } catch (Exception ex) {
+	            ex.printStackTrace();
+	            Platform.runLater(utils.LoaderManager::hideScreenLoader);
+	        }
+	    }).start();
+		
 		try {
 			Parent addClientView = FXMLLoader.load(getClass().getResource("/fxml/add_client.fxml"));
 			centerRoot.getChildren().setAll(addClientView);
