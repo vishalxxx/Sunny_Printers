@@ -43,6 +43,7 @@
             vbarPolicy="AS_NEEDED"
             minWidth="70"
             maxWidth="240"
+            styleClass="sidebar-scroll"
             BorderPane.alignment="CENTER_LEFT"
             stylesheets="@../css/sidebar.css">
 

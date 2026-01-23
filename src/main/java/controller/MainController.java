@@ -39,6 +39,11 @@ public class MainController implements Initializable {
 	Job currentJob = new Job();
 	// Center content container
 
+	public void goDashboard() {
+	    setPageTitle("Dashboard");
+	    // if you also want to show main sidebar here then do it
+	}
+	
 	@FXML
 	private VBox centerRoot;
 	// singleton-like reference so other controllers can reach MainController

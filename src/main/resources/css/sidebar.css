@@ -1,241 +1,260 @@
-/* =========================================
-   ✅ SIDEBAR FINAL CSS (Premium + Same Size Transition)
-   ========================================= */
+/* ======================================================
+   ✅ SUNNY PRINTERS - PREMIUM SIDEBAR CSS (V2)
+   Theme: Blue + Purple Neon Glass
+   Collapsed = Icons only
+   Expanded  = Icons + Text
+   ====================================================== */
 
-/* -------------------------------
-   ✅ ScrollPane Fix
-   ------------------------------- */
-.scroll-pane {
+/* ==============================
+   ✅ ScrollPane Base
+   ============================== */
+.sidebar-scroll {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.sidebar-scroll .viewport {
     -fx-background-color: transparent;
 }
-.scroll-pane .viewport {
-    -fx-background-color: transparent;
-}
 
-/* Hide horizontal bar completely */
-.scroll-pane .scroll-bar:horizontal {
+/* ✅ Remove horizontal scrollbar */
+.sidebar-scroll .scroll-bar:horizontal {
     -fx-opacity: 0;
     -fx-pref-height: 0;
-    -fx-show-hide-on-hover: false;
+    -fx-max-height: 0;
 }
 
-/* -------------------------------
-   ✅ Sidebar Outer Background Panel
-   ------------------------------- */
+/* ✅ Vertical scrollbar clean */
+.sidebar-scroll .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-padding: 2;
+}
+.sidebar-scroll .scroll-bar:vertical .track {
+    -fx-background-color: transparent;
+}
+.sidebar-scroll .scroll-bar:vertical .thumb {
+    -fx-background-radius: 12;
+    -fx-background-color: rgba(255,255,255,0.18);
+}
+.sidebar-scroll .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: rgba(255,255,255,0.30);
+}
+
+
+/* ==============================
+   ✅ Sidebar Background Panel
+   ============================== */
 .sidebar-background {
-    -fx-background-radius: 22;
-    -fx-padding: 0;
-
-    -fx-background-color: linear-gradient(
-        to bottom,
-        #070A12,
-        #0B1223,
-        #060813
-    );
-}
-
-/* Collapsed mode background (slightly darker) */
-.sidebar-collapsed-bg {
-    -fx-background-color: linear-gradient(
-        to bottom,
-        #05060C,
-        #070A14
-    );
-}
-
-/* Expanded mode background */
-.sidebar-expanded-bg {
-    -fx-background-color: linear-gradient(
-        to bottom,
-        #070A12,
-        #0B1223,
-        #060813
-    );
-}
-
-/* -------------------------------
-   ✅ Sidebar Container
-   ------------------------------- */
-.sidebar {
+    -fx-background-radius: 24;
     -fx-padding: 12;
-    -fx-spacing: 10;
-}
 
-/* Section Header (Quick Links etc.) */
-.sidebar-section-header {
-    -fx-padding: 14 10 6 10;
-    -fx-text-fill: rgba(255,255,255,0.45);
-    -fx-font-size: 12px;
-    -fx-font-weight: bold;
-}
+    /* New gradient combo */
+    -fx-background-color: linear-gradient(
+        to bottom,
+        #070B18,
+        #0A1230,
+        #080A1A
+    );
 
-/* -------------------------------
-   ✅ GLOBAL SIDEBAR ITEM HEIGHT
-   ✅ SAME HEIGHT in collapsed + expanded (NO SHRINK)
-   ------------------------------- */
-.sidebar-item {
-    -fx-min-height: 56;
-    -fx-pref-height: 56;
-    -fx-max-height: 56;
-}
-
-/* -------------------------------
-   ✅ Expanded Mode: Pill Buttons
-   ------------------------------- */
-.sidebar-item {
-    /* ✅ remove vertical padding to keep same height */
-    -fx-padding: 0 16;
-    -fx-spacing: 14;
-    -fx-alignment: CENTER_LEFT;
-
-    -fx-background-radius: 22;
-    -fx-background-color: rgba(255,255,255,0.03);
-
-    -fx-border-radius: 22;
+    /* Glass border */
+    -fx-border-radius: 24;
     -fx-border-width: 1;
-    -fx-border-color: rgba(255,255,255,0.06);
+    -fx-border-color: rgba(170, 190, 255, 0.14);
 
-    -fx-cursor: hand;
+    /* Soft depth */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 26, 0.25, 0, 0);
 }
 
-/* Hover effect (expanded) */
-.sidebar-item:hover {
-    -fx-background-color: rgba(255,255,255,0.06);
-    -fx-border-color: rgba(120, 120, 255, 0.35);
-    -fx-effect: dropshadow(gaussian, rgba(110,130,255,0.30), 18, 0.25, 0, 0);
+
+/* ==============================
+   ✅ Sidebar Container
+   ============================== */
+.sidebar {
+    -fx-padding: 8;
+    -fx-spacing: 6;
+    -fx-fill-width: true;
 }
 
-/* Active item (optional class from controller) */
-.sidebar-item-active {
-    -fx-background-color: rgba(120,130,255,0.18);
-    -fx-border-color: rgba(140,160,255,0.65);
-    -fx-effect: dropshadow(gaussian, rgba(120,140,255,0.35), 22, 0.30, 0, 0);
+
+/* ==============================
+   ✅ Section Header (Quick Links)
+   ✅ reserve space always
+   ============================== */
+.sidebar-section-header {
+	-fx-min-height: 24;
+	    -fx-pref-height: 24;
+	    -fx-max-height: 24;
+
+	    -fx-padding: 6 10 4 10;
+	    -fx-font-size: 12px;
+
+    /* Bigger + clean */
+    -fx-text-fill: rgba(255,255,255,0.80);
+    -fx-font-weight: 800;
+
+    /* tiny spacing feel */
+    -fx-letter-spacing: 0.4px;
 }
 
-/* Sidebar item text */
-.sidebar-text {
-    -fx-text-fill: rgba(255,255,255,0.92);
-    -fx-font-size: 14px;
-    -fx-font-weight: 600;
+/* ✅ Collapsed = hide header text but keep height */
+.sidebar-collapsed .sidebar-section-header {
+    -fx-text-fill: transparent;
+    -fx-opacity: 1;
+    -fx-mouse-transparent: true;
 }
 
-/* ===================================================
-   ✅ COLLAPSED MODE (Perfect centered icon cards)
-   ✅ SAME height as expanded button
-   =================================================== */
-.sidebar-collapsed .sidebar {
-    -fx-alignment: TOP_CENTER;
-}
 
-.sidebar-collapsed .sidebar-item {
-    /* make every item a square icon card */
-    -fx-min-width: 56;
-    -fx-pref-width: 56;
-    -fx-max-width: 56;
+/* ==============================
+   ✅ Sidebar Item (Modern pill)
+   ============================== */
+.sidebar-item {
+    /* stable height */
+    -fx-min-height: 44;
+    -fx-pref-height: 44;
+    -fx-max-height: 44;
 
-    /* ✅ same height already set globally */
-    -fx-alignment: CENTER;
-    -fx-spacing: 0;
-    -fx-padding: 0;
+    -fx-padding: 0 14;
+    -fx-spacing: 12;
+    -fx-alignment: CENTER_LEFT;
 
     -fx-background-radius: 16;
     -fx-border-radius: 16;
 
-    -fx-background-color: rgba(255,255,255,0.02);
+    /* Glass feel */
+    -fx-background-color: rgba(255,255,255,0.035);
+
+    /* Border glow */
     -fx-border-width: 1;
-    -fx-border-color: rgba(255,255,255,0.10);
+    -fx-border-color: rgba(120, 160, 255, 0.18);
 
-    -fx-effect: null;
+    -fx-cursor: hand;
 }
 
-/* Hover in collapsed mode */
-.sidebar-collapsed .sidebar-item:hover {
-    -fx-background-color: rgba(120,130,255,0.15);
-    -fx-border-color: rgba(140,160,255,0.55);
-    -fx-effect: dropshadow(gaussian, rgba(120,140,255,0.18), 10, 0.20, 0, 0);
+/* ✅ Hover effect: neon glow */
+.sidebar-item:hover {
+    -fx-background-color: rgba(140, 170, 255, 0.10);
+    -fx-border-color: rgba(150, 110, 255, 0.55);
+
+    -fx-effect: dropshadow(gaussian, rgba(140,120,255,0.35), 22, 0.25, 0, 0);
 }
 
-/* ✅ Hide only text smoothly (NO SHIFTING) */
-.sidebar-collapsed .sidebar-text,
-.sidebar-collapsed .sidebar-section-header {
-    -fx-opacity: 0;
+/* ✅ Active item */
+.sidebar-item-active {
+    -fx-background-color: rgba(90, 120, 255, 0.22);
+    -fx-border-color: rgba(190, 160, 255, 0.75);
+    -fx-effect: dropshadow(gaussian, rgba(140,120,255,0.38), 26, 0.28, 0, 0);
 }
 
-/* ✅ Text should not take width in collapsed mode */
+
+/* ==============================
+   ✅ Sidebar Text (Expanded view)
+   ✅ Bigger + White
+   ============================== */
+.sidebar-text {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 15.5px;      /* ✅ bigger text */
+    -fx-font-weight: 700;
+}
+
+/* ==============================
+   ✅ Icon size stable
+   ============================== */
+.sidebar-item ImageView {
+    -fx-fit-width: 20;
+    -fx-fit-height: 20;
+}
+
+
+/* ======================================================
+   ✅ COLLAPSED MODE (Icons only)
+   Apply class: sidebar-collapsed to mainSidebar VBox
+   ====================================================== */
+
+/* ✅ Hide only text but do not shift layout */
 .sidebar-collapsed .sidebar-text {
+    -fx-opacity: 0;
+
     -fx-min-width: 0;
     -fx-pref-width: 0;
     -fx-max-width: 0;
+
     -fx-padding: 0;
-    -fx-mouse-transparent: true;
+    -fx-managed: false;
 }
 
-/* Icon sizing */
-.sidebar-collapsed .sidebar-item ImageView {
-    -fx-fit-width: 24;
-    -fx-fit-height: 24;
+/* ✅ Icon tiles (premium small cards) */
+.sidebar-collapsed .sidebar-item {
+    -fx-min-width: 48;
+    -fx-pref-width: 48;
+    -fx-max-width: 48;
+
+    -fx-min-height: 44;
+    -fx-pref-height: 44;
+    -fx-max-height: 44;
+
+    -fx-padding: 0;
+    -fx-alignment: CENTER;
 }
 
-/* -------------------------------
-   ✅ Back Button Premium (Circle)
-   ------------------------------- */
+/* ✅ hover collapsed */
+.sidebar-collapsed .sidebar-item:hover {
+    -fx-background-color: rgba(130, 160, 255, 0.18);
+    -fx-border-color: rgba(190, 160, 255, 0.65);
+    -fx-effect: dropshadow(gaussian, rgba(150,120,255,0.25), 14, 0.22, 0, 0);
+}
+
+
+/* ======================================================
+   ✅ Back Button (Submenu)
+   ====================================================== */
 .back-row {
-    -fx-padding: 10 12;
-    -fx-background-radius: 18;
-    -fx-cursor: hand;
+    -fx-min-height: 52;
+    -fx-pref-height: 52;
+    -fx-max-height: 52;
+
+    -fx-padding: 0 14;
+    -fx-spacing: 10;
     -fx-alignment: CENTER_LEFT;
+
+    -fx-background-radius: 18;
+    -fx-border-radius: 18;
+
+    -fx-background-color: rgba(255,255,255,0.035);
+    -fx-border-width: 1;
+    -fx-border-color: rgba(120,160,255,0.18);
+
+    -fx-cursor: hand;
+}
+
+.back-row:hover {
+    -fx-background-color: rgba(140,170,255,0.12);
+    -fx-border-color: rgba(190,160,255,0.60);
+
+    -fx-effect: dropshadow(gaussian, rgba(140,120,255,0.28), 18, 0.22, 0, 0);
 }
 
 .back-circle {
-    -fx-min-width: 34;
-    -fx-min-height: 34;
-    -fx-max-width: 34;
-    -fx-max-height: 34;
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+    -fx-max-width: 36;
+    -fx-max-height: 36;
 
     -fx-background-radius: 100;
     -fx-background-color: rgba(255,255,255,0.06);
 
     -fx-border-radius: 100;
     -fx-border-width: 1;
-    -fx-border-color: rgba(255,255,255,0.10);
+    -fx-border-color: rgba(190,160,255,0.30);
 }
 
 .back-arrow {
-    -fx-text-fill: rgba(255,255,255,0.92);
-    -fx-font-size: 15px;
-    -fx-font-weight: bold;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 16px;
+    -fx-font-weight: 800;
 }
 
 .back-text {
-    -fx-text-fill: rgba(255,255,255,0.85);
-    -fx-font-size: 14px;
-    -fx-font-weight: 600;
-}
-
-.back-row:hover .back-circle {
-    -fx-background-color: rgba(120,130,255,0.18);
-    -fx-border-color: rgba(140,160,255,0.60);
-    -fx-effect: dropshadow(gaussian, rgba(120,140,255,0.35), 18, 0.25, 0, 0);
-}
-
-.back-row:hover .back-text {
-    -fx-text-fill: white;
-}
-
-/* -------------------------------
-   ✅ Scrollbar styling (optional)
-   ------------------------------- */
-.scroll-bar:vertical {
-    -fx-background-color: transparent;
-    -fx-padding: 0;
-}
-.scroll-bar:vertical .track {
-    -fx-background-color: transparent;
-}
-.scroll-bar:vertical .thumb {
-    -fx-background-color: rgba(255,255,255,0.22);
-    -fx-background-radius: 10;
-}
-.scroll-bar:vertical .thumb:hover {
-    -fx-background-color: rgba(255,255,255,0.30);
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 15px;
+    -fx-font-weight: 700;
 }
