@@ -1,39 +1,45 @@
-/* ✅ overlay covers only its parent container */
+/* ✅ Full overlay dark layer */
 .screen-loader-overlay {
-    -fx-background-color: rgba(0, 0, 0, 0.45);
+    -fx-background-color: rgba(0, 0, 0, 0.72);
     -fx-alignment: center;
 }
 
-/* ✅ card */
+/* ✅ Center glass loader card */
 .screen-loader-card {
     -fx-background-color: rgba(15, 18, 28, 0.96);
-    -fx-background-radius: 18;
-    -fx-padding: 22 26;
-    -fx-min-width: 240;
-    -fx-max-width: 320;
+    -fx-background-radius: 20;
+    -fx-padding: 24 28;
 
-    -fx-border-radius: 18;
+    -fx-min-width: 340;
+    -fx-pref-width: 340;
+    -fx-max-width: 340;
+
+    -fx-min-height: 220;
+    -fx-pref-height: 220;
+    -fx-max-height: 220;
+
+    -fx-border-radius: 20;
     -fx-border-width: 1;
-    -fx-border-color: rgba(255, 255, 255, 0.06);
+    -fx-border-color: rgba(255, 255, 255, 0.08);
 
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 28, 0.25, 0, 6);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.65), 34, 0.25, 0, 8);
 }
 
-/* ✅ spinner */
+/* ✅ Spinner */
 .screen-loader-spinner {
     -fx-progress-color: white;
 }
 
-/* ✅ title */
+/* ✅ Title */
 .screen-loader-title {
     -fx-text-fill: white;
     -fx-font-size: 15px;
-    -fx-font-weight: 700;
+    -fx-font-weight: 800;
 }
 
-/* ✅ subtitle */
+/* ✅ Subtitle */
 .screen-loader-subtitle {
     -fx-text-fill: rgba(255,255,255,0.70);
     -fx-font-size: 12px;
-    -fx-font-weight: 500;
+    -fx-font-weight: 600;
 }

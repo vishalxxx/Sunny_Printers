@@ -499,3 +499,9 @@
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
 }
+
+.invoice-page {
+    -fx-background-color: transparent;
+    -fx-max-width: Infinity;
+}
+

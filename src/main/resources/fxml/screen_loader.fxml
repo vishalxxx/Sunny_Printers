@@ -5,25 +5,34 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<StackPane xmlns="http://javafx.com/javafx/23"
+<StackPane fx:id="overlayRoot"
+           xmlns="http://javafx.com/javafx/23"
            xmlns:fx="http://javafx.com/fxml/1"
-           fx:id="overlayRoot"
+           fx:controller="controller.ScreenLoaderController"
+           stylesheets="@../css/screen_loader.css"
            styleClass="screen-loader-overlay"
-           pickOnBounds="true">
+           visible="false"
+           managed="false"
+           pickOnBounds="true"
+           mouseTransparent="false"
+           prefWidth="Infinity"
+           prefHeight="Infinity"
+           maxWidth="Infinity"
+           maxHeight="Infinity">
 
-    <!-- ✅ Center Card -->
+    <!-- ✅ Loader Card -->
     <VBox fx:id="loaderCard"
           alignment="CENTER"
           spacing="10"
           styleClass="screen-loader-card">
 
         <ProgressIndicator fx:id="spinner"
-                           prefWidth="42"
-                           prefHeight="42"
+                           prefWidth="46"
+                           prefHeight="46"
                            styleClass="screen-loader-spinner"/>
 
         <Label fx:id="titleLabel"
-               text="Loading Screen..."
+               text="Loading..."
                styleClass="screen-loader-title"/>
 
         <Label fx:id="subLabel"
@@ -31,4 +40,5 @@
                styleClass="screen-loader-subtitle"/>
 
     </VBox>
+
 </StackPane>

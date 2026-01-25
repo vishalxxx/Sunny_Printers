@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+
+<StackPane xmlns="http://javafx.com/javafx/23"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:id="rootPane">
+
+    <!-- ✅ Main Scroll Content -->
+    <ScrollPane fx:id="centerScroll"
+                fitToHeight="true"
+                fitToWidth="true"
+                hbarPolicy="NEVER"
+                vbarPolicy="AS_NEEDED"
+                stylesheets="@../css/dashboard_ui.css">
+
+        <content>
+            <VBox fx:id="centerRoot"
+                  fillWidth="true"
+                  spacing="20"
+                  styleClass="center-area">
+
+                <!-- MAIN TITLE -->
+                <Label styleClass="dashboard-title" text="Dashboard"/>
+
+                <!-- TOP METRICS GRID -->
+                <GridPane hgap="20" vgap="20" styleClass="metrics-grid">
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="33.33"/>
+                        <ColumnConstraints percentWidth="33.33"/>
+                        <ColumnConstraints percentWidth="33.33"/>
+                    </columnConstraints>
+
+                    <!-- CARD 1 -->
+                    <StackPane GridPane.columnIndex="0" styleClass="card-style">
+                        <VBox spacing="10" styleClass="card-content">
+                            <Label styleClass="card-title" text="Total Clients"/>
+                            <HBox spacing="10">
+                                <ImageView fitHeight="24" fitWidth="24" preserveRatio="true">
+                                    <image>
+                                        <Image url="@../icons/total_clients.png"/>
+                                    </image>
+                                </ImageView>
+                                <Label styleClass="card-value" text="345"/>
+                            </HBox>
+                        </VBox>
+                    </StackPane>
+
+                    <!-- CARD 2 -->
+                    <StackPane GridPane.columnIndex="1" styleClass="card-style">
+                        <VBox spacing="10" styleClass="card-content">
+                            <Label styleClass="card-title" text="Total Jobs"/>
+                            <HBox spacing="10">
+                                <ImageView fitHeight="24" fitWidth="24" preserveRatio="true">
+                                    <image>
+                                        <Image url="@../icons/total_jobs.png"/>
+                                    </image>
+                                </ImageView>
+                                <Label styleClass="card-value" text="345"/>
+                            </HBox>
+                        </VBox>
+                    </StackPane>
+
+                    <!-- CARD 3 -->
+                    <StackPane GridPane.columnIndex="2" styleClass="card-style">
+                        <VBox spacing="10" styleClass="card-content">
+                            <Label styleClass="card-title" text="Total Bills"/>
+                            <HBox spacing="10">
+                                <ImageView fitHeight="24" fitWidth="24" preserveRatio="true">
+                                    <image>
+                                        <Image url="@../icons/total_bill.png"/>
+                                    </image>
+                                </ImageView>
+                                <Label styleClass="card-value" text="345"/>
+                            </HBox>
+                        </VBox>
+                    </StackPane>
+                </GridPane>
+
+                <!-- SECOND METRICS GRID -->
+                <GridPane hgap="20" vgap="20" styleClass="metrics-grid">
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="33.33"/>
+                        <ColumnConstraints percentWidth="33.33"/>
+                        <ColumnConstraints percentWidth="33.33"/>
+                    </columnConstraints>
+
+                    <StackPane GridPane.columnIndex="0" styleClass="card-style">
+                        <VBox spacing="10" styleClass="card-content">
+                            <Label styleClass="card-title" text="Total Sales"/>
+                            <HBox spacing="10">
+                                <ImageView fitHeight="24" fitWidth="24" preserveRatio="true">
+                                    <image>
+                                        <Image url="@../icons/total_sales.png"/>
+                                    </image>
+                                </ImageView>
+                                <Label styleClass="card-value" text="345"/>
+                            </HBox>
+                        </VBox>
+                    </StackPane>
+
+                    <StackPane GridPane.columnIndex="1" styleClass="card-style">
+                        <VBox spacing="10" styleClass="card-content">
+                            <Label styleClass="card-title" text="Outstanding Payments"/>
+                            <HBox spacing="10">
+                                <ImageView fitHeight="24" fitWidth="24" preserveRatio="true">
+                                    <image>
+                                        <Image url="@../icons/outstanding_payments.png"/>
+                                    </image>
+                                </ImageView>
+                                <Label styleClass="card-value" text="345"/>
+                            </HBox>
+                        </VBox>
+                    </StackPane>
+
+                    <StackPane GridPane.columnIndex="2" styleClass="card-style">
+                        <VBox spacing="10" styleClass="card-content">
+                            <Label styleClass="card-title" text="Pending Bills"/>
+                            <HBox spacing="10">
+                                <ImageView fitHeight="24" fitWidth="24" preserveRatio="true">
+                                    <image>
+                                        <Image url="@../icons/total_.png"/>
+                                    </image>
+                                </ImageView>
+                                <Label styleClass="card-value" text="345"/>
+                            </HBox>
+                        </VBox>
+                    </StackPane>
+                </GridPane>
+
+                <!-- LOWER SECTION -->
+                <HBox spacing="20" styleClass="bottom-section" fillHeight="true">
+
+                    <!-- RECENT ACTIVITIES -->
+                    <VBox spacing="10" styleClass="bottom-card" HBox.hgrow="ALWAYS">
+                        <Label styleClass="bottom-title" text="Recent Activities"/>
+
+                        <VBox spacing="6" styleClass="activity-list">
+
+                            <HBox styleClass="activity-row">
+                                <Label styleClass="activity-text"
+                                       text="New client added – Aman Traders"
+                                       HBox.hgrow="ALWAYS"/>
+                                <Label styleClass="activity-time" text="10:20 AM"/>
+                            </HBox>
+
+                            <HBox styleClass="activity-row">
+                                <Label styleClass="activity-text"
+                                       text="Invoice generated – #INV-228"
+                                       HBox.hgrow="ALWAYS"/>
+                                <Label styleClass="activity-time" text="09:45 AM"/>
+                            </HBox>
+
+                        </VBox>
+                    </VBox>
+
+                    <!-- NAVIGATION TILES -->
+                    <VBox spacing="10" styleClass="bottom-card" HBox.hgrow="ALWAYS">
+                        <Label styleClass="bottom-title" text="Navigation Tiles"/>
+
+                        <FlowPane hgap="12" vgap="12" maxWidth="Infinity" prefWrapLength="500">
+
+                            <HBox styleClass="nav-tile">
+                                <ImageView styleClass="tile-icon">
+                                    <image><Image url="@../icons/client_black.png"/></image>
+                                </ImageView>
+                                <Label text="Client Details"/>
+                            </HBox>
+
+                            <HBox styleClass="nav-tile">
+                                <ImageView styleClass="tile-icon">
+                                    <image><Image url="@../icons/job_black.png"/></image>
+                                </ImageView>
+                                <Label text="Job Details"/>
+                            </HBox>
+
+                            <HBox styleClass="nav-tile">
+                                <ImageView styleClass="tile-icon">
+                                    <image><Image url="@../icons/bill_black.png"/></image>
+                                </ImageView>
+                                <Label text="Bill Creation"/>
+                            </HBox>
+
+                            <HBox styleClass="nav-tile">
+                                <ImageView styleClass="tile-icon">
+                                    <image><Image url="@../icons/payment_black.png"/></image>
+                                </ImageView>
+                                <Label text="Payment Entry"/>
+                            </HBox>
+
+                            <HBox styleClass="nav-tile">
+                                <ImageView styleClass="tile-icon">
+                                    <image><Image url="@../icons/ledger_black.png"/></image>
+                                </ImageView>
+                                <Label text="Client Ledger"/>
+                            </HBox>
+
+                            <HBox styleClass="nav-tile">
+                                <ImageView styleClass="tile-icon">
+                                    <image><Image url="@../icons/outstanding_black.png"/></image>
+                                </ImageView>
+                                <Label text="Outstanding"/>
+                            </HBox>
+
+                            <HBox styleClass="nav-tile">
+                                <ImageView styleClass="tile-icon">
+                                    <image><Image url="@../icons/expense_black.png"/></image>
+                                </ImageView>
+                                <Label text="Expenses"/>
+                            </HBox>
+
+                            <HBox styleClass="nav-tile">
+                                <ImageView styleClass="tile-icon">
+                                    <image><Image url="@../icons/report_black.png"/></image>
+                                </ImageView>
+                                <Label text="Reports"/>
+                            </HBox>
+
+                            <HBox styleClass="nav-tile">
+                                <ImageView styleClass="tile-icon">
+                                    <image><Image url="@../icons/settings_black.png"/></image>
+                                </ImageView>
+                                <Label text="Settings"/>
+                            </HBox>
+
+                        </FlowPane>
+                    </VBox>
+
+                </HBox>
+
+            </VBox>
+        </content>
+    </ScrollPane>
+
+    <!-- ✅ Loader Overlay (always last so it stays on top) -->
+    <fx:include fx:id="centerLoaderInclude" source="screen_loader.fxml"/>
+
+</StackPane>

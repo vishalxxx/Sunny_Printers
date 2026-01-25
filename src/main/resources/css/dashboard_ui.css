@@ -321,26 +321,4 @@
     -fx-font-size: 12px;
     -fx-font-weight: 500;
 }
-.sidebar-item, .back-row {
-    -fx-max-width: Infinity;
-}
-/* ✅ Hide labels/titles inside any sidebar when collapsed */
-.sidebar-collapsed .hide-when-collapsed {
-    -fx-opacity: 0;
-    -fx-managed: false;
-    -fx-visible: false;
-}
-
-/* ✅ Center submenu items when collapsed */
-.sidebar-collapsed .sidebar-item {
-    -fx-alignment: CENTER;
-    -fx-padding: 1.2em 0;
-}
-
-/* ✅ Back row becomes centered icon-only in collapsed sidebar */
-.sidebar-collapsed .back-row {
-    -fx-alignment: CENTER;
-    -fx-padding: 1.2em 0;
-}
-
 

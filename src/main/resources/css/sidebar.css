@@ -81,20 +81,13 @@
    ✅ reserve space always
    ============================== */
 .sidebar-section-header {
-	-fx-min-height: 24;
-	    -fx-pref-height: 24;
-	    -fx-max-height: 24;
-
-	    -fx-padding: 6 10 4 10;
-	    -fx-font-size: 12px;
-
-    /* Bigger + clean */
+    -fx-padding: 14 10 10 10;
+    -fx-font-size: 18px;
     -fx-text-fill: rgba(255,255,255,0.80);
     -fx-font-weight: 800;
-
-    /* tiny spacing feel */
     -fx-letter-spacing: 0.4px;
 }
+
 
 /* ✅ Collapsed = hide header text but keep height */
 .sidebar-collapsed .sidebar-section-header {
@@ -204,57 +197,35 @@
 }
 
 
-/* ======================================================
-   ✅ Back Button (Submenu)
-   ====================================================== */
-.back-row {
-    -fx-min-height: 52;
-    -fx-pref-height: 52;
-    -fx-max-height: 52;
 
-    -fx-padding: 0 14;
-    -fx-spacing: 10;
-    -fx-alignment: CENTER_LEFT;
-
-    -fx-background-radius: 18;
-    -fx-border-radius: 18;
-
-    -fx-background-color: rgba(255,255,255,0.035);
-    -fx-border-width: 1;
-    -fx-border-color: rgba(120,160,255,0.18);
-
-    -fx-cursor: hand;
+.sidebar-collapsed .sidebar-item ImageView {
+    -fx-opacity: 1;
+}
+.sidebar-collapsed {
+    -fx-alignment: TOP_CENTER;   /* ✅ aligns children in center horizontally */
+}
+.sidebar-collapsed .sidebar {
+    -fx-alignment: TOP_CENTER;
 }
 
-.back-row:hover {
-    -fx-background-color: rgba(140,170,255,0.12);
-    -fx-border-color: rgba(190,160,255,0.60);
 
-    -fx-effect: dropshadow(gaussian, rgba(140,120,255,0.28), 18, 0.22, 0, 0);
+/*  To be deleted  */
+
+/* =========================================
+   ✅ Center Overlay (Small Premium Message)
+   ========================================= */
+
+.center-overlay {
+    -fx-background-color: rgba(0, 0, 0, 0.35);
+    -fx-alignment: center;
 }
 
-.back-circle {
-    -fx-min-width: 36;
-    -fx-min-height: 36;
-    -fx-max-width: 36;
-    -fx-max-height: 36;
 
-    -fx-background-radius: 100;
-    -fx-background-color: rgba(255,255,255,0.06);
-
-    -fx-border-radius: 100;
-    -fx-border-width: 1;
-    -fx-border-color: rgba(190,160,255,0.30);
+.sidebar-collapsed .back-row {
+    -fx-alignment: CENTER;
+    -fx-padding: 1.2em 0;
 }
-
-.back-arrow {
-    -fx-text-fill: #FFFFFF;
-    -fx-font-size: 16px;
-    -fx-font-weight: 800;
-}
-
-.back-text {
-    -fx-text-fill: #FFFFFF;
-    -fx-font-size: 15px;
-    -fx-font-weight: 700;
+.submenu-sidebar {
+    -fx-padding: 0.8em;
+    -fx-spacing: 0.8em;
 }

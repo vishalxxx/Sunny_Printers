@@ -23,6 +23,7 @@ import model.Job;
 import service.JobService;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
+import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
 import javafx.scene.control.ScrollPane;
@@ -123,7 +124,7 @@ public class MainController implements Initializable {
 	public void initialize(URL location, ResourceBundle resources) {
 		
 		setPageTitle("Dashboard");
-		    
+		openCenterDashboard();
 		Rectangle clip = new Rectangle();
 	    clip.widthProperty().bind(sidebarScroll.widthProperty());
 	    clip.heightProperty().bind(sidebarScroll.heightProperty());
@@ -141,7 +142,7 @@ public class MainController implements Initializable {
 			//Collapsable Sidebar Code
 		  // ✅ Start in collapsed state
         sidebarScroll.setPrefWidth(COLLAPSED_WIDTH);
-        mainSidebar.getStyleClass().add("sidebar-collapsed");
+        applyCollapsedStyleToAll(true);
         sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
         sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
         // ✅ Hover expand
@@ -213,31 +214,90 @@ public class MainController implements Initializable {
 			}
 		});
 	}
+	private void applyCollapsedStyleToAll(boolean collapsed) {
 
-	
-	
-	
-	 private void expandSidebar() {
-	        mainSidebar.getStyleClass().remove("sidebar-collapsed");
+	    VBox[] sidebars = {
+	            mainSidebar,
+	            jobsSidebar,
+	            clientsSidebar,
+	            billingSidebar,
+	            paymentSidebar,
+	            ledgerSidebar
+	    };
 
-	        sidebarStack.getStyleClass().remove("sidebar-collapsed-bg");
-	        sidebarStack.getStyleClass().add("sidebar-expanded-bg");
+	    for (VBox s : sidebars) {
+	        if (s == null) continue;
 
-	        animateSidebarWidth(EXPANDED_WIDTH);
-	    }
-
-	    private void collapseSidebar() {
-	        animateSidebarWidth(COLLAPSED_WIDTH);
-
-	        if (anim != null) anim.setOnFinished(e -> {
-	            if (!mainSidebar.getStyleClass().contains("sidebar-collapsed")) {
-	                mainSidebar.getStyleClass().add("sidebar-collapsed");
+	        if (collapsed) {
+	            if (!s.getStyleClass().contains("sidebar-collapsed")) {
+	                s.getStyleClass().add("sidebar-collapsed");
 	            }
-
-	            sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
-	            sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
-	        });
+	        } else {
+	            s.getStyleClass().remove("sidebar-collapsed");
+	        }
 	    }
+	}
+
+	@FXML
+	public void openCenterDashboard() {
+	    loadCenterScreen("/fxml/dashboard_ui.fxml",
+	            "Loading Dashboard...",
+	            "Please wait");
+	}
+	
+	private void loadCenterScreen(String fxmlPath, String title, String subtitle) {
+
+	    if (centerLoaderIncludeController != null) {
+	        centerLoaderIncludeController.show(title, subtitle);
+	    }
+
+	    new Thread(() -> {
+	        try {
+	            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+	            Parent view = loader.load();
+
+	            Platform.runLater(() -> {
+	                centerContentHost.getChildren().setAll(view);
+
+	                if (centerLoaderIncludeController != null) {
+	                    centerLoaderIncludeController.hide();
+	                }
+	            });
+
+	        } catch (Exception ex) {
+	            ex.printStackTrace();
+
+	            Platform.runLater(() -> {
+	                if (centerLoaderIncludeController != null) {
+	                    centerLoaderIncludeController.hide();
+	                }
+	            });
+	        }
+	    }).start();
+	}
+
+	private void expandSidebar() {
+
+	    applyCollapsedStyleToAll(false);
+
+	    sidebarStack.getStyleClass().remove("sidebar-collapsed-bg");
+	    sidebarStack.getStyleClass().add("sidebar-expanded-bg");
+
+	    animateSidebarWidth(EXPANDED_WIDTH);
+	}
+	private void collapseSidebar() {
+
+	    animateSidebarWidth(COLLAPSED_WIDTH);
+
+	    if (anim != null) anim.setOnFinished(e -> {
+
+	        applyCollapsedStyleToAll(true);
+
+	        sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
+	        sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
+	    });
+	}
+
 
 	    private void animateSidebarWidth(double width) {
 	        if (anim != null) anim.stop();
@@ -293,6 +353,7 @@ public class MainController implements Initializable {
 	@FXML
 	private void openDashboard(MouseEvent event) {
 		showOnly(mainSidebar);
+		openCenterDashboard();
 		setPageTitle("Dashboard");
 	}
 
@@ -330,93 +391,94 @@ public class MainController implements Initializable {
 	private void showMainSidebar(MouseEvent event) {
 		openDashboard(event);
 	}
-
+	
+	
 	@FXML
 	private void loadAddClient(MouseEvent event) {
-		utils.LoaderManager.showScreenLoader(centerRoot, "Loading Add Client...", "Please wait");
-
-	    new Thread(() -> {
-	        try {
-	            Parent view = FXMLLoader.load(getClass().getResource("/fxml/add_client.fxml"));
-
-	            Platform.runLater(() -> {
-	                centerRoot.getChildren().setAll(view);
-	                utils.LoaderManager.hideScreenLoader();
-	            });
-
-	        } catch (Exception ex) {
-	            ex.printStackTrace();
-	            Platform.runLater(utils.LoaderManager::hideScreenLoader);
-	        }
-	    }).start();
-		
-		try {
-			Parent addClientView = FXMLLoader.load(getClass().getResource("/fxml/add_client.fxml"));
-			centerRoot.getChildren().setAll(addClientView);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		loadCenterScreen("/fxml/add_client.fxml",
+	            "Loading Dashboard...",
+	            "Please wait");
 	}
 
 	@FXML
 	private void loadAddJob(MouseEvent event) {
-		try {
-			FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ht.fxml"));
-			Parent addJobView = loader.load();
-
-			AddJobController addJobController = loader.getController();
-			addJobController.startNewJob();
-
-			centerRoot.getChildren().setAll(addJobView);
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		loadCenterScreen("/fxml/ht.fxml",
+	            "Loading Dashboard...",
+	            "Please wait");
 	}
 
 	@FXML
 	private void loadViewJob(MouseEvent event) {
-		try {
-			FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/view_job.fxml"));
-			Parent viewJobView = loader.load();
-
-			centerRoot.getChildren().setAll(viewJobView);
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		loadCenterScreen("/fxml/view_job.fxml",
+	            "Loading Dashboard...",
+	            "Please wait");
 	}
 
 	@FXML
 	private void loadViewClients(MouseEvent event) {
-		try {
-			Parent view = FXMLLoader.load(getClass().getResource("/fxml/view_client.fxml"));
-			centerRoot.getChildren().setAll(view);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		loadCenterScreen("/fxml/view_client.fxml",
+	            "Loading Dashboard...",
+	            "Please wait");
 	}
 
-	public void loadViewClients() {
-		try {
-			Parent view = FXMLLoader.load(getClass().getResource("/fxml/view_client.fxml"));
-			centerRoot.getChildren().setAll(view);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+	
 
 	public void setCenterView(Parent view) {
 		centerRoot.getChildren().setAll(view);
 	}
 
+	@FXML
 	public void loadInvoiceGenration() {
-		try {
-			Parent view = FXMLLoader.load(getClass().getResource("/fxml/invoice_genration.fxml"));
-			centerRoot.getChildren().setAll(view);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+
+		loadCenterScreen("/fxml/invoice_genration.fxml",
+	            "Loading Dashboard...",
+	            "Please wait");
 	}
+
+
+//		try {
+//			Parent view = FXMLLoader.load(getClass().getResource("/fxml/invoice_genration.fxml"));
+//			centerRoot.getChildren().setAll(view);
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//	}
+	
+	@FXML private StackPane centerLoaderInclude;
+	public void showCenterLoader() {
+	    centerLoaderInclude.setVisible(true);
+	    centerLoaderInclude.setManaged(true);
+	}
+
+	public void hideCenterLoader() {
+	    centerLoaderInclude.setVisible(false);
+	    centerLoaderInclude.setManaged(false);
+	}
+
+	@FXML private StackPane centerContentHost;
+	@FXML private ScreenLoaderController centerLoaderIncludeController;
+
+	public void loadCenterPage(String fxmlPath, String title, String sub) {
+
+	    centerLoaderIncludeController.show(title, sub);
+
+	    new Thread(() -> {
+	        try {
+	            Parent view = FXMLLoader.load(getClass().getResource(fxmlPath));
+
+	            Platform.runLater(() -> {
+	                centerContentHost.getChildren().setAll(view);
+	                centerLoaderIncludeController.hide();
+	            });
+
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	            Platform.runLater(() -> centerLoaderIncludeController.hide());
+	        }
+	    }).start();
+	}
+
+	
+	
 
 }
