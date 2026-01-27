@@ -4,6 +4,15 @@ import java.io.Serializable;
 
 public class Printing implements Serializable {
 
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	private int id;
     private int qty;              // optional (0 allowed)
     private String units;         // Sheet/Rim/Bundle...
     private String sets;          // ex: "2"

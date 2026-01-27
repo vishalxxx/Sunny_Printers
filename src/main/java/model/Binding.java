@@ -4,6 +4,25 @@ import java.io.Serializable;
 
 public class Binding implements Serializable {
 
+	
+	private int id;
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public int getJobitemid() {
+		return jobitemid;
+	}
+
+	public void setJobItemId(int job_item_id) {
+		this.jobitemid = jobitemid;
+	}
+
+	private int jobitemid;
     private String process;   // Perfect Binding / Spiral...
     private int qty;          // optional
     private double rate;      // optional
@@ -31,4 +50,5 @@ public class Binding implements Serializable {
     public String toString() {
         return "Binding{process=" + process + ", qty=" + qty + ", amount=" + amount + "}";
     }
+
 }

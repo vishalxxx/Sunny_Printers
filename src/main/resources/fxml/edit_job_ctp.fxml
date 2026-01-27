@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+
+<HBox xmlns="http://javafx.com/javafx/23"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="controller.CtpTabController"
+      spacing="16"
+      styleClass="tab-container">
+
+    <!-- ===== LEFT TABLE ===== -->
+    <VBox styleClass="table-wrapper" HBox.hgrow="ALWAYS">
+
+       <TableView fx:id="ctpTable" VBox.vgrow="ALWAYS">
+
+    <columns>
+        <TableColumn fx:id="supplierCol" text="Supplier"/>
+        <TableColumn fx:id="qtyCol" text="Qty"/>
+        <TableColumn fx:id="plateSizeCol" text="Plate Size"/>
+        <TableColumn fx:id="gaugeCol" text="Gauge"/>
+        <TableColumn fx:id="backingCol" text="Backing"/>
+        <TableColumn fx:id="colorCol" text="Color"/>
+        <TableColumn fx:id="amountCol" text="Amount"/>
+    </columns>
+
+</TableView>
+
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <Label text="Items:"/>
+            <Label fx:id="itemCountLabel" text="0"/>
+            <Pane HBox.hgrow="ALWAYS"/>
+            <Label text="Total:"/>
+            <Label fx:id="totalAmountLabel"
+                   text="₹0.00"
+                   styleClass="amount-highlight"/>
+        </HBox>
+
+    </VBox>
+
+    <!-- ===== RIGHT PANEL ===== -->
+    <VBox styleClass="editor-panel">
+        <Label text="CTP / Plates Editor"
+               styleClass="card-title"/>
+        <Label text="(Add / Edit plates here later)"/>
+    </VBox>
+
+</HBox>

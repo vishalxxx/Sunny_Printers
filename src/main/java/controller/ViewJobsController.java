@@ -237,17 +237,20 @@ public class ViewJobsController {
             {
                 editBtn.getStyleClass().add("edit-button");
                 deleteBtn.getStyleClass().add("delete-button");
-
-                box.setStyle("-fx-alignment: CENTER;");
+                box.setAlignment(javafx.geometry.Pos.CENTER);
 
                 editBtn.setOnAction(e -> {
-                    Job job = getTableView().getItems().get(getIndex());
-                    onEditJob(job);
+                    Job job = getTableRow().getItem();
+                    if (job != null) {
+                    	openEditJobScreen(job);
+                    }
                 });
 
                 deleteBtn.setOnAction(e -> {
-                    Job job = getTableView().getItems().get(getIndex());
-                    onDeleteJob(job);
+                    Job job = getTableRow().getItem();
+                    if (job != null) {
+                        onDeleteJob(job);
+                    }
                 });
             }
 
@@ -379,20 +382,27 @@ public class ViewJobsController {
     // =========================================================
     // ✅ EDIT / DELETE
     // =========================================================
-    private void onEditJob(Job job) {
+    private void openEditJobScreen(Job job) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ht.fxml"));
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/fxml/edit_job.fxml")
+            );
+
             Parent view = loader.load();
 
-            AddJobController ctrl = loader.getController();
-            ctrl.openForEdit(job.getId());
+            EditJobController controller = loader.getController();
+
+            // ✅ PASS FULL JOB OBJECT
+            controller.openForEdit(job);
 
             MainController.getInstance().setCenterView(view);
 
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            toast("Failed to open Edit Job ❌");
         }
     }
+
 
 
     private void onDeleteJob(Job job) {

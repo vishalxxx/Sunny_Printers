@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+
+<StackPane xmlns="http://javafx.com/javafx/23"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="controller.EditJobController"
+           stylesheets="@../css/edit_job.css"
+           styleClass="stack-root">
+
+    <BorderPane styleClass="edit-job-root">
+
+        <!-- ================= HEADER ================= -->
+        <top>
+            <HBox styleClass="job-header-bar" alignment="CENTER_LEFT">
+               <VBox spacing="4">
+    <Label fx:id="jobNumberLabel"
+           text="Edit Job"
+           styleClass="job-title"/>
+
+    <Label fx:id="jobTitleLabel"
+           text=""
+           styleClass="job-subtitle"/>
+</VBox>
+
+
+                <Pane HBox.hgrow="ALWAYS"/>
+
+                <Button text="Discard Changes" styleClass="btn-secondary"/>
+                <Button text="Save Progress" styleClass="btn-primary"/>
+            </HBox>
+        </top>
+
+        <!-- ================= CENTER ================= -->
+ <center>
+    <VBox spacing="14"
+          alignment="TOP_CENTER"
+          VBox.vgrow="ALWAYS">
+
+        <!-- TAB BAR -->
+     <TabPane fx:id="jobTabPane" tabClosingPolicy="UNAVAILABLE">
+
+    <Tab fx:id="paperTab" text="Paper"/>
+    <Tab fx:id="printingTab" text="Printing"/>
+    <Tab fx:id="ctpTab" text="CTP / Plates"/>
+    <Tab fx:id="bindingTab" text="Binding"/>
+    <Tab fx:id="laminationTab" text="Lamination"/>
+
+</TabPane>
+
+
+    </VBox>
+</center>
+
+
+
+    </BorderPane>
+</StackPane>

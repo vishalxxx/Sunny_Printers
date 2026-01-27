@@ -415,7 +415,7 @@ public class MainController implements Initializable {
 	}
 
 	@FXML
-	private void loadViewClients(MouseEvent event) {
+	public void loadViewClients() {
 		loadCenterScreen("/fxml/view_client.fxml",
 	            "Loading Dashboard...",
 	            "Please wait");
@@ -424,7 +424,7 @@ public class MainController implements Initializable {
 	
 
 	public void setCenterView(Parent view) {
-		centerRoot.getChildren().setAll(view);
+		centerContentHost.getChildren().setAll(view);
 	}
 
 	@FXML

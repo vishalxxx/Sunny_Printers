@@ -1,6 +1,7 @@
 package service;
 
 import java.sql.Connection;
+import java.util.List;
 
 import model.Binding;
 import model.CtpPlate;
@@ -31,7 +32,9 @@ public class JobItemService {
 	private final LaminationItemRepository laminationRepo = new LaminationItemRepository();
 	private final CtpItemRepository ctpRepo = new CtpItemRepository();
 	
-	
+	 public List<JobItem> getJobItems(int jobId) {
+	        return jobItemRepo.findByJobId(jobId);
+	    }
 	
 	  // ✅ ONE METHOD FOR ALL CARD TYPES
     public JobItem addJobItem(int jobId, Object cardData) {

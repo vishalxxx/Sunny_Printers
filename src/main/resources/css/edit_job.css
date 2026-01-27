@@ -1,0 +1,244 @@
+/* ======================================================
+   GLOBAL ROOT
+   ====================================================== */
+.root {
+    -fx-font-family: "Segoe UI", "Inter", "SF Pro Display";
+    -fx-font-size: 13px;
+    -fx-text-fill: #e6eaf0;
+    -fx-background-color: #0b0f14;
+}
+
+/* ======================================================
+   PAGE CONTAINER
+   ====================================================== */
+.stack-root {
+    -fx-background-color: #0b0f14;
+}
+
+.edit-job-root {
+    -fx-padding: 28;
+}
+
+/* ======================================================
+   HEADER
+   ====================================================== */
+.job-header-bar {
+    -fx-spacing: 14;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.job-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+}
+
+.job-subtitle {
+    -fx-text-fill: #9aa4b2;
+}
+
+/* ======================================================
+   BUTTON SYSTEM
+   ====================================================== */
+.button {
+    -fx-padding: 8 20;
+    -fx-background-radius: 999;
+    -fx-cursor: hand;
+    -fx-font-size: 13px;
+}
+
+/* Primary */
+.btn-primary {
+    -fx-background-color: linear-gradient(to bottom, #1eea8a, #00c46a);
+    -fx-text-fill: #001b0f;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, rgba(0,255,170,0.35), 14, 0.35, 0, 0);
+}
+
+.btn-primary:hover {
+    -fx-background-color: linear-gradient(to bottom, #2cff9c, #00e676);
+}
+
+/* Secondary */
+.btn-secondary {
+    -fx-background-color: #1b222c;
+    -fx-text-fill: #cfd6e0;
+}
+
+.btn-secondary:hover {
+    -fx-background-color: #232c38;
+}
+
+/* ======================================================
+   TAB PANE (NO BORDERS, PREMIUM)
+   ====================================================== */
+.tab-pane {
+    -fx-background-color: transparent;
+}
+
+.tab-pane > .tab-header-area {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 12 0;
+}
+
+.tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: transparent;
+}
+
+/* Tabs */
+.tab-pane .tab {
+    -fx-background-color: #141a22;
+    -fx-background-radius: 12;
+    -fx-padding: 10 20;
+    -fx-border-color: transparent;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.tab-pane .tab:hover {
+    -fx-background-color: #1a2230;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: #1e2632;
+    -fx-border-color: transparent;
+    -fx-effect: dropshadow(
+        gaussian,
+        rgba(0, 230, 118, 0.35),
+        14,
+        0.4,
+        0,
+        0
+    );
+}
+
+/* Tab text */
+.tab-pane .tab-label {
+    -fx-text-fill: #9aa4b2;
+}
+
+.tab-pane .tab:selected .tab-label {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+
+/* ======================================================
+   CONTENT CARD
+   ====================================================== */
+.content-card {
+    -fx-background-color: linear-gradient(to bottom right, #0f141b, #0b0f14);
+    -fx-background-radius: 18;
+    -fx-padding: 18;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 40, 0.35, 0, 8);
+}
+
+/* ======================================================
+   TABLE VIEW (NO GRID / NO | LINES)
+   ====================================================== */
+.table-view {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-table-cell-border-color: transparent;
+}
+
+/* Header */
+.table-view .column-header-background {
+    -fx-background-color: #161c26;
+    -fx-background-radius: 12 12 0 0;
+}
+
+.table-view .column-header,
+.table-view .filler {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #9aa4b2;
+    -fx-font-weight: bold;
+}
+
+/* Rows */
+.table-row-cell {
+    -fx-background-color: #0f141b;
+    -fx-border-color: transparent;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #111822;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #1e2632;
+}
+
+/* Cells */
+.table-cell {
+    -fx-border-color: transparent;
+    -fx-padding: 10 12;
+    -fx-text-fill: #e6eaf0;
+}
+
+/* ======================================================
+   RIGHT EDITOR PANEL
+   ====================================================== */
+.editor-panel {
+    -fx-pref-width: 340;
+    -fx-spacing: 16;
+}
+
+.editor-card {
+    -fx-background-color: #11151c;
+    -fx-background-radius: 14;
+    -fx-padding: 14;
+    -fx-spacing: 8;
+}
+
+.card-title {
+    -fx-text-fill: #00e676;
+    -fx-font-weight: bold;
+}
+
+/* ======================================================
+   INPUTS
+   ====================================================== */
+.text-field,
+.text-area {
+    -fx-background-radius: 8;
+    -fx-background-color: #0f141b;
+    -fx-text-fill: #ffffff;
+    -fx-prompt-text-fill: #6f7a88;
+}
+
+/* Toggle buttons */
+.toggle-button {
+    -fx-background-color: #1b222c;
+    -fx-text-fill: #cfd6e0;
+    -fx-background-radius: 8;
+}
+
+.toggle-button:selected {
+    -fx-background-color: #00e676;
+    -fx-text-fill: #001b0f;
+    -fx-font-weight: bold;
+}
+
+/* ======================================================
+   FOOTER / TOTALS
+   ====================================================== */
+.amount-highlight {
+    -fx-text-fill: #00e676;
+    -fx-font-weight: bold;
+}
+
+/* ======================================================
+   SCROLLBAR (SUBTLE)
+   ====================================================== */
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #2a3342;
+    -fx-background-radius: 6;
+}

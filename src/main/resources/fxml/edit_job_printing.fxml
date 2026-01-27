@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<HBox xmlns="http://javafx.com/javafx/23"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="controller.PrintingTabController"
+      spacing="16">
+
+    <VBox HBox.hgrow="ALWAYS">
+
+        <TableView fx:id="printingTable">
+
+            <columns>
+                <TableColumn fx:id="qtyCol" text="Qty"/>
+                <TableColumn fx:id="unitsCol" text="Units"/>
+                <TableColumn fx:id="setsCol" text="Sets"/>
+                <TableColumn fx:id="colorCol" text="Color"/>
+                <TableColumn fx:id="sideCol" text="Side"/>
+                <TableColumn fx:id="ctpCol" text="CTP"/>
+                <TableColumn fx:id="amountCol" text="Amount"/>
+            </columns>
+
+        </TableView>
+
+    </VBox>
+</HBox>

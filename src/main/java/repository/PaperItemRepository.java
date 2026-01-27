@@ -2,8 +2,10 @@ package repository;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 import model.Paper;
+import utils.DBConnection;
 
 public class PaperItemRepository {
 
@@ -33,4 +35,41 @@ public class PaperItemRepository {
             throw new RuntimeException("Failed to save paper item", e);
         }
     }
+    
+    public Paper findByJobItemId(int jobItemId) {
+
+        String sql = """
+            SELECT qty, units, size, gsm, type, source, notes, amount
+            FROM paper_items
+            WHERE job_item_id = ?
+        """;
+
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, jobItemId);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                Paper p = new Paper();
+                p.setQty(rs.getInt("qty"));
+                p.setUnits(rs.getString("units"));
+                p.setSize(rs.getString("size"));
+                p.setGsm(rs.getString("gsm"));
+                p.setType(rs.getString("type"));
+                p.setSource(rs.getString("source"));
+                p.setNotes(rs.getString("notes"));
+                p.setAmount(rs.getDouble("amount"));
+                return p;
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException(
+                "Failed to fetch paper item for jobItemId=" + jobItemId, e
+            );
+        }
+
+        return null;
+    }
+
 }

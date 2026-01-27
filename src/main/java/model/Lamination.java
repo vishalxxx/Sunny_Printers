@@ -3,6 +3,24 @@ package model;
 import java.io.Serializable;
 
 public class Lamination implements Serializable {
+	private int id;
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public int getJobItemId() {
+		return jobItemId;
+	}
+
+	public void setJobItemId(int jobItemId) {
+		this.jobItemId = jobItemId;
+	}
+
+	private int jobItemId;
 	private int qty;
 	private String unit;
 	private String type;
