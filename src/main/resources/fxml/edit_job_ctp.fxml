@@ -3,46 +3,132 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 
-<HBox xmlns="http://javafx.com/javafx/23"
-      xmlns:fx="http://javafx.com/fxml/1"
+ <ScrollPane
+    xmlns="http://javafx.com/javafx/23"
+    xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="controller.CtpTabController"
-      spacing="16"
-      styleClass="tab-container">
+    fitToWidth="true"
+    styleClass="tab-scroll">
+
+    <content>
+        <HBox spacing="16" styleClass="tab-container">
+
+
 
     <!-- ===== LEFT TABLE ===== -->
-    <VBox styleClass="table-wrapper" HBox.hgrow="ALWAYS">
-
-       <TableView fx:id="ctpTable" VBox.vgrow="ALWAYS">
+      <VBox styleClass="table-wrapper" HBox.hgrow="ALWAYS"  prefWidth="650">
+     
+     <TableView fx:id="ctpTable" styleClass="data-table">
 
     <columns>
         <TableColumn fx:id="supplierCol" text="Supplier"/>
         <TableColumn fx:id="qtyCol" text="Qty"/>
+        <TableColumn fx:id="colorCol" text="Color"/>
+		<TableColumn fx:id="backingCol" text="Backing"/>
+
         <TableColumn fx:id="plateSizeCol" text="Plate Size"/>
         <TableColumn fx:id="gaugeCol" text="Gauge"/>
-        <TableColumn fx:id="backingCol" text="Backing"/>
-        <TableColumn fx:id="colorCol" text="Color"/>
+        <TableColumn fx:id="notesCol" text="Notes"/>
+
         <TableColumn fx:id="amountCol" text="Amount"/>
     </columns>
 
 </TableView>
 
-        <HBox spacing="8" alignment="CENTER_LEFT">
-            <Label text="Items:"/>
-            <Label fx:id="itemCountLabel" text="0"/>
-            <Pane HBox.hgrow="ALWAYS"/>
-            <Label text="Total:"/>
-            <Label fx:id="totalAmountLabel"
-                   text="₹0.00"
-                   styleClass="amount-highlight"/>
-        </HBox>
+     
 
     </VBox>
 
     <!-- ===== RIGHT PANEL ===== -->
-    <VBox styleClass="editor-panel">
-        <Label text="CTP / Plates Editor"
-               styleClass="card-title"/>
-        <Label text="(Add / Edit plates here later)"/>
+   <!-- ===== RIGHT PANEL : CTP / PLATES EDITOR ===== -->
+<!-- ===== RIGHT PANEL : CTP / PLATES EDITOR ===== -->
+<VBox styleClass="editor-panel"
+      spacing="12"
+      fx:id="rightPane"
+      prefWidth="350">
+
+
+    <!-- Header -->
+    <Label text="CTP / Plates Editor"
+           styleClass="card-title"/>
+
+<FlowPane
+    hgap="12"
+    vgap="12"
+    prefWrapLength="330">
+             
+    <!-- Supplier -->
+    <VBox spacing="6" prefWidth="300">
+        <Label text="Supplier"/>
+        <ComboBox fx:id="supplierField"
+                  promptText="Select supplier"/>
     </VBox>
 
+    <!-- Quantity -->
+    <VBox spacing="6" prefWidth="150">
+        <Label text="Quantity"/>
+        <TextField fx:id="qtyField"
+                   promptText="Enter quantity"/>
+    </VBox>
+
+  
+
+        <VBox spacing="6"  prefWidth="150">
+            <Label text="Plate Size"/>
+            <ComboBox fx:id="plateSizeField"
+                      promptText="Select size"/>
+        </VBox>
+
+        <VBox spacing="6"  prefWidth="150">
+            <Label text="Gauge"/>
+            <ComboBox fx:id="gaugeField"
+                      promptText="Select gauge"/>
+        </VBox>
+
+
+    <!-- Compact Row: Backing + Color -->
+   
+
+        <VBox spacing="6"  prefWidth="150">
+            <Label text="Backing"/>
+            <ComboBox fx:id="backingField"
+                      promptText="Select backing"/>
+        </VBox>
+
+        <VBox spacing="6"  prefWidth="110">
+            <Label text="Color"/>
+            <ComboBox fx:id="colorField"
+                      promptText="Select color"/>
+        </VBox>
+
+    </FlowPane>
+
+    <!-- Notes -->
+    <VBox spacing="6">
+        <Label text="Notes"/>
+        <TextArea fx:id="notesField"
+                  prefRowCount="2"
+                  wrapText="true"
+                  promptText="Optional notes"/>
+    </VBox>
+
+    <!-- Amount -->
+    <VBox spacing="6">
+        <Label text="Amount (₹)"/>
+        <TextField fx:id="amountField"
+                   promptText="Enter amount"/>
+    </VBox>
+
+    <!-- Action Button -->
+    <Button fx:id="addUpdateBtn"
+            text="Add CTP Plate"
+            maxWidth="Infinity"
+            styleClass="btn-primary"/>
+
+</VBox>
+
+
+
 </HBox>
+</content>
+</ScrollPane>

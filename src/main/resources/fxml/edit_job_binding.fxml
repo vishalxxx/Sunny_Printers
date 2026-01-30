@@ -3,22 +3,30 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 
-<HBox xmlns="http://javafx.com/javafx/23"
-      xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="controller.BindingTabController"
-      spacing="16"
-      styleClass="tab-container">
+<ScrollPane
+    xmlns="http://javafx.com/javafx/23"
+    xmlns:fx="http://javafx.com/fxml/1"
+     fx:controller="controller.BindingTabController"
+    fitToWidth="true"
+    styleClass="tab-scroll">
+
+    <content>
+        <HBox spacing="16" styleClass="tab-container" >
+
 
     <!-- ===== LEFT TABLE ===== -->
-    <VBox styleClass="table-wrapper" HBox.hgrow="ALWAYS">
-
+ 		<VBox fx:id="leftPane" styleClass="table-wrapper"
+          HBox.hgrow="ALWAYS"
+          prefWidth="650">
         <TableView fx:id="bindingTable">
 
             <columns>
                 <TableColumn fx:id="processCol" text="Process"/>
                 <TableColumn fx:id="qtyCol" text="Qty"/>
                 <TableColumn fx:id="rateCol" text="Rate"/>
-                <TableColumn fx:id="amountCol" text="Amount"/>
+                <TableColumn fx:id="notesCol" text="Notes"/>
+            	<TableColumn fx:id="amountCol" text="Amount"/>
+
             </columns>
 
         </TableView>
@@ -36,10 +44,54 @@
     </VBox>
 
     <!-- ===== RIGHT PANEL (future editor) ===== -->
-    <VBox styleClass="editor-panel">
-        <Label text="Binding Editor"
-               styleClass="card-title"/>
-        <Label text="(Add / Edit binding here later)"/>
-    </VBox>
+   <!-- ===== RIGHT PANEL : BINDING EDITOR ===== -->
+     <VBox fx:id="rightPane"
+                  styleClass="editor-panel"
+                  spacing="12"
+                  prefWidth="350">
+
+                <Label text="Binding Editor"
+                       styleClass="card-title"/>
+                       
+<FlowPane
+    hgap="12"
+    vgap="12"
+    prefWrapLength="330">		
+                <VBox spacing="4" prefWidth="120">
+                    <Label text="Process"/>
+                    <ComboBox fx:id="processField"
+                              promptText="Binding Process"/>
+                </VBox>
+
+                <VBox spacing="4" prefWidth="80">
+                    <Label text="Quantity"/>
+                    <TextField fx:id="qtyField"/>
+                </VBox>
+
+                <VBox spacing="4" prefWidth="90">
+                    <Label text="Rate"/>
+                    <TextField fx:id="rateField"/>
+                </VBox>
+	</FlowPane>
+                <VBox spacing="4">
+                    <Label text="Notes"/>
+                    <TextArea fx:id="notesField"
+                              prefRowCount="3"/>
+                </VBox>
+
+                <VBox spacing="4">
+                    <Label text="Amount"/>
+                    <TextField fx:id="amountField"/>
+                </VBox>
+
+                <Button fx:id="addUpdateBtn"
+                        text="Add Binding"
+                        maxWidth="Infinity"
+                        styleClass="btn-primary"
+                        onAction="#handleAddOrUpdate"/>
+            </VBox>
 
 </HBox>
+
+</content>
+</ScrollPane>

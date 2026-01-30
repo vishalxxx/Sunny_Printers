@@ -3,14 +3,19 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 
-<HBox xmlns="http://javafx.com/javafx/23"
-      xmlns:fx="http://javafx.com/fxml/1"
+<ScrollPane
+    xmlns="http://javafx.com/javafx/23"
+    xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="controller.LaminationTabController"
-      spacing="16"
-      styleClass="tab-container">
+    fitToWidth="true"
+    styleClass="tab-scroll">
+
+    <content>
+        <HBox spacing="16" styleClass="tab-container">
+
 
     <!-- ========= LEFT : TABLE ========= -->
-    <VBox styleClass="table-wrapper" HBox.hgrow="ALWAYS">
+    <VBox styleClass="table-wrapper" HBox.hgrow="ALWAYS" prefWidth="650">
 
         <TableView fx:id="laminationTable"
                    styleClass="data-table">
@@ -21,7 +26,8 @@
                 <TableColumn fx:id="typeCol" text="Type"/>
                 <TableColumn fx:id="sideCol" text="Side"/>
                 <TableColumn fx:id="sizeCol" text="Size"/>
-                <TableColumn fx:id="amountCol" text="Amount"/>
+                <TableColumn fx:id="notesCol" text="Notes"/>
+				<TableColumn fx:id="amountCol" text="Amount"/>
             </columns>
 
         </TableView>
@@ -39,24 +45,71 @@
     </VBox>
 
     <!-- ========= RIGHT : EDIT PANEL ========= -->
-    <VBox styleClass="editor-panel">
+  <!-- ========= RIGHT : LAMINATION EDITOR ========= -->
+<VBox fx:id="rightPane"
+                  styleClass="editor-panel"
+                  spacing="14"
+                  prefWidth="350">
 
-        <VBox styleClass="editor-card">
-            <Label text="Lamination Details"
-                   styleClass="card-title"/>
+                <Label text="Lamination Editor"
+                       styleClass="card-title"/>
 
-            <TextField promptText="Quantity"/>
-            <ComboBox promptText="Unit"/>
-            <ComboBox promptText="Lamination Type"/>
-            <ComboBox promptText="Side"/>
-            <TextField promptText="Size"/>
-            <TextArea promptText="Notes" prefRowCount="3"/>
-        </VBox>
+  <FlowPane hgap="12"
+              vgap="12"
+             >
+              
+                <!-- Qty -->
+                <VBox spacing="4">
+                    <Label text="Quantity"/>
+                    <TextField fx:id="qtyField"/>
+                </VBox>
 
-        <Button text="+ Add / Update Lamination"
-                styleClass="btn-primary"
-                maxWidth="Infinity"/>
+                <!-- Unit -->
+                <VBox spacing="4">
+                    <Label text="Unit"/>
+                    <ComboBox fx:id="unitField"/>
+                </VBox>
 
-    </VBox>
+                <!-- Type -->
+                <VBox spacing="4">
+                    <Label text="Type"/>
+                    <ComboBox fx:id="typeField"/>
+                </VBox>
+
+                <!-- Side -->
+                <VBox spacing="4">
+                    <Label text="Side"/>
+                    <ComboBox fx:id="sideField"/>
+                </VBox>
+
+                <!-- Size -->
+                <VBox spacing="4">
+                    <Label text="Size"/>
+                    <ComboBox fx:id="sizeField"/>
+                </VBox>
+</FlowPane>
+                <!-- Notes -->
+                <VBox spacing="4">
+                    <Label text="Notes"/>
+                    <TextArea fx:id="notesField"
+                              prefRowCount="3"/>
+                </VBox>
+
+                <!-- Amount -->
+                <VBox spacing="4">
+                    <Label text="Amount (₹)"/>
+                    <TextField fx:id="amountField"/>
+                </VBox>
+
+                <Button fx:id="addUpdateBtn"
+                        text="Add Lamination"
+                        maxWidth="Infinity"
+                        styleClass="btn-primary"
+                        onAction="#handleAddOrUpdate"/>
+
+            </VBox>
+
 
 </HBox>
+</content>
+</ScrollPane>

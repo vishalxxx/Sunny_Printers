@@ -14,15 +14,16 @@
         <!-- ================= HEADER ================= -->
         <top>
             <HBox styleClass="job-header-bar" alignment="CENTER_LEFT">
-               <VBox spacing="4">
+  <VBox spacing="4">
     <Label fx:id="jobNumberLabel"
-           text="Edit Job"
+           text="Edit Job #000"
            styleClass="job-title"/>
 
     <Label fx:id="jobTitleLabel"
-           text=""
+           text="Job Title"
            styleClass="job-subtitle"/>
 </VBox>
+
 
 
                 <Pane HBox.hgrow="ALWAYS"/>

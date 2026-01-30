@@ -3,14 +3,22 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<HBox xmlns="http://javafx.com/javafx/23"
-      xmlns:fx="http://javafx.com/fxml/1"
+<ScrollPane
+    xmlns="http://javafx.com/javafx/23"
+    xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="controller.PrintingTabController"
-      spacing="16">
+    fitToWidth="true"
+    styleClass="tab-scroll">
 
-    <VBox HBox.hgrow="ALWAYS">
+    <content>
+        <HBox spacing="16" styleClass="tab-container">
 
-        <TableView fx:id="printingTable">
+            <!-- ========= LEFT : TABLE ========= -->
+
+
+            <VBox styleClass="table-wrapper" HBox.hgrow="ALWAYS"  prefWidth="650">
+
+        <TableView fx:id="printingTable" styleClass="data-table">
 
             <columns>
                 <TableColumn fx:id="qtyCol" text="Qty"/>
@@ -19,10 +27,95 @@
                 <TableColumn fx:id="colorCol" text="Color"/>
                 <TableColumn fx:id="sideCol" text="Side"/>
                 <TableColumn fx:id="ctpCol" text="CTP"/>
+                <TableColumn fx:id="notesCol" text="Notes"/>
+
                 <TableColumn fx:id="amountCol" text="Amount"/>
             </columns>
 
         </TableView>
 
     </VBox>
+    
+    <!-- ================= RIGHT : EDIT PANEL ================= -->
+
+    <!-- ================= Printing Specification ================= -->
+  <VBox styleClass="editor-panel"
+      spacing="18"
+      fx:id="rightPane"
+      prefWidth="350">
+
+    <!-- Header -->
+    <Label text="Printing Editor" styleClass="card-title"/>
+
+    <!-- Quantity -->
+  
+
+    <!-- Compact row: Units + Sets -->
+    <FlowPane hgap="12"
+              vgap="12"
+              prefWrapLength="350">
+  <VBox spacing="6">
+        <Label text="Quantity"/>
+        <TextField fx:id="qtyField"/>
+    </VBox>
+        <VBox spacing="6">
+            <Label text="Units"/>
+            <ComboBox fx:id="unitsField"/>
+        </VBox>
+
+        <VBox spacing="6" >
+            <Label text="Sets"/>
+            <TextField fx:id="setsField"/>
+        </VBox>
+
+   
+
+        <VBox spacing="6" >
+            <Label text="Color"/>
+            <ComboBox fx:id="colorField"/>
+        </VBox>
+
+    
+    <HBox spacing="16" alignment="CENTER_LEFT">
+    <VBox spacing="4">
+        <Label text="Side"/>
+        <ComboBox fx:id="sideField"/>
+    </VBox>
+
+    <VBox spacing="10"> <!-- spacer to match ComboBox height -->
+            <Label />
+
+        <CheckBox fx:id="ctpCheckBox" text="With CTP"/>
+    </VBox>
 </HBox>
+
+
+
+</FlowPane>
+    <!-- Notes -->
+    <VBox spacing="6">
+        <Label text="Notes"/>
+        <TextArea fx:id="notesField"
+                  prefRowCount="3"
+                  wrapText="true"/>
+    </VBox>
+
+    <!-- Amount -->
+    <VBox spacing="6">
+        <Label text="Amount (₹)"/>
+        <TextField fx:id="amountField"/>
+    </VBox>
+
+    <!-- Action -->
+    <Button fx:id="addUpdateBtn"
+            text="Add / Update Printing"
+            maxWidth="Infinity"
+            styleClass="btn-primary"/>
+
+</VBox>
+
+
+
+</HBox>
+</content>
+</ScrollPane>

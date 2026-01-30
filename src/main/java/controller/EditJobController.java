@@ -1,6 +1,8 @@
 package controller;
 
 import javafx.fxml.FXML;
+import javafx.scene.control.TableView;
+
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.control.Label;
@@ -27,6 +29,7 @@ public class EditJobController {
 
     @FXML
     private Label jobTitleLabel;
+
 
     /* =====================================================
        TAB CONTROLLERS
@@ -62,7 +65,7 @@ public class EditJobController {
 
             if (!paperLoaded) {
                 loadPaperTab();
-                paperLoaded = true;
+                paperLoaded = 		true;
             } else {
                 paperTabController.loadForJob(currentJob);
             }
@@ -80,6 +83,9 @@ public class EditJobController {
                 }
             }
         });
+        
+       
+
         
         /* ================= Lamination TAB ================= */
 
@@ -137,12 +143,18 @@ public class EditJobController {
        ===================================================== */
     public void openForEdit(Job job) {
         this.currentJob = job;
-        // Header
+
         jobNumberLabel.setText("Edit Job #" + job.getId());
-        jobTitleLabel.setText(job.getJobTitle()); // or job.getJobName()
+
+        String title = job.getJobTitle();
+        if (title == null || title.isBlank()) {
+            jobTitleLabel.setText("Untitled Job");
+        } else {
+            jobTitleLabel.setText(title);
+        }
+
         System.out.println("✏ Editing Job ID: " + job.getId());
 
-        // Handle case where Paper tab is already selected
         if (paperTab.isSelected()) {
             if (!paperLoaded) {
                 loadPaperTab();

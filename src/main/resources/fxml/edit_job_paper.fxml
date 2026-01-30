@@ -1,33 +1,134 @@
-<?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.control.TableView?>
-<?import javafx.scene.control.TableColumn?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.control.ToggleButton?>
-<?import javafx.scene.layout.*?>
-<?import javafx.geometry.Insets?>
+<?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 
 <ScrollPane
     xmlns="http://javafx.com/javafx/23"
     xmlns:fx="http://javafx.com/fxml/1"
     fx:controller="controller.PaperTabController"
-    fitToWidth="true">
+    fitToWidth="true"
+    styleClass="tab-scroll">
 
     <content>
-        <VBox spacing="12">
+        <HBox spacing="16" styleClass="tab-container">
 
-            <TableView fx:id="paperTable">
-                <columns>
-                    <TableColumn fx:id="qtyCol" text="Qty"/>
-                    <TableColumn fx:id="sizeCol" text="Size"/>
-                    <TableColumn fx:id="gsmCol" text="GSM"/>
-                    <TableColumn fx:id="amountCol" text="Amount"/>
-                </columns>
-            </TableView>
+            <!-- ================= LEFT : TABLE ================= -->
+            <VBox styleClass="table-wrapper"
+                  HBox.hgrow="ALWAYS"
+                  prefWidth="700">
 
-        </VBox>
+                <!-- Horizontal scroll ONLY for table -->
+                <ScrollPane fitToHeight="true"
+                            fitToWidth="false"
+                            hbarPolicy="AS_NEEDED"
+                            vbarPolicy="AS_NEEDED"
+                            styleClass="table-scroll">
+
+                    <content>
+                    
+  
+
+                        <TableView fx:id="paperTable"
+                                   styleClass="data-table"
+                                   minWidth="900">
+
+                            <columns>
+                                <TableColumn fx:id="qtyCol" text="Qty" prefWidth="80"/>
+                                <TableColumn fx:id="unitsCol" text="Units" prefWidth="110"/>
+                                <TableColumn fx:id="sizeCol" text="Size" prefWidth="110"/>
+                                <TableColumn fx:id="gsmCol" text="GSM" prefWidth="90"/>
+                                <TableColumn fx:id="typeCol" text="Type" prefWidth="140"/>
+                                <TableColumn fx:id="sourceCol" text="Source" prefWidth="100"/>
+                                <TableColumn fx:id="notesCol" text="Notes" prefWidth="120"/>
+                                <TableColumn fx:id="amountCol" text="Amount" prefWidth="120"/>
+                      
+                            </columns>
+
+                        </TableView>
+                    </content>
+                </ScrollPane>
+
+                <!-- Footer -->
+                <HBox styleClass="table-footer">
+                    <Label text="Items:"/>
+                    <Label fx:id="itemCountLabel" text="0"/>
+                    <Pane HBox.hgrow="ALWAYS"/>
+                    <Label text="Total:"/>
+                    <Label fx:id="totalAmountLabel"
+                           text="₹0.00"
+                           styleClass="amount-highlight"/>
+                </HBox>
+
+            </VBox>
+
+            <!-- ================= RIGHT : PAPER EDITOR ================= -->
+            <VBox styleClass="editor-panel"
+                  spacing="18"
+                  fx:id="rightPane"
+                  prefWidth="350">
+
+                <Label text="Paper Editor"
+                       styleClass="card-title"/>
+
+                <!-- MAIN GRID -->
+                <FlowPane hgap="14"
+                          vgap="14"
+                          prefWrapLength="350">
+
+                    <VBox spacing="6">
+                        <Label text="Quantity"/>
+                        <TextField fx:id="qtyField"/>
+                    </VBox>
+
+                    <VBox spacing="6">
+                        <Label text="Units"/>
+                        <ComboBox fx:id="unitsField"/>
+                    </VBox>
+
+                    <VBox spacing="6">
+                        <Label text="Size"/>
+                        <ComboBox fx:id="sizeField"/>
+                    </VBox>
+
+                    <VBox spacing="6">
+                        <Label text="GSM"/>
+                        <ComboBox fx:id="gsmField"/>
+                    </VBox>
+
+                    <VBox spacing="6">
+                        <Label text="Type"/>
+                        <ComboBox fx:id="typeField"/>
+                    </VBox>
+
+                    <VBox spacing="8">
+                        <Label text="Paper Source"/>
+                        <HBox spacing="14">
+                            <RadioButton fx:id="ourRadio" text="Our"/>
+                            <RadioButton fx:id="clientRadio" text="Client"/>
+                        </HBox>
+                    </VBox>
+
+                </FlowPane>
+
+                <VBox spacing="6">
+                    <Label text="Notes"/>
+                    <TextArea fx:id="notesField"
+                              prefRowCount="3"/>
+                </VBox>
+
+                <VBox spacing="6">
+                    <Label text="Amount (₹)"/>
+                    <TextField fx:id="amountField"/>
+                </VBox>
+
+                <Button fx:id="addUpdateBtn"
+                        text="Add Paper"
+                        maxWidth="Infinity"
+                        styleClass="btn-primary"/>
+
+            </VBox>
+
+        </HBox>
     </content>
 </ScrollPane>
-
