@@ -24,13 +24,13 @@
     -fx-alignment: CENTER_LEFT;
 }
 
-.job-title {
-    -fx-font-size: 26px;
+.label.job-title {
+    -fx-font-size: 20px;
     -fx-font-weight: 800;
     -fx-text-fill: #FFFFFF;
 }
 
-.job-subtitle {
+.label.job-subtitle {
     -fx-font-size: 15px;
     -fx-text-fill: #9CA3AF;
 }
@@ -68,6 +68,22 @@
 .btn-secondary:hover {
     -fx-background-color: #242A36;
 }
+.btn-danger {
+    -fx-background-color: linear-gradient(to bottom, #e53935, #b71c1c);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 999;
+    -fx-cursor: hand;
+}
+
+.btn-danger:hover {
+    -fx-background-color: linear-gradient(to bottom, #ef5350, #c62828);
+}
+
+.btn-danger:pressed {
+    -fx-background-color: #8e0000;
+}
+
 
 /* ======================================================
    TABS (Tailwind style)
@@ -78,7 +94,7 @@
 
 .tab-pane > .tab-header-area {
     -fx-background-color: transparent;
-    -fx-padding: 0 0 16 0;
+    -fx-padding: 0 0 6 0;
 }
 
 .tab-pane > .tab-header-area > .tab-header-background {
@@ -196,6 +212,26 @@
    .table-cell.amount {
        -fx-font-size: 15px;
        -fx-font-weight: 700;
+   }
+  
+ 
+
+   /* 🟨 NEW */
+   .table-row-cell.row-new .table-cell {
+       -fx-background-color: rgba(255, 215, 0, 0.35);
+   }
+
+   /* 🟦 UPDATED */
+   .table-row-cell.row-updated .table-cell {
+       -fx-background-color: rgba(100, 149, 237, 0.35);
+   }
+
+   /* 🟥 DELETED */
+   .table-row-cell.row-deleted .table-cell {
+       -fx-background-color: rgba(255, 99, 71, 0.35);
+   }
+   .table-cell {
+       -fx-background-color: transparent;
    }
 
 
@@ -438,3 +474,57 @@
     -fx-background-color: white;
 }
 
+/* =======================  Status Column ==================== */
+/* ===== Base pill ===== */
+.status-pill {
+    -fx-padding: 6 6;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+
+    -fx-alignment: center;
+    -fx-text-alignment: center;
+
+    /* 🔒 fixed button-like width */
+    -fx-min-width: 90px;
+    -fx-pref-width: 90px;
+    -fx-max-width: 90px;
+}
+
+/* ===== NEW ===== */
+.status-new {
+    -fx-text-fill: #20e3a2;
+    -fx-background-color: rgba(32, 227, 162, 0.15);
+    -fx-border-color: #20e3a2;
+    -fx-border-width: 1.5;
+    -fx-effect: dropshadow(gaussian, rgba(32,227,162,0.45), 10, 0.3, 0, 0);
+}
+
+/* ===== UPDATED ===== */
+.status-updated {
+    -fx-text-fill: #4da3ff;
+    -fx-background-color: rgba(77,163,255,0.15);
+    -fx-border-color: #4da3ff;
+    -fx-border-width: 1.5;
+    -fx-effect: dropshadow(gaussian, rgba(77,163,255,0.45), 10, 0.3, 0, 0);
+}
+
+/* ===== DELETED ===== */
+.status-deleted {
+    -fx-text-fill: #ff6b6b;
+    -fx-background-color: rgba(255,107,107,0.15);
+    -fx-border-color: #ff6b6b;
+    -fx-border-width: 1.5;
+    -fx-effect: dropshadow(gaussian, rgba(255,107,107,0.45), 10, 0.3, 0, 0);
+}
+
+
+.tabs-offset {
+    -fx-padding: 6 0 0 0;   /* top right bottom left */
+}
+
+.editor-wrapper {
+    -fx-padding: 12 0 0 0;  /* acts like margin-top */
+}

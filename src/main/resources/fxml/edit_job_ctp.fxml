@@ -21,6 +21,8 @@
      <TableView fx:id="ctpTable" styleClass="data-table">
 
     <columns>
+         <TableColumn fx:id="statusCol"  text="Status" prefWidth="110"/>
+
         <TableColumn fx:id="supplierCol" text="Supplier"/>
         <TableColumn fx:id="qtyCol" text="Qty"/>
         <TableColumn fx:id="colorCol" text="Color"/>
@@ -42,6 +44,7 @@
     <!-- ===== RIGHT PANEL ===== -->
    <!-- ===== RIGHT PANEL : CTP / PLATES EDITOR ===== -->
 <!-- ===== RIGHT PANEL : CTP / PLATES EDITOR ===== -->
+
 <VBox styleClass="editor-panel"
       spacing="12"
       fx:id="rightPane"
@@ -119,15 +122,29 @@
                    promptText="Enter amount"/>
     </VBox>
 
-    <!-- Action Button -->
+
+<HBox spacing="10" HBox.hgrow="ALWAYS">
+
     <Button fx:id="addUpdateBtn"
-            text="Add CTP Plate"
+            text="Add CTP"
             maxWidth="Infinity"
-            styleClass="btn-primary"/>
+            HBox.hgrow="ALWAYS"
+            styleClass="btn-primary"
+            onAction="#handleAddOrUpdate"/>
+
+    <Button fx:id="deleteBtn"
+            text="Delete"
+            maxWidth="Infinity"
+            HBox.hgrow="ALWAYS"
+            onAction="#handleDelete"
+            visible="false"
+            managed="false"
+            styleClass="btn-danger"/>
+
+</HBox>
+
 
 </VBox>
-
-
 
 </HBox>
 </content>

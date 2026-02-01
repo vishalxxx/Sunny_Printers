@@ -1,111 +1,145 @@
 package model;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class Lamination implements Serializable {
-	private int id;
-	public int getId() {
-		return id;
-	}
 
-	public void setId(int id) {
-		this.id = id;
-	}
+    /* ================= IDENTIFIERS ================= */
 
-	public int getJobItemId() {
-		return jobItemId;
-	}
+    private int id;
+    private int jobItemId;
 
-	public void setJobItemId(int jobItemId) {
-		this.jobItemId = jobItemId;
-	}
+    /* ================= DATA ================= */
 
-	private int jobItemId;
-	private int qty;
-	private String unit;
-	private String type;
-	private String side;
-	private String size;
-	private String notes;
-	private double amount;
+    private int qty;
+    private String unit;
+    private String type;
+    private String side;
+    private String size;
+    private String notes;
+    private double amount;
 
-	public Lamination() {
-	}
+    /* ================= UI STATE FLAGS ================= */
 
-	// getters/setters...
-	public int getQty() {
-		return qty;
-	}
+    private transient boolean isNew;
+    private transient boolean isUpdated;
+    private transient boolean isDeleted;
 
-	public void setQty(int qty) {
-		this.qty = qty;
-	}
+    /* ================= ORIGINAL SNAPSHOT ================= */
 
-	public String getUnit() {
-		return unit;
-	}
+    private transient Lamination originalSnapshot;
 
-	public void setUnit(String unit) {
-		this.unit = unit;
-	}
+    public Lamination() {}
 
-	public String getType() {
-		return type;
-	}
+    /* ================= COPY ================= */
 
-	public void setType(String type) {
-		this.type = type;
-	}
+    public Lamination copy() {
+        Lamination l = new Lamination();
+        l.id = this.id;
+        l.jobItemId = this.jobItemId;
+        l.qty = this.qty;
+        l.unit = this.unit;
+        l.type = this.type;
+        l.side = this.side;
+        l.size = this.size;
+        l.notes = this.notes;
+        l.amount = this.amount;
+        return l;
+    }
 
-	public String getSide() {
-		return side;
-	}
+    /* ================= SNAPSHOT ================= */
 
-	public void setSide(String side) {
-		this.side = side;
-	}
+    public void captureOriginal() {
+        this.originalSnapshot = this.copy();
+    }
 
-	public String getSize() {
-		return size;
-	}
+    /* ================= COMPARISON ================= */
 
-	public void setSize(String size) {
-		this.size = size;
-	}
+    public boolean isDifferentFromOriginal() {
+        if (originalSnapshot == null) return true;
 
-	public String getNotes() {
-		return notes;
-	}
+        return qty != originalSnapshot.qty
+            || !Objects.equals(unit, originalSnapshot.unit)
+            || !Objects.equals(type, originalSnapshot.type)
+            || !Objects.equals(side, originalSnapshot.side)
+            || !Objects.equals(size, originalSnapshot.size)
+            || !Objects.equals(notes, originalSnapshot.notes)
+            || Double.compare(amount, originalSnapshot.amount) != 0;
+    }
 
-	public void setNotes(String notes) {
-		this.notes = notes;
-	}
+    public boolean isSameAsOriginal() {
+        if (originalSnapshot == null) return false;
 
-	public double getAmount() {
-		return amount;
-	}
+        return qty == originalSnapshot.qty
+            && Objects.equals(unit, originalSnapshot.unit)
+            && Objects.equals(type, originalSnapshot.type)
+            && Objects.equals(side, originalSnapshot.side)
+            && Objects.equals(size, originalSnapshot.size)
+            && Objects.equals(notes, originalSnapshot.notes)
+            && Double.compare(amount, originalSnapshot.amount) == 0;
+    }
 
-	public void setAmount(double amount) {
-		this.amount = amount;
-	}
+    /* ================= FLAGS ================= */
 
-	public String toShortText() {
-		StringBuilder s = new StringBuilder();
-		if (qty != 0)
-			s.append(qty).append(" ");
-		if (unit != null)
-			s.append(unit).append(" - ");
-		if (type != null)
-			s.append(type).append(" - ");
-		if (side != null)
-			s.append(side).append(" - ");
-		if (amount != 0.0)
-			s.append("₹").append(amount);
-		return s.toString().trim();
-	}
+    public boolean isNew() { return isNew; }
+    public void setNew(boolean isNew) { this.isNew = isNew; }
 
-	@Override
-	public String toString() {
-		return toShortText();
-	}
+    public boolean isUpdated() { return isUpdated; }
+    public void setUpdated(boolean isUpdated) { this.isUpdated = isUpdated; }
+
+    public boolean isDeleted() { return isDeleted; }
+    public void setDeleted(boolean isDeleted) { this.isDeleted = isDeleted; }
+
+    public void resetFlags() {
+        isNew = false;
+        isUpdated = false;
+        isDeleted = false;
+    }
+
+    /* ================= GETTERS / SETTERS ================= */
+
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
+
+    public int getJobItemId() { return jobItemId; }
+    public void setJobItemId(int jobItemId) { this.jobItemId = jobItemId; }
+
+    public int getQty() { return qty; }
+    public void setQty(int qty) { this.qty = qty; }
+
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
+
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
+
+    public String getSide() { return side; }
+    public void setSide(String side) { this.side = side; }
+
+    public String getSize() { return size; }
+    public void setSize(String size) { this.size = size; }
+
+    public String getNotes() { return notes; }
+    public void setNotes(String notes) { this.notes = notes; }
+
+    public double getAmount() { return amount; }
+    public void setAmount(double amount) { this.amount = amount; }
+
+    /* ================= DISPLAY ================= */
+
+    @Override
+    public String toString() {
+        return toShortText();
+    }
+
+    public String toShortText() {
+        StringBuilder s = new StringBuilder();
+        if (qty != 0) s.append(qty).append(" ");
+        if (unit != null) s.append(unit).append(" - ");
+        if (type != null) s.append(type).append(" - ");
+        if (side != null) s.append(side).append(" - ");
+        if (amount != 0.0) s.append("₹").append(amount);
+        return s.toString().trim();
+    }
 }

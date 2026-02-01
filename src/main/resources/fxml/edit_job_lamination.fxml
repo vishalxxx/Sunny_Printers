@@ -21,6 +21,8 @@
                    styleClass="data-table">
 
             <columns>
+                 <TableColumn fx:id="statusCol"  text="Status" prefWidth="110"/>
+
                 <TableColumn fx:id="qtyCol" text="Qty"/>
                 <TableColumn fx:id="unitCol" text="Unit"/>
                 <TableColumn fx:id="typeCol" text="Type"/>
@@ -100,12 +102,29 @@
                     <Label text="Amount (₹)"/>
                     <TextField fx:id="amountField"/>
                 </VBox>
+                
+  <HBox spacing="10" HBox.hgrow="ALWAYS">
 
-                <Button fx:id="addUpdateBtn"
-                        text="Add Lamination"
-                        maxWidth="Infinity"
-                        styleClass="btn-primary"
-                        onAction="#handleAddOrUpdate"/>
+    <Button fx:id="addUpdateBtn"
+            text="Add Lamination"
+            maxWidth="Infinity"
+            HBox.hgrow="ALWAYS"
+            styleClass="btn-primary"
+            onAction="#handleAddOrUpdate"/>
+
+    <Button fx:id="deleteBtn"
+            text="Delete"
+            maxWidth="Infinity"
+            HBox.hgrow="ALWAYS"
+            onAction="#handleDelete"
+            visible="false"
+            managed="false"
+            styleClass="btn-danger"/>
+
+</HBox>
+
+              
+
 
             </VBox>
 

@@ -9,6 +9,9 @@ import utils.DBConnection;
 
 public class BindingItemRepository {
 
+    /* =====================================================
+       INSERT (uses existing transaction)
+       ===================================================== */
     public void save(Connection con, int jobItemId, Binding b) {
 
         String sql = """
@@ -32,7 +35,10 @@ public class BindingItemRepository {
             throw new RuntimeException("Failed to save binding item", e);
         }
     }
-    
+
+    /* =====================================================
+       READ (standalone)
+       ===================================================== */
     public Binding findByJobItemId(int jobItemId) {
 
         String sql = """
@@ -45,9 +51,10 @@ public class BindingItemRepository {
             Connection con = DBConnection.getConnection();
             PreparedStatement ps = con.prepareStatement(sql)
         ) {
-            ps.setInt(1, jobItemId);
 
+            ps.setInt(1, jobItemId);
             ResultSet rs = ps.executeQuery();
+
             if (rs.next()) {
                 Binding b = new Binding();
                 b.setId(rs.getInt("id"));
@@ -61,8 +68,62 @@ public class BindingItemRepository {
             }
 
         } catch (Exception e) {
-            throw new RuntimeException("Failed to load binding item", e);
+            throw new RuntimeException(
+                "Failed to load binding item for jobItemId=" + jobItemId, e
+            );
         }
+
         return null;
+    }
+
+    /* =====================================================
+       UPDATE (standalone)
+       ===================================================== */
+    public void update(Connection con, Binding b) {
+
+        String sql = """
+            UPDATE binding_items
+            SET process = ?, qty = ?, rate = ?, notes = ?, amount = ?
+            WHERE job_item_id = ?
+        """;
+
+        try (
+            
+            PreparedStatement ps = con.prepareStatement(sql)
+        ) {
+
+            ps.setString(1, b.getProcess());
+            ps.setInt(2, b.getQty());
+            ps.setDouble(3, b.getRate());
+            ps.setString(4, b.getNotes());
+            ps.setDouble(5, b.getAmount());
+            ps.setInt(6, b.getJobItemId());
+
+            ps.executeUpdate();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update binding item", e);
+        }
+    }
+
+    /* =====================================================
+       DELETE (standalone)
+       Uses CASCADE to delete binding_items automatically
+       ===================================================== */
+    public void deleteByJobItemId( Connection con, int jobItemId) {
+
+        String sql = "DELETE FROM job_items WHERE id = ?";
+
+        try (
+            
+            PreparedStatement ps = con.prepareStatement(sql)
+        ) {
+
+            ps.setInt(1, jobItemId);
+            ps.executeUpdate();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete binding item", e);
+        }
     }
 }

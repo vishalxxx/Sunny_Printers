@@ -21,8 +21,10 @@
         <TableView fx:id="printingTable" styleClass="data-table">
 
             <columns>
-                <TableColumn fx:id="qtyCol" text="Qty"/>
-                <TableColumn fx:id="unitsCol" text="Units"/>
+                 <TableColumn fx:id="statusCol"  text="Status" prefWidth="110"/>
+
+                <TableColumn fx:id="qtyCol" text="Qty" prefWidth="80"/>
+                <TableColumn fx:id="unitsCol" text="Units" prefWidth="110"/>
                 <TableColumn fx:id="setsCol" text="Sets"/>
                 <TableColumn fx:id="colorCol" text="Color"/>
                 <TableColumn fx:id="sideCol" text="Side"/>
@@ -31,7 +33,7 @@
 
                 <TableColumn fx:id="amountCol" text="Amount"/>
             </columns>
-
+ 
         </TableView>
 
     </VBox>
@@ -51,8 +53,8 @@
   
 
     <!-- Compact row: Units + Sets -->
-    <FlowPane hgap="12"
-              vgap="12"
+    <FlowPane hgap="14"
+              vgap="14"
               prefWrapLength="350">
   <VBox spacing="6">
         <Label text="Quantity"/>
@@ -105,13 +107,28 @@
         <Label text="Amount (₹)"/>
         <TextField fx:id="amountField"/>
     </VBox>
+    
+    
+<HBox spacing="10" HBox.hgrow="ALWAYS">
 
     <!-- Action -->
     <Button fx:id="addUpdateBtn"
-            text="Add / Update Printing"
+            text="Add Printing"
             maxWidth="Infinity"
-            styleClass="btn-primary"/>
+            HBox.hgrow="ALWAYS"
+            styleClass="btn-primary"
+            onAction="#handleAddOrUpdate"/>
 
+	 <Button fx:id="deleteBtn"
+            text="Delete"
+            maxWidth="Infinity"
+            HBox.hgrow="ALWAYS"
+            onAction="#handleDelete"
+            visible="false"
+            managed="false"
+            styleClass="btn-danger"/>
+ </HBox>   
+            
 </VBox>
 
 

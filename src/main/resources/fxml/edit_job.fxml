@@ -28,8 +28,9 @@
 
                 <Pane HBox.hgrow="ALWAYS"/>
 
-                <Button text="Discard Changes" styleClass="btn-secondary"/>
-                <Button text="Save Progress" styleClass="btn-primary"/>
+                <Button text="Discard Changes" styleClass="btn-secondary"         onAction="#handleDiscardChanges"
+/>
+                <Button text="Save Progress" styleClass="btn-primary" onAction="#handleSaveChanges"/>
             </HBox>
         </top>
 
@@ -37,9 +38,10 @@
  <center>
     <VBox spacing="14"
           alignment="TOP_CENTER"
-          VBox.vgrow="ALWAYS">
+          VBox.vgrow="ALWAYS"  styleClass="tabs-offset">
+            
 
-        <!-- TAB BAR -->
+      <!-- TAB BAR -->
      <TabPane fx:id="jobTabPane" tabClosingPolicy="UNAVAILABLE">
 
     <Tab fx:id="paperTab" text="Paper"/>

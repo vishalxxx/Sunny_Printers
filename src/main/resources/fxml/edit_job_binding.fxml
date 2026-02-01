@@ -6,92 +6,103 @@
 <ScrollPane
     xmlns="http://javafx.com/javafx/23"
     xmlns:fx="http://javafx.com/fxml/1"
-     fx:controller="controller.BindingTabController"
+    fx:controller="controller.BindingTabController"
     fitToWidth="true"
-    styleClass="tab-scroll">
+    styleClass="table-scroll">
 
     <content>
-        <HBox spacing="16" styleClass="tab-container" >
+        <HBox spacing="16" styleClass="tab-container">
 
+            <!-- ================= LEFT : TABLE ================= -->
+            <VBox styleClass="table-wrapper"
+                  HBox.hgrow="ALWAYS"
+                  prefWidth="650">
 
-    <!-- ===== LEFT TABLE ===== -->
- 		<VBox fx:id="leftPane" styleClass="table-wrapper"
-          HBox.hgrow="ALWAYS"
-          prefWidth="650">
-        <TableView fx:id="bindingTable">
+                <TableView fx:id="bindingTable"
+                           styleClass="data-table">
 
-            <columns>
-                <TableColumn fx:id="processCol" text="Process"/>
-                <TableColumn fx:id="qtyCol" text="Qty"/>
-                <TableColumn fx:id="rateCol" text="Rate"/>
-                <TableColumn fx:id="notesCol" text="Notes"/>
-            	<TableColumn fx:id="amountCol" text="Amount"/>
+                    <columns>
+                        <TableColumn fx:id="statusCol" text="Status" prefWidth="90"
+             minWidth="80"
+             maxWidth="100"/>
 
-            </columns>
+                        <TableColumn fx:id="processCol" text="Process" prefWidth="100"/>
+                        <TableColumn fx:id="qtyCol" text="Qty" prefWidth="80"/>
+                        <TableColumn fx:id="rateCol" text="Rate" prefWidth="90"/>
+                        <TableColumn fx:id="notesCol" text="Notes" prefWidth="140"/>
+                        <TableColumn fx:id="amountCol" text="Amount" prefWidth="120"/>
+                    </columns>
 
-        </TableView>
+                </TableView>
 
-        <HBox spacing="8" alignment="CENTER_LEFT">
-            <Label text="Items:"/>
-            <Label fx:id="itemCountLabel" text="0"/>
-            <Pane HBox.hgrow="ALWAYS"/>
-            <Label text="Total:"/>
-            <Label fx:id="totalAmountLabel"
-                   text="₹0.00"
-                   styleClass="amount-highlight"/>
-        </HBox>
+            </VBox>
 
-    </VBox>
-
-    <!-- ===== RIGHT PANEL (future editor) ===== -->
-   <!-- ===== RIGHT PANEL : BINDING EDITOR ===== -->
-     <VBox fx:id="rightPane"
-                  styleClass="editor-panel"
-                  spacing="12"
+            <!-- ================= RIGHT : BINDING EDITOR ================= -->
+            <VBox styleClass="editor-panel"
+                  spacing="18"
+                  fx:id="rightPane"
                   prefWidth="350">
 
                 <Label text="Binding Editor"
                        styleClass="card-title"/>
-                       
-<FlowPane
-    hgap="12"
-    vgap="12"
-    prefWrapLength="330">		
-                <VBox spacing="4" prefWidth="120">
-                    <Label text="Process"/>
-                    <ComboBox fx:id="processField"
-                              promptText="Binding Process"/>
-                </VBox>
 
-                <VBox spacing="4" prefWidth="80">
-                    <Label text="Quantity"/>
-                    <TextField fx:id="qtyField"/>
-                </VBox>
+              <!-- MAIN GRID -->
+<FlowPane hgap="14"
+          vgap="14"
+          prefWrapLength="350">
 
-                <VBox spacing="4" prefWidth="90">
-                    <Label text="Rate"/>
-                    <TextField fx:id="rateField"/>
-                </VBox>
-	</FlowPane>
-                <VBox spacing="4">
+    <VBox spacing="6" prefWidth="150">
+        <Label text="Process"/>
+        <ComboBox fx:id="processField"
+                  promptText="Binding Process"/>
+    </VBox>
+
+    <VBox spacing="6" prefWidth="70">
+        <Label text="Quantity"/>
+        <TextField fx:id="qtyField"/>
+    </VBox>
+
+    <VBox spacing="6" prefWidth="50">
+        <Label text="Rate"/>
+        <TextField fx:id="rateField"
+                   />
+    </VBox>
+
+</FlowPane>
+
+                <VBox spacing="6">
                     <Label text="Notes"/>
                     <TextArea fx:id="notesField"
                               prefRowCount="3"/>
                 </VBox>
 
-                <VBox spacing="4">
-                    <Label text="Amount"/>
+                <VBox spacing="6">
+                    <Label text="Amount (₹)"/>
                     <TextField fx:id="amountField"/>
                 </VBox>
 
-                <Button fx:id="addUpdateBtn"
-                        text="Add Binding"
-                        maxWidth="Infinity"
-                        styleClass="btn-primary"
-                        onAction="#handleAddOrUpdate"/>
-            </VBox>
+                <!-- ACTION BUTTONS -->
+                <HBox spacing="10" HBox.hgrow="ALWAYS">
 
-</HBox>
+                    <Button fx:id="addUpdateBtn"
+                            text="Add Binding"
+                            maxWidth="Infinity"
+                            HBox.hgrow="ALWAYS"
+                            styleClass="btn-primary"
+                            onAction="#handleAddOrUpdate"/>
 
-</content>
+                    <Button fx:id="deleteBtn"
+                            text="Delete"
+                            maxWidth="Infinity"
+                            HBox.hgrow="ALWAYS"
+                            onAction="#handleDelete"
+                            visible="false"
+                            managed="false"
+                            styleClass="btn-danger"/>
+
+                </HBox>
+
+</VBox>
+        </HBox>
+    </content>
 </ScrollPane>

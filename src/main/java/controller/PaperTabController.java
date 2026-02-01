@@ -1,5 +1,6 @@
 package controller;
 
+import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -8,8 +9,10 @@ import javafx.scene.layout.VBox;
 import model.Job;
 import model.JobItem;
 import model.Paper;
+import model.Printing;
 import repository.PaperItemRepository;
 import service.JobItemService;
+import utils.DeleteConfirmationDialog;
 
 import java.util.List;
 
@@ -88,6 +91,13 @@ public class PaperTabController {
 	private final JobItemService jobItemService = new JobItemService();
 	private final PaperItemRepository paperRepo = new PaperItemRepository();
 
+	@FXML
+	private Button deleteBtn;
+	@FXML
+	private TableColumn<Paper, Paper> statusCol;
+
+	private Paper originalSnapshot;
+
 	/*
 	 * ========================= INITIALIZE =========================
 	 */
@@ -124,7 +134,7 @@ public class PaperTabController {
 		ourRadio.setSelected(true);
 
 		/* ===== ComboBox values (controller-based) ===== */
-		unitsField.getItems().addAll("Sheet", "Rim", "Bundle", "Thousand", "Kg", "Roll", "Packet");
+		unitsField.getItems().addAll("Sheets", "Rim", "Bundle", "Thousand", "Kg", "Roll", "Packet");
 
 		sizeField.getItems().addAll("12x18", "13x19", "17x22", "19x25", "20x30", "23x36", "25x36", "28x40");
 
@@ -136,12 +146,17 @@ public class PaperTabController {
 
 		/* ===== Selection → Editor ===== */
 		paperTable.getSelectionModel().selectedItemProperty().addListener((obs, oldItem, newItem) -> {
+			clearEditor();
 			if (newItem != null) {
 				loadToEditor(newItem);
 				addUpdateBtn.setText("Update Paper");
+				deleteBtn.setVisible(true);
+				deleteBtn.setManaged(true);
 			} else {
-				clearEditor();
+
 				addUpdateBtn.setText("Add Paper");
+				deleteBtn.setVisible(false);
+				deleteBtn.setManaged(false);
 			}
 		});
 
@@ -177,6 +192,63 @@ public class PaperTabController {
 				paperTable.getSelectionModel().clearSelection();
 			}
 		});
+
+		/* ===== Glowing status Lables ===== */
+		statusCol.setCellValueFactory(param -> new javafx.beans.property.SimpleObjectProperty<>(param.getValue()));
+
+		statusCol.setCellFactory(col -> new TableCell<Paper, Paper>() {
+
+			private final Label label = new Label();
+
+			@Override
+			protected void updateItem(Paper item, boolean empty) {
+				super.updateItem(item, empty);
+
+				if (empty || item == null) {
+					setGraphic(null);
+					return;
+				}
+
+				label.getStyleClass().setAll("status-pill"); // base style
+
+				if (item.isDeleted()) {
+					label.setText("● Deleted");
+					label.getStyleClass().add("status-deleted");
+				} else if (item.isNew()) {
+					label.setText("● New");
+					label.getStyleClass().add("status-new");
+				} else if (item.isUpdated()) {
+					label.setText("● Updated");
+					label.getStyleClass().add("status-updated");
+				} else {
+					setGraphic(null);
+					return;
+				}
+
+				setGraphic(label);
+			}
+		});
+		
+		/* =========================Listener to Identify User Changed in Editor or NOT =======================*/  
+
+
+		ChangeListener<Object> changeListener = (obs, o, n) -> {
+			if (selectedItem != null) {
+				addUpdateBtn.setDisable(!isEditorChanged());
+			}
+		};
+
+		qtyField.textProperty().addListener(changeListener);
+		unitsField.valueProperty().addListener(changeListener);
+		sizeField.valueProperty().addListener(changeListener);
+		gsmField.valueProperty().addListener(changeListener);
+		typeField.valueProperty().addListener(changeListener);
+		notesField.textProperty().addListener(changeListener);
+		amountField.textProperty().addListener(changeListener);
+
+		ourRadio.selectedProperty().addListener(changeListener);
+		clientRadio.selectedProperty().addListener(changeListener);
+
 	}
 
 	/*
@@ -193,6 +265,8 @@ public class PaperTabController {
 			if ("PAPER".equalsIgnoreCase(ji.getType())) {
 				Paper p = paperRepo.findByJobItemId(ji.getId());
 				if (p != null) {
+				    p.captureOriginal();   // 🔥 THIS IS IMPORTANT
+
 					paperTable.getItems().add(p);
 				}
 			}
@@ -209,6 +283,9 @@ public class PaperTabController {
 	private void loadToEditor(Paper p) {
 		selectedItem = p;
 
+		// 🔒 snapshot original state
+		originalSnapshot = p.copy();
+
 		qtyField.setText(String.valueOf(p.getQty()));
 		unitsField.setValue(p.getUnits());
 		sizeField.setValue(p.getSize());
@@ -224,6 +301,24 @@ public class PaperTabController {
 		}
 	}
 
+	private boolean isEditorChanged() {
+		if (selectedItem == null || originalSnapshot == null)
+			return false;
+
+		return parseInt(qtyField.getText()) != originalSnapshot.getQty()
+				|| !equals(unitsField.getValue(), originalSnapshot.getUnits())
+				|| !equals(sizeField.getValue(), originalSnapshot.getSize())
+				|| !equals(gsmField.getValue(), originalSnapshot.getGsm())
+				|| !equals(typeField.getValue(), originalSnapshot.getType())
+				|| !equals(notesField.getText(), originalSnapshot.getNotes())
+				|| parseDouble(amountField.getText()) != originalSnapshot.getAmount()
+				|| !equals(ourRadio.isSelected() ? "OUR" : "CLIENT", originalSnapshot.getSource());
+	}
+
+	private boolean equals(Object a, Object b) {
+		return a == null ? b == null : a.equals(b);
+	}
+
 	/*
 	 * ========================= ADD / UPDATE =========================
 	 */
@@ -234,34 +329,65 @@ public class PaperTabController {
 		if (currentJob == null)
 			return;
 
-		boolean isNew = false;
-
+		// ===== ADD MODE =====
 		if (selectedItem == null) {
-			selectedItem = new Paper();
-			isNew = true;
+
+			Paper p = new Paper();
+
+			p.setQty(parseInt(qtyField.getText()));
+			p.setUnits(unitsField.getValue());
+			p.setSize(sizeField.getValue());
+			p.setGsm(gsmField.getValue());
+			p.setType(typeField.getValue());
+			p.setNotes(notesField.getText());
+			p.setAmount(parseDouble(amountField.getText()));
+			p.setSource(ourRadio.isSelected() ? "OUR" : "CLIENT");
+
+			p.setNew(true); // 🔥 mark as new
+			p.setUpdated(false);
+
+			paperTable.getItems().add(p);
+
+		}
+		// ===== UPDATE MODE =====
+		else {
+
+			selectedItem.setQty(parseInt(qtyField.getText()));
+			selectedItem.setUnits(unitsField.getValue());
+			selectedItem.setSize(sizeField.getValue());
+			selectedItem.setGsm(gsmField.getValue());
+			selectedItem.setType(typeField.getValue());
+			selectedItem.setNotes(notesField.getText());
+			selectedItem.setAmount(parseDouble(amountField.getText()));
+			selectedItem.setSource(ourRadio.isSelected() ? "OUR" : "CLIENT");
+
+			if (!selectedItem.isNew()) {
+			    if (selectedItem.isDifferentFromOriginal()) {
+			        selectedItem.setUpdated(true);
+			    } else {
+			        selectedItem.setUpdated(false); // 🔥 revert update
+			    }
+			}
+
+
+			paperTable.refresh();
+
 		}
 
-		selectedItem.setQty(parseInt(qtyField.getText()));
-		selectedItem.setUnits(unitsField.getValue());
-		selectedItem.setSize(sizeField.getValue());
-		selectedItem.setGsm(gsmField.getValue());
-		selectedItem.setType(typeField.getValue());
-		selectedItem.setNotes(notesField.getText());
-		selectedItem.setAmount(parseDouble(amountField.getText()));
-		selectedItem.setSource(ourRadio.isSelected() ? "OUR" : "CLIENT");
+		System.out.println("---- PAPER ITEMS (after add/update) ----");
+		for (Paper p : paperTable.getItems()) {
+			System.out.println("qty=" + p.getQty() + ", new=" + p.isNew() + ", updated=" + p.isUpdated());
 
-		// TODO: persist using repository
-		// paperRepo.saveOrUpdate(currentJob, selectedItem);
-
-		if (isNew) {
-			paperTable.getItems().add(selectedItem);
 		}
 
+		// ===== RESET UI =====
 		paperTable.getSelectionModel().clearSelection();
-		paperTable.refresh();
-		updateFooter();
 		clearEditor();
+		updateFooter();
 		addUpdateBtn.setText("Add Paper");
+		addUpdateBtn.setDisable(true);
+		originalSnapshot = null;
+
 	}
 
 	/*
@@ -271,6 +397,7 @@ public class PaperTabController {
 	private void clearEditor() {
 		selectedItem = null;
 		qtyField.clear();
+
 		unitsField.setValue(null);
 		sizeField.setValue(null);
 		gsmField.setValue(null);
@@ -278,6 +405,9 @@ public class PaperTabController {
 		notesField.clear();
 		amountField.clear();
 		ourRadio.setSelected(true);
+		originalSnapshot = null;
+		addUpdateBtn.setDisable(false); // add mode
+
 	}
 
 	private void updateFooter() {
@@ -306,4 +436,34 @@ public class PaperTabController {
 			return 0.0;
 		}
 	}
+
+	public List<Paper> getItems() {
+		return paperTable.getItems();
+	}
+
+	@FXML
+	private void handleDelete() {
+
+		if (selectedItem == null)
+			return;
+
+		selectedItem.setDeleted(true);
+
+		paperTable.refresh();
+
+		paperTable.getSelectionModel().clearSelection();
+		clearEditor();
+
+		addUpdateBtn.setText("Add Paper");
+	}
+
+	@FXML
+	private void handleDiscard() {
+
+		if (currentJob == null)
+			return;
+
+		loadForJob(currentJob); // 🔥 reload from DB
+	}
+
 }

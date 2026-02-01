@@ -37,6 +37,13 @@ import utils.Toast;
 
 public class AddJobController {
 
+	private Runnable onJobItemAdded;
+
+	public void setOnJobItemAdded(Runnable r) {
+	    this.onJobItemAdded = r;
+	}
+
+	
 	/* ========================= STATE ========================= */
 
 	private boolean editMode = false;

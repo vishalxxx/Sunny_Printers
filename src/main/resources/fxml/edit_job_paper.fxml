@@ -8,7 +8,7 @@
     xmlns:fx="http://javafx.com/fxml/1"
     fx:controller="controller.PaperTabController"
     fitToWidth="true"
-    styleClass="tab-scroll">
+    styleClass="table-scroll">
 
     <content>
         <HBox spacing="16" styleClass="tab-container">
@@ -16,24 +16,17 @@
             <!-- ================= LEFT : TABLE ================= -->
             <VBox styleClass="table-wrapper"
                   HBox.hgrow="ALWAYS"
-                  prefWidth="700">
+                  prefWidth="650">
 
-                <!-- Horizontal scroll ONLY for table -->
-                <ScrollPane fitToHeight="true"
-                            fitToWidth="false"
-                            hbarPolicy="AS_NEEDED"
-                            vbarPolicy="AS_NEEDED"
-                            styleClass="table-scroll">
-
-                    <content>
-                    
-  
+         
 
                         <TableView fx:id="paperTable"
                                    styleClass="data-table"
-                                   minWidth="900">
+                                   >
 
                             <columns>
+                                <TableColumn fx:id="statusCol"  text="Status" prefWidth="110"/>
+
                                 <TableColumn fx:id="qtyCol" text="Qty" prefWidth="80"/>
                                 <TableColumn fx:id="unitsCol" text="Units" prefWidth="110"/>
                                 <TableColumn fx:id="sizeCol" text="Size" prefWidth="110"/>
@@ -42,23 +35,10 @@
                                 <TableColumn fx:id="sourceCol" text="Source" prefWidth="100"/>
                                 <TableColumn fx:id="notesCol" text="Notes" prefWidth="120"/>
                                 <TableColumn fx:id="amountCol" text="Amount" prefWidth="120"/>
-                      
+
                             </columns>
 
                         </TableView>
-                    </content>
-                </ScrollPane>
-
-                <!-- Footer -->
-                <HBox styleClass="table-footer">
-                    <Label text="Items:"/>
-                    <Label fx:id="itemCountLabel" text="0"/>
-                    <Pane HBox.hgrow="ALWAYS"/>
-                    <Label text="Total:"/>
-                    <Label fx:id="totalAmountLabel"
-                           text="₹0.00"
-                           styleClass="amount-highlight"/>
-                </HBox>
 
             </VBox>
 
@@ -122,12 +102,29 @@
                     <TextField fx:id="amountField"/>
                 </VBox>
 
-                <Button fx:id="addUpdateBtn"
-                        text="Add Paper"
-                        maxWidth="Infinity"
-                        styleClass="btn-primary"/>
+<HBox spacing="10" HBox.hgrow="ALWAYS">
+
+    <Button fx:id="addUpdateBtn"
+            text="Add Paper"
+            maxWidth="Infinity"
+            HBox.hgrow="ALWAYS"
+            styleClass="btn-primary"
+            onAction="#handleAddOrUpdate"/>
+
+    <Button fx:id="deleteBtn"
+            text="Delete"
+            maxWidth="Infinity"
+            HBox.hgrow="ALWAYS"
+            onAction="#handleDelete"
+            visible="false"
+            managed="false"
+            styleClass="btn-danger"/>
+
+</HBox>
+
 
             </VBox>
+            
 
         </HBox>
     </content>
