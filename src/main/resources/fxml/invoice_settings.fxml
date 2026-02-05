@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<StackPane xmlns:fx="http://javafx.com/fxml/1"
+           stylesheets="@../css/invoice_settings.css"
+            fx:controller="controller.SystemSettingsController"
+           styleClass="root">
+
+    <BorderPane>
+
+        <!-- ================= HEADER ================= -->
+        <top>
+            <VBox spacing="6" styleClass="header-box">
+                <HBox alignment="CENTER_LEFT" spacing="10">
+                    <Label text="Invoice Generation Settings" styleClass="title"/>
+                    <Pane HBox.hgrow="ALWAYS"/>
+                    <Label text="LIVE SYSTEM" styleClass="live-badge"/>
+                </HBox>
+
+                <Label text="Configure sequence rules and manual numbering patterns."
+                       styleClass="subtitle"/>
+                       
+                 <!-- Buttons -->
+                            <HBox alignment="CENTER_RIGHT" spacing="12">
+                                <Button text="Reset Defaults" fx:id="resetBtn" styleClass="btn-secondary"/>
+                                <Button text="Save Settings" fx:id="saveBtn" styleClass="btn-primary"/>
+                            </HBox>
+            </VBox>
+        </top>
+
+
+        <!-- ================= MAIN ================= -->
+        <center>
+            <ScrollPane fitToWidth="true" styleClass="settings-scroll">
+                <VBox spacing="24" styleClass="content-wrapper">
+                    <padding>
+                        <Insets top="24" right="32" bottom="32" left="32"/>
+                    </padding>
+
+                    <!-- Page Title -->
+                    <VBox spacing="6">
+                        <Label text="Invoice Settings" styleClass="page-title"/>
+                        <Label text="Manage your invoice numbering preferences."
+                               styleClass="page-subtitle"/>
+                    </VBox>
+
+                    <!-- Two Cards Row -->
+                    <HBox spacing="20">
+
+                        <!-- ================= LEFT CARD ================= -->
+                        <VBox spacing="18" styleClass="card" HBox.hgrow="ALWAYS">
+
+                            <fx:define>
+                                <ToggleGroup fx:id="modeGroup"/>
+                            </fx:define>
+
+                            <Label text="GENERATION MODE" styleClass="section-label"/>
+
+                            <VBox spacing="14">
+
+                                <RadioButton fx:id="autoRadio"
+                                             text="Automatic Mode"
+                                             toggleGroup="$modeGroup"
+                                             styleClass="radio-title"/>
+
+                                <Label text="System manages sequential invoice numbers automatically."
+                                       wrapText="true"
+                                       styleClass="radio-desc"/>
+
+                                <RadioButton fx:id="manualRadio"
+                                             text="Manual Series Configuration"
+                                             toggleGroup="$modeGroup"
+                                             styleClass="radio-title"/>
+
+                                <Label text="Define custom prefix, start number and padding."
+                                       wrapText="true"
+                                       styleClass="radio-desc"/>
+                            </VBox>
+
+                            <Pane VBox.vgrow="ALWAYS"/>
+
+                            <Label text="Changing mode affects all new invoices immediately."
+                                   styleClass="info-text"/>
+                        </VBox>
+
+
+                        <!-- ================= RIGHT CARD ================= -->
+                        <VBox fx:id="manualCard"
+                              spacing="18"
+                              styleClass="card"
+                              HBox.hgrow="ALWAYS">
+
+                            <HBox alignment="CENTER_LEFT">
+                                <Label text="MANUAL CONFIGURATION" styleClass="section-label"/>
+                                <Pane HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="previewBadge"
+                                       text="INV-001"
+                                       styleClass="preview-badge"/>
+                            </HBox>
+
+                            <!-- Prefix -->
+                            <VBox spacing="6">
+                                <Label text="DOCUMENT PREFIX" styleClass="field-label"/>
+                                <TextField fx:id="prefixField" promptText="INV-"/>
+                            </VBox>
+
+                            <!-- Start + Padding -->
+                            <HBox spacing="14">
+
+                                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                                    <Label text="STARTING NO." styleClass="field-label"/>
+                                    <TextField fx:id="startField" promptText="001"/>
+                                </VBox>
+
+                                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                                    <Label text="PADDING" styleClass="field-label"/>
+                                    <ComboBox fx:id="paddingCombo"/>
+                                </VBox>
+
+                            </HBox>
+
+                            <!-- Sequence Preview -->
+                            <VBox spacing="6" styleClass="sequence-box">
+                                <Label text="SEQUENCE EXAMPLE" styleClass="sequence-label"/>
+                                <Label fx:id="sequencePreview"
+                                       text="INV-002, INV-003..."
+                                       styleClass="sequence-value"/>
+                            </VBox>
+
+                            <Pane VBox.vgrow="ALWAYS"/>
+
+                         
+
+                        </VBox>
+
+                    </HBox>
+                </VBox>
+            </ScrollPane>
+        </center>
+
+    </BorderPane>
+</StackPane>

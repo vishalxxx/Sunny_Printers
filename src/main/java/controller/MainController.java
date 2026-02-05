@@ -101,6 +101,9 @@ public class MainController implements Initializable {
 	private VBox paymentSidebar;
 	@FXML
 	private VBox ledgerSidebar;
+	
+	@FXML
+	private VBox settingsSidebar;
 
 	// ScrollPanes
 	@FXML
@@ -222,7 +225,8 @@ public class MainController implements Initializable {
 	            clientsSidebar,
 	            billingSidebar,
 	            paymentSidebar,
-	            ledgerSidebar
+	            ledgerSidebar,
+	            settingsSidebar
 	    };
 
 	    for (VBox s : sidebars) {
@@ -247,18 +251,46 @@ public class MainController implements Initializable {
 	
 	private void loadCenterScreen(String fxmlPath, String title, String subtitle) {
 
+	    // 1️⃣ Show loader
 	    if (centerLoaderIncludeController != null) {
 	        centerLoaderIncludeController.show(title, subtitle);
 	    }
 
 	    new Thread(() -> {
 	        try {
-	            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+	            FXMLLoader loader =
+	                    new FXMLLoader(getClass().getResource(fxmlPath));
 	            Parent view = loader.load();
+	            Object controller = loader.getController();
+
+	            Job draftJob = null;
+
+	            // 🔑 Only Add Job screen needs draft logic
+	            if (controller instanceof AddJobController) {
+	                JobService jobService = new JobService();
+	                draftJob = jobService.getLatestDraftJob();
+	            }
+
+	            Job finalDraftJob = draftJob;
 
 	            Platform.runLater(() -> {
+
+	                // 2️⃣ Replace center UI
 	                centerContentHost.getChildren().setAll(view);
 
+	                // 3️⃣ Resume or create job
+	                if (controller instanceof AddJobController addJobController) {
+
+	                    if (finalDraftJob != null) {
+	                        // 🔁 Resume unfinished draft
+	                        addJobController.openForEdit(finalDraftJob.getId());
+	                    } else {
+	                        // 🆕 Create new draft
+	                        addJobController.startNewJob();
+	                    }
+	                }
+
+	                // 4️⃣ Hide loader
 	                if (centerLoaderIncludeController != null) {
 	                    centerLoaderIncludeController.hide();
 	                }
@@ -266,7 +298,6 @@ public class MainController implements Initializable {
 
 	        } catch (Exception ex) {
 	            ex.printStackTrace();
-
 	            Platform.runLater(() -> {
 	                if (centerLoaderIncludeController != null) {
 	                    centerLoaderIncludeController.hide();
@@ -275,6 +306,8 @@ public class MainController implements Initializable {
 	        }
 	    }).start();
 	}
+
+
 
 	private void expandSidebar() {
 
@@ -332,6 +365,7 @@ public class MainController implements Initializable {
 		hideSidebar(billingSidebar);
 		hideSidebar(paymentSidebar);
 		hideSidebar(ledgerSidebar);
+		hideSidebar(settingsSidebar);
 	}
 
 	private void showOnly(VBox target) {
@@ -340,6 +374,9 @@ public class MainController implements Initializable {
 			target.setVisible(true);
 			target.setManaged(true);
 		}
+		
+		else
+			System.out.println("Null SideBAR");
 	}
 
 	private void setPageTitle(String title) {
@@ -455,6 +492,19 @@ public class MainController implements Initializable {
 	    centerLoaderInclude.setManaged(false);
 	}
 
+	@FXML
+	private void loadUserSettings(MouseEvent event) {
+		loadCenterScreen("/fxml/user_settings.fxml",
+	            "Loading User Settings...",
+	            "Please wait");
+	}
+	@FXML
+	private void loadInvoiceSettings(MouseEvent event) {
+		loadCenterScreen("/fxml/invoice_settings.fxml",
+	            "Loading Invoice Settings...",
+	            "Please wait");
+	}
+	
 	@FXML private StackPane centerContentHost;
 	@FXML private ScreenLoaderController centerLoaderIncludeController;
 
@@ -477,8 +527,19 @@ public class MainController implements Initializable {
 	        }
 	    }).start();
 	}
+	
+	
+	@FXML
+	private void showSettingSubmenu(MouseEvent event)
+	{
+		
+		showOnly(settingsSidebar);
+		setPageTitle("Genral Settings");
+	}
+	
 
 	
+
 	
 
 }

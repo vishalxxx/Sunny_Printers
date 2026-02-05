@@ -43,6 +43,8 @@ public class AddJobController {
 	    this.onJobItemAdded = r;
 	}
 
+
+
 	
 	/* ========================= STATE ========================= */
 
@@ -198,6 +200,10 @@ public class AddJobController {
 	private Button addBindingBtn;
 	@FXML
 	private Button addLaminationBtn;
+	
+	@FXML
+	private Label jobNoLabel;
+
 
 	/* ========================= CLIENT COMBO STATE ========================= */
 
@@ -244,53 +250,52 @@ public class AddJobController {
 	/* ========================= JOB FLOW ========================= */
 
 	public void startNewJob() {
-		JobService jobService = new JobService();
-		this.currentJob = jobService.createDraftJob();
-		this.editMode = false;
-		addJobBtn.setText("Add Job ✅");
 
-		System.out.println("✅ Draft job created: " + currentJob.getJobNo());
+	    JobService jobService = new JobService();
 
-		// ✅ reset UI state
-		clientCombo.setDisable(false);
-		clientLocked = false;
-		selectedClient = null;
+	    this.currentJob = jobService.createDraftJob();
+	    this.editMode = false;
 
-		jobName.clear();
-		clientCombo.getSelectionModel().clearSelection();
+	    jobNoLabel.setText("Job No: " + currentJob.getJobNo());
+	    addJobBtn.setText("Add Job ✅");
 
-		updateFormState();
+	    // reset UI state
+	    clientCombo.setDisable(false);
+	    clientLocked = false;
+	    selectedClient = null;
+
+	    jobName.clear();
+	    clientCombo.getSelectionModel().clearSelection();
+
+	    updateFormState();
+
+	    System.out.println("✅ New draft created: " + currentJob.getJobNo());
 	}
+
 
 	public void openForEdit(int jobId) {
 
-		JobService jobService = new JobService();
-		Job job = jobService.getJobById(jobId);
+	    JobService jobService = new JobService();
+	    Job job = jobService.getJobById(jobId);
 
-		if (job == null) {
-			System.out.println("❌ Job not found: " + jobId);
-			return;
-		}
+	    if (job == null) {
+	        toast("❌ Job not found");
+	        return;
+	    }
 
-		this.currentJob = job;
-		this.editMode = true;
+	    this.currentJob = job;
+	    this.editMode = true;
 
-		System.out.println("✏ Edit Mode ON for Job: " + currentJob.getJobNo());
+	    jobNoLabel.setText("Job No: " + currentJob.getJobNo());
+	    addJobBtn.setText("Update Job ✅");
 
-		addJobBtn.setText("Update Job ✅");
+	    preloadClientIntoCombo();
 
-		// ✅ load client and lock it
-		preloadClientIntoCombo();
+	    jobName.setText(currentJob.getJobTitle());
 
-		// ✅ Prefill job name (if you have it in Job model)
-		// If your Job model doesn't have getJobName(), comment this line.
-		try {
-			jobName.setText(currentJob.getJobTitle());
-		} catch (Exception ignore) {
-		}
+	    updateFormState();
 
-		// ✅ now allow cards only if both are filled
-		updateFormState();
+	    System.out.println("✏ Resumed draft: " + currentJob.getJobNo());
 	}
 
 	private void preloadClientIntoCombo() {

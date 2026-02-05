@@ -52,15 +52,20 @@
 					<StackPane fx:id="sidebarStack" maxWidth="240"
 						minWidth="70" styleClass="sidebar-background">
 
-
+							
+							
 						<!-- MAIN SIDEBAR -->
 						<VBox fx:id="mainSidebar" fillWidth="true"
 							maxWidth="Infinity" spacing="4" styleClass="sidebar">
 
 
+
+								
+								
 							<!-- Dashboard -->
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#openDashboard" styleClass="sidebar-item">
+								onMouseClicked="#openDashboard" styleClass="sidebar-item" maxWidth="Infinity"
+								HBox.hgrow="ALWAYS">
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -75,7 +80,8 @@
 
 							<!-- Job Details -->
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#showJobsSubmenu" styleClass="sidebar-item">
+								onMouseClicked="#showJobsSubmenu" styleClass="sidebar-item" maxWidth="Infinity"
+								HBox.hgrow="ALWAYS">
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -90,7 +96,8 @@
 
 							<!-- Client Details -->
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#showClientsSubmenu" styleClass="sidebar-item">
+								onMouseClicked="#showClientsSubmenu" styleClass="sidebar-item" maxWidth="Infinity"
+								HBox.hgrow="ALWAYS">
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -105,7 +112,8 @@
 
 							<!-- Billing -->
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#showBillingSubmenu" styleClass="sidebar-item">
+								onMouseClicked="#showBillingSubmenu" styleClass="sidebar-item" maxWidth="Infinity"
+								HBox.hgrow="ALWAYS">
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -120,7 +128,8 @@
 
 							<!-- Payments -->
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#showPaymentSubmenu" styleClass="sidebar-item">
+								onMouseClicked="#showPaymentSubmenu" styleClass="sidebar-item" maxWidth="Infinity"
+								HBox.hgrow="ALWAYS">
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -135,7 +144,8 @@
 
 							<!-- Ledger -->
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#showLedgerSubmenu" styleClass="sidebar-item">
+								onMouseClicked="#showLedgerSubmenu" styleClass="sidebar-item" maxWidth="Infinity"
+								HBox.hgrow="ALWAYS">
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -147,13 +157,29 @@
 										text="Client Ledger" HBox.hgrow="ALWAYS" />
 								</children>
 							</HBox>
+							<!-- Settings -->
+							<HBox alignment="CENTER_LEFT"
+								onMouseClicked="#showSettingSubmenu" styleClass="sidebar-item" maxWidth="Infinity"
+								HBox.hgrow="ALWAYS">
+								<children>
+									<ImageView fitHeight="20" fitWidth="20"
+										preserveRatio="true">
+										<image>
+											<Image url="@../icons/setting_icon.png" />
+										</image>
+									</ImageView>
+									<Label maxWidth="Infinity" styleClass="sidebar-text"
+										text="Settings" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
 
 							<!-- QUICK LINKS -->
 							<Label styleClass="sidebar-section-header"
 								text="Quick Links" />
 
 							<HBox onMouseClicked="#loadAddClient"
-								styleClass="sidebar-item">
+								styleClass="sidebar-item" maxWidth="Infinity"
+								HBox.hgrow="ALWAYS">
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -166,7 +192,8 @@
 								</children>
 							</HBox>
 
-							<HBox styleClass="sidebar-item">
+							<HBox styleClass="sidebar-item" maxWidth="Infinity"
+								HBox.hgrow="ALWAYS">
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -179,7 +206,8 @@
 								</children>
 							</HBox>
 
-							<HBox styleClass="sidebar-item">
+							<HBox styleClass="sidebar-item" maxWidth="Infinity"
+								HBox.hgrow="ALWAYS">
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -192,7 +220,8 @@
 								</children>
 							</HBox>
 
-							<HBox styleClass="sidebar-item">
+							<HBox styleClass="sidebar-item" maxWidth="Infinity"
+								HBox.hgrow="ALWAYS">
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -501,7 +530,69 @@
 										text="Outstanding Ledger Reports" HBox.hgrow="ALWAYS" />
 								</children>
 							</HBox>
+							
+							
+
 						</VBox>
+						
+						<!-- ================= SETTING SUBMENU ================= -->
+							
+						
+							
+						<VBox fx:id="settingsSidebar" managed="false" spacing="5"
+							styleClass="sidebar submenu-sidebar">
+
+<HBox alignment="CENTER_LEFT"
+      onMouseClicked="#showMainSidebar"
+      styleClass="sidebar-item">
+
+    <children>
+        <ImageView fitHeight="20" fitWidth="20" preserveRatio="true">
+            <image>
+                <Image url="@../icons/back_icon.png"/>
+            </image>
+        </ImageView>
+
+        <Label text="Back" styleClass="sidebar-text"/>
+    </children>
+</HBox>
+
+							<HBox alignment="CENTER_LEFT"
+								onMouseClicked="#loadUserSettings" spacing="14"
+								styleClass="sidebar-item" maxWidth="Infinity"
+								HBox.hgrow="ALWAYS">
+
+								<children>
+									<ImageView fitHeight="20" fitWidth="20"
+										preserveRatio="true">
+										<image>
+											<Image url="@../icons/viewclient_icon.png" />
+										</image>
+									</ImageView>
+									<Label maxWidth="Infinity" styleClass="sidebar-text"
+										text="Genral" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+
+						
+
+							<HBox alignment="CENTER_LEFT"
+								onMouseClicked="#loadInvoiceSettings" styleClass="sidebar-item">
+								<children>
+									<ImageView fitHeight="20" fitWidth="20"
+										preserveRatio="true">
+										<image>
+											<Image url="@../icons/add_client.png" />
+										</image>
+									</ImageView>
+									<Label maxWidth="Infinity" styleClass="sidebar-text"
+										text="Invoice Settings" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
+							
+						</VBox>
+						
+						
 
 					</StackPane>
 				</content>

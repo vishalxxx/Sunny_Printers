@@ -1,0 +1,160 @@
+.settings-root {
+    -fx-background-color: #0b1220;
+    -fx-font-family: "Segoe UI", "Inter", sans-serif;
+}
+
+/* TOP BAR */
+.top-bar {
+    -fx-background-color: #0e1628;
+    -fx-border-color: transparent transparent #1f2a44 transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.search-field {
+    -fx-background-color: #111a2e;
+    -fx-background-radius: 10;
+    -fx-text-fill: #e5e7eb;
+    -fx-prompt-text-fill: #6b7280;
+    -fx-padding: 8 12;
+}
+
+/* PROFILE */
+.profile-name {
+    -fx-text-fill: #e5e7eb;
+    -fx-font-weight: bold;
+}
+
+.profile-plan {
+    -fx-text-fill: #9ca3af;
+    -fx-font-size: 11px;
+}
+
+.avatar-small {
+    -fx-background-color: #1f2937;
+    -fx-background-radius: 100;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+}
+
+/* CONTENT */
+.settings-scroll {
+    -fx-background: transparent;
+    -fx-background-color: transparent;
+}
+
+.content-wrapper {
+    -fx-max-width: 900;
+}
+
+/* TITLES */
+.page-title {
+    -fx-text-fill: #f9fafb;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+}
+
+.page-subtitle {
+    -fx-text-fill: #9ca3af;
+}
+
+.section-title {
+    -fx-text-fill: #e5e7eb;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+/* CARDS */
+.card {
+    -fx-background-color: #111a2e;
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-border-color: #1f2a44;
+    -fx-padding: 18;
+}
+
+/* PROFILE CARD */
+.avatar-large {
+    -fx-background-color: #1f2937;
+    -fx-background-radius: 14;
+    -fx-min-width: 72;
+    -fx-min-height: 72;
+}
+
+.card-title {
+    -fx-text-fill: #f3f4f6;
+    -fx-font-weight: bold;
+}
+
+.card-subtitle {
+    -fx-text-fill: #9ca3af;
+}
+
+/* BUTTONS */
+.btn-primary {
+    -fx-background-color: #2563eb;
+    -fx-text-fill: white;
+    -fx-background-radius: 8;
+}
+
+.btn-secondary {
+    -fx-background-color: #1f2937;
+    -fx-text-fill: #e5e7eb;
+    -fx-background-radius: 8;
+}
+
+.link-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #3b82f6;
+}
+
+/* INFO ROWS */
+.info-row {
+    -fx-padding: 12 4;
+}
+
+.info-label {
+    -fx-text-fill: #6b7280;
+    -fx-font-size: 10px;
+}
+
+.info-value {
+    -fx-text-fill: #e5e7eb;
+}
+
+/* BADGES */
+.badge-verified {
+    -fx-background-color: #065f46;
+    -fx-text-fill: #34d399;
+    -fx-padding: 4 10;
+    -fx-background-radius: 20;
+}
+
+.badge-enabled {
+    -fx-text-fill: #22c55e;
+    -fx-font-weight: bold;
+}
+
+/* LIST */
+.list-row {
+    -fx-padding: 14 4;
+}
+
+.list-title {
+    -fx-text-fill: #e5e7eb;
+}
+
+.list-subtitle {
+    -fx-text-fill: #9ca3af;
+    -fx-font-size: 11px;
+}
+
+.icon-circle {
+    -fx-background-color: #1f2937;
+    -fx-background-radius: 100;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+}
+
+.arrow {
+    -fx-text-fill: #6b7280;
+}

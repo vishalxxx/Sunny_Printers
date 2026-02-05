@@ -121,5 +121,9 @@ public class JobService {
 	public Job getJobById(int jobId) {
 	    return repo.findJobById(jobId);
 	}
+	public Job getLatestDraftJob() {
+	    return repo.findLatestDraftJob();
+	}
+	
 
 }

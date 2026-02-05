@@ -317,3 +317,9 @@
     -fx-pref-height: 420;   /* ⬅ Add this */
 }
 
+.job-no-label {
+    -fx-font-size: 1.1em;
+    -fx-font-weight: bold;
+	-fx-text-fill: #ffffff;
+}
+

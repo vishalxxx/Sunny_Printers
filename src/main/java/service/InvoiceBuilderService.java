@@ -12,8 +12,11 @@ import model.Invoice;
 import model.InvoiceJob;
 import model.InvoiceLine;
 import utils.DBConnection;
+import service.SettingsService;
 
 public class InvoiceBuilderService {
+
+	private final SettingsService settingsService = new SettingsService();
 
     // =========================================================
     // ✅ BUILD SINGLE INVOICE BY CLIENT ID (BEST METHOD)
@@ -27,7 +30,11 @@ public class InvoiceBuilderService {
     ) {
 
         Invoice invoice = new Invoice();
-        invoice.setInvoiceNo(generateInvoiceNo());
+        try {
+            invoice.setInvoiceNo(settingsService.generateNextInvoiceNumber());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate invoice number", e);
+        }
         invoice.setInvoiceDate(LocalDate.now());
 
         // ✅ Your company details
@@ -118,8 +125,11 @@ public class InvoiceBuilderService {
     ) {
 
         Invoice invoice = new Invoice();
-        invoice.setInvoiceNo(generateInvoiceNo());
-        invoice.setInvoiceDate(LocalDate.now());
+        try {
+            invoice.setInvoiceNo(settingsService.generateNextInvoiceNumber());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate invoice number", e);
+        }        invoice.setInvoiceDate(LocalDate.now());
 
         // ✅ Your company details
         invoice.setCompanyName("SUNNY PRINTERS");
@@ -278,9 +288,6 @@ public class InvoiceBuilderService {
     }
 
 
-    private String generateInvoiceNo() {
-        return "INV-" + System.currentTimeMillis();
-    }
 
     
 }

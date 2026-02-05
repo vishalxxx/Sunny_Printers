@@ -1,0 +1,135 @@
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+
+<StackPane xmlns:fx="http://javafx.com/fxml/1"
+            stylesheets="@../css/user_settings.css"
+            fx:controller="controller.SystemSettingsController"
+			styleClass="settings-root">
+<BorderPane >
+
+    <!-- TOP BAR -->
+    <top>
+        <HBox spacing="16" alignment="CENTER_LEFT" styleClass="top-bar">
+            <padding>
+                <Insets top="14" right="20" bottom="14" left="20"/>
+            </padding>
+
+            <TextField fx:id="searchField"
+                       promptText="Search settings..."
+                       HBox.hgrow="ALWAYS"
+                       styleClass="search-field"/>
+
+            <HBox spacing="10" alignment="CENTER_RIGHT">
+                <Label text="Alex Rivera" styleClass="profile-name"/>
+                <Label text="Professional Plan" styleClass="profile-plan"/>
+                <StackPane styleClass="avatar-small">
+                    <ImageView fitWidth="28" fitHeight="28"/>
+                </StackPane>
+            </HBox>
+        </HBox>
+    </top>
+
+    <!-- CENTER CONTENT -->
+    <center>
+        <ScrollPane fitToWidth="true" styleClass="settings-scroll">
+            <VBox spacing="24" styleClass="content-wrapper">
+                <padding>
+                    <Insets top="24" right="32" bottom="32" left="32"/>
+                </padding>
+
+                <!-- TITLE -->
+                <VBox spacing="6">
+                    <Label text="Account Settings" styleClass="page-title"/>
+                    <Label text="Manage your profile information and account preferences."
+                           styleClass="page-subtitle"/>
+                </VBox>
+
+                <!-- PROFILE CARD -->
+                <HBox spacing="18" styleClass="card">
+                    <padding>
+                        <Insets top="20" right="20" bottom="20" left="20"/>
+                    </padding>
+
+                    <StackPane styleClass="avatar-large"/>
+
+                    <VBox spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="Alex Rivera" styleClass="card-title"/>
+                        <Label text="alex.rivera@example.com" styleClass="card-subtitle"/>
+
+                        <HBox spacing="10">
+                            <Button text="Change Avatar" styleClass="btn-primary"/>
+                            <Button text="Remove" styleClass="btn-secondary"/>
+                        </HBox>
+                    </VBox>
+                </HBox>
+
+                <!-- PERSONAL INFO -->
+                <VBox spacing="12">
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Personal Information" styleClass="section-title"/>
+                        <Pane HBox.hgrow="ALWAYS"/>
+                        <Button text="Edit details" styleClass="link-button"/>
+                    </HBox>
+
+                    <VBox spacing="0" styleClass="card">
+
+                        <VBox spacing="4" styleClass="info-row">
+                            <Label text="FULL NAME" styleClass="info-label"/>
+                            <Label text="Alex Rivera" styleClass="info-value"/>
+                        </VBox>
+
+                        <Separator/>
+
+                        <HBox alignment="CENTER_LEFT" spacing="10" styleClass="info-row">
+                            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                                <Label text="EMAIL ADDRESS" styleClass="info-label"/>
+                                <Label text="alex.rivera@example.com" styleClass="info-value"/>
+                            </VBox>
+                            <Label text="VERIFIED" styleClass="badge-verified"/>
+                        </HBox>
+
+                        <Separator/>
+
+                        <VBox spacing="4" styleClass="info-row">
+                            <Label text="TIMEZONE" styleClass="info-label"/>
+                            <Label text="Pacific Time (PT) - Los Angeles" styleClass="info-value"/>
+                        </VBox>
+                    </VBox>
+                </VBox>
+
+                <!-- LOGIN PREFERENCES -->
+                <VBox spacing="12">
+                    <Label text="Login Preferences" styleClass="section-title"/>
+
+                    <VBox spacing="0" styleClass="card">
+
+                        <HBox spacing="12" alignment="CENTER_LEFT" styleClass="list-row">
+                            <StackPane styleClass="icon-circle"/>
+                            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                <Label text="Password Management" styleClass="list-title"/>
+                                <Label text="Last changed 3 months ago" styleClass="list-subtitle"/>
+                            </VBox>
+                            <Label text="›" styleClass="arrow"/>
+                        </HBox>
+
+                        <Separator/>
+
+                        <HBox spacing="12" alignment="CENTER_LEFT" styleClass="list-row">
+                            <StackPane styleClass="icon-circle"/>
+                            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                <Label text="Two-Factor Authentication" styleClass="list-title"/>
+                                <Label text="Secured via Authenticator App" styleClass="list-subtitle"/>
+                            </VBox>
+                            <Label text="ENABLED" styleClass="badge-enabled"/>
+                        </HBox>
+                    </VBox>
+                </VBox>
+
+            </VBox>
+        </ScrollPane>
+    </center>
+
+</BorderPane>
+</StackPane>

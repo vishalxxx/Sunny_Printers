@@ -21,6 +21,10 @@
 	
    <VBox alignment="CENTER" maxWidth="1150">
 
+<!-- Job Number -->
+    <Label fx:id="jobNoLabel"
+           text="Job No: —"
+           styleClass="job-no-label"/>
     <GridPane alignment="CENTER" hgap="10" maxWidth="Infinity" styleClass="card-grid">
         <columnConstraints>
             <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>

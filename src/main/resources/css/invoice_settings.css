@@ -1,0 +1,333 @@
+/* ================= ROOT ================= */
+
+.root {
+    -fx-background-color: #05070b;
+    -fx-font-family: "Inter";
+}
+
+
+/* ================= HEADER ================= */
+
+.header-box {
+    -fx-padding: 22 28 14 28;
+}
+
+.title {
+    -fx-text-fill: #f8fafc;
+    -fx-font-size: 20px;
+    -fx-font-weight: 600;
+}
+
+.subtitle {
+    -fx-text-fill: #8b9bb8;
+    -fx-font-size: 12px;
+}
+
+.live-badge {
+    -fx-background-color: rgba(20,184,166,0.14);
+    -fx-text-fill: #14b8a6;
+    -fx-padding: 6 14;
+    -fx-background-radius: 999;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+
+/* ================= PAGE TITLE ================= */
+
+.page-title {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 18px;
+    -fx-font-weight: 600;
+}
+
+.page-subtitle {
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 12px;
+}
+
+
+/* ================= SCROLL ================= */
+
+.settings-scroll {
+    -fx-background: transparent;
+    -fx-background-color: transparent;
+}
+
+.settings-scroll .viewport {
+    -fx-background-color: transparent;
+}
+
+
+/* ================= CARD ================= */
+
+.card {
+    -fx-background-color: linear-gradient(to bottom, #0b1220, #070c16);
+    -fx-border-color: #1f2937;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+    -fx-padding: 24;
+}
+
+
+/* Disabled card but readable text */
+.card-disabled {
+    -fx-background-color: linear-gradient(to bottom, #050914, #03060f);
+    -fx-border-color: #111827;
+}
+
+.card-disabled .text-field,
+.card-disabled .combo-box,
+.card-disabled .button {
+    -fx-opacity: 0.4;
+}
+
+.card-disabled .label {
+    -fx-opacity: 0.9;
+}
+
+
+/* ================= LABEL HIERARCHY ================= */
+
+.section-label {
+    -fx-text-fill: #9fb3d9;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-letter-spacing: 0.5px;
+}
+
+.field-label {
+    -fx-text-fill: #cbd5ff;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.radio-title {
+    -fx-text-fill: #e6edff;
+    -fx-font-size: 14px;
+}
+
+.radio-desc {
+    -fx-text-fill: #9fb3d9;
+    -fx-font-size: 12px;
+}
+
+.info-text {
+    -fx-text-fill: #7f8db3;
+    -fx-font-size: 11px;
+}
+
+
+/* ================= INPUTS ================= */
+
+.text-field,
+.combo-box {
+    -fx-background-color: #020617;
+    -fx-text-fill: #f1f5ff;
+    -fx-border-color: #1e293b;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 10 12;
+}
+
+.text-field:focused,
+.combo-box:focused {
+    -fx-border-color: #3b82f6;
+    -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.35), 12, 0.4, 0, 0);
+}
+
+
+/* ================= RADIO BUTTON LOOK ================= */
+
+.radio-button .radio {
+    -fx-background-color: #020617;
+    -fx-border-color: #334155;
+    -fx-border-radius: 50%;
+    -fx-background-radius: 50%;
+}
+
+.radio-button:selected .radio {
+    -fx-border-color: #3b82f6;
+}
+
+.radio-button:selected .dot {
+    -fx-background-color: #3b82f6;
+}
+
+
+/* ================= PREVIEW BADGE ================= */
+
+.preview-badge {
+    -fx-background-color: rgba(20,184,166,0.18);
+    -fx-text-fill: #14e0c5;
+    -fx-padding: 6 16;
+    -fx-background-radius: 999;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+}
+
+
+/* ================= SEQUENCE BOX ================= */
+
+.sequence-box {
+    -fx-background-color: #020617;
+    -fx-border-color: #111827;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 18;
+}
+
+.sequence-label {
+    -fx-text-fill: #7c8db5;
+    -fx-font-size: 10px;
+}
+
+.sequence-value {
+    -fx-text-fill: #f8fbff;
+    -fx-font-size: 18px;
+    -fx-font-family: "JetBrains Mono", "Consolas";
+    -fx-font-weight: bold;
+}
+
+
+/* ================= BUTTONS ================= */
+
+.btn-primary {
+    -fx-background-color: linear-gradient(to bottom, #3b82f6, #2563eb);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-padding: 10 22;
+}
+
+.btn-primary:hover {
+    -fx-background-color: linear-gradient(to bottom, #4f8df7, #2f6df0);
+    -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.45), 16, 0.4, 0, 0);
+}
+
+.btn-secondary {
+    -fx-background-color: transparent;
+    -fx-text-fill: #9fb3d9;
+    -fx-font-size: 12px;
+}
+
+.btn-secondary:hover {
+    -fx-text-fill: #e6edff;
+}
+/* ================= ComboBox Dark Theme Fix ================= */
+
+/* ===================== DARK ERP COMBOBOX ===================== */
+
+.combo-box {
+    -fx-background-color: #0b1220;
+    -fx-border-color: #1f2a44;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 4 10 4 10;
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+}
+
+/* focused glow */
+.combo-box:focused {
+    -fx-border-color: #3b82f6;
+    -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.35), 10, 0.2, 0, 0);
+}
+
+/* arrow button */
+.combo-box .arrow-button {
+    -fx-background-color: transparent;
+}
+
+.combo-box .arrow {
+    -fx-background-color: #9ca3af;
+}
+
+/* selected text */
+.combo-box .list-cell {
+    -fx-text-fill: #e5e7eb;
+    -fx-background-color: transparent;
+}
+
+/* dropdown popup */
+.combo-box-popup .list-view {
+    -fx-background-color: #0b1220;
+    -fx-border-color: #1f2a44;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 4;
+}
+
+/* dropdown items */
+.combo-box-popup .list-cell {
+    -fx-text-fill: #e5e7eb;
+    -fx-background-color: transparent;
+    -fx-padding: 8 12;
+}
+
+/* hover */
+.combo-box-popup .list-cell:hover {
+    -fx-background-color: rgba(59,130,246,0.15);
+}
+
+/* selected item */
+.combo-box-popup .list-cell:selected {
+    -fx-background-color: rgba(59,130,246,0.25);
+}
+/* ================= DARK ALERT DIALOG ================= */
+/* ===== Root dialog background ===== */
+.dialog-pane {
+    -fx-background-color: linear-gradient(to bottom right, #071428, #0b1f3a);
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-border-color: rgba(80,120,255,0.25);
+    -fx-border-width: 1.2;
+}
+
+/* ===== Header area ===== */
+.dialog-pane .header-panel {
+    -fx-background-color: transparent;
+}
+
+.dialog-pane .header-panel .label {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+/* ===== Content text ===== */
+.dialog-pane .content.label {
+    -fx-text-fill: #c7d2fe;
+    -fx-font-size: 14px;
+}
+
+/* ===== Graphic icon circle ===== */
+.dialog-pane .graphic-container {
+    -fx-background-color: radial-gradient(radius 80%, #4f8cff, #1e3a8a);
+    -fx-background-radius: 999;
+    -fx-padding: 10;
+}
+
+/* ===== Buttons area ===== */
+.dialog-pane .button-bar {
+    -fx-background-color: transparent;
+}
+
+/* ===== Primary button (OK) ===== */
+.dialog-pane .button {
+    -fx-background-color: linear-gradient(to bottom right, #3b82f6, #2563eb);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-padding: 8 22 8 22;
+}
+
+.dialog-pane .button:hover {
+    -fx-background-color: linear-gradient(to bottom right, #60a5fa, #3b82f6);
+}
+
+.dialog-pane .button:pressed {
+    -fx-background-color: #1e40af;
+}
+
+

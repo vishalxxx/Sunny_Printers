@@ -5,9 +5,11 @@ import java.sql.Statement;
 
 public class DatabaseInitializer {
 
-	public static void initialize() {
+	public static void initialize() throws Exception
+ {
 
-		try (Connection conn = DBConnection.getConnection(); Statement stmt = conn.createStatement()) {
+		Connection conn = DBConnection.getConnection(); 
+		Statement stmt = conn.createStatement();
 
 			// ================== CLIENTS TABLE ==================
 			stmt.execute("""
@@ -75,11 +77,31 @@ public class DatabaseInitializer {
 					        role TEXT
 					    );
 					""");
+			
+			// ================== SYSTEM SETTINGS TABLE ==================
+			stmt.execute("""
+			        CREATE TABLE IF NOT EXISTS system_settings (
+			            id INTEGER PRIMARY KEY CHECK (id = 1),
+
+			            invoice_mode TEXT NOT NULL CHECK (invoice_mode IN ('AUTO','MANUAL')),
+			            invoice_prefix TEXT,
+			            invoice_start_no INTEGER,
+			            invoice_padding INTEGER,
+
+			            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			        );
+			""");
+
+			// Ensure default configuration row exists
+			stmt.execute("""
+			        INSERT OR IGNORE INTO system_settings
+			        (id, invoice_mode, invoice_prefix, invoice_start_no, invoice_padding)
+			        VALUES (1, 'AUTO', 'INV-', 1, 3);
+			""");
+			
 
 			System.out.println("✔ All tables are created and ready!");
 
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		
 	}
 }

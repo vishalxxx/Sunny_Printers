@@ -9,7 +9,12 @@ public class DBConnection {
 
 	static {
 		// initialize database tables
-		DatabaseInitializer.initialize();
+		try {
+			DatabaseInitializer.initialize();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	public static Connection getConnection() {
