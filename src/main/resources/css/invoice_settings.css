@@ -278,8 +278,7 @@
 /* ===== Root dialog background ===== */
 .dialog-pane {
     -fx-background-color: linear-gradient(to bottom right, #071428, #0b1f3a);
-    -fx-background-radius: 14;
-    -fx-border-radius: 14;
+   
     -fx-border-color: rgba(80,120,255,0.25);
     -fx-border-width: 1.2;
 }
