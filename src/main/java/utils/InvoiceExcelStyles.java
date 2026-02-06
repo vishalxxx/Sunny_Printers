@@ -25,24 +25,30 @@ public final class InvoiceExcelStyles {
 	public final CellStyle Date;
 	public final CellStyle serial;
 	public final CellStyle headerDate;
+	public final CellStyle columnHeader;
+	public final CellStyle performaNo;
+	public final CellStyle headerDateText;
 
 	public InvoiceExcelStyles(Workbook wb) {
 
-		headerTitle = buildStyle(wb, HorizontalAlignment.LEFT, VerticalAlignment.CENTER, true, false, true, null,16 );
-		headerText = buildStyle(wb, HorizontalAlignment.LEFT, VerticalAlignment.CENTER, false, false, true, null,12);
-		clientText = buildStyle(wb, HorizontalAlignment.RIGHT, VerticalAlignment.CENTER, true, true, true, null,12);
-		headerDate = buildStyle(wb, HorizontalAlignment.LEFT, VerticalAlignment.CENTER, false, true, true, null,12);
-		serial = buildStyle(wb, HorizontalAlignment.CENTER, VerticalAlignment.CENTER, true, true, false, null,12);
-		Date = buildStyle(wb, HorizontalAlignment.LEFT, VerticalAlignment.CENTER, false, true, true, "dd-MM-yyyy",12);
-		descText = buildStyle(wb, HorizontalAlignment.CENTER, VerticalAlignment.CENTER, true, true, true, null,12);
+		performaNo = buildStyle(wb, HorizontalAlignment.LEFT, VerticalAlignment.CENTER, false, true, true, null,12 ,false, false,false,false);
+		columnHeader = buildStyle(wb, HorizontalAlignment.CENTER, VerticalAlignment.CENTER, true, true, true, null,12 ,false, false,false,false);
+		headerTitle = buildStyle(wb, HorizontalAlignment.LEFT, VerticalAlignment.CENTER, true, false, true, null,16 ,false, false,false,false);
+		headerText = buildStyle(wb, HorizontalAlignment.LEFT, VerticalAlignment.CENTER, false, false, true, null,12,false, false,false,false);
+		clientText = buildStyle(wb, HorizontalAlignment.RIGHT, VerticalAlignment.CENTER, true, true, true, null,12,false, false,false,false);
+		serial = buildStyle(wb, HorizontalAlignment.CENTER, VerticalAlignment.CENTER, true, false, false, null,12,false, false,false,false);
+		Date = buildStyle(wb, HorizontalAlignment.LEFT, VerticalAlignment.CENTER, false, false, true, "dd-MM-yyyy",12,false, false,false,false);
+		headerDate = buildStyle(wb, HorizontalAlignment.LEFT, VerticalAlignment.CENTER, false, false, true, "dd-MM-yyyy",12,true, true,true,false);
+		headerDateText = buildStyle(wb, HorizontalAlignment.LEFT, VerticalAlignment.CENTER, false, false, true, "dd-MM-yyyy",12,true, true,false,true);
+		descText = buildStyle(wb, HorizontalAlignment.CENTER, VerticalAlignment.CENTER, true, false, true, null,12,false, false,true,true);
 
-		jobDesc = buildStyle(wb, HorizontalAlignment.LEFT, VerticalAlignment.CENTER, false, true, true, null,12.5);
+		jobDesc = buildStyle(wb, HorizontalAlignment.LEFT, VerticalAlignment.CENTER, false, false, true, null,12.5,false, false,false,false);
 
-		amount = buildStyle(wb, HorizontalAlignment.RIGHT, VerticalAlignment.CENTER, false, true, true, "#,##0.00",12);
+		amount = buildStyle(wb, HorizontalAlignment.RIGHT, VerticalAlignment.CENTER, false, false, true, "#,##0.00",12,false, false,false,false);
 
-		totalAmount = buildStyle(wb, HorizontalAlignment.CENTER, VerticalAlignment.CENTER, true, true, true, "#,##0.00",12.5);
+		totalAmount = buildStyle(wb, HorizontalAlignment.CENTER, VerticalAlignment.CENTER, true, true, true, "#,##0.00",12.5,false, false,false,false);
 
-		totalLabel = buildStyle(wb, HorizontalAlignment.RIGHT, VerticalAlignment.CENTER, true, true, true, null,12.5);
+		totalLabel = buildStyle(wb, HorizontalAlignment.RIGHT, VerticalAlignment.CENTER, true, true, true, null,12.5,false, false,false,false);
 	}
 
 	/*
@@ -51,7 +57,7 @@ public final class InvoiceExcelStyles {
 	 */
 
 	private CellStyle buildStyle(Workbook wb, HorizontalAlignment hAlign, VerticalAlignment vAlign, boolean bold,
-			boolean border, boolean wrap, String dataFormat, double fontsize) {
+			boolean border, boolean wrap, String dataFormat, double fontsize, boolean onlyTopBorder, boolean onlyBottomBorder, boolean onlyRightBorder, boolean onlyLeftBorder ) {
 		CellStyle style = wb.createCellStyle();
 		Font font = wb.createFont();
 		font.setFontHeightInPoints((short) fontsize);
@@ -63,6 +69,18 @@ public final class InvoiceExcelStyles {
 			style.setBorderBottom(BorderStyle.THIN);
 			style.setBorderLeft(BorderStyle.THIN);
 			style.setBorderRight(BorderStyle.THIN);
+		}
+		else {
+			
+			if(onlyTopBorder)
+				style.setBorderTop(BorderStyle.THIN);
+			if(onlyBottomBorder)
+				style.setBorderBottom(BorderStyle.THIN);
+			if(onlyRightBorder)
+				style.setBorderRight(BorderStyle.THIN);
+			if(onlyLeftBorder)
+				style.setBorderLeft(BorderStyle.THIN);
+			
 		}
 
 		if (hAlign != null) {

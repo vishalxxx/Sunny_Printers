@@ -100,10 +100,10 @@ public class InvoiceGenerationService {
 		 */
 		Row header = sheet.createRow(rowIndex++);
 
-		mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 0, 0, "#", is.descText);
-		mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 1, 1, "DATE", is.descText);
-		mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 2, 2, "Description", is.descText);
-		mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 3, 3, "Amount", is.descText);
+		mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 0, 0, "#", is.columnHeader);
+		mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 1, 1, "DATE", is.columnHeader);
+		mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 2, 2, "Description", is.columnHeader);
+		mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 3, 3, "Amount",is.columnHeader);
 
 		int serial = 0;
 
@@ -146,6 +146,7 @@ public class InvoiceGenerationService {
 		 * ========================= GRAND TOTAL =========================
 		 */
 		Row totalRow = sheet.createRow(rowIndex++);
+		outlineInvoice(sheet, 0, totalRow.getRowNum());
 
 		totalRow.createCell(3).setCellValue(invoice.getGrandTotal());
 		totalRow.getCell(3).setCellStyle(is.totalAmount);
@@ -204,11 +205,16 @@ public class InvoiceGenerationService {
 		mergeAndStyle(sheet, 3, 3, 0, 3, "Email: " + invoice.getEmail() + " | Ph: " + invoice.getCompanyContact(),
 				is.headerText);
 
-		mergeAndStyle(sheet, 5, 5, 0, 1, "Date: " + invoice.getInvoiceDate(), is.Date);
+		//mergeAndStyle(sheet, 5, 5, 0, 1, "Date: " + invoice.getInvoiceDate(), is.headerDate);
+		
+		mergeAndStyle(sheet, 5, 5, 0, 0, "Date:", is.headerDateText);
+		mergeAndStyle(sheet, 5, 5, 1, 1, invoice.getInvoiceDate(), is.headerDate);
+
+		
 
 		mergeAndStyle(sheet, 5, 5, 2, 3, "Client: " + invoice.getClientName(), is.clientText);
 
-		mergeAndStyle(sheet, 6, 6, 0, 3, "Performa No: " + invoice.getInvoiceNo(), is.headerDate);
+		mergeAndStyle(sheet, 6, 6, 0, 3, "Performa No: " + invoice.getInvoiceNo(), is.performaNo);
 
 		return BODY_START_ROW;
 	}
@@ -237,16 +243,31 @@ public class InvoiceGenerationService {
 		}
 
 		if (value != null) {
-			Cell cell = sheet.getRow(startRow).getCell(startCol);
-			if (value instanceof Number)
-				cell.setCellValue(((Number) value).doubleValue());
-			else
-				cell.setCellValue(value.toString());
+		    Cell cell = sheet.getRow(startRow).getCell(startCol);
+
+		    if (value instanceof Number) {
+		        cell.setCellValue(((Number) value).doubleValue());
+
+		    } else if (value instanceof java.time.LocalDate) {
+		        cell.setCellValue(java.sql.Date.valueOf((java.time.LocalDate) value));
+
+		    } else if (value instanceof java.util.Date) {
+		        cell.setCellValue((java.util.Date) value);
+
+		    } else {
+		        cell.setCellValue(value.toString());
+		    }
 		}
+
 		return region;
 	}
 
 	private void outlineInvoice(Sheet sheet, int startRow, int endRow) {
 		ExcelRegionUtil.applyBorder(sheet, new CellRangeAddress(startRow, endRow, 0, 3), true, true, true, true);
+		ExcelRegionUtil.applyBorder(sheet, new CellRangeAddress(8, endRow, 1, 1), false, false, true, true);
+		ExcelRegionUtil.applyBorder(sheet, new CellRangeAddress(8, endRow, 2, 2), false, false, true, true);
+
+
+
 	}
 }
