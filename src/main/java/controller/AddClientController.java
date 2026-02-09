@@ -48,7 +48,7 @@ public class AddClientController implements Initializable {
 	// SAVE CLIENT BUTTON
 	// ============================================================
 	@FXML
-	private void handleSaveClient() {
+	private void handleSaveClient() throws Exception {
 
 		// Basic validation
 		if (businessNameField.getText().isEmpty() || clientNameField.getText().isEmpty()

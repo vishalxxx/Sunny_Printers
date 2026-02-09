@@ -11,11 +11,10 @@ import utils.DBConnection;
 public class UserRepository {
 	
 
-	public User findByUsername(String username) {
+	public User findByUsername(String username) throws Exception {
         String sql = "SELECT * FROM users WHERE username = ?";
-        
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        Connection conn = DBConnection.getConnection();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             
             ps.setString(1, username);
             ResultSet rs = ps.executeQuery();

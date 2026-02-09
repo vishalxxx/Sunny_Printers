@@ -47,7 +47,7 @@ public class JobItemRepository {
 
 	/* ================= FETCH BY JOB ================= */
 
-	public List<JobItem> findByJobId(int jobId) {
+	public List<JobItem> findByJobId(int jobId) throws Exception {
 
 		String sql = """
 				    SELECT id, job_id, type, description, amount, sort_order
@@ -86,7 +86,7 @@ public class JobItemRepository {
 
 	/* ================= DELETE ================= */
 
-	public void delete(int itemId) {
+	public void delete(int itemId) throws Exception {
 
 		String sql = "DELETE FROM job_items WHERE id = ?";
 
@@ -102,7 +102,7 @@ public class JobItemRepository {
 
 	/* ================= TOTAL ================= */
 
-	public double getTotalForJob(int jobId) {
+	public double getTotalForJob(int jobId) throws Exception {
 
 		String sql = "SELECT COALESCE(SUM(amount), 0) FROM job_items WHERE job_id = ?";
 

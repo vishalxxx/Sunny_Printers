@@ -53,7 +53,14 @@ public class JobItemService {
        ===================================================== */
 
     public List<JobItem> getJobItems(int jobId) {
-        return jobItemRepo.findByJobId(jobId);
+    	List<JobItem> ls = null;
+        try {
+			 ls = jobItemRepo.findByJobId(jobId);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        return ls;
     }
 
     /* =====================================================

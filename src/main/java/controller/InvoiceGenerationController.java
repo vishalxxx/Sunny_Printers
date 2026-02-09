@@ -11,6 +11,7 @@ import java.util.Set;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
@@ -31,6 +32,7 @@ import service.InvoiceGenerationService;
 import service.InvoiceHistoryRowService;
 import service.InvoiceStorageService;
 import service.JobService;
+import service.PdfInvoiceService;
 import utils.Toast;
 import java.io.File;
 import javafx.stage.DirectoryChooser;
@@ -44,6 +46,7 @@ public class InvoiceGenerationController {
 	private final Set<String> selectedJobs = new LinkedHashSet<>();
 	private final ClientService clientService = new ClientService();
 	private final InvoiceHistoryRowService historyService = new InvoiceHistoryRowService();
+	private PdfInvoiceService pdfService = new PdfInvoiceService();
 
 	// ---------------- CARD 1 ----------------
 	@FXML
@@ -108,8 +111,14 @@ public class InvoiceGenerationController {
 	private final ObservableList<InvoiceHistoryRow> recentInvoiceRows = FXCollections.observableArrayList();
 
 	@FXML
+	private ComboBox<String> formatComboBox;
+	private String format;
+
+	@FXML
 	private void initialize() {
 
+		formatComboBox.getItems().addAll("EXCEL", "PDF");
+		formatComboBox.setValue("EXCEL");
 		setupClientComboBoxUI(clientComboBox);
 		setupClientComboBoxUI(jobClientComboBox);
 		setupJobComboBoxUI();
@@ -342,10 +351,9 @@ public class InvoiceGenerationController {
 //	}
 
 	private void updateState() {
-	    boolean hasJobs = !selectedJobsMap.isEmpty();
-	    selectedLabel.setVisible(hasJobs);
+		boolean hasJobs = !selectedJobsMap.isEmpty();
+		selectedLabel.setVisible(hasJobs);
 	}
-
 
 	// ==========================================================
 	// BUTTON ACTIONS
@@ -392,75 +400,102 @@ public class InvoiceGenerationController {
 			return;
 		}
 
-		File file = invoicegeneration.generateSingleInvoice(invoice);
+		if (invoice.getJobs().isEmpty()) {
+			toast("No jobs found for selected date range ❌");
+			return;
+		}
 
-		if (file == null || !file.exists()) {
-		    toast("❌ Invoice file not generated.");
-		    return;
+		File file = null;
+		File pdf = null;
+
+		/* ===== GENERATION ===== */
+		format = formatComboBox.getValue();
+		if ("Excel".equalsIgnoreCase(format)) {
+			file = invoicegeneration.generateSingleInvoice(invoice);
+		}
+
+		if ("PDF".equalsIgnoreCase(format)) {
+			pdf = pdfService.generateSingleInvoicePDF(invoice);
+		}
+
+		/* ===== VALIDATION ===== */
+
+		boolean excelRequired = "Excel".equalsIgnoreCase(format);
+		boolean pdfRequired = "PDF".equalsIgnoreCase(format);
+
+		if (excelRequired && (file == null || !file.exists())) {
+			toast("❌ Excel invoice not generated.");
+			return;
+		}
+
+		if (pdfRequired && (pdf == null || !pdf.exists())) {
+			toast("❌ PDF invoice not generated.");
+			return;
 		}
 
 		historyService.saveHistory(invoice, "DATE_RANGE", "SENT", file.getAbsolutePath());
 		loadRecentInvoiceHistory();
 
-
-
 		toast("Invoice generated successfully ✅");
 	}
 
-	@FXML
-	private void onRunMonthlyBulkClicked(MouseEvent e) {
+	
+@FXML
+private void onRunMonthlyBulkClicked(MouseEvent e) {
 
-	    if (InvoiceStorageService.getSavePath() == null) {
-	        toast("Please choose Save Location first.");
-	        return;
-	    }
+    if (InvoiceStorageService.getSavePath() == null) {
+        toast("Please choose Save Location first.");
+        return;
+    }
 
-	    String month = monthComboBox.getValue();
-	    Integer year = yearComboBox.getValue();
+    String month = monthComboBox.getValue();
+    Integer year = yearComboBox.getValue();
 
-	    if (month == null || year == null) {
-	        toast("Please select Month and Year.");
-	        return;
-	    }
+    if (month == null || year == null) {
+        toast("Please select Month and Year.");
+        return;
+    }
 
-	    java.time.Month selectedMonth = java.time.Month.valueOf(month.toUpperCase());
-	    int monthValue = selectedMonth.getValue();
-	    YearMonth ym = YearMonth.of(year, selectedMonth);
+    java.time.Month selectedMonth = java.time.Month.valueOf(month.toUpperCase());
+    int monthValue = selectedMonth.getValue();
+    YearMonth ym = YearMonth.of(year, selectedMonth);
 
-	    toast("Running Monthly Bulk for: " + selectedMonth + " " + year + " ✅");
+    toast("Running Monthly Bulk for: " + selectedMonth + " " + year + " ⏳");
+    
+    Task<File> task = new Task<>() {
+        @Override
+        protected File call() throws Exception {
 
-	    // ✅ 1) Build invoices for all clients
-	    Map<String, Invoice> invoiceMap = invoicebuilder.buildMonthlyInvoicesForAllClients(year, monthValue);
+            // 1️⃣ Build invoices (DB work)
+            Map<String, Invoice> invoiceMap =
+                    invoicebuilder.buildMonthlyInvoicesForAllClients(year, monthValue);
 
-	    if (invoiceMap.isEmpty()) {
-	        toast("No jobs found for selected Month and Year.");
-	        return;
-	    }
+            if (invoiceMap.isEmpty()) return null;
 
-	    // ✅ 2) Save workbook FIRST
-	    File bulkFile = invoicegeneration.generateMonthlyClientWorkbook(ym, invoiceMap);
+            // 2️⃣ Generate Excel (heavy IO)
+            return invoicegeneration.generateMonthlyClientWorkbook(ym, invoiceMap);
+        }
+    };
 
-	    if (bulkFile == null || !bulkFile.exists()) {
-	        toast("❌ Bulk workbook not generated.");
-	        return;
-	    }
+    task.setOnSucceeded(ev -> {
+        File bulkFile = task.getValue();
 
-	    // ✅ 3) Save history for ONLY client invoices (inside workbook)
-	    for (Invoice inv : invoiceMap.values()) {
+        if (bulkFile == null || !bulkFile.exists()) {
+            toast("❌ Bulk workbook not generated.");
+            return;
+        }
 
-	        if (inv.getJobs() == null || inv.getJobs().isEmpty()) continue; // extra safety
+        toast("Monthly invoices generated successfully ✅");
+        loadRecentInvoiceHistory();
+    });
 
-	        historyService.saveHistory(
-	                inv,
-	                "MONTHLY_BULK",
-	                "SENT",
-	                bulkFile.getAbsolutePath()
-	        );
-	    }
+    task.setOnFailed(ev -> {
+        task.getException().printStackTrace();
+        toast("❌ Failed: " + task.getException().getMessage());
+    });
 
-	    loadRecentInvoiceHistory();
-	    toast("Monthly invoices generated successfully ✅");
-	}
+    new Thread(task).start();   // 🔥 run in background
+}
 
 
 	@FXML
@@ -522,15 +557,12 @@ public class InvoiceGenerationController {
 			File file = invoicegeneration.generateSingleInvoice(invoice);
 
 			if (file == null || !file.exists()) {
-			    toast("❌ Invoice file not generated.");
-			    return;
+				toast("❌ Invoice file not generated.");
+				return;
 			}
 
 			historyService.saveHistory(invoice, "JOB_SPECIFIC", "SENT", file.getAbsolutePath());
 			loadRecentInvoiceHistory();
-
-
-
 
 			toast("✅ Invoice Generated & Saved!");
 			clearCard3();
@@ -614,6 +646,7 @@ public class InvoiceGenerationController {
 				dp.show();
 		});
 	}
+
 	private void setupRecentInvoiceTable() {
 
 		recentInvoicesTable.setFixedCellSize(42);
@@ -622,31 +655,29 @@ public class InvoiceGenerationController {
 		recentInvoicesTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
 		colInvNo.setCellValueFactory(data -> data.getValue().invoiceNoProperty());
-	    colClient.setCellValueFactory(data -> data.getValue().clientNameProperty());
-	    colDate.setCellValueFactory(data -> data.getValue().dateProperty());
-	    colAmount.setCellValueFactory(data -> data.getValue().amountProperty());
-	    colType.setCellValueFactory(data -> data.getValue().typeProperty());
-	    colStatus.setCellValueFactory(data -> data.getValue().statusProperty());
+		colClient.setCellValueFactory(data -> data.getValue().clientNameProperty());
+		colDate.setCellValueFactory(data -> data.getValue().dateProperty());
+		colAmount.setCellValueFactory(data -> data.getValue().amountProperty());
+		colType.setCellValueFactory(data -> data.getValue().typeProperty());
+		colStatus.setCellValueFactory(data -> data.getValue().statusProperty());
 
-	    recentInvoicesTable.setItems(recentInvoiceRows);
+		recentInvoicesTable.setItems(recentInvoiceRows);
 	}
-
 
 	@FXML
 	private void onViewAllHistoryClicked(ActionEvent event) {
 		toast("History page coming soon ✅");
 	}
+
 	private void loadRecentInvoiceHistory() {
-	    var rows = historyService.getRecentHistory(10);
+		var rows = historyService.getRecentHistory(10);
 
-	    System.out.println("✅ Loaded invoice rows = " + rows.size());
+		System.out.println("✅ Loaded invoice rows = " + rows.size());
 
-	    recentInvoiceRows.setAll(rows);
+		recentInvoiceRows.setAll(rows);
 
-	    System.out.println("✅ Table items = " + recentInvoicesTable.getItems().size());
+		System.out.println("✅ Table items = " + recentInvoicesTable.getItems().size());
 	}
-
-
 
 	// ==========================================================
 	// TOAST
@@ -655,4 +686,5 @@ public class InvoiceGenerationController {
 		Stage stage = (Stage) ((Node) clientComboBox).getScene().getWindow();
 		Toast.show(stage, message);
 	}
+
 }

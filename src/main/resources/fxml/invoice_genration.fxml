@@ -22,11 +22,26 @@
     </padding>
 
     <!-- HEADER -->
+    <HBox alignment="CENTER_LEFT" spacing="20">
+
+    <!-- LEFT SIDE -->
     <VBox spacing="6">
         <Label text="Invoice Generation" styleClass="page-title"/>
         <Label text="Select a method below to generate invoices for your clients."
                styleClass="page-subtitle"/>
     </VBox>
+
+    <!-- SPACER pushes right content to edge -->
+    <Region HBox.hgrow="ALWAYS"/>
+
+    <!-- RIGHT SIDE -->
+    <VBox spacing="6" alignment="CENTER_RIGHT">
+        <Label text="Invoice Format"/>
+        <ComboBox fx:id="formatComboBox" prefWidth="120"  styleClass="card-title"/>
+    </VBox>
+
+</HBox>
+
 
     <!-- CARDS GRID -->
     <GridPane hgap="22" vgap="22" maxWidth="Infinity">

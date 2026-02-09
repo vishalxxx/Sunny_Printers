@@ -9,7 +9,13 @@ public class LoginService {
 
 	public boolean login(String username) {
 
-		User user = userrepo.findByUsername(username);
+		User user = null;
+		try {
+			user = userrepo.findByUsername(username);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		if (user != null) {
 
 			System.out.println(

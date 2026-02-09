@@ -16,7 +16,13 @@ public class UndoDeleteManager {
 			return false;
 
 		ClientRepository repo = new ClientRepository();
-		boolean restored = repo.save(lastDeletedClient); // Reinsert into DB
+		boolean restored = false;
+		try {
+			restored = repo.save(lastDeletedClient);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} // Reinsert into DB
 
 		if (restored) {
 			lastDeletedClient = null;

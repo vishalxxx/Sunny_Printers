@@ -36,4 +36,45 @@ public class SettingsService {
 		// Format with prefix + padding
 		return String.format("%s%0" + s.getInvoicePadding() + "d", s.getInvoicePrefix(), nextNumber);
 	}
+	public synchronized String[] generateNextInvoiceNumbers(int count) throws Exception {
+
+	    if (count <= 0) {
+	        return new String[0];
+	    }
+
+	    // 1️⃣ Load settings ONLY once
+	    SystemSettings s = repo.load();
+
+	    String[] numbers = new String[count];
+
+	    int current = s.getLastInvoiceNo();
+
+	    // 2️⃣ Generate numbers IN MEMORY (no DB writes here)
+	    for (int i = 0; i < count; i++) {
+
+	        if (s.isAuto()) {
+	            current = current + 1;
+	        } else {
+	            if (current < s.getInvoiceStartNo()) {
+	                current = s.getInvoiceStartNo();
+	            } else {
+	                current = current + 1;
+	            }
+	        }
+
+	        numbers[i] = String.format(
+	                "%s%0" + s.getInvoicePadding() + "d",
+	                s.getInvoicePrefix(),
+	                current
+	        );
+	    }
+
+	    // 3️⃣ Save ONLY ONCE → prevents SQLITE_BUSY
+	    s.setLastInvoiceNo(current);
+	    repo.save(s);
+
+	    return numbers;
+	}
+
+	
 }

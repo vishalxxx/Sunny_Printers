@@ -26,10 +26,12 @@ public class InvoiceStorageService {
 
     public static File saveInvoice(Workbook workbook, Invoice invoice) {
 
-        File baseDir = resolveBaseDirectory();
+    	File baseDir = resolveBaseDirectory();
 
         YearMonth ym = YearMonth.from(invoice.getInvoiceDate());
         File monthDir = createYearMonthFolder(baseDir, ym);
+        File formatDir = createFormatFolder(monthDir, "Excel");
+
 
         String fileName = buildFileName(
                 invoice.getCompanyName(),
@@ -38,7 +40,7 @@ public class InvoiceStorageService {
                 ym
         );
 
-        File output = new File(monthDir, fileName);
+        File output = new File(formatDir, fileName);
 
         try (FileOutputStream fos = new FileOutputStream(output)) {
             workbook.write(fos);
@@ -88,6 +90,22 @@ public class InvoiceStorageService {
     /* =======================
        FOLDER CREATION
        ======================= */
+ 
+    /* =======================
+    FORMAT FOLDER
+    ======================= */
+
+ private static File createFormatFolder(File baseDir, String format) {
+
+     File formatDir = new File(baseDir, format);
+
+     if (!formatDir.exists()) {
+         formatDir.mkdirs();
+     }
+
+     return formatDir;
+ }
+
 
     private static File createYearMonthFolder(
             File baseDir,
@@ -135,4 +153,25 @@ public class InvoiceStorageService {
     private static String sanitize(String s) {
         return s.trim().replaceAll("[^a-zA-Z0-9-_]", "_");
     }
+    
+    public static File createPdfFile(Invoice invoice) {
+
+    	File baseDir = resolveBaseDirectory();
+
+        YearMonth ym = YearMonth.from(invoice.getInvoiceDate());
+        File monthDir = createYearMonthFolder(baseDir, ym);
+        File formatDir = createFormatFolder(monthDir, "PDF");
+
+
+        String fileName = sanitize(invoice.getCompanyName()) + "_"
+                + sanitize(invoice.getClientName()) + "_"
+                + sanitize(invoice.getInvoiceNo()) + "_"
+                + ym + ".pdf";
+
+        return new File(formatDir, fileName);
+    }
+
+
+
+    
 }

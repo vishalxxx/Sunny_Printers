@@ -220,10 +220,11 @@ public class InvoiceBuilderService {
     // =========================================================
     public Map<String, Invoice> buildMonthlyInvoicesForAllClients(int year, int month) {
 
+        log("START monthly build → " + year + "-" + month);
+
         Map<String, Invoice> invoiceMap = new LinkedHashMap<>();
 
         YearMonth ym = YearMonth.of(year, month);
-
         LocalDate fromDate = ym.atDay(1);
         LocalDate toDate   = ym.atEndOfMonth();
 
@@ -241,10 +242,14 @@ public class InvoiceBuilderService {
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
+            log("DB connection opened");
+
             ps.setString(1, fromDate.toString());
             ps.setString(2, toDate.toString());
 
             ResultSet rs = ps.executeQuery();
+
+            int builtCount = 0;
 
             while (rs.next()) {
 
@@ -252,41 +257,153 @@ public class InvoiceBuilderService {
                 String clientName = rs.getString("client_name");
                 String businessName = rs.getString("business_name");
 
-                Invoice invoice = buildInvoiceForClient(
+                log("→ Building invoice for client: " + businessName + " (ID=" + clientId + ")");
+
+                Invoice invoice = buildInvoiceForMonthlyClient(
                         clientId,
                         clientName,
                         businessName,
                         fromDate,
-                        toDate
+                        toDate,
+                        con
                 );
 
-                if (invoice.getJobs().isEmpty()) continue;
+                if (invoice.getJobs().isEmpty()) {
+                    log("   No jobs found → skipped");
+                    continue;
+                }
 
-                invoice.setClientId(clientId);
-                invoice.setInvoiceType("MONTHLY_BULK");
-                invoice.setStatus("SENT");
-                
-                // ✅ Sheet name should be business name
                 String sheetKey = businessName;
 
-                // ✅ prevent overwrite
                 if (invoiceMap.containsKey(sheetKey)) {
                     sheetKey = businessName + " [ID:" + clientId + "]";
                 }
 
                 invoiceMap.put(sheetKey, invoice);
+                builtCount++;
             }
 
+            log("Invoices built = " + builtCount);
+
+            // 🔥 Generate invoice numbers in ONE DB write
+            log("Generating invoice numbers...");
+            String[] numbers = settingsService.generateNextInvoiceNumbers(invoiceMap.size());
+            log("Invoice numbers generated.");
+
+            int i = 0;
+            for (Invoice inv : invoiceMap.values()) {
+                inv.setInvoiceNo(numbers[i++]);
+            }
+
+            log("Invoice numbers assigned.");
+
         } catch (Exception e) {
-            throw new RuntimeException(
-                    "Failed to build monthly invoices for " + ym,
-                    e
-            );
+            log("ERROR during monthly build: " + e.getMessage());
+            throw new RuntimeException("Failed to build monthly invoices for " + ym, e);
         }
 
+        log("END monthly build");
         return invoiceMap;
     }
 
+    
+    
+    public Invoice buildInvoiceForMonthlyClient(
+            int clientId,
+            String clientName,
+            String businessName,
+            LocalDate fromDate,
+            LocalDate toDate,
+            Connection con
+    ) {
+
+        log("   Fetching jobs for clientId=" + clientId);
+
+        Invoice invoice = new Invoice();
+
+        invoice.setInvoiceDate(LocalDate.now());
+
+        invoice.setCompanyName("SUNNY PRINTERS");
+        invoice.setCompanyAddress("B-234, Naraina Industrial Area,\nPhase-1, New Delhi-110028");
+        invoice.setCompanyContact("9811269375 9999662547");
+        invoice.setEmail("sunny.printers@gmail.com");
+
+        invoice.setClientName(businessName + " (" + clientName + ")");
+        invoice.setFromDate(fromDate);
+        invoice.setToDate(toDate);
+        invoice.setClientId(clientId);
+        invoice.setInvoiceType("MONTHLY_BULK");
+        invoice.setStatus("SENT");
+
+        String sql = """
+            SELECT
+                j.id        AS job_id,
+                j.job_no    AS job_no,
+                j.job_date  AS job_date,
+                j.job_title AS job_name,
+                ji.description,
+                ji.amount,
+                ji.type,
+                ji.sort_order
+            FROM jobs j
+            JOIN job_items ji ON ji.job_id = j.id
+            WHERE j.client_id = ?
+              AND DATE(j.job_date) BETWEEN ? AND ?
+            ORDER BY j.job_date, j.id, ji.sort_order;
+        """;
+
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, clientId);
+            ps.setString(2, fromDate.toString());
+            ps.setString(3, toDate.toString());
+
+            ResultSet rs = ps.executeQuery();
+
+            Map<Integer, InvoiceJob> jobMap = new LinkedHashMap<>();
+            int lineCount = 0;
+
+            while (rs.next()) {
+
+                int jobId = rs.getInt("job_id");
+
+                InvoiceJob job = jobMap.get(jobId);
+
+                if (job == null) {
+                    job = new InvoiceJob();
+                    job.setJobId(jobId);
+                    job.setJobNo(rs.getString("job_no"));
+                    job.setJobName(rs.getString("job_name"));
+                    job.setJobDate(LocalDate.parse(rs.getString("job_date")));
+
+                    jobMap.put(jobId, job);
+                    invoice.getJobs().add(job);
+                }
+
+                InvoiceLine line = new InvoiceLine();
+                line.setDescription(rs.getString("description"));
+                line.setAmount(rs.getDouble("amount"));
+                line.setType(rs.getString("type"));
+                line.setSortOrder(rs.getInt("sort_order"));
+
+                job.addLine(line);
+                lineCount++;
+            }
+
+            log("   Jobs fetched: " + jobMap.size() + ", lines=" + lineCount);
+
+        } catch (Exception e) {
+            log("   ERROR fetching jobs for clientId=" + clientId + " → " + e.getMessage());
+            throw new RuntimeException("Failed to build invoice for clientId=" + clientId, e);
+        }
+
+        return invoice;
+    }
+
+
+    private void log(String msg) {
+        System.out.println("[InvoiceBuilder] " + msg);
+    }
 
 
     

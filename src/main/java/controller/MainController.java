@@ -307,8 +307,6 @@ public class MainController implements Initializable {
 	    }).start();
 	}
 
-
-
 	private void expandSidebar() {
 
 	    applyCollapsedStyleToAll(false);
