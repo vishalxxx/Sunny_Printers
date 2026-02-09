@@ -1,5 +1,7 @@
 package service;
 
+import java.sql.Connection;
+
 import model.SystemSettings;
 import repository.SystemSettingsRepository;
 
@@ -36,7 +38,7 @@ public class SettingsService {
 		// Format with prefix + padding
 		return String.format("%s%0" + s.getInvoicePadding() + "d", s.getInvoicePrefix(), nextNumber);
 	}
-	public synchronized String[] generateNextInvoiceNumbers(int count) throws Exception {
+	public synchronized String[] generateNextInvoiceNumbers(Connection con, int count) throws Exception {
 
 	    if (count <= 0) {
 	        return new String[0];

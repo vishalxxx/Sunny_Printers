@@ -2,6 +2,7 @@ package service;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -154,6 +155,123 @@ public class PdfInvoiceService {
         }
 
         return createdFiles;
+    }
+
+    
+    public File generateMonthlyBulkPDF(YearMonth ym, Map<String, Invoice> invoiceMap) {
+
+        try {
+            // 🔹 Create one combined monthly PDF file
+            File file = InvoiceStorageService.createMonthlyPdfFile(ym);
+
+            Document doc = new Document(PageSize.A4, 36, 36, 36, 36);
+            PdfWriter.getInstance(doc, new FileOutputStream(file));
+            doc.open();
+
+            boolean first = true;
+
+            for (Invoice invoice : invoiceMap.values()) {
+
+                if (invoice.getJobs() == null || invoice.getJobs().isEmpty())
+                    continue;
+
+                // 🔹 Add page break between invoices
+                if (!first) {
+                    doc.newPage();
+                }
+                first = false;
+
+                // 🔹 Reuse existing single-invoice drawing logic
+                addInvoiceToDocument(doc, invoice);
+            }
+
+            doc.close();
+            return file;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Monthly bulk PDF generation failed", e);
+        }
+    }
+
+    
+    private void addInvoiceToDocument(Document doc, Invoice invoice) throws Exception {
+
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
+        Font titleFont  = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
+        Font boldFont   = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
+        Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 12);
+
+        // ================= HEADER =================
+        doc.add(new Paragraph(invoice.getCompanyName(), titleFont));
+        doc.add(new Paragraph(invoice.getCompanyAddress(), normalFont));
+        doc.add(new Paragraph(
+                "Email: " + invoice.getEmail() +
+                " | Ph: " + invoice.getCompanyContact(),
+                normalFont
+        ));
+
+        doc.add(new Paragraph(" "));
+
+        doc.add(new Paragraph("Invoice No: " + invoice.getInvoiceNo(), boldFont));
+        doc.add(new Paragraph("Date: " + invoice.getInvoiceDate().format(fmt), normalFont));
+        doc.add(new Paragraph("Client: " + invoice.getClientName(), normalFont));
+
+        doc.add(new Paragraph(" "));
+
+        // ================= TABLE =================
+        PdfPTable table = new PdfPTable(new float[]{40, 80, 300, 80});
+        table.setWidthPercentage(100);
+        table.setSplitRows(true);
+        table.setSplitLate(false);
+
+        table.addCell(headerCell("#", boldFont));
+        table.addCell(headerCell("Date", boldFont));
+        table.addCell(headerCell("Description", boldFont));
+        table.addCell(headerCell("Amount", boldFont));
+
+        int serial = 0;
+
+        for (InvoiceJob job : invoice.getJobs()) {
+
+            table.addCell(centerCell(String.valueOf(++serial), normalFont));
+            table.addCell(centerCell(job.getJobDate().format(fmt), normalFont));
+            table.addCell(leftDescCell("(" + job.getJobNo() + ") - " + job.getJobName(), normalFont));
+            table.addCell(centerCell("", normalFont));
+
+            for (InvoiceLine line : job.getLines()) {
+                table.addCell(centerCell("", normalFont));
+                table.addCell(centerCell("", normalFont));
+                table.addCell(leftDescCell(line.getDescription(), normalFont));
+                table.addCell(centerCell(String.format("%.2f", line.getAmount()), normalFont));
+            }
+
+            addSpacerRow(table);
+        }
+
+        addSpacerRow(table);
+
+        table.addCell(centerCell("", boldFont));
+        table.addCell(centerCell("", boldFont));
+        table.addCell(rightBoldCell("GRAND TOTAL", boldFont));
+        table.addCell(rightBoldCell(String.format("%.2f", invoice.getGrandTotal()), boldFont));
+
+        // 🔹 Outer border
+        table.setTableEvent((tbl, widths, heights, headerRows, rowStart, canvases) -> {
+
+            float left   = widths[0][0];
+            float right  = widths[0][widths[0].length - 1];
+            float top    = heights[0];
+            float bottom = heights[heights.length - 1];
+
+            Rectangle rect = new Rectangle(left, bottom, right, top);
+            rect.setBorder(Rectangle.BOX);
+            rect.setBorderWidth(1.2f);
+
+            canvases[PdfPTable.LINECANVAS].rectangle(rect);
+        });
+
+        doc.add(table);
     }
 
 

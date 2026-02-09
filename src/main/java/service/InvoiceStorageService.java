@@ -20,6 +20,7 @@ public class InvoiceStorageService {
     private static final String KEY_SAVE_PATH = "save_path";
     private static final String KEY_NEVER_ASK = "never_ask";
 
+
     /* =======================
        PUBLIC API
        ======================= */
@@ -170,6 +171,31 @@ public class InvoiceStorageService {
 
         return new File(formatDir, fileName);
     }
+    
+    public static File createMonthlyPdfFile(YearMonth ym) {
+
+        File baseDir = resolveBaseDirectory();
+
+        File yearDir = new File(baseDir, String.valueOf(ym.getYear()));
+        File monthDir = new File(
+                yearDir,
+                String.format("%02d_%s",
+                        ym.getMonthValue(),
+                        ym.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH))
+        );
+
+        if (!monthDir.exists()) {
+            monthDir.mkdirs();
+        }
+
+        File pdfDir = createFormatFolder(monthDir, "PDF");
+
+        String fileName = "Monthly_Invoices_" + ym + ".pdf";
+
+        return new File(pdfDir, fileName);
+    }
+
+
 
 
 

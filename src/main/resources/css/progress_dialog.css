@@ -1,0 +1,67 @@
+/* ===== Overlay background ===== */
+.progress-overlay {
+    -fx-background-color: rgba(0, 0, 0, 0.55);
+}
+
+/* ===== Center floating box ===== */
+.progress-card {
+    -fx-background-color: #121417;
+    -fx-background-radius: 18;
+    -fx-border-radius: 18;
+    -fx-border-color: rgba(255,255,255,0.06);
+    -fx-padding: 28 36 30 36;
+
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.6), 30, 0.3, 0, 10);
+    -fx-max-width: 420;
+    -fx-min-width: 380;
+}
+
+/* ===== Title ===== */
+.progress-title {
+    -fx-text-fill: #E8EAED;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+/* ===== Subtitle / status ===== */
+.progress-subtitle {
+    -fx-text-fill: #9AA0A6;
+    -fx-font-size: 13px;
+}
+
+/* ===== Percentage text ===== */
+.progress-percent {
+    -fx-text-fill: #AECBFA;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+/* ===== Progress bar track ===== */
+.progress-bar {
+    -fx-pref-height: 8;
+    -fx-background-radius: 8;
+}
+
+.progress-bar > .track {
+    -fx-background-color: #1F2329;
+    -fx-background-radius: 8;
+}
+
+/* ===== Progress fill ===== */
+.progress-bar > .bar {
+    -fx-background-color: linear-gradient(to right, #4F8CFF, #6EA8FF);
+    -fx-background-radius: 8;
+}
+
+/* ===== Cancel button ===== */
+.progress-cancel {
+    -fx-background-color: #2A2F36;
+    -fx-text-fill: #E8EAED;
+    -fx-background-radius: 10;
+    -fx-padding: 6 18 6 18;
+}
+
+.progress-cancel:hover {
+    -fx-background-color: #E53935;
+    -fx-text-fill: white;
+}

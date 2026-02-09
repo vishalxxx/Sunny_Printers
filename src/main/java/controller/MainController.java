@@ -270,6 +270,11 @@ public class MainController implements Initializable {
 	                JobService jobService = new JobService();
 	                draftJob = jobService.getLatestDraftJob();
 	            }
+	         // 🔹 Inject root pane into Invoice screen
+	            if (controller instanceof InvoiceGenerationController c) {
+	                c.setRootPane(appRoot);   // 👈 global overlay access
+	            }
+
 
 	            Job finalDraftJob = draftJob;
 
