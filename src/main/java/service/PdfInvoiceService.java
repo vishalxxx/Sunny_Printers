@@ -157,32 +157,54 @@ public class PdfInvoiceService {
         return createdFiles;
     }
 
-    
     public File generateMonthlyBulkPDF(YearMonth ym, Map<String, Invoice> invoiceMap) {
 
         try {
-            // 🔹 Create one combined monthly PDF file
+            // ================= SAFETY CHECK =================
+            if (invoiceMap == null || invoiceMap.isEmpty()) {
+                return null;   // controller will show "No data" toast
+            }
+
+            // Check if ANY invoice actually contains jobs
+            boolean hasData = false;
+            for (Invoice inv : invoiceMap.values()) {
+                if (inv.getJobs() != null && !inv.getJobs().isEmpty()) {
+                    hasData = true;
+                    break;
+                }
+            }
+
+            if (!hasData) {
+                return null;   // graceful exit instead of exception
+            }
+
+            // ================= CREATE FILE =================
             File file = InvoiceStorageService.createMonthlyPdfFile(ym);
 
-            Document doc = new Document(PageSize.A4, 36, 36, 36, 36);
+            Document doc = new Document(PageSize.A4, 36, 36, 30, 36);
             PdfWriter.getInstance(doc, new FileOutputStream(file));
             doc.open();
 
-            boolean first = true;
+            boolean firstPageWritten = false;
 
+            // ================= WRITE INVOICES =================
             for (Invoice invoice : invoiceMap.values()) {
 
                 if (invoice.getJobs() == null || invoice.getJobs().isEmpty())
                     continue;
 
-                // 🔹 Add page break between invoices
-                if (!first) {
+                if (firstPageWritten) {
                     doc.newPage();
                 }
-                first = false;
 
-                // 🔹 Reuse existing single-invoice drawing logic
                 addInvoiceToDocument(doc, invoice);
+                firstPageWritten = true;
+            }
+
+            // ================= FINAL SAFETY =================
+            // Extremely defensive: ensure at least one page exists
+            if (!firstPageWritten) {
+                doc.add(new Paragraph("No invoice data available for this period."));
             }
 
             doc.close();
@@ -192,6 +214,7 @@ public class PdfInvoiceService {
             throw new RuntimeException("Monthly bulk PDF generation failed", e);
         }
     }
+
 
     
     private void addInvoiceToDocument(Document doc, Invoice invoice) throws Exception {

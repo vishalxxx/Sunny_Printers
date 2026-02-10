@@ -8,8 +8,6 @@ public class DBConnection {
 
     private static final String URL = "jdbc:sqlite:database/sunnyprinters.db";
 
-    private static Connection connection;
-
     static {
         try {
             DatabaseInitializer.initialize();
@@ -18,22 +16,18 @@ public class DBConnection {
         }
     }
 
-    public static synchronized Connection getConnection() throws Exception {
+    public static Connection getConnection() throws Exception {
 
-        if (connection == null || connection.isClosed()) {
+        Connection connection = DriverManager.getConnection(URL);
 
-            connection = DriverManager.getConnection(URL);
-
-            try (Statement st = connection.createStatement()) {
-
-                // 🔥 PRODUCTION PRAGMAS
-                st.execute("PRAGMA journal_mode=WAL;");
-                st.execute("PRAGMA synchronous=NORMAL;");
-                st.execute("PRAGMA busy_timeout=5000;");
-                st.execute("PRAGMA foreign_keys=ON;");
-            }
+        try (Statement st = connection.createStatement()) {
+            st.execute("PRAGMA journal_mode=WAL;");
+            st.execute("PRAGMA synchronous=NORMAL;");
+            st.execute("PRAGMA busy_timeout=5000;");
+            st.execute("PRAGMA foreign_keys=ON;");
         }
 
         return connection;
     }
 }
+

@@ -7,76 +7,75 @@ import repository.SystemSettingsRepository;
 
 public class SettingsService {
 
-	private final SystemSettingsRepository repo = new SystemSettingsRepository();
+    private final SystemSettingsRepository repo = new SystemSettingsRepository();
 
-	/**
-	 * Generates the NEXT sequential invoice number and persists it immediately to
-	 * DB.
-	 */
-	public synchronized String generateNextInvoiceNumber() throws Exception {
+    // =========================================================
+    // SINGLE NUMBER (atomic)
+    // =========================================================
+    public synchronized String generateNextInvoiceNumber(Connection con) throws Exception {
 
-		SystemSettings s = repo.load();
+        SystemSettings s = repo.load(con);
 
-		int nextNumber;
+        int nextNumber;
 
-		if (s.isAuto()) {
-			// AUTO → always increment
-			nextNumber = s.getLastInvoiceNo() + 1;
-		} else {
-			// MANUAL → start from configured start_no if first time
-			if (s.getLastInvoiceNo() < s.getInvoiceStartNo()) {
-				nextNumber = s.getInvoiceStartNo();
-			} else {
-				nextNumber = s.getLastInvoiceNo() + 1;
-			}
-		}
+        if (s.isAuto()) {
+            nextNumber = s.getLastInvoiceNo() + 1;
+        } else {
+            if (s.getLastInvoiceNo() < s.getInvoiceStartNo()) {
+                nextNumber = s.getInvoiceStartNo();
+            } else {
+                nextNumber = s.getLastInvoiceNo() + 1;
+            }
+        }
 
-		// Persist new last number
-		s.setLastInvoiceNo(nextNumber);
-		repo.save(s);
+        // update in memory
+        s.setLastInvoiceNo(nextNumber);
 
-		// Format with prefix + padding
-		return String.format("%s%0" + s.getInvoicePadding() + "d", s.getInvoicePrefix(), nextNumber);
-	}
-	public synchronized String[] generateNextInvoiceNumbers(Connection con, int count) throws Exception {
+        // save using SAME transaction
+        repo.save(con, s);
 
-	    if (count <= 0) {
-	        return new String[0];
-	    }
+        return String.format(
+                "%s%0" + s.getInvoicePadding() + "d",
+                s.getInvoicePrefix(),
+                nextNumber
+        );
+    }
 
-	    // 1️⃣ Load settings ONLY once
-	    SystemSettings s = repo.load();
+    // =========================================================
+    // BULK NUMBERS (atomic & SQLITE-safe)
+    // =========================================================
+    public synchronized String[] generateNextInvoiceNumbers(Connection con, int count) throws Exception {
 
-	    String[] numbers = new String[count];
+        if (count <= 0) return new String[0];
 
-	    int current = s.getLastInvoiceNo();
+        SystemSettings s = repo.load(con);
 
-	    // 2️⃣ Generate numbers IN MEMORY (no DB writes here)
-	    for (int i = 0; i < count; i++) {
+        String[] numbers = new String[count];
+        int current = s.getLastInvoiceNo();
 
-	        if (s.isAuto()) {
-	            current = current + 1;
-	        } else {
-	            if (current < s.getInvoiceStartNo()) {
-	                current = s.getInvoiceStartNo();
-	            } else {
-	                current = current + 1;
-	            }
-	        }
+        for (int i = 0; i < count; i++) {
 
-	        numbers[i] = String.format(
-	                "%s%0" + s.getInvoicePadding() + "d",
-	                s.getInvoicePrefix(),
-	                current
-	        );
-	    }
+            if (s.isAuto()) {
+                current++;
+            } else {
+                if (current < s.getInvoiceStartNo()) {
+                    current = s.getInvoiceStartNo();
+                } else {
+                    current++;
+                }
+            }
 
-	    // 3️⃣ Save ONLY ONCE → prevents SQLITE_BUSY
-	    s.setLastInvoiceNo(current);
-	    repo.save(s);
+            numbers[i] = String.format(
+                    "%s%0" + s.getInvoicePadding() + "d",
+                    s.getInvoicePrefix(),
+                    current
+            );
+        }
 
-	    return numbers;
-	}
+        // 🔥 single DB write → prevents SQLITE_BUSY
+        s.setLastInvoiceNo(current);
+        repo.save(con, s);
 
-	
+        return numbers;
+    }
 }

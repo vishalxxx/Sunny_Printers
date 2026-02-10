@@ -44,6 +44,9 @@ public class InvoiceGenerationService {
 
 	// ✅ NEW: Monthly client-wise workbook
 	public File generateMonthlyClientWorkbook(YearMonth month, Map<String, Invoice> invoiceMap) {
+		if (invoiceMap == null || invoiceMap.isEmpty()) {
+		    return null;   // important
+		}
 		try (Workbook wb = new XSSFWorkbook()) {
 
 			for (Map.Entry<String, Invoice> entry : invoiceMap.entrySet()) {

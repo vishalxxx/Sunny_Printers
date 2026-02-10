@@ -22,6 +22,7 @@ public class Invoice {
 
 
 
+
 	public LocalDate getFromDate() {
 		return periodFrom;
 	}

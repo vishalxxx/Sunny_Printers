@@ -36,7 +36,7 @@
 
     <!-- RIGHT SIDE -->
     <VBox spacing="6" alignment="CENTER_RIGHT">
-        <Label text="Invoice Format"/>
+        <Label text="Invoice Format"     styleClass="card-title"/>
         <ComboBox fx:id="formatComboBox" prefWidth="120"  styleClass="card-title"/>
     </VBox>
 

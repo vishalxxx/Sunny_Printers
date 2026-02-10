@@ -3,7 +3,6 @@ package repository;
 import java.sql.*;
 
 import model.SystemSettings;
-import utils.DBConnection;
 
 public class SystemSettingsRepository {
 
@@ -33,11 +32,12 @@ public class SystemSettingsRepository {
         WHERE id = 1
         """;
 
-    // ================= LOAD =================
-    public SystemSettings load() throws Exception {
+    // =========================================================
+    // LOAD → uses SAME connection (atomic safe)
+    // =========================================================
+    public SystemSettings load(Connection con) throws Exception {
 
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(SELECT);
+        try (PreparedStatement ps = con.prepareStatement(SELECT);
              ResultSet rs = ps.executeQuery()) {
 
             if (rs.next()) {
@@ -61,11 +61,12 @@ public class SystemSettingsRepository {
         return def;
     }
 
-    // ================= SAVE =================
-    public void save(SystemSettings s) throws Exception {
+    // =========================================================
+    // SAVE → uses SAME connection (atomic safe)
+    // =========================================================
+    public void save(Connection con, SystemSettings s) throws Exception {
 
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(UPSERT)) {
+        try (PreparedStatement ps = con.prepareStatement(UPSERT)) {
 
             ps.setString(1, s.getInvoiceMode());
             ps.setString(2, s.getInvoicePrefix());

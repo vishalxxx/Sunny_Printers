@@ -593,46 +593,44 @@ public class InvoiceGenerationController {
 			// =====================================================
 			Task<File> task = new Task<>() {
 
+				private Thread smoothThread;
+				private final AtomicBoolean realDone = new AtomicBoolean(false);
+
 				@Override
 				protected File call() throws Exception {
 
-					AtomicBoolean realDone = new AtomicBoolean(false);
-
-					// 🔹 Smooth fake progress
-					Thread smoothProgress = new Thread(() -> {
+					// 🔹 Smooth visual progress (stops automatically)
+					smoothThread = new Thread(() -> {
 						double p = 0.0;
 
 						try {
-							while (p < 0.90 && !isCancelled() && !realDone.get()) {
+							while (p < 0.85 && !isCancelled() && !realDone.get()) {
 
 								updateProgress(p, 1);
 								updateMessage("Preparing data...");
 
-								if (p < 0.20) {
-									p += 0.001;
-									Thread.sleep(160);
-								} else if (p < 0.50) {
-									p += 0.001;
-									Thread.sleep(140);
-								} else if (p < 0.75) {
-									p += 0.003;
-									Thread.sleep(120);
+								if (p < 0.30) {
+									p += 0.01;
+									Thread.sleep(60);
+								} else if (p < 0.60) {
+									p += 0.008;
+									Thread.sleep(70);
 								} else {
-									p += 0.002;
-									Thread.sleep(150);
+									p += 0.006;
+									Thread.sleep(80);
 								}
 							}
-
 						} catch (InterruptedException ignored) {
 						}
 					});
 
-					smoothProgress.setDaemon(true);
-					smoothProgress.start();
+					smoothThread.setDaemon(true);
+					smoothThread.start();
 
 					// =====================================================
-					// 🔥 REAL WORK — BUILD INVOICES
+					// 🔥 BUILD INVOICES
 					// =====================================================
+					updateMessage("Loading clients...");
 					Map<String, Invoice> invoiceMap = invoicebuilder.buildMonthlyInvoicesForAllClients(year,
 							monthValue);
 
@@ -640,43 +638,42 @@ public class InvoiceGenerationController {
 						return null;
 
 					// =====================================================
-					// 🔥 FILE GENERATION (Excel / PDF)
+					// 🔥 FILE GENERATION
 					// =====================================================
-					File outputFile = null;
+					updateProgress(0.85, 1);
+
+					File outputFile;
 					String format = formatComboBox.getValue();
 
 					if ("Excel".equalsIgnoreCase(format)) {
-
 						updateMessage("Generating Excel workbook...");
 						outputFile = invoicegeneration.generateMonthlyClientWorkbook(ym, invoiceMap);
 
 					} else if ("PDF".equalsIgnoreCase(format)) {
-
 						updateMessage("Generating PDF bundle...");
 						outputFile = pdfService.generateMonthlyBulkPDF(ym, invoiceMap);
 
 					} else {
-						throw new RuntimeException("Unknown format selected");
+						throw new RuntimeException("Unknown format selected: " + format);
 					}
 
+					if (isCancelled())
+						return null;
+
 					// =====================================================
-					// 🔥 REAL WORK FINISHED
+					// 🔥 FINISH SMOOTHLY (very fast)
 					// =====================================================
 					realDone.set(true);
+					if (smoothThread != null)
+						smoothThread.interrupt();
 
-					// 🔹 Smooth finish animation
-					double p = 0.90;
-
-					while (p < 1.0 && !isCancelled()) {
+					for (double p = 0.85; p <= 1.0; p += 0.05) {
 						updateProgress(p, 1);
 						updateMessage("Finalizing...");
-						p += 0.02;
 						Thread.sleep(40);
 					}
 
-					updateProgress(1, 1);
 					updateMessage("Completed");
-
 					return outputFile;
 				}
 			};
@@ -698,28 +695,18 @@ public class InvoiceGenerationController {
 			// SUCCESS
 			// =====================================================
 			task.setOnSucceeded(ev -> {
-
 				progress.hide();
 				rootStackPane.getChildren().remove(progressRoot);
 
 				File bulkFile = task.getValue();
 
 				if (bulkFile == null || !bulkFile.exists()) {
-					toast("❌ Bulk file not generated.");
+					toast("No invoice data found for selected period.");
 					return;
 				}
 
 				toast("Monthly invoices generated successfully ✅");
 				loadRecentInvoiceHistory();
-			});
-
-			// =====================================================
-			// CANCELLED
-			// =====================================================
-			task.setOnCancelled(ev -> {
-				progress.hide();
-				rootStackPane.getChildren().remove(progressRoot);
-				toast("⚠ Process cancelled. No invoices saved.");
 			});
 
 			// =====================================================
@@ -729,8 +716,11 @@ public class InvoiceGenerationController {
 				progress.hide();
 				rootStackPane.getChildren().remove(progressRoot);
 
-				task.getException().printStackTrace();
-				toast("❌ Failed: " + task.getException().getMessage());
+				Throwable ex = task.getException();
+				if (ex != null)
+					ex.printStackTrace();
+
+				toast("❌ Failed to generate monthly invoices.");
 			});
 
 			new Thread(task).start();
