@@ -6,6 +6,8 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.function.BooleanSupplier;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.Paragraph;
@@ -158,14 +160,20 @@ public class PdfInvoiceService {
     }
 
     public File generateMonthlyBulkPDF(YearMonth ym, Map<String, Invoice> invoiceMap) {
+        return generateMonthlyBulkPDF(ym, invoiceMap, null, null);
+    }
+
+    public File generateMonthlyBulkPDF(YearMonth ym, Map<String, Invoice> invoiceMap, BooleanSupplier isCancelled) {
+        return generateMonthlyBulkPDF(ym, invoiceMap, isCancelled, null);
+    }
+
+    public File generateMonthlyBulkPDF(YearMonth ym, Map<String, Invoice> invoiceMap, BooleanSupplier isCancelled, File[] outFileRef) {
 
         try {
-            // ================= SAFETY CHECK =================
             if (invoiceMap == null || invoiceMap.isEmpty()) {
-                return null;   // controller will show "No data" toast
+                return null;
             }
 
-            // Check if ANY invoice actually contains jobs
             boolean hasData = false;
             for (Invoice inv : invoiceMap.values()) {
                 if (inv.getJobs() != null && !inv.getJobs().isEmpty()) {
@@ -175,41 +183,49 @@ public class PdfInvoiceService {
             }
 
             if (!hasData) {
-                return null;   // graceful exit instead of exception
+                return null;
             }
 
-            // ================= CREATE FILE =================
             File file = InvoiceStorageService.createMonthlyPdfFile(ym);
+            if (outFileRef != null && outFileRef.length > 0) outFileRef[0] = file;
 
             Document doc = new Document(PageSize.A4, 36, 36, 30, 36);
             PdfWriter.getInstance(doc, new FileOutputStream(file));
             doc.open();
 
-            boolean firstPageWritten = false;
+            try {
+                boolean firstPageWritten = false;
 
-            // ================= WRITE INVOICES =================
-            for (Invoice invoice : invoiceMap.values()) {
+                for (Invoice invoice : invoiceMap.values()) {
 
-                if (invoice.getJobs() == null || invoice.getJobs().isEmpty())
-                    continue;
+                    if (isCancelled != null && isCancelled.getAsBoolean())
+                        throw new CancellationException();
 
-                if (firstPageWritten) {
-                    doc.newPage();
+                    if (invoice.getJobs() == null || invoice.getJobs().isEmpty())
+                        continue;
+
+                    if (firstPageWritten) {
+                        doc.newPage();
+                    }
+
+                    addInvoiceToDocument(doc, invoice);
+                    firstPageWritten = true;
                 }
 
-                addInvoiceToDocument(doc, invoice);
-                firstPageWritten = true;
+                if (!firstPageWritten) {
+                    doc.add(new Paragraph("No invoice data available for this period."));
+                }
+
+                doc.close();
+                return file;
+
+            } catch (CancellationException e) {
+                try { doc.close(); } catch (Exception ignored) {}
+                throw e;
             }
 
-            // ================= FINAL SAFETY =================
-            // Extremely defensive: ensure at least one page exists
-            if (!firstPageWritten) {
-                doc.add(new Paragraph("No invoice data available for this period."));
-            }
-
-            doc.close();
-            return file;
-
+        } catch (CancellationException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Monthly bulk PDF generation failed", e);
         }

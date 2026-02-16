@@ -3,12 +3,15 @@ package controller;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -30,10 +33,11 @@ import model.Client;
 import model.Invoice;
 import model.InvoiceHistoryRow;
 import model.JobSummary;
+import model.InvoiceMaster;
 import service.ClientService;
 import service.InvoiceBuilderService;
 import service.InvoiceGenerationService;
-import service.InvoiceHistoryRowService;
+import service.InvoiceMasterService;
 import service.InvoiceStorageService;
 import service.JobService;
 import service.PdfInvoiceService;
@@ -52,7 +56,8 @@ public class InvoiceGenerationController {
 	private final Map<String, JobSummary> selectedJobsMap = new LinkedHashMap<>();
 	private final Set<String> selectedJobs = new LinkedHashSet<>();
 	private final ClientService clientService = new ClientService();
-	private final InvoiceHistoryRowService historyService = new InvoiceHistoryRowService();
+	// replaced InvoiceHistoryRowService with InvoiceMasterService
+	private final InvoiceMasterService invoiceMasterService = new InvoiceMasterService();
 	private PdfInvoiceService pdfService = new PdfInvoiceService();
 	private Task<File> monthlyTask;
 	@FXML
@@ -415,6 +420,10 @@ public class InvoiceGenerationController {
 			rootStackPane.getChildren().add(progressRoot);
 			progress.show("Generating Invoice");
 
+			// Track newly created invoice IDs and generated file for cancel rollback
+			final List<Integer> newlyCreatedIds = new ArrayList<>();
+			final File[] generatedFileRef = new File[1];
+
 			// =====================================================
 			// BACKGROUND TASK
 			// =====================================================
@@ -463,15 +472,28 @@ public class InvoiceGenerationController {
 							client.getBusinessName(), startDatePicker.getValue(), endDatePicker.getValue());
 
 					if (isCancelled())
-						return null;
+						throw new CancellationException();
 
 					if (invoice.getJobs().isEmpty())
 						throw new RuntimeException("No jobs found for selected date range");
 
-					File file = null;
+					// =================================================
+					// 🔥 STEP 1: Reserve or reuse invoice number BEFORE file generation
+					// =================================================
+					InvoiceMasterService.CreateOrGetResult reserved = invoiceMasterService.createOrGetExisting(invoice, "DATE_RANGE", null);
+					if (reserved != null) {
+						invoice.setInvoiceNo(reserved.master().getInvoiceNo());
+						if (reserved.wasNewlyCreated()) {
+							newlyCreatedIds.add(reserved.master().getId());
+						}
+					}
 
+					File file = null;
 					format = formatComboBox.getValue();
 
+					// =================================================
+					// FILE GENERATION (UNCHANGED)
+					// =================================================
 					if ("Excel".equalsIgnoreCase(format)) {
 						updateMessage("Generating Excel...");
 						file = invoicegeneration.generateSingleInvoice(invoice);
@@ -481,6 +503,11 @@ public class InvoiceGenerationController {
 						updateMessage("Generating PDF...");
 						file = pdfService.generateSingleInvoicePDF(invoice);
 					}
+
+					generatedFileRef[0] = file;
+
+					if (isCancelled())
+						throw new CancellationException();
 
 					realDone.set(true);
 
@@ -493,11 +520,17 @@ public class InvoiceGenerationController {
 						Thread.sleep(40);
 					}
 
+					if (isCancelled())
+						throw new CancellationException();
+
 					updateProgress(1, 1);
 					updateMessage("Completed");
 
-					// save history AFTER success
-					historyService.saveHistory(invoice, "DATE_RANGE", "SENT", file.getAbsolutePath());
+					// =================================================
+					// 🔥 STEP 2: Update file path (ensure we update existing master)
+					// =================================================
+					invoiceMasterService.registerDateRangeInvoice(invoice, startDatePicker.getValue(),
+							endDatePicker.getValue(), "DATE_RANGE", file != null ? file.getAbsolutePath() : null);
 
 					return file;
 				}
@@ -535,21 +568,49 @@ public class InvoiceGenerationController {
 			});
 
 			// =====================================================
-			// CANCELLED
+			// CANCELLED - show rollback animation, then void invoices + delete file
 			// =====================================================
 			task.setOnCancelled(ev -> {
-				progress.hide();
-				rootStackPane.getChildren().remove(progressRoot);
-				toast("⚠ Process cancelled.");
+				new Thread(() -> {
+					invoiceMasterService.deleteInvoicesIfCancelled(newlyCreatedIds);
+					File f = generatedFileRef[0];
+					if (f != null && f.exists()) {
+						try { f.delete(); } catch (Exception ex) { System.err.println("Failed to delete: " + ex.getMessage()); }
+					}
+				}).start();
+				progress.showRollback("Reverting changes...", () -> {
+					progress.hide();
+					rootStackPane.getChildren().remove(progressRoot);
+					toast("⚠ Process cancelled.");
+				});
 			});
 
 			// =====================================================
-			// FAILED
+			// FAILED (date range) - also handle CancellationException if task reports FAILED
 			// =====================================================
 			task.setOnFailed(ev -> {
 				progress.hide();
 				rootStackPane.getChildren().remove(progressRoot);
-				toast("❌ " + task.getException().getMessage());
+
+				Throwable ex = task.getException();
+				if (ex instanceof CancellationException || (ex != null && ex.getCause() instanceof CancellationException)) {
+					new Thread(() -> {
+						invoiceMasterService.deleteInvoicesIfCancelled(newlyCreatedIds);
+						File f = generatedFileRef[0];
+						if (f != null && f.exists()) {
+							try { f.delete(); } catch (Exception ignored) {}
+						}
+					}).start();
+					progress.showRollback("Reverting changes...", () -> {
+						progress.hide();
+						rootStackPane.getChildren().remove(progressRoot);
+						toast("⚠ Process cancelled.");
+					});
+				} else {
+					progress.hide();
+					rootStackPane.getChildren().remove(progressRoot);
+					toast("❌ " + (ex != null ? ex.getMessage() : "Unknown error"));
+				}
 			});
 
 			new Thread(task).start();
@@ -587,6 +648,10 @@ public class InvoiceGenerationController {
 
 			rootStackPane.getChildren().add(progressRoot);
 			progress.show("Generating Monthly Invoices");
+
+			// Track newly created invoice IDs and generated file for cancel rollback
+			final List<Integer> newlyCreatedIds = new ArrayList<>();
+			final File[] generatedFileRef = new File[1];
 
 			// =====================================================
 			// BACKGROUND TASK
@@ -635,7 +700,29 @@ public class InvoiceGenerationController {
 							monthValue);
 
 					if (isCancelled())
-						return null;
+						throw new CancellationException();
+
+					LocalDate fromDate = ym.atDay(1);
+					LocalDate toDate = ym.atEndOfMonth();
+
+					// =====================================================
+					// 🔥 STEP 1: Reserve or reuse invoice numbers (no duplicate per client/month)
+					// =====================================================
+					updateMessage("Reserving invoice numbers...");
+					for (Invoice inv : invoiceMap.values()) {
+						if (isCancelled())
+							throw new CancellationException();
+						InvoiceMasterService.CreateOrGetResult reserved = invoiceMasterService.createOrGetExisting(inv, "MONTHLY_BULK", null);
+						if (reserved != null) {
+							inv.setInvoiceNo(reserved.master().getInvoiceNo());
+							if (reserved.wasNewlyCreated()) {
+								newlyCreatedIds.add(reserved.master().getId());
+							}
+						}
+					}
+
+					if (isCancelled())
+						throw new CancellationException();
 
 					// =====================================================
 					// 🔥 FILE GENERATION
@@ -647,18 +734,26 @@ public class InvoiceGenerationController {
 
 					if ("Excel".equalsIgnoreCase(format)) {
 						updateMessage("Generating Excel workbook...");
-						outputFile = invoicegeneration.generateMonthlyClientWorkbook(ym, invoiceMap);
+						outputFile = invoicegeneration.generateMonthlyClientWorkbook(ym, invoiceMap, this::isCancelled);
 
 					} else if ("PDF".equalsIgnoreCase(format)) {
 						updateMessage("Generating PDF bundle...");
-						outputFile = pdfService.generateMonthlyBulkPDF(ym, invoiceMap);
+						outputFile = pdfService.generateMonthlyBulkPDF(ym, invoiceMap, this::isCancelled, generatedFileRef);
 
 					} else {
 						throw new RuntimeException("Unknown format selected: " + format);
 					}
 
+					generatedFileRef[0] = outputFile;
+
 					if (isCancelled())
-						return null;
+						throw new CancellationException();
+
+					// =====================================================
+					// 🔥 STEP 2: Register invoices / update file path on existing (allow regenerate)
+					// =====================================================
+					invoiceMasterService.registerMonthlyInvoices(invoiceMap, fromDate, toDate, "MONTHLY_BULK",
+							outputFile != null ? outputFile.getAbsolutePath() : null);
 
 					// =====================================================
 					// 🔥 FINISH SMOOTHLY (very fast)
@@ -697,6 +792,7 @@ public class InvoiceGenerationController {
 			task.setOnSucceeded(ev -> {
 				progress.hide();
 				rootStackPane.getChildren().remove(progressRoot);
+				monthlyTask = null;
 
 				File bulkFile = task.getValue();
 
@@ -710,19 +806,56 @@ public class InvoiceGenerationController {
 			});
 
 			// =====================================================
-			// FAILED
+			// CANCELLED - show rollback animation, then void invoices + delete file
+			// =====================================================
+			task.setOnCancelled(ev -> {
+				monthlyTask = null;
+				new Thread(() -> {
+					invoiceMasterService.deleteInvoicesIfCancelled(newlyCreatedIds);
+					File f = generatedFileRef[0];
+					if (f != null && f.exists()) {
+						try { f.delete(); } catch (Exception ex) { System.err.println("Failed to delete: " + ex.getMessage()); }
+					}
+				}).start();
+				progress.showRollback("Reverting changes...", () -> {
+					progress.hide();
+					rootStackPane.getChildren().remove(progressRoot);
+					toast("⚠ Process cancelled.");
+				});
+			});
+
+			// =====================================================
+			// FAILED (monthly) - also handle CancellationException if task reports FAILED
 			// =====================================================
 			task.setOnFailed(ev -> {
 				progress.hide();
 				rootStackPane.getChildren().remove(progressRoot);
+				monthlyTask = null;
 
 				Throwable ex = task.getException();
-				if (ex != null)
-					ex.printStackTrace();
-
-				toast("❌ Failed to generate monthly invoices.");
+				if (ex instanceof CancellationException || (ex != null && ex.getCause() instanceof CancellationException)) {
+					monthlyTask = null;
+					new Thread(() -> {
+						invoiceMasterService.deleteInvoicesIfCancelled(newlyCreatedIds);
+						File f = generatedFileRef[0];
+						if (f != null && f.exists()) {
+							try { f.delete(); } catch (Exception ignored) {}
+						}
+					}).start();
+					progress.showRollback("Reverting changes...", () -> {
+						progress.hide();
+						rootStackPane.getChildren().remove(progressRoot);
+						toast("⚠ Process cancelled.");
+					});
+				} else {
+					progress.hide();
+					rootStackPane.getChildren().remove(progressRoot);
+					if (ex != null) ex.printStackTrace();
+					toast("❌ Failed to generate monthly invoices.");
+				}
 			});
 
+			monthlyTask = task;
 			new Thread(task).start();
 
 		} catch (Exception ex) {
@@ -844,7 +977,8 @@ public class InvoiceGenerationController {
 					updateProgress(0.85, 1);
 					updateMessage("Saving history...");
 
-					historyService.saveHistory(invoice, "JOB_SPECIFIC", "SENT", file.getAbsolutePath());
+					// use InvoiceMasterService to save generated invoice
+					invoiceMasterService.saveGeneratedInvoice(invoice, "JOB_SPECIFIC", "SENT", file.getAbsolutePath());
 
 					updateProgress(1, 1);
 					updateMessage("Completed");
@@ -1035,7 +1169,14 @@ public class InvoiceGenerationController {
 	}
 
 	private void loadRecentInvoiceHistory() {
-		var rows = historyService.getRecentHistory(10);
+		// fetch recent InvoiceMaster entries and convert to InvoiceHistoryRow for the
+		// UI table
+		var masters = invoiceMasterService.getRecentInvoices(10);
+
+		List<InvoiceHistoryRow> rows = masters
+				.stream().map(m -> new InvoiceHistoryRow(m.getInvoiceNo(), m.getClientName(),
+						m.getInvoiceDate().toString(), m.getAmount(), m.getType(), m.getStatus()))
+				.collect(Collectors.toList());
 
 		System.out.println("✅ Loaded invoice rows = " + rows.size());
 

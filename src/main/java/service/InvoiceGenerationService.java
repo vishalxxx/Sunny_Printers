@@ -1,10 +1,10 @@
 package service;
 
 import java.io.File;
-import java.time.Year;
 import java.time.YearMonth;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.function.BooleanSupplier;
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -27,12 +27,13 @@ public class InvoiceGenerationService {
 	 * =========================================================
 	 */
 
-	// Existing single-invoice generator (UNCHANGED usage)
+	// Existing single-invoice generator
 	public File generateSingleInvoice(Invoice invoice) {
 		try (Workbook wb = new XSSFWorkbook()) {
 
+			InvoiceExcelStyles styles = new InvoiceExcelStyles(wb);
 			Sheet sheet = wb.createSheet("Invoice");
-			generateInvoiceSheet(wb, sheet, invoice);
+			generateInvoiceSheet(wb, sheet, invoice, styles);
 
 			// ✅ SAVE using storage class
 			return InvoiceStorageService.saveInvoice(wb, invoice);
@@ -42,23 +43,30 @@ public class InvoiceGenerationService {
 		}
 	}
 
-	// ✅ NEW: Monthly client-wise workbook
+	// ✅ Monthly client-wise workbook - styles created ONCE per workbook for performance
 	public File generateMonthlyClientWorkbook(YearMonth month, Map<String, Invoice> invoiceMap) {
+		return generateMonthlyClientWorkbook(month, invoiceMap, null);
+	}
+
+	public File generateMonthlyClientWorkbook(YearMonth month, Map<String, Invoice> invoiceMap, BooleanSupplier isCancelled) {
 		if (invoiceMap == null || invoiceMap.isEmpty()) {
-		    return null;   // important
+		    return null;
 		}
 		try (Workbook wb = new XSSFWorkbook()) {
 
+			InvoiceExcelStyles styles = new InvoiceExcelStyles(wb);
+
 			for (Map.Entry<String, Invoice> entry : invoiceMap.entrySet()) {
 
-				String sheetName = entry.getKey(); // business name
-				Invoice invoice = entry.getValue();
+				if (isCancelled != null && isCancelled.getAsBoolean())
+					throw new CancellationException();
 
-				// Excel sheet name max length 31
+				String sheetName = entry.getKey();
+				Invoice invoice = entry.getValue();
 				sheetName = safeSheetName(sheetName);
 
 				Sheet sheet = wb.createSheet(sheetName);
-				generateInvoiceSheet(wb, sheet, invoice);
+				generateInvoiceSheet(wb, sheet, invoice, styles);
 			}
 
 			// ✅ Save into base/year/month folder
@@ -71,6 +79,8 @@ public class InvoiceGenerationService {
 
 			return InvoiceStorageService.saveInvoice(wb, dummy);
 
+		} catch (CancellationException e) {
+			throw e;
 		} catch (Exception e) {
 			throw new RuntimeException("Monthly bulk invoice generation failed", e);
 		}
@@ -90,13 +100,11 @@ public class InvoiceGenerationService {
 	 * GENERATOR (REUSED) =========================================================
 	 */
 
-	private void generateInvoiceSheet(Workbook wb, Sheet sheet, Invoice invoice) {
+	private void generateInvoiceSheet(Workbook wb, Sheet sheet, Invoice invoice, InvoiceExcelStyles is) {
 
 		setupColumns(sheet);
 
-		int rowIndex = drawHeader(wb, sheet, invoice);
-
-		InvoiceExcelStyles is = new InvoiceExcelStyles(wb);
+		int rowIndex = drawHeader(wb, sheet, invoice, is);
 
 		/*
 		 * ========================= COLUMN HEADER =========================
@@ -200,8 +208,7 @@ public class InvoiceGenerationService {
 
 	
 
-	private int drawHeader(Workbook wb, Sheet sheet, Invoice invoice) {
-		InvoiceExcelStyles is = new InvoiceExcelStyles(wb);
+	private int drawHeader(Workbook wb, Sheet sheet, Invoice invoice, InvoiceExcelStyles is) {
 
 		mergeAndStyle(sheet, 1, 1, 0, 3, invoice.getCompanyName(), is.headerTitle);
 		mergeAndStyle(sheet, 2, 2, 0, 3, invoice.getCompanyAddress(), is.headerText);

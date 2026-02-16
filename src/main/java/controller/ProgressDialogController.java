@@ -1,9 +1,12 @@
 package controller;
 
+	import javafx.animation.KeyFrame;
+	import javafx.animation.Timeline;
 	import javafx.application.Platform;
 	import javafx.fxml.FXML;
 	import javafx.scene.control.*;
 	import javafx.scene.layout.StackPane;
+	import javafx.util.Duration;
 	
 	
 public class ProgressDialogController {
@@ -47,6 +50,33 @@ public class ProgressDialogController {
 	        Platform.runLater(() -> {
 	            progressBar.setProgress(progress);
 	            percentLabel.setText((int) (progress * 100) + " %");
+	            if (message != null && !message.isEmpty()) {
+	                statusLabel.setText(message);
+	            }
+	        });
+	    }
+
+	    // =====================================================
+	    // SHOW ROLLBACK - animate progress bar backwards, keep window open
+	    // =====================================================
+	    public void showRollback(String message, Runnable onComplete) {
+	        Platform.runLater(() -> {
+	            statusLabel.setText(message != null ? message : "Reverting changes...");
+	            cancelButton.setDisable(true);
+	            double from = Math.max(0.01, progressBar.getProgress());
+	            final int steps = 15;
+	            final double durationMs = 800;
+	            Timeline timeline = new Timeline();
+	            for (int i = 0; i <= steps; i++) {
+	                final double p = from * (steps - i) / steps;
+	                final boolean isLast = (i == steps);
+	                timeline.getKeyFrames().add(new KeyFrame(Duration.millis(durationMs * i / steps), e -> {
+	                    progressBar.setProgress(p);
+	                    percentLabel.setText((int) (p * 100) + " %");
+	                    if (isLast && onComplete != null) onComplete.run();
+	                }));
+	            }
+	            timeline.play();
 	        });
 	    }
 

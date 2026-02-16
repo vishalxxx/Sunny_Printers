@@ -41,7 +41,8 @@ public class AtomicDB {
             }
 
         } catch (Exception e) {
-            throw new RuntimeException("Database transaction failed", e);
+            String msg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+            throw new RuntimeException("Database transaction failed: " + (msg != null ? msg : e.getClass().getSimpleName()), e);
         }
     }
 
@@ -65,7 +66,8 @@ public class AtomicDB {
             }
 
         } catch (Exception e) {
-            throw new RuntimeException("Database transaction failed", e);
+            String msg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+            throw new RuntimeException("Database transaction failed: " + (msg != null ? msg : e.getClass().getSimpleName()), e);
         }
     }
 }
