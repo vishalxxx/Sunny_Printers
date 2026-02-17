@@ -474,6 +474,13 @@ public class MainController implements Initializable {
 	            "Loading Dashboard...",
 	            "Please wait");
 	}
+	
+	@FXML
+	public void loadRecordPayment(MouseEvent event) {
+		loadCenterScreen("/fxml/record_payment.fxml",
+	            "Loading Payment Screen...",
+	            "Loading outstanding invoices and client details...");
+	}
 
 
 //		try {

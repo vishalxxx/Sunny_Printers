@@ -152,7 +152,12 @@ public class Client {
 	@Override
 	public String toString() {
 		// This is what shows when selected
-		return businessName + " (" + clientName + ")";
+		String bn = getBusinessName() == null ? "" : getBusinessName();
+		String cn = getClientName() == null ? "" : getClientName();
+		if (bn.isBlank() && cn.isBlank()) return "";
+		if (cn.isBlank()) return bn;
+		if (bn.isBlank()) return cn;
+		return bn + " (" + cn + ")";
 	}
 
 }

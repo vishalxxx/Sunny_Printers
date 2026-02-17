@@ -1,0 +1,110 @@
+/* This file is only for Record Payment specifics.
+   Base styling comes from invoice_genration.css. */
+
+.app-root {
+    -fx-background-color: #0f0f0f; /* match invoice css root */
+}
+
+/* Make all labels white (as requestFied) */
+.label { -fx-text-fill: #ffffff; }
+
+/* ScrollPane transparency */
+.content-scroll {
+    -fx-background: transparent;
+    -fx-background-color: transparent;
+}
+.content-scroll > .viewport { -fx-background-color: transparent; }
+
+/* Header (custom layout not in invoice css) */
+.header-bar {
+    -fx-padding: 14 24;
+    -fx-background-color: rgba(24,24,27,0.92);
+    -fx-border-color: rgba(255,255,255,0.10);
+    -fx-border-width: 0 0 1 0;
+}
+.header-icon { -fx-font-size: 18px; }
+.header-title { -fx-font-size: 14px; -fx-font-weight: 900; }
+.header-subtitle { -fx-font-size: 10px; -fx-font-weight: 800; }
+.avatar { -fx-font-size: 16px; }
+
+.status-pill {
+    -fx-font-size: 10px;
+    -fx-font-weight: 900;
+    -fx-padding: 6 10;
+    -fx-background-color: rgba(250,204,21,0.12);
+    -fx-background-radius: 999;
+    -fx-border-color: rgba(250,204,21,0.28);
+    -fx-border-radius: 999;
+}
+.date-label { -fx-font-size: 9px; -fx-font-weight: 900; }
+.date-value { -fx-font-size: 11px; -fx-font-weight: 900; }
+
+/* Inputs: keep invoice css, just ensure height */
+.text-field.input, .combo-box.input, .date-picker.input { -fx-pref-height: 42; }
+.amount { -fx-font-weight: 900; }
+
+/* Remove inner text-field border for editable bank combo (avoids double border) */
+.bank-combo > .text-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-insets: 0;
+    -fx-effect: null;
+}
+
+/* Section titles */
+.section-title { -fx-font-size: 12px; -fx-font-weight: 900; }
+.section-icon { -fx-font-size: 14px; }
+
+/* Info banner */
+.info-banner {
+    -fx-background-color: rgba(59,130,246,0.12);
+    -fx-border-color: rgba(59,130,246,0.28);
+    -fx-border-radius: 0.9em;
+    -fx-background-radius: 0.9em;
+    -fx-padding: 0.9em 1.0em;
+}
+.info-icon { -fx-font-weight: 900; }
+.info-text { -fx-font-size: 0.92em; -fx-font-weight: 700; }
+
+/* Table header row above history-table */
+.table-header {
+    -fx-padding: 14 16;
+    -fx-border-color: rgba(255,255,255,0.08);
+    -fx-border-width: 0 0 1 0;
+}
+.table-title { -fx-font-size: 12px; -fx-font-weight: 900; }
+
+/* Footer bar (custom) */
+.footer-bar {
+    -fx-padding: 14 24;
+    -fx-background-color: rgba(24,24,27,0.92);
+    -fx-border-color: rgba(255,255,255,0.10);
+    -fx-border-width: 1 0 0 0;
+}
+.brand { -fx-font-size: 16px; -fx-font-weight: 900; }
+.totals-box {
+    -fx-background-color: #0b0b0c;
+    -fx-border-color: #27272a;
+    -fx-border-radius: 0.9em;
+    -fx-background-radius: 0.9em;
+    -fx-padding: 0.85em 1.0em;
+}
+.total-label { -fx-font-size: 0.78em; -fx-font-weight: 900; }
+.total-value { -fx-font-size: 1.25em; -fx-font-weight: 900; }
+.total-green { -fx-text-fill: #4ade80; -fx-font-size: 1.25em; -fx-font-weight: 900; }
+
+/* Action buttons (keep invoice .button base) */
+.ghost-btn { -fx-background-color: transparent; -fx-border-color: transparent; }
+.outline-btn { -fx-background-color: transparent; -fx-border-color: #3f3f46; }
+.soft-btn { -fx-background-color: #27272a; }
+
+/* Excess pill */
+.excess-pill {
+    -fx-font-size: 10px;
+    -fx-font-weight: 900;
+    -fx-padding: 8 10;
+    -fx-background-radius: 999;
+    -fx-background-color: rgba(251,191,36,0.12);
+    -fx-border-color: rgba(251,191,36,0.28);
+    -fx-border-radius: 999;
+}

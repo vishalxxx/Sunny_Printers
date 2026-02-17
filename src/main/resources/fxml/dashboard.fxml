@@ -193,7 +193,8 @@
 							</HBox>
 
 							<HBox styleClass="sidebar-item" maxWidth="Infinity"
-								HBox.hgrow="ALWAYS">
+								HBox.hgrow="ALWAYS"
+								onMouseClicked="#loadRecordPayment">
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -207,7 +208,8 @@
 							</HBox>
 
 							<HBox styleClass="sidebar-item" maxWidth="Infinity"
-								HBox.hgrow="ALWAYS">
+								HBox.hgrow="ALWAYS"
+								onMouseClicked="#loadRecordPayment">
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -221,7 +223,8 @@
 							</HBox>
 
 							<HBox styleClass="sidebar-item" maxWidth="Infinity"
-								HBox.hgrow="ALWAYS">
+								HBox.hgrow="ALWAYS"
+								onMouseClicked="#loadRecordPayment">
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -292,7 +295,8 @@
 										text="View Jobs" HBox.hgrow="ALWAYS" />
 								</children>
 							</HBox>
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item"
+								onMouseClicked="#loadRecordPayment">
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -356,7 +360,8 @@
 										text="View Clients" HBox.hgrow="ALWAYS" />
 								</children>
 							</HBox>
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item"
+								onMouseClicked="#loadRecordPayment">
 								<children>
 								<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">

@@ -71,6 +71,31 @@ public class DatabaseInitializer {
 					    );
 					""");
 
+            // ================== PAYMENT ALLOCATIONS TABLE ==================
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS payment_allocations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    payment_id INTEGER NOT NULL,
+                    invoice_id INTEGER NOT NULL,
+                    allocated_amount REAL NOT NULL CHECK(allocated_amount > 0),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (payment_id) REFERENCES payments(id),
+                    FOREIGN KEY (invoice_id) REFERENCES invoice_master(id)
+                );
+            """);
+
+            // ================== PAYMENT DETAILS TABLE ==================
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS payment_details (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    payment_id INTEGER NOT NULL,
+                    field_key TEXT NOT NULL,
+                    field_value TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(payment_id, field_key)
+                );
+            """);
+
             // ================== USERS TABLE ==================
             stmt.execute("""
 					    CREATE TABLE IF NOT EXISTS users (

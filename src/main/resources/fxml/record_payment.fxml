@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/23"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="controller.RecordPaymentController"
+            stylesheets="@../css/invoice_genration.css,@../css/record_payment.css"
+            styleClass="app-root">
+
+    <!-- ===================================================== -->
+    <!-- HEADER (FIXED) -->
+    <!-- ===================================================== -->
+    <top>
+        <HBox styleClass="header-bar" alignment="CENTER_LEFT">
+
+            <!-- LEFT TITLE -->
+            <HBox spacing="12" alignment="CENTER_LEFT">
+                <Label text="💳" styleClass="header-icon"/>
+                <VBox spacing="2">
+                    <Label text="RECORD CLIENT PAYMENT" styleClass="header-title"/>
+                    <Label text="ACCOUNTS › PAYMENTS" styleClass="header-subtitle"/>
+                </VBox>
+            </HBox>
+
+            <Pane HBox.hgrow="ALWAYS"/>
+
+            <!-- RIGHT STATUS -->
+            <HBox spacing="20" alignment="CENTER_RIGHT">
+                <Label text="● PENDING" styleClass="status-pill"/>
+                <VBox alignment="CENTER_RIGHT">
+                    <Label text="CURRENT DATE" styleClass="date-label"/>
+                    <Label fx:id="currentDateLabel" text="Oct 24, 2023" styleClass="date-value"/>
+                </VBox>
+                <Label text="👤" styleClass="avatar"/>
+            </HBox>
+        </HBox>
+    </top>
+
+    <!-- ===================================================== -->
+    <!-- CENTER SCROLLABLE CONTENT -->
+    <!-- ===================================================== -->
+    <center>
+        <ScrollPane fitToWidth="true" styleClass="content-scroll">
+            <content>
+                <VBox spacing="24" styleClass="page" fillWidth="true">
+
+                    <!-- PAYMENT CARDS ROW -->
+                    <HBox spacing="18">
+
+                        <!-- CARD 1: CLIENT + PAYMENT DATE / AMOUNT -->
+                        <VBox spacing="16" styleClass="card" HBox.hgrow="ALWAYS">
+
+                            <!-- CLIENT full width -->
+                            <VBox spacing="6" >
+                                <Label text="SELECT CLIENT" styleClass="field-label"/>
+                                <ComboBox fx:id="clientCombo" promptText="Select client..."    maxWidth="Infinity" styleClass="input"/>
+                            </VBox>
+
+                            <!-- PAYMENT MODE + PAYMENT DATE in one row -->
+                            <GridPane hgap="18" vgap="0">
+                                <columnConstraints>
+                                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                                </columnConstraints>
+
+                                <VBox spacing="6" GridPane.columnIndex="0">
+                                    <Label text="PAYMENT MODE" styleClass="field-label"/>
+                                    <ComboBox fx:id="paymentModeCombo" promptText="Cash / Cheque / UPI" styleClass="input"/>
+                                </VBox>
+
+                                <VBox spacing="6" GridPane.columnIndex="1">
+                                    <Label text="PAYMENT DATE" styleClass="field-label"/>
+                                    <DatePicker fx:id="paymentDatePicker" promptText="mm/dd/yy" styleClass="input"/>
+                                </VBox>
+                            </GridPane>
+                        </VBox>
+
+                        <!-- CARD 2: MODE + REFERENCE / NOTES -->
+                        <VBox spacing="16" styleClass="card" HBox.hgrow="ALWAYS">
+
+                            <GridPane hgap="18" vgap="18">
+                                <columnConstraints>
+                                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                                </columnConstraints>
+
+                                <!-- AMOUNT + REFERENCE (same row) -->
+                                <VBox spacing="6" GridPane.columnIndex="0">
+                                    <Label text="PAYMENT AMOUNT" styleClass="field-label"/>
+                                    <TextField fx:id="amountField" promptText="0.00" styleClass="input amount"/>
+                                </VBox>
+
+                                <VBox spacing="6" GridPane.columnIndex="1">
+                                    <Label text="REFERENCE / UTR" styleClass="field-label"/>
+                                    <TextField fx:id="referenceField" promptText="CHQ / UTR / Ref..." styleClass="input"/>
+                                </VBox>
+
+                                <!-- NOTES full width -->
+                                <VBox spacing="6" GridPane.rowIndex="1" GridPane.columnIndex="0" GridPane.columnSpan="2">
+                                    <Label text="NOTES" styleClass="field-label"/>
+                                    <TextField fx:id="notesField" promptText="Add transaction remarks..." styleClass="input"/>
+                                </VBox>
+                            </GridPane>
+                        </VBox>
+
+                    </HBox>
+
+                    <!-- CHEQUE DETAILS (visible only for cheque) -->
+                    <VBox fx:id="chequeDetailsBox" spacing="14" styleClass="card">
+                        <HBox alignment="CENTER_LEFT" spacing="10">
+                            <Label text="🏦" styleClass="section-icon"/>
+                            <Label text="CHEQUE DETAILS" styleClass="section-title"/>
+                        </HBox>
+
+                        <HBox spacing="10" alignment="CENTER_LEFT" styleClass="info-banner">
+                            <Label text="ℹ" styleClass="info-icon"/>
+                            <Label text="This cheque is pending clearance. Invoices will remain unpaid until cleared." styleClass="info-text" wrapText="true"/>
+                        </HBox>
+
+                        <GridPane hgap="18" vgap="18">
+                            <columnConstraints>
+                                <ColumnConstraints percentWidth="20" hgrow="ALWAYS"/>
+                                <ColumnConstraints percentWidth="35" hgrow="ALWAYS"/>
+                                <ColumnConstraints percentWidth="22.5" hgrow="ALWAYS"/>
+                                <ColumnConstraints percentWidth="22.5" hgrow="ALWAYS"/>
+                            </columnConstraints>
+
+                            <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                <Label text="CHEQUE NO" styleClass="field-label"/>
+                                <TextField fx:id="chequeNumberField" promptText="No..." styleClass="input"/>
+                            </VBox>
+
+                            <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                <Label text="BANK NAME" styleClass="field-label"/>
+                                <ComboBox fx:id="bankNameCombo" promptText="Select bank..." styleClass="input bank-combo"/>
+                            </VBox>
+
+                            <VBox spacing="6" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                                <Label text="CHEQUE DATE" styleClass="field-label"/>
+                                <DatePicker fx:id="chequeDatePicker" promptText="mm/dd/yy" styleClass="input"/>
+                            </VBox>
+
+                            <VBox spacing="6" GridPane.columnIndex="3" GridPane.rowIndex="0">
+                                <Label text="CLEARANCE DATE" styleClass="field-label"/>
+                                <DatePicker fx:id="clearanceDatePicker" promptText="mm/dd/yy" styleClass="input"/>
+                            </VBox>
+                        </GridPane>
+                    </VBox>
+
+                    <!-- UPI DETAILS (visible only for UPI) -->
+                    <VBox fx:id="upiDetailsBox" spacing="14" styleClass="card">
+                        <HBox alignment="CENTER_LEFT" spacing="10">
+                            <Label text="📱" styleClass="section-icon"/>
+                            <Label text="UPI DETAILS" styleClass="section-title"/>
+                        </HBox>
+
+                        <GridPane hgap="18" vgap="18">
+                            <columnConstraints>
+                                <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                                <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                            </columnConstraints>
+
+                            <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                <Label text="UPI ID" styleClass="field-label"/>
+                                <TextField fx:id="upiIdField" promptText="name@bank" styleClass="input"/>
+                            </VBox>
+
+                            <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                <Label text="UTR" styleClass="field-label"/>
+                                <TextField fx:id="upiUtrField" promptText="UTR / reference..." styleClass="input"/>
+                            </VBox>
+                        </GridPane>
+                    </VBox>
+
+                    <!-- TABLE CARD -->
+                    <VBox spacing="0" styleClass="card">
+
+                        <HBox styleClass="table-header">
+                            <Label text="ALLOCATION AGAINST OUTSTANDING INVOICES" styleClass="table-title"/>
+                            <Pane HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="invoiceCountLabel" text="0 records found" styleClass="muted"/>
+                        </HBox>
+
+                        <TableView fx:id="invoiceTable" styleClass="history-table" VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="selectColumn" text="" prefWidth="60"/>
+                                <TableColumn fx:id="invoiceNoColumn" text="INVOICE NO" prefWidth="160"/>
+                                <TableColumn fx:id="invoiceDateColumn" text="DATE" prefWidth="120"/>
+                                <TableColumn fx:id="totalAmountColumn" text="TOTAL" prefWidth="120"/>
+                                <TableColumn fx:id="alreadyPaidColumn" text="PAID" prefWidth="120"/>
+                                <TableColumn fx:id="dueAmountColumn" text="DUE" prefWidth="120"/>
+                                <TableColumn fx:id="allocateAmountColumn" text="ALLOCATE" prefWidth="140"/>
+                            </columns>
+                        </TableView>
+                    </VBox>
+
+                </VBox>
+            </content>
+        </ScrollPane>
+    </center>
+
+    <!-- ===================================================== -->
+    <!-- FOOTER (FIXED ACTION BAR) -->
+    <!-- ===================================================== -->
+    <bottom>
+        <HBox styleClass="footer-bar" alignment="CENTER_LEFT">
+
+            <!-- CLIENT NAME -->
+            <Label fx:id="footerClientLabel" text="Select Client" styleClass="brand"/>
+
+            <Pane HBox.hgrow="ALWAYS"/>
+
+            <!-- TOTALS -->
+            <HBox spacing="30" alignment="CENTER_LEFT" styleClass="totals-box">
+                <VBox>
+                    <Label text="AMOUNT RECEIVED" styleClass="total-label"/>
+                    <Label fx:id="totalEnteredLabel" text="₹ 0.00" styleClass="total-value"/>
+                </VBox>
+                <VBox>
+                    <Label text="TOTAL ALLOCATED" styleClass="total-label"/>
+                    <Label fx:id="totalAllocatedLabel" text="₹ 0.00" styleClass="total-value"/>
+                </VBox>
+                <VBox>
+                    <Label text="DUE" styleClass="total-label"/>
+                    <Label fx:id="remainingBalanceLabel" text="₹ 0.00" styleClass="total-green"/>
+                </VBox>
+            </HBox>
+
+            <Pane HBox.hgrow="ALWAYS"/>
+
+            <!-- ACTIONS -->
+            <HBox spacing="12">
+                <Label fx:id="excessPaymentLabel" text="" visible="false" managed="false" styleClass="excess-pill"/>
+                <Button text="Cancel" onAction="#onCancel" styleClass="ghost-btn"/>
+                <Button text="Reset" onAction="#onReset" styleClass="outline-btn"/>
+                <Button text="Print Receipt" onAction="#onPrintReceipt" styleClass="soft-btn"/>
+                <Button text="Save as Pending" onAction="#onSavePending" styleClass="btn-primary"/>
+            </HBox>
+        </HBox>
+    </bottom>
+
+</BorderPane>

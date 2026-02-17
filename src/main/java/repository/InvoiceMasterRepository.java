@@ -124,10 +124,26 @@ public class InvoiceMasterRepository {
 
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
-                return Optional.of(mapRow(rs));
+                return Optional.of(mapRowPublic(rs));
             }
             return Optional.empty();
         }
+    }
+
+    /* =========================================================
+       SIMPLE FIND BY ID (used by payments)
+       ========================================================= */
+    public InvoiceMaster findById(Connection con, int id) throws Exception {
+        String sql = "SELECT * FROM invoice_master WHERE id = ?";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapRowPublic(rs);
+                }
+            }
+        }
+        return null;
     }
 
     /* =========================================================
@@ -163,7 +179,7 @@ public class InvoiceMasterRepository {
             ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
-                return Optional.of(mapRow(rs));
+                return Optional.of(mapRowPublic(rs));
             }
 
             return Optional.empty();
@@ -247,7 +263,7 @@ public class InvoiceMasterRepository {
             ps.setInt(1, limit);
             ResultSet rs = ps.executeQuery();
 
-            while (rs.next()) list.add(mapRow(rs));
+            while (rs.next()) list.add(mapRowPublic(rs));
         }
 
         return list;
@@ -256,7 +272,7 @@ public class InvoiceMasterRepository {
     /* =========================================================
        MAP ROW
        ========================================================= */
-    private InvoiceMaster mapRow(ResultSet rs) throws Exception {
+    public InvoiceMaster mapRowPublic(ResultSet rs) throws Exception {
 
         InvoiceMaster inv = new InvoiceMaster();
 
