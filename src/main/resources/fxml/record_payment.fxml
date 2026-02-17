@@ -55,7 +55,7 @@
                             <!-- CLIENT full width -->
                             <VBox spacing="6" >
                                 <Label text="SELECT CLIENT" styleClass="field-label"/>
-                                <ComboBox fx:id="clientCombo" promptText="Select client..."    maxWidth="Infinity" styleClass="input"/>
+                                <ComboBox fx:id="clientCombo" promptText="Select client..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
                             </VBox>
 
                             <!-- PAYMENT MODE + PAYMENT DATE in one row -->
@@ -67,12 +67,12 @@
 
                                 <VBox spacing="6" GridPane.columnIndex="0">
                                     <Label text="PAYMENT MODE" styleClass="field-label"/>
-                                    <ComboBox fx:id="paymentModeCombo" promptText="Cash / Cheque / UPI" styleClass="input"/>
+                                    <ComboBox fx:id="paymentModeCombo" promptText="Cash / Cheque / UPI" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
                                 </VBox>
 
                                 <VBox spacing="6" GridPane.columnIndex="1">
                                     <Label text="PAYMENT DATE" styleClass="field-label"/>
-                                    <DatePicker fx:id="paymentDatePicker" promptText="mm/dd/yy" styleClass="input"/>
+                                    <DatePicker fx:id="paymentDatePicker" promptText="mm/dd/yy" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
                                 </VBox>
                             </GridPane>
                         </VBox>

@@ -36,42 +36,71 @@ import utils.DBConnection;
 public class RecordPaymentController implements Initializable {
 
     // --- Top payment information ---
-    @FXML private ComboBox<Client> clientCombo;
-    @FXML private DatePicker paymentDatePicker;
-    @FXML private TextField amountField;
-    @FXML private ComboBox<String> paymentModeCombo;
-    @FXML private TextField referenceField;
-    @FXML private TextField notesField;
-    @FXML private Label currentDateLabel;
-    @FXML private Label footerClientLabel;
+    @FXML
+    private ComboBox<Client> clientCombo;
+    @FXML
+    private DatePicker paymentDatePicker;
+    @FXML
+    private TextField amountField;
+    @FXML
+    private ComboBox<String> paymentModeCombo;
+    @FXML
+    private TextField referenceField;
+    @FXML
+    private TextField notesField;
+    @FXML
+    private Label currentDateLabel;
+    @FXML
+    private Label footerClientLabel;
 
     // Cheque details
-    @FXML private VBox chequeDetailsBox;
-    @FXML private TextField chequeNumberField;
-    @FXML private ComboBox<String> bankNameCombo;
-    @FXML private DatePicker chequeDatePicker;
-    @FXML private DatePicker clearanceDatePicker;
+    @FXML
+    private VBox chequeDetailsBox;
+    @FXML
+    private TextField chequeNumberField;
+    @FXML
+    private ComboBox<String> bankNameCombo;
+    @FXML
+    private DatePicker chequeDatePicker;
+    @FXML
+    private DatePicker clearanceDatePicker;
 
     // UPI details
-    @FXML private VBox upiDetailsBox;
-    @FXML private TextField upiIdField;
-    @FXML private TextField upiUtrField;
+    @FXML
+    private VBox upiDetailsBox;
+    @FXML
+    private TextField upiIdField;
+    @FXML
+    private TextField upiUtrField;
 
     // Invoice table + footer
-    @FXML private TableView<InvoiceRow> invoiceTable;
-    @FXML private TableColumn<InvoiceRow, Boolean> selectColumn;
-    @FXML private TableColumn<InvoiceRow, String> invoiceNoColumn;
-    @FXML private TableColumn<InvoiceRow, String> invoiceDateColumn;
-    @FXML private TableColumn<InvoiceRow, BigDecimal> totalAmountColumn;
-    @FXML private TableColumn<InvoiceRow, BigDecimal> alreadyPaidColumn;
-    @FXML private TableColumn<InvoiceRow, BigDecimal> dueAmountColumn;
-    @FXML private TableColumn<InvoiceRow, BigDecimal> allocateAmountColumn;
+    @FXML
+    private TableView<InvoiceRow> invoiceTable;
+    @FXML
+    private TableColumn<InvoiceRow, Boolean> selectColumn;
+    @FXML
+    private TableColumn<InvoiceRow, String> invoiceNoColumn;
+    @FXML
+    private TableColumn<InvoiceRow, String> invoiceDateColumn;
+    @FXML
+    private TableColumn<InvoiceRow, BigDecimal> totalAmountColumn;
+    @FXML
+    private TableColumn<InvoiceRow, BigDecimal> alreadyPaidColumn;
+    @FXML
+    private TableColumn<InvoiceRow, BigDecimal> dueAmountColumn;
+    @FXML
+    private TableColumn<InvoiceRow, BigDecimal> allocateAmountColumn;
 
-    @FXML private Label invoiceCountLabel;
-    @FXML private Label totalEnteredLabel;
-    @FXML private Label totalAllocatedLabel;
-    @FXML private Label remainingBalanceLabel;
-    @FXML private Label excessPaymentLabel;
+    @FXML
+    private Label invoiceCountLabel;
+    @FXML
+    private Label totalEnteredLabel;
+    @FXML
+    private Label totalAllocatedLabel;
+    @FXML
+    private Label remainingBalanceLabel;
+    @FXML
+    private Label excessPaymentLabel;
 
     private final ObservableList<InvoiceRow> invoiceItems = FXCollections.observableArrayList();
     private final ClientService clientService = new ClientService();
@@ -90,17 +119,24 @@ public class RecordPaymentController implements Initializable {
     }
 
     private void onClientSelected() {
-        boolean hasClient = clientCombo.getSelectionModel().getSelectedItem() != null;
-        setFormEnabled(hasClient);
-        updateAmountEnabledState();
+        try {
+            boolean hasClient = clientCombo.getSelectionModel().getSelectedItem() != null;
+            setFormEnabled(hasClient);
+            updateAmountEnabledState();
 
-        if (hasClient) {
-            loadOutstandingInvoicesForSelectedClient();
-        } else {
-            invoiceItems.clear();
-            if (invoiceCountLabel != null) invoiceCountLabel.setText("0 records found");
+            if (hasClient) {
+                loadOutstandingInvoicesForSelectedClient();
+            } else {
+                invoiceItems.clear();
+                if (invoiceCountLabel != null)
+                    invoiceCountLabel.setText("0 records found");
+            }
+            refreshFooterTotals();
+        } catch (Exception e) {
+            e.printStackTrace();
+            new Alert(Alert.AlertType.ERROR, "Error loading client details: " + e.getMessage(), ButtonType.OK)
+                    .showAndWait();
         }
-        refreshFooterTotals();
     }
 
     private void loadClients() {
@@ -164,28 +200,41 @@ public class RecordPaymentController implements Initializable {
 
     private void setFormEnabled(boolean enabled) {
         // Top form
-        if (paymentDatePicker != null) paymentDatePicker.setDisable(!enabled);
-        if (referenceField != null) referenceField.setDisable(!enabled);
-        if (paymentModeCombo != null) paymentModeCombo.setDisable(!enabled);
-        if (notesField != null) notesField.setDisable(!enabled);
+        if (paymentDatePicker != null)
+            paymentDatePicker.setDisable(!enabled);
+        if (referenceField != null)
+            referenceField.setDisable(!enabled);
+        if (paymentModeCombo != null)
+            paymentModeCombo.setDisable(!enabled);
+        if (notesField != null)
+            notesField.setDisable(!enabled);
 
         // Amount depends on payment mode too
-        if (amountField != null) amountField.setDisable(true);
+        if (amountField != null)
+            amountField.setDisable(true);
 
         // Cheque / UPI fields (mode will further hide)
-        if (chequeNumberField != null) chequeNumberField.setDisable(!enabled);
-        if (bankNameCombo != null) bankNameCombo.setDisable(!enabled);
-        if (chequeDatePicker != null) chequeDatePicker.setDisable(!enabled);
-        if (clearanceDatePicker != null) clearanceDatePicker.setDisable(!enabled);
-        if (upiIdField != null) upiIdField.setDisable(!enabled);
-        if (upiUtrField != null) upiUtrField.setDisable(!enabled);
+        if (chequeNumberField != null)
+            chequeNumberField.setDisable(!enabled);
+        if (bankNameCombo != null)
+            bankNameCombo.setDisable(!enabled);
+        if (chequeDatePicker != null)
+            chequeDatePicker.setDisable(!enabled);
+        if (clearanceDatePicker != null)
+            clearanceDatePicker.setDisable(!enabled);
+        if (upiIdField != null)
+            upiIdField.setDisable(!enabled);
+        if (upiUtrField != null)
+            upiUtrField.setDisable(!enabled);
 
         // Allocation table
-        if (invoiceTable != null) invoiceTable.setDisable(!enabled);
+        if (invoiceTable != null)
+            invoiceTable.setDisable(!enabled);
     }
 
     private void updateAmountEnabledState() {
-        if (amountField == null) return;
+        if (amountField == null)
+            return;
         boolean hasClient = clientCombo != null && clientCombo.getSelectionModel().getSelectedItem() != null;
         boolean hasMode = paymentModeCombo != null && paymentModeCombo.getSelectionModel().getSelectedItem() != null;
         amountField.setDisable(!(hasClient && hasMode));
@@ -193,7 +242,7 @@ public class RecordPaymentController implements Initializable {
 
     private void updateModeSpecificSections(String mode) {
         boolean isCheque = "Cheque".equalsIgnoreCase(mode);
-        boolean isUpi    = "UPI".equalsIgnoreCase(mode);
+        boolean isUpi = "UPI".equalsIgnoreCase(mode);
 
         if (chequeDetailsBox != null) {
             chequeDetailsBox.setVisible(isCheque);
@@ -209,7 +258,8 @@ public class RecordPaymentController implements Initializable {
     }
 
     private void setupInvoiceTable() {
-        if (invoiceTable == null) return;
+        if (invoiceTable == null)
+            return;
 
         // If FXML does not define columns, create them programmatically
         if (selectColumn == null) {
@@ -291,7 +341,8 @@ public class RecordPaymentController implements Initializable {
 
         // Due = Total Allocated - Amount Received (requested)
         BigDecimal due = totalAllocated.subtract(totalEntered);
-        if (due.compareTo(BigDecimal.ZERO) < 0) due = BigDecimal.ZERO;
+        if (due.compareTo(BigDecimal.ZERO) < 0)
+            due = BigDecimal.ZERO;
 
         // Positive => excess payment
         BigDecimal remaining = totalEntered.subtract(totalAllocated);
@@ -341,7 +392,8 @@ public class RecordPaymentController implements Initializable {
             }
 
             String mode = paymentModeCombo.getSelectionModel().getSelectedItem();
-            if (mode == null) mode = "Cash";
+            if (mode == null)
+                mode = "Cash";
 
             // 1) Insert into payments table (simple header table already in schema)
             int paymentId;
@@ -366,9 +418,11 @@ public class RecordPaymentController implements Initializable {
             InvoiceMasterRepository repo = new InvoiceMasterRepository();
 
             for (InvoiceRow row : invoiceItems) {
-                if (!row.isSelected()) continue;
+                if (!row.isSelected())
+                    continue;
                 BigDecimal alloc = row.getAllocateAmount();
-                if (alloc == null || alloc.compareTo(BigDecimal.ZERO) <= 0) continue;
+                if (alloc == null || alloc.compareTo(BigDecimal.ZERO) <= 0)
+                    continue;
 
                 int invoiceId = row.getInvoiceId();
 
@@ -399,7 +453,8 @@ public class RecordPaymentController implements Initializable {
                 }
             }
 
-            // 3) Optional: store extra payment details (mode / UTR / cheque info) into a flexible table
+            // 3) Optional: store extra payment details (mode / UTR / cheque info) into a
+            // flexible table
             savePaymentDetails(con, paymentId, mode);
         });
 
@@ -408,7 +463,8 @@ public class RecordPaymentController implements Initializable {
 
     @FXML
     private void onSavePending() {
-        // For now, treat as normal save but you can later mark method/status differently
+        // For now, treat as normal save but you can later mark method/status
+        // differently
         onSavePayment();
     }
 
@@ -432,7 +488,8 @@ public class RecordPaymentController implements Initializable {
         }
 
         chequeNumberField.clear();
-        if (bankNameCombo != null) bankNameCombo.getSelectionModel().clearSelection();
+        if (bankNameCombo != null)
+            bankNameCombo.getSelectionModel().clearSelection();
         chequeDatePicker.setValue(null);
         clearanceDatePicker.setValue(null);
 
@@ -459,15 +516,16 @@ public class RecordPaymentController implements Initializable {
     private void loadOutstandingInvoicesForSelectedClient() {
         try (Connection con = DBConnection.getConnection()) {
             int clientId = getSelectedClientId(con);
-            if (clientId <= 0) return;
+            if (clientId <= 0)
+                return;
 
             InvoiceMasterRepository repo = new InvoiceMasterRepository();
             // Simple example: load recent invoices for client that still have due > 0
             String sql = """
-                SELECT * FROM invoice_master
-                WHERE client_id = ? AND is_void = 0 AND due_amount > 0
-                ORDER BY invoice_date DESC
-            """;
+                        SELECT * FROM invoice_master
+                        WHERE client_id = ? AND is_void = 0 AND due_amount > 0
+                        ORDER BY invoice_date DESC
+                    """;
 
             invoiceItems.clear();
 
@@ -487,7 +545,7 @@ public class RecordPaymentController implements Initializable {
                                 total,
                                 paid,
                                 due,
-                                due    // default allocate full due
+                                due // default allocate full due
                         ));
                     }
                 }
@@ -514,7 +572,8 @@ public class RecordPaymentController implements Initializable {
      */
     private int getSelectedClientId(Connection con) throws Exception {
         Client c = clientCombo.getSelectionModel().getSelectedItem();
-        if (c == null) return -1;
+        if (c == null)
+            return -1;
 
         if (footerClientLabel != null) {
             // show business name in footer (as requested)
@@ -528,7 +587,8 @@ public class RecordPaymentController implements Initializable {
     // DATE PICKER (same behavior as invoice generation)
     // ==========================================================
     private void setupAutoPopupDatePicker(DatePicker dp) {
-        if (dp == null) return;
+        if (dp == null)
+            return;
 
         dp.setEditable(false);
 
@@ -538,7 +598,8 @@ public class RecordPaymentController implements Initializable {
             public void updateItem(LocalDate date, boolean empty) {
                 super.updateItem(date, empty);
 
-                if (empty || date == null) return;
+                if (empty || date == null)
+                    return;
 
                 if (date.isAfter(LocalDate.now())) {
                     setDisable(true);
@@ -549,11 +610,13 @@ public class RecordPaymentController implements Initializable {
 
         // ✅ Auto open popup on click / focus
         dp.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
-            if (!dp.isShowing()) dp.show();
+            if (!dp.isShowing())
+                dp.show();
         });
 
         dp.focusedProperty().addListener((obs, oldV, newV) -> {
-            if (newV && !dp.isShowing()) dp.show();
+            if (newV && !dp.isShowing())
+                dp.show();
         });
     }
 
@@ -600,22 +663,21 @@ public class RecordPaymentController implements Initializable {
                 "Shivalik Small Finance Bank",
                 "Paytm Payments Bank",
                 "Airtel Payments Bank",
-                "India Post Payments Bank"
-        );
+                "India Post Payments Bank");
     }
 
     private void savePaymentDetails(Connection con, int paymentId, String mode) throws Exception {
         // Ensure supporting table exists
         try (PreparedStatement ps = con.prepareStatement("""
-                CREATE TABLE IF NOT EXISTS payment_details (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    payment_id INTEGER NOT NULL,
-                    field_key TEXT NOT NULL,
-                    field_value TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(payment_id, field_key)
-                )
-            """)) {
+                    CREATE TABLE IF NOT EXISTS payment_details (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        payment_id INTEGER NOT NULL,
+                        field_key TEXT NOT NULL,
+                        field_value TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(payment_id, field_key)
+                    )
+                """)) {
             ps.execute();
         }
 
@@ -642,11 +704,12 @@ public class RecordPaymentController implements Initializable {
     }
 
     private void insertPaymentDetail(Connection con, int paymentId, String key, String value) throws Exception {
-        if (key == null || value == null || value.isBlank()) return;
+        if (key == null || value == null || value.isBlank())
+            return;
         try (PreparedStatement ps = con.prepareStatement("""
-                INSERT OR REPLACE INTO payment_details (payment_id, field_key, field_value)
-                VALUES (?,?,?)
-            """)) {
+                    INSERT OR REPLACE INTO payment_details (payment_id, field_key, field_value)
+                    VALUES (?,?,?)
+                """)) {
             ps.setInt(1, paymentId);
             ps.setString(2, key);
             ps.setString(3, value);
@@ -667,12 +730,12 @@ public class RecordPaymentController implements Initializable {
         private final BooleanProperty selected = new SimpleBooleanProperty(true);
 
         public InvoiceRow(int invoiceId,
-                          String invoiceNo,
-                          String invoiceDate,
-                          BigDecimal totalAmount,
-                          BigDecimal alreadyPaid,
-                          BigDecimal dueAmount,
-                          BigDecimal allocateAmount) {
+                String invoiceNo,
+                String invoiceDate,
+                BigDecimal totalAmount,
+                BigDecimal alreadyPaid,
+                BigDecimal dueAmount,
+                BigDecimal allocateAmount) {
             this.invoiceId = invoiceId;
             this.invoiceNo.set(invoiceNo);
             this.invoiceDate.set(invoiceDate);
@@ -682,29 +745,63 @@ public class RecordPaymentController implements Initializable {
             this.allocateAmount.set(allocateAmount);
         }
 
-        public StringProperty invoiceNoProperty() { return invoiceNo; }
-        public StringProperty invoiceDateProperty() { return invoiceDate; }
-        public ObjectProperty<BigDecimal> totalAmountProperty() { return totalAmount; }
-        public ObjectProperty<BigDecimal> alreadyPaidProperty() { return alreadyPaid; }
-        public ObjectProperty<BigDecimal> dueAmountProperty() { return dueAmount; }
-        public ObjectProperty<BigDecimal> allocateAmountProperty() { return allocateAmount; }
-        public BooleanProperty selectedProperty() { return selected; }
+        public StringProperty invoiceNoProperty() {
+            return invoiceNo;
+        }
 
-        public int getInvoiceId() { return invoiceId; }
+        public StringProperty invoiceDateProperty() {
+            return invoiceDate;
+        }
 
-        public boolean isSelected() { return selected.get(); }
-        public void setSelected(boolean value) { selected.set(value); }
+        public ObjectProperty<BigDecimal> totalAmountProperty() {
+            return totalAmount;
+        }
 
-        public BigDecimal getAllocateAmount() { return allocateAmount.get(); }
-        public void setAllocateAmount(BigDecimal value) { allocateAmount.set(value); }
+        public ObjectProperty<BigDecimal> alreadyPaidProperty() {
+            return alreadyPaid;
+        }
 
-        public BigDecimal getDueAmount() { return dueAmount.get() == null ? BigDecimal.ZERO : dueAmount.get(); }
+        public ObjectProperty<BigDecimal> dueAmountProperty() {
+            return dueAmount;
+        }
+
+        public ObjectProperty<BigDecimal> allocateAmountProperty() {
+            return allocateAmount;
+        }
+
+        public BooleanProperty selectedProperty() {
+            return selected;
+        }
+
+        public int getInvoiceId() {
+            return invoiceId;
+        }
+
+        public boolean isSelected() {
+            return selected.get();
+        }
+
+        public void setSelected(boolean value) {
+            selected.set(value);
+        }
+
+        public BigDecimal getAllocateAmount() {
+            return allocateAmount.get();
+        }
+
+        public void setAllocateAmount(BigDecimal value) {
+            allocateAmount.set(value);
+        }
+
+        public BigDecimal getDueAmount() {
+            return dueAmount.get() == null ? BigDecimal.ZERO : dueAmount.get();
+        }
     }
 
     /**
      * Simple editable cell for BigDecimal values using a TextField.
      */
-    private class EditingBigDecimalCell extends TableCell<InvoiceRow, BigDecimal> {
+    private static class EditingBigDecimalCell extends TableCell<InvoiceRow, BigDecimal> {
         private final TextField textField = new TextField();
 
         EditingBigDecimalCell() {
@@ -718,7 +815,8 @@ public class RecordPaymentController implements Initializable {
 
         private BigDecimal parse(String s) {
             try {
-                if (s == null || s.trim().isEmpty()) return BigDecimal.ZERO;
+                if (s == null || s.trim().isEmpty())
+                    return BigDecimal.ZERO;
                 return new BigDecimal(s.trim());
             } catch (Exception e) {
                 return getItem() == null ? BigDecimal.ZERO : getItem();
@@ -763,4 +861,3 @@ public class RecordPaymentController implements Initializable {
         }
     }
 }
-
