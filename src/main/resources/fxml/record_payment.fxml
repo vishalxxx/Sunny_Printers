@@ -236,7 +236,7 @@
                 <Button text="Cancel" onAction="#onCancel" styleClass="ghost-btn"/>
                 <Button text="Reset" onAction="#onReset" styleClass="outline-btn"/>
                 <Button text="Print Receipt" onAction="#onPrintReceipt" styleClass="soft-btn"/>
-                <Button text="Save as Pending" onAction="#onSavePending" styleClass="btn-primary"/>
+                <Button text="Add Payment" onAction="#onAddPayment" styleClass="btn-primary"/>
             </HBox>
         </HBox>
     </bottom>

@@ -377,95 +377,99 @@ public class RecordPaymentController implements Initializable {
     // --- Button handlers (skeletons) ---
 
     @FXML
-    private void onSavePayment() {
+    private void onAddPayment() {
         if (clientCombo.getSelectionModel().isEmpty()) {
-            // simple guard; you can replace with nicer popup
+            new Alert(Alert.AlertType.WARNING, "Please select a client first.", ButtonType.OK).showAndWait();
             return;
         }
 
-        AtomicDB.runVoid(con -> {
-            int clientId = getSelectedClientId(con);
+        try {
+            AtomicDB.runVoid(con -> {
+                int clientId = getSelectedClientId(con);
 
-            BigDecimal totalAmount = parseAmountField();
-            if (totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException("Amount must be greater than zero");
-            }
-
-            String mode = paymentModeCombo.getSelectionModel().getSelectedItem();
-            if (mode == null)
-                mode = "Cash";
-
-            // 1) Insert into payments table (simple header table already in schema)
-            int paymentId;
-            try (PreparedStatement ps = con.prepareStatement(
-                    "INSERT INTO payments (client_id, amount, payment_date, method) VALUES (?,?,?,?)",
-                    PreparedStatement.RETURN_GENERATED_KEYS)) {
-                ps.setInt(1, clientId);
-                ps.setDouble(2, totalAmount.doubleValue());
-                ps.setString(3, paymentDatePicker.getValue() == null ? null : paymentDatePicker.getValue().toString());
-                ps.setString(4, mode);
-                ps.executeUpdate();
-
-                try (ResultSet rs = ps.getGeneratedKeys()) {
-                    if (!rs.next()) {
-                        throw new IllegalStateException("Failed to generate payment id");
-                    }
-                    paymentId = rs.getInt(1);
+                BigDecimal totalAmount = parseAmountField();
+                if (totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new IllegalArgumentException("Amount must be greater than zero");
                 }
-            }
 
-            // 2) Allocate amounts to invoices and update invoice_master payment fields
-            InvoiceMasterRepository repo = new InvoiceMasterRepository();
+                String mode = paymentModeCombo.getSelectionModel().getSelectedItem();
+                if (mode == null)
+                    mode = "Cash";
 
-            for (InvoiceRow row : invoiceItems) {
-                if (!row.isSelected())
-                    continue;
-                BigDecimal alloc = row.getAllocateAmount();
-                if (alloc == null || alloc.compareTo(BigDecimal.ZERO) <= 0)
-                    continue;
-
-                int invoiceId = row.getInvoiceId();
-
-                // 2a) Insert allocation row (using a dedicated allocations table)
+                // 1) Insert into payments
+                int paymentId;
                 try (PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO payment_allocations (payment_id, invoice_id, allocated_amount) VALUES (?,?,?)")) {
-                    ps.setInt(1, paymentId);
-                    ps.setInt(2, invoiceId);
-                    ps.setDouble(3, alloc.doubleValue());
+                        "INSERT INTO payments (client_id, amount, payment_date, method) VALUES (?,?,?,?)",
+                        PreparedStatement.RETURN_GENERATED_KEYS)) {
+                    ps.setInt(1, clientId);
+                    ps.setDouble(2, totalAmount.doubleValue());
+                    ps.setString(3,
+                            paymentDatePicker.getValue() == null ? null : paymentDatePicker.getValue().toString());
+                    ps.setString(4, mode);
                     ps.executeUpdate();
-                }
 
-                // 2b) Recalculate paid & due for this invoice and update payment_status
-                InvoiceMaster inv = repo.findById(con, invoiceId);
-                if (inv != null) {
-                    double newPaid = inv.getPaidAmount() + alloc.doubleValue();
-                    double newDue = inv.getAmount() - newPaid;
-                    String status;
-                    if (newDue <= 0.0001) {
-                        status = "PAID";
-                        newDue = 0.0;
-                    } else if (newPaid > 0) {
-                        status = "PARTIAL";
-                    } else {
-                        status = "DUE";
+                    try (ResultSet rs = ps.getGeneratedKeys()) {
+                        if (!rs.next()) {
+                            throw new IllegalStateException("Failed to generate payment id");
+                        }
+                        paymentId = rs.getInt(1);
                     }
-                    repo.updatePayment(con, invoiceId, newPaid, newDue, status, paymentDatePicker.getValue());
                 }
-            }
 
-            // 3) Optional: store extra payment details (mode / UTR / cheque info) into a
-            // flexible table
-            savePaymentDetails(con, paymentId, mode);
-        });
+                // 2) Allocate amounts
+                InvoiceMasterRepository repo = new InvoiceMasterRepository();
 
-        refreshFooterTotals();
-    }
+                for (InvoiceRow row : invoiceItems) {
+                    if (!row.isSelected())
+                        continue;
+                    BigDecimal alloc = row.getAllocateAmount();
+                    if (alloc == null || alloc.compareTo(BigDecimal.ZERO) <= 0)
+                        continue;
 
-    @FXML
-    private void onSavePending() {
-        // For now, treat as normal save but you can later mark method/status
-        // differently
-        onSavePayment();
+                    int invoiceId = row.getInvoiceId();
+
+                    // 2a) Insert allocation
+                    try (PreparedStatement ps = con.prepareStatement(
+                            "INSERT INTO payment_allocations (payment_id, invoice_id, allocated_amount) VALUES (?,?,?)")) {
+                        ps.setInt(1, paymentId);
+                        ps.setInt(2, invoiceId);
+                        ps.setDouble(3, alloc.doubleValue());
+                        ps.executeUpdate();
+                    }
+
+                    // 2b) Update invoice
+                    InvoiceMaster inv = repo.findById(con, invoiceId);
+                    if (inv != null) {
+                        double newPaid = inv.getPaidAmount() + alloc.doubleValue();
+                        double newDue = inv.getAmount() - newPaid;
+                        String status;
+                        if (newDue <= 0.0001) {
+                            status = "PAID";
+                            newDue = 0.0;
+                        } else if (newPaid > 0) {
+                            status = "PARTIAL";
+                        } else {
+                            status = "DUE";
+                        }
+                        repo.updatePayment(con, invoiceId, newPaid, newDue, status, paymentDatePicker.getValue());
+                    }
+                }
+
+                // 3) Payment details
+                savePaymentDetails(con, paymentId, mode);
+            });
+
+            // Show success message
+            new Alert(Alert.AlertType.INFORMATION, "Payment recorded successfully!", ButtonType.OK).showAndWait();
+
+            // Reset form but KEEP client selected (better UX)
+            onReset(false);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            new Alert(Alert.AlertType.ERROR, "Failed to record payment: " + e.getMessage(), ButtonType.OK)
+                    .showAndWait();
+        }
     }
 
     @FXML
@@ -476,16 +480,23 @@ public class RecordPaymentController implements Initializable {
 
     @FXML
     private void onReset() {
-        clientCombo.getSelectionModel().clearSelection();
+        // Default reset behavior (clear everything)
+        onReset(true);
+    }
+
+    private void onReset(boolean clearClient) {
+        if (clearClient) {
+            clientCombo.getSelectionModel().clearSelection();
+            if (footerClientLabel != null) {
+                footerClientLabel.setText("Select Client");
+            }
+        }
+
         paymentDatePicker.setValue(LocalDate.now());
         amountField.clear();
         paymentModeCombo.getSelectionModel().clearSelection();
         referenceField.clear();
         notesField.clear();
-
-        if (footerClientLabel != null) {
-            footerClientLabel.setText("Select Client");
-        }
 
         chequeNumberField.clear();
         if (bankNameCombo != null)
@@ -496,19 +507,22 @@ public class RecordPaymentController implements Initializable {
         upiIdField.clear();
         upiUtrField.clear();
 
-        invoiceItems.forEach(row -> {
-            row.setSelected(false);
-            row.setAllocateAmount(BigDecimal.ZERO);
-        });
-        setFormEnabled(false);
-        updateAmountEnabledState();
-        refreshFooterTotals();
+        // Reload invoices if client is still selected, otherwise clear table
+        if (!clearClient && clientCombo.getSelectionModel().getSelectedItem() != null) {
+            onClientSelected(); // Re-fetch from DB
+        } else {
+            invoiceItems.clear();
+            if (invoiceCountLabel != null)
+                invoiceCountLabel.setText("0 records found");
+            setFormEnabled(false);
+            updateAmountEnabledState();
+            refreshFooterTotals();
+        }
     }
 
     @FXML
     private void onCancel() {
-        // Optional: navigate back to dashboard or simply clear
-        onReset();
+        onReset(true);
     }
 
     // ------------------ DB helpers ------------------

@@ -511,7 +511,7 @@
 
 							<Label styleClass="sidebar-section-header" text="Ledger" />
 
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item" onMouseClicked="#loadClientLedger">
 								<children>
 								<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">

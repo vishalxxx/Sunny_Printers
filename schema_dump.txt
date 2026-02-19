@@ -1,0 +1,76 @@
+=== TABLES ===
+users
+sqlite_sequence
+clients
+suppliers
+jobs
+job_items
+billing
+payments
+invoice_history
+printing_items
+paper_items
+binding_items
+lamination_items
+ctp_items
+system_settings
+payment_details
+payment_allocations
+invoice_master
+
+=== TRIGGERS ===
+Trigger: trg_printing_items_updated_at
+  Table: printing_items
+  SQL: CREATE TRIGGER trg_printing_items_updated_at
+AFTER UPDATE ON printing_items
+FOR EACH ROW
+BEGIN
+    UPDATE printing_items
+    SET updated_at = CURRENT_TIMESTAMP
+    WHERE id = OLD.id;
+END
+--------------------------------------------------
+Trigger: trg_paper_items_updated_at
+  Table: paper_items
+  SQL: CREATE TRIGGER trg_paper_items_updated_at
+AFTER UPDATE ON paper_items
+FOR EACH ROW
+BEGIN
+    UPDATE paper_items
+    SET updated_at = CURRENT_TIMESTAMP
+    WHERE id = OLD.id;
+END
+--------------------------------------------------
+Trigger: trg_binding_items_updated_at
+  Table: binding_items
+  SQL: CREATE TRIGGER trg_binding_items_updated_at
+AFTER UPDATE ON binding_items
+FOR EACH ROW
+BEGIN
+    UPDATE binding_items
+    SET updated_at = CURRENT_TIMESTAMP
+    WHERE id = OLD.id;
+END
+--------------------------------------------------
+Trigger: trg_lamination_items_updated_at
+  Table: lamination_items
+  SQL: CREATE TRIGGER trg_lamination_items_updated_at
+AFTER UPDATE ON lamination_items
+FOR EACH ROW
+BEGIN
+    UPDATE lamination_items
+    SET updated_at = CURRENT_TIMESTAMP
+    WHERE id = OLD.id;
+END
+--------------------------------------------------
+Trigger: trg_ctp_plate_updated_at
+  Table: ctp_items
+  SQL: CREATE TRIGGER trg_ctp_plate_updated_at
+AFTER UPDATE ON "ctp_items"
+FOR EACH ROW
+BEGIN
+    UPDATE "ctp_items"
+    SET updated_at = CURRENT_TIMESTAMP
+    WHERE id = OLD.id;
+END
+--------------------------------------------------

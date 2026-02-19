@@ -1,9 +1,9 @@
 package controller;
+
 import javafx.scene.shape.Rectangle;
 
 import java.net.URL;
 import java.util.ResourceBundle;
-
 
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -34,21 +34,23 @@ public class MainController implements Initializable {
 
 	private final double COLLAPSED_WIDTH = 82;
 	private final double EXPANDED_WIDTH = 260;
-	@FXML private StackPane appRoot;
-	@FXML private StackPane centerWrapper;
+	@FXML
+	private StackPane appRoot;
+	@FXML
+	private StackPane centerWrapper;
 
-	
-	@FXML private StackPane sidebarStack;
+	@FXML
+	private StackPane sidebarStack;
 	private Timeline anim;
 
 	Job currentJob = new Job();
 	// Center content container
 
 	public void goDashboard() {
-	    setPageTitle("Dashboard");
-	    // if you also want to show main sidebar here then do it
+		setPageTitle("Dashboard");
+		// if you also want to show main sidebar here then do it
 	}
-	
+
 	@FXML
 	private VBox centerRoot;
 	// singleton-like reference so other controllers can reach MainController
@@ -67,26 +69,28 @@ public class MainController implements Initializable {
 	public void setCenterContent(Parent view) {
 		centerRoot.getChildren().setAll(view);
 	}
-	
-	@FXML private VBox globalLoader;
-	@FXML private Label loaderTitle;
-	@FXML private Label loaderSubtitle;
-	@FXML private ProgressBar loaderBar;
+
+	@FXML
+	private VBox globalLoader;
+	@FXML
+	private Label loaderTitle;
+	@FXML
+	private Label loaderSubtitle;
+	@FXML
+	private ProgressBar loaderBar;
 
 	public void showGlobalLoader(String title, String subtitle) {
-	    loaderTitle.setText(title);
-	    loaderSubtitle.setText(subtitle);
+		loaderTitle.setText(title);
+		loaderSubtitle.setText(subtitle);
 
-	    globalLoader.setVisible(true);
-	    globalLoader.setManaged(true);
+		globalLoader.setVisible(true);
+		globalLoader.setManaged(true);
 	}
 
 	public void hideGlobalLoader() {
-	    globalLoader.setVisible(false);
-	    globalLoader.setManaged(false);
+		globalLoader.setVisible(false);
+		globalLoader.setManaged(false);
 	}
-
-	
 
 	// Sidebar containers
 	@FXML
@@ -101,7 +105,7 @@ public class MainController implements Initializable {
 	private VBox paymentSidebar;
 	@FXML
 	private VBox ledgerSidebar;
-	
+
 	@FXML
 	private VBox settingsSidebar;
 
@@ -125,14 +129,14 @@ public class MainController implements Initializable {
 
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
-		
+
 		setPageTitle("Dashboard");
 		openCenterDashboard();
 		Rectangle clip = new Rectangle();
-	    clip.widthProperty().bind(sidebarScroll.widthProperty());
-	    clip.heightProperty().bind(sidebarScroll.heightProperty());
+		clip.widthProperty().bind(sidebarScroll.widthProperty());
+		clip.heightProperty().bind(sidebarScroll.heightProperty());
 
-	    sidebarScroll.setClip(clip);
+		sidebarScroll.setClip(clip);
 		sidebarStack.prefWidthProperty().bind(sidebarScroll.widthProperty());
 		sidebarStack.minWidthProperty().bind(sidebarScroll.widthProperty());
 		sidebarStack.maxWidthProperty().bind(sidebarScroll.widthProperty());
@@ -141,26 +145,20 @@ public class MainController implements Initializable {
 		mainSidebar.minWidthProperty().bind(sidebarScroll.widthProperty());
 		mainSidebar.maxWidthProperty().bind(sidebarScroll.widthProperty());
 
+		// Collapsable Sidebar Code
+		// ✅ Start in collapsed state
+		sidebarScroll.setPrefWidth(COLLAPSED_WIDTH);
+		applyCollapsedStyleToAll(true);
+		sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
+		sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
+		// ✅ Hover expand
+		sidebarScroll.setOnMouseEntered(e -> expandSidebar());
 
-			//Collapsable Sidebar Code
-		  // ✅ Start in collapsed state
-        sidebarScroll.setPrefWidth(COLLAPSED_WIDTH);
-        applyCollapsedStyleToAll(true);
-        sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
-        sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
-        // ✅ Hover expand
-        sidebarScroll.setOnMouseEntered(e -> expandSidebar());
+		// ✅ Mouse exit collapse
+		sidebarScroll.setOnMouseExited(e -> collapseSidebar());
 
-        // ✅ Mouse exit collapse
-        sidebarScroll.setOnMouseExited(e -> collapseSidebar());
-		
-		
-		//Collapsable sidebar Code END
-		
-		
-		
-		
-		
+		// Collapsable sidebar Code END
+
 		// Show only the main sidebar initially
 		showOnly(mainSidebar);
 		setPageTitle("Dashboard");
@@ -217,138 +215,134 @@ public class MainController implements Initializable {
 			}
 		});
 	}
+
 	private void applyCollapsedStyleToAll(boolean collapsed) {
 
-	    VBox[] sidebars = {
-	            mainSidebar,
-	            jobsSidebar,
-	            clientsSidebar,
-	            billingSidebar,
-	            paymentSidebar,
-	            ledgerSidebar,
-	            settingsSidebar
-	    };
+		VBox[] sidebars = {
+				mainSidebar,
+				jobsSidebar,
+				clientsSidebar,
+				billingSidebar,
+				paymentSidebar,
+				ledgerSidebar,
+				settingsSidebar
+		};
 
-	    for (VBox s : sidebars) {
-	        if (s == null) continue;
+		for (VBox s : sidebars) {
+			if (s == null)
+				continue;
 
-	        if (collapsed) {
-	            if (!s.getStyleClass().contains("sidebar-collapsed")) {
-	                s.getStyleClass().add("sidebar-collapsed");
-	            }
-	        } else {
-	            s.getStyleClass().remove("sidebar-collapsed");
-	        }
-	    }
+			if (collapsed) {
+				if (!s.getStyleClass().contains("sidebar-collapsed")) {
+					s.getStyleClass().add("sidebar-collapsed");
+				}
+			} else {
+				s.getStyleClass().remove("sidebar-collapsed");
+			}
+		}
 	}
 
 	@FXML
 	public void openCenterDashboard() {
-	    loadCenterScreen("/fxml/dashboard_ui.fxml",
-	            "Loading Dashboard...",
-	            "Please wait");
+		loadCenterScreen("/fxml/dashboard_ui.fxml",
+				"Loading Dashboard...",
+				"Please wait");
 	}
-	
+
 	private void loadCenterScreen(String fxmlPath, String title, String subtitle) {
 
-	    // 1️⃣ Show loader
-	    if (centerLoaderIncludeController != null) {
-	        centerLoaderIncludeController.show(title, subtitle);
-	    }
+		// 1️⃣ Show loader
+		if (centerLoaderIncludeController != null) {
+			centerLoaderIncludeController.show(title, subtitle);
+		}
 
-	    new Thread(() -> {
-	        try {
-	            FXMLLoader loader =
-	                    new FXMLLoader(getClass().getResource(fxmlPath));
-	            Parent view = loader.load();
-	            Object controller = loader.getController();
+		new Thread(() -> {
+			try {
+				FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+				Parent view = loader.load();
+				Object controller = loader.getController();
 
-	            Job draftJob = null;
+				Job draftJob = null;
 
-	            // 🔑 Only Add Job screen needs draft logic
-	            if (controller instanceof AddJobController) {
-	                JobService jobService = new JobService();
-	                draftJob = jobService.getLatestDraftJob();
-	            }
-	         // 🔹 Inject root pane into Invoice screen
-	            if (controller instanceof InvoiceGenerationController c) {
-	                c.setRootPane(appRoot);   // 👈 global overlay access
-	            }
+				// 🔑 Only Add Job screen needs draft logic
+				if (controller instanceof AddJobController) {
+					JobService jobService = new JobService();
+					draftJob = jobService.getLatestDraftJob();
+				}
+				// 🔹 Inject root pane into Invoice screen
+				if (controller instanceof InvoiceGenerationController c) {
+					c.setRootPane(appRoot); // 👈 global overlay access
+				}
 
+				Job finalDraftJob = draftJob;
 
-	            Job finalDraftJob = draftJob;
+				Platform.runLater(() -> {
 
-	            Platform.runLater(() -> {
+					// 2️⃣ Replace center UI
+					centerContentHost.getChildren().setAll(view);
 
-	                // 2️⃣ Replace center UI
-	                centerContentHost.getChildren().setAll(view);
+					// 3️⃣ Resume or create job
+					if (controller instanceof AddJobController addJobController) {
 
-	                // 3️⃣ Resume or create job
-	                if (controller instanceof AddJobController addJobController) {
+						if (finalDraftJob != null) {
+							// 🔁 Resume unfinished draft
+							addJobController.openForEdit(finalDraftJob.getId());
+						} else {
+							// 🆕 Create new draft
+							addJobController.startNewJob();
+						}
+					}
 
-	                    if (finalDraftJob != null) {
-	                        // 🔁 Resume unfinished draft
-	                        addJobController.openForEdit(finalDraftJob.getId());
-	                    } else {
-	                        // 🆕 Create new draft
-	                        addJobController.startNewJob();
-	                    }
-	                }
+					// 4️⃣ Hide loader
+					if (centerLoaderIncludeController != null) {
+						centerLoaderIncludeController.hide();
+					}
+				});
 
-	                // 4️⃣ Hide loader
-	                if (centerLoaderIncludeController != null) {
-	                    centerLoaderIncludeController.hide();
-	                }
-	            });
-
-	        } catch (Exception ex) {
-	            ex.printStackTrace();
-	            Platform.runLater(() -> {
-	                if (centerLoaderIncludeController != null) {
-	                    centerLoaderIncludeController.hide();
-	                }
-	            });
-	        }
-	    }).start();
+			} catch (Exception ex) {
+				ex.printStackTrace();
+				Platform.runLater(() -> {
+					if (centerLoaderIncludeController != null) {
+						centerLoaderIncludeController.hide();
+					}
+				});
+			}
+		}).start();
 	}
 
 	private void expandSidebar() {
 
-	    applyCollapsedStyleToAll(false);
+		applyCollapsedStyleToAll(false);
 
-	    sidebarStack.getStyleClass().remove("sidebar-collapsed-bg");
-	    sidebarStack.getStyleClass().add("sidebar-expanded-bg");
+		sidebarStack.getStyleClass().remove("sidebar-collapsed-bg");
+		sidebarStack.getStyleClass().add("sidebar-expanded-bg");
 
-	    animateSidebarWidth(EXPANDED_WIDTH);
+		animateSidebarWidth(EXPANDED_WIDTH);
 	}
+
 	private void collapseSidebar() {
 
-	    animateSidebarWidth(COLLAPSED_WIDTH);
+		animateSidebarWidth(COLLAPSED_WIDTH);
 
-	    if (anim != null) anim.setOnFinished(e -> {
+		if (anim != null)
+			anim.setOnFinished(e -> {
 
-	        applyCollapsedStyleToAll(true);
+				applyCollapsedStyleToAll(true);
 
-	        sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
-	        sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
-	    });
+				sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
+				sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
+			});
 	}
 
+	private void animateSidebarWidth(double width) {
+		if (anim != null)
+			anim.stop();
 
-	    private void animateSidebarWidth(double width) {
-	        if (anim != null) anim.stop();
-
-	        anim = new Timeline(
-	                new KeyFrame(Duration.millis(180),
-	                        new KeyValue(sidebarScroll.prefWidthProperty(), width)
-	                )
-	        );
-	        anim.play();
-	    }
-
-
-
-
+		anim = new Timeline(
+				new KeyFrame(Duration.millis(180),
+						new KeyValue(sidebarScroll.prefWidthProperty(), width)));
+		anim.play();
+	}
 
 	// ---------------------------
 	// Sidebar / Page switching
@@ -377,7 +371,7 @@ public class MainController implements Initializable {
 			target.setVisible(true);
 			target.setManaged(true);
 		}
-		
+
 		else
 			System.out.println("Null SideBAR");
 	}
@@ -431,37 +425,41 @@ public class MainController implements Initializable {
 	private void showMainSidebar(MouseEvent event) {
 		openDashboard(event);
 	}
-	
-	
+
+	@FXML
+	private void loadClientLedger(MouseEvent event) {
+		loadCenterScreen("/fxml/client_ledger.fxml",
+				"Loading Client Ledger...",
+				"Fetching financial records...");
+	}
+
 	@FXML
 	private void loadAddClient(MouseEvent event) {
 		loadCenterScreen("/fxml/add_client.fxml",
-	            "Loading Dashboard...",
-	            "Please wait");
+				"Loading Dashboard...",
+				"Please wait");
 	}
 
 	@FXML
 	private void loadAddJob(MouseEvent event) {
 		loadCenterScreen("/fxml/ht.fxml",
-	            "Loading Dashboard...",
-	            "Please wait");
+				"Loading Dashboard...",
+				"Please wait");
 	}
 
 	@FXML
 	private void loadViewJob(MouseEvent event) {
 		loadCenterScreen("/fxml/view_job.fxml",
-	            "Loading Dashboard...",
-	            "Please wait");
+				"Loading Dashboard...",
+				"Please wait");
 	}
 
 	@FXML
 	public void loadViewClients() {
 		loadCenterScreen("/fxml/view_client.fxml",
-	            "Loading Dashboard...",
-	            "Please wait");
+				"Loading Dashboard...",
+				"Please wait");
 	}
-
-	
 
 	public void setCenterView(Parent view) {
 		centerContentHost.getChildren().setAll(view);
@@ -471,85 +469,83 @@ public class MainController implements Initializable {
 	public void loadInvoiceGenration() {
 
 		loadCenterScreen("/fxml/invoice_genration.fxml",
-	            "Loading Dashboard...",
-	            "Please wait");
+				"Loading Dashboard...",
+				"Please wait");
 	}
-	
+
 	@FXML
 	public void loadRecordPayment(MouseEvent event) {
 		loadCenterScreen("/fxml/record_payment.fxml",
-	            "Loading Payment Screen...",
-	            "Loading outstanding invoices and client details...");
+				"Loading Payment Screen...",
+				"Loading outstanding invoices and client details...");
 	}
 
+	// try {
+	// Parent view =
+	// FXMLLoader.load(getClass().getResource("/fxml/invoice_genration.fxml"));
+	// centerRoot.getChildren().setAll(view);
+	// } catch (Exception e) {
+	// e.printStackTrace();
+	// }
+	// }
 
-//		try {
-//			Parent view = FXMLLoader.load(getClass().getResource("/fxml/invoice_genration.fxml"));
-//			centerRoot.getChildren().setAll(view);
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//	}
-	
-	@FXML private StackPane centerLoaderInclude;
+	@FXML
+	private StackPane centerLoaderInclude;
+
 	public void showCenterLoader() {
-	    centerLoaderInclude.setVisible(true);
-	    centerLoaderInclude.setManaged(true);
+		centerLoaderInclude.setVisible(true);
+		centerLoaderInclude.setManaged(true);
 	}
 
 	public void hideCenterLoader() {
-	    centerLoaderInclude.setVisible(false);
-	    centerLoaderInclude.setManaged(false);
+		centerLoaderInclude.setVisible(false);
+		centerLoaderInclude.setManaged(false);
 	}
 
 	@FXML
 	private void loadUserSettings(MouseEvent event) {
 		loadCenterScreen("/fxml/user_settings.fxml",
-	            "Loading User Settings...",
-	            "Please wait");
+				"Loading User Settings...",
+				"Please wait");
 	}
+
 	@FXML
 	private void loadInvoiceSettings(MouseEvent event) {
 		loadCenterScreen("/fxml/invoice_settings.fxml",
-	            "Loading Invoice Settings...",
-	            "Please wait");
+				"Loading Invoice Settings...",
+				"Please wait");
 	}
-	
-	@FXML private StackPane centerContentHost;
-	@FXML private ScreenLoaderController centerLoaderIncludeController;
+
+	@FXML
+	private StackPane centerContentHost;
+	@FXML
+	private ScreenLoaderController centerLoaderIncludeController;
 
 	public void loadCenterPage(String fxmlPath, String title, String sub) {
 
-	    centerLoaderIncludeController.show(title, sub);
+		centerLoaderIncludeController.show(title, sub);
 
-	    new Thread(() -> {
-	        try {
-	            Parent view = FXMLLoader.load(getClass().getResource(fxmlPath));
+		new Thread(() -> {
+			try {
+				Parent view = FXMLLoader.load(getClass().getResource(fxmlPath));
 
-	            Platform.runLater(() -> {
-	                centerContentHost.getChildren().setAll(view);
-	                centerLoaderIncludeController.hide();
-	            });
+				Platform.runLater(() -> {
+					centerContentHost.getChildren().setAll(view);
+					centerLoaderIncludeController.hide();
+				});
 
-	        } catch (Exception e) {
-	            e.printStackTrace();
-	            Platform.runLater(() -> centerLoaderIncludeController.hide());
-	        }
-	    }).start();
+			} catch (Exception e) {
+				e.printStackTrace();
+				Platform.runLater(() -> centerLoaderIncludeController.hide());
+			}
+		}).start();
 	}
-	
-	
+
 	@FXML
-	private void showSettingSubmenu(MouseEvent event)
-	{
-		
+	private void showSettingSubmenu(MouseEvent event) {
+
 		showOnly(settingsSidebar);
 		setPageTitle("Genral Settings");
 	}
-	
-
-	
-
-	
 
 }
