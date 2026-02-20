@@ -17,7 +17,7 @@ public class LoginService {
 			e.printStackTrace();
 		}
 		if (user != null) {
-
+			utils.SessionManager.getInstance().login(user);
 			System.out.println(
 					user.getId() + "   " + user.getUsername() + "    " + user.getPassword() + "    " + user.getRole());
 			return true;

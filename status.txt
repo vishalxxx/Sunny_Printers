@@ -1,0 +1,16 @@
+﻿ M database/sunnyprinters.db-wal
+ M src/main/java/controller/ClientLedgerController.java
+ M src/main/java/controller/LoginController.java
+ M src/main/java/controller/MainController.java
+ M src/main/java/model/Invoice.java
+ M src/main/java/model/User.java
+ M src/main/java/service/LoginService.java
+ M src/main/java/sunnyprinters/Main.java
+ M src/main/resources/css/dashboard.css
+ M src/main/resources/fxml/dashboard.fxml
+ M src/main/resources/fxml/login.fxml
+?? src/main/java/controller/ProfileSettingsController.java
+?? src/main/java/utils/NavigationManager.java
+?? src/main/java/utils/SessionManager.java
+?? src/main/resources/fxml/profile_settings.fxml
+?? status.txt

@@ -20,9 +20,6 @@ public class Invoice {
 	private String invoiceType; // JOB_SPECIFIC / DATE_RANGE / MONTHLY_BULK
 	private String status; // SENT / DRAFT / PAID
 
-
-
-
 	public LocalDate getFromDate() {
 		return periodFrom;
 	}
@@ -38,8 +35,6 @@ public class Invoice {
 	public void setToDate(LocalDate periodTo) {
 		this.periodTo = periodTo;
 	}
-
-
 
 	public String getInvoiceType() {
 		return invoiceType;

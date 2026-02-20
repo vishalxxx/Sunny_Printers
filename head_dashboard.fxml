@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
@@ -247,7 +247,7 @@
 						<VBox fx:id="jobsSidebar" managed="false" spacing="4"
 							styleClass="sidebar submenu-sidebar">
 
-							<HBox onMouseClicked="#handleBack"
+							<HBox onMouseClicked="#showMainSidebar"
 								styleClass="sidebar-item">
 
 								<children>
@@ -315,7 +315,7 @@
 							styleClass="sidebar submenu-sidebar" visible="false">
 
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#handleBack" spacing="14"
+								onMouseClicked="#showMainSidebar" spacing="14"
 								styleClass="sidebar-item" maxWidth="Infinity"
 								HBox.hgrow="ALWAYS">
 
@@ -379,7 +379,7 @@
 						<VBox fx:id="billingSidebar" managed="false" spacing="4"
 							styleClass="sidebar submenu-sidebar" visible="false">
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#handleBack" spacing="14"
+								onMouseClicked="#showMainSidebar" spacing="14"
 								styleClass="sidebar-item" maxWidth="Infinity"
 								HBox.hgrow="ALWAYS">
 
@@ -442,7 +442,7 @@
 							styleClass="sidebar submenu-sidebar" visible="false">
 
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#handleBack" spacing="14"
+								onMouseClicked="#showMainSidebar" spacing="14"
 								styleClass="sidebar-item" maxWidth="Infinity"
 								HBox.hgrow="ALWAYS">
 
@@ -492,7 +492,7 @@
 							styleClass="sidebar submenu-sidebar" visible="false">
 
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#handleBack" spacing="14"
+								onMouseClicked="#showMainSidebar" spacing="14"
 								styleClass="sidebar-item" maxWidth="Infinity"
 								HBox.hgrow="ALWAYS">
 
@@ -548,7 +548,7 @@
 							styleClass="sidebar submenu-sidebar">
 
 <HBox alignment="CENTER_LEFT"
-      onMouseClicked="#handleBack"
+      onMouseClicked="#showMainSidebar"
       styleClass="sidebar-item">
 
     <children>
@@ -613,11 +613,11 @@
 			<StackPane fx:id="centerWrapper"
 				BorderPane.alignment="CENTER">
 
-				<!-- ✅ All screens will be loaded here -->
+				<!-- Γ£à All screens will be loaded here -->
 				<StackPane fx:id="centerContentHost" maxHeight="Infinity"
 					maxWidth="Infinity" />
 
-				<!-- ✅ Loader always on top -->
+				<!-- Γ£à Loader always on top -->
 				<fx:include fx:id="centerLoaderInclude"
 					source="screen_loader.fxml" />
 

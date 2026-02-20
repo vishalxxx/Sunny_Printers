@@ -1,4 +1,4 @@
-package controller;
+﻿package controller;
 
 import javafx.scene.shape.Rectangle;
 
@@ -19,13 +19,15 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import javafx.scene.Scene;
-import java.io.IOException;
 import model.Job;
 import service.JobService;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
+import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
+import javafx.fxml.FXML;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
 public class MainController implements Initializable {
@@ -54,7 +56,7 @@ public class MainController implements Initializable {
 	// singleton-like reference so other controllers can reach MainController
 	private static MainController instance;
 
-	// no-arg constructor — FXMLLoader will call this when creating the controller
+	// no-arg constructor ΓÇö FXMLLoader will call this when creating the controller
 	public MainController() {
 		instance = this;
 	}
@@ -144,15 +146,15 @@ public class MainController implements Initializable {
 		mainSidebar.maxWidthProperty().bind(sidebarScroll.widthProperty());
 
 		// Collapsable Sidebar Code
-		// ✅ Start in collapsed state
+		// Γ£à Start in collapsed state
 		sidebarScroll.setPrefWidth(COLLAPSED_WIDTH);
 		applyCollapsedStyleToAll(true);
 		sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
 		sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
-		// ✅ Hover expand
+		// Γ£à Hover expand
 		sidebarScroll.setOnMouseEntered(e -> expandSidebar());
 
-		// ✅ Mouse exit collapse
+		// Γ£à Mouse exit collapse
 		sidebarScroll.setOnMouseExited(e -> collapseSidebar());
 
 		// Collapsable sidebar Code END
@@ -211,13 +213,6 @@ public class MainController implements Initializable {
 					centerRoot.setMinHeight(centerScroll.getViewportBounds().getHeight());
 				}
 			}
-
-			// Initialize User Profile
-			if (userNameLabel != null && utils.SessionManager.getInstance().isLoggedIn()) {
-				userNameLabel.setText(utils.SessionManager.getInstance().getCurrentUser().getUsername());
-			} else if (userNameLabel != null) {
-				userNameLabel.setText("Guest");
-			}
 		});
 	}
 
@@ -254,31 +249,11 @@ public class MainController implements Initializable {
 				"Please wait");
 	}
 
-	private VBox currentSidebar = null;
-
 	private void loadCenterScreen(String fxmlPath, String title, String subtitle) {
-		loadCenterScreen(fxmlPath, title, subtitle, true);
-	}
 
-	private String lastValidTitle = "Dashboard";
-
-	private void loadCenterScreen(String fxmlPath, String loaderTitle, String loaderSubtitle, boolean pushToHistory) {
-		System.out.println(
-				"DEBUG: loadCenterScreen called with path: " + fxmlPath + " | pushToHistory: " + pushToHistory);
-		if (pushToHistory) {
-			String sidebarId = (currentSidebar != null) ? currentSidebar.getId() : null;
-			System.out.println(
-					"DEBUG: Preparing to push to NavigationManager... Using lastValidTitle: " + lastValidTitle);
-			utils.NavigationManager.getInstance().push(fxmlPath, lastValidTitle, loaderSubtitle, sidebarId);
-		}
-
-		lastValidTitle = pageTitle.getText();
-		System.out
-				.println("DEBUG: loadCenterScreen finished pushing/setting. lastValidTitle is now: " + lastValidTitle);
-
-		// 1️⃣ Show loader
+		// 1∩╕ÅΓâú Show loader
 		if (centerLoaderIncludeController != null) {
-			centerLoaderIncludeController.show(loaderTitle, loaderSubtitle);
+			centerLoaderIncludeController.show(title, subtitle);
 		}
 
 		new Thread(() -> {
@@ -289,36 +264,36 @@ public class MainController implements Initializable {
 
 				Job draftJob = null;
 
-				// 🔑 Only Add Job screen needs draft logic
+				// ≡ƒöæ Only Add Job screen needs draft logic
 				if (controller instanceof AddJobController) {
 					JobService jobService = new JobService();
 					draftJob = jobService.getLatestDraftJob();
 				}
-				// 🔹 Inject root pane into Invoice screen
+				// ≡ƒö╣ Inject root pane into Invoice screen
 				if (controller instanceof InvoiceGenerationController c) {
-					c.setRootPane(appRoot); // 👈 global overlay access
+					c.setRootPane(appRoot); // ≡ƒæê global overlay access
 				}
 
 				Job finalDraftJob = draftJob;
 
 				Platform.runLater(() -> {
 
-					// 2️⃣ Replace center UI
+					// 2∩╕ÅΓâú Replace center UI
 					centerContentHost.getChildren().setAll(view);
 
-					// 3️⃣ Resume or create job
+					// 3∩╕ÅΓâú Resume or create job
 					if (controller instanceof AddJobController addJobController) {
 
 						if (finalDraftJob != null) {
-							// 🔁 Resume unfinished draft
+							// ≡ƒöü Resume unfinished draft
 							addJobController.openForEdit(finalDraftJob.getId());
 						} else {
-							// 🆕 Create new draft
+							// ≡ƒåò Create new draft
 							addJobController.startNewJob();
 						}
 					}
 
-					// 4️⃣ Hide loader
+					// 4∩╕ÅΓâú Hide loader
 					if (centerLoaderIncludeController != null) {
 						centerLoaderIncludeController.hide();
 					}
@@ -392,7 +367,6 @@ public class MainController implements Initializable {
 
 	private void showOnly(VBox target) {
 		hideAllSidebars();
-		currentSidebar = target;
 		if (target != null) {
 			target.setVisible(true);
 			target.setManaged(true);
@@ -403,11 +377,8 @@ public class MainController implements Initializable {
 	}
 
 	private void setPageTitle(String title) {
-		System.out.println("DEBUG: setPageTitle called with: " + title);
 		if (pageTitle != null) {
 			pageTitle.setText(title);
-			lastValidTitle = title;
-			System.out.println("DEBUG: pageTitle set to: " + title + " | lastValidTitle is now: " + lastValidTitle);
 		}
 	}
 
@@ -421,54 +392,33 @@ public class MainController implements Initializable {
 	}
 
 	@FXML
-	public void showJobsSubmenu(MouseEvent event) {
+	private void showJobsSubmenu(MouseEvent event) {
 		showOnly(jobsSidebar);
 		setPageTitle("Job Details");
 	}
 
 	@FXML
-	public void showClientsSubmenu(MouseEvent event) {
+	private void showClientsSubmenu(MouseEvent event) {
 		showOnly(clientsSidebar);
 		setPageTitle("Client Details");
 	}
 
 	@FXML
-	public void showBillingSubmenu(MouseEvent event) {
+	private void showBillingSubmenu(MouseEvent event) {
 		showOnly(billingSidebar);
 		setPageTitle("Billing");
 	}
 
 	@FXML
-	public void showPaymentSubmenu(MouseEvent event) {
+	private void showPaymentSubmenu(MouseEvent event) {
 		showOnly(paymentSidebar);
 		setPageTitle("Payments");
 	}
 
 	@FXML
-	public void showLedgerSubmenu(MouseEvent event) {
+	private void showLedgerSubmenu(MouseEvent event) {
 		showOnly(ledgerSidebar);
 		setPageTitle("Ledger");
-	}
-
-	private VBox findSidebarById(String id) {
-		if (id == null)
-			return mainSidebar;
-		switch (id) {
-			case "jobsSidebar":
-				return jobsSidebar;
-			case "clientsSidebar":
-				return clientsSidebar;
-			case "billingSidebar":
-				return billingSidebar;
-			case "paymentSidebar":
-				return paymentSidebar;
-			case "ledgerSidebar":
-				return ledgerSidebar;
-			case "settingsSidebar":
-				return settingsSidebar;
-			default:
-				return mainSidebar;
-		}
 	}
 
 	@FXML
@@ -477,25 +427,7 @@ public class MainController implements Initializable {
 	}
 
 	@FXML
-	public void handleBack(MouseEvent event) {
-		if (utils.NavigationManager.getInstance().hasHistory()) {
-			utils.NavigationManager.NavState prevState = utils.NavigationManager.getInstance().pop();
-			if (prevState != null) {
-				VBox restoredSidebar = findSidebarById(prevState.getActiveSidebarId());
-				showOnly(restoredSidebar);
-				lastValidTitle = prevState.getTitle();
-				setPageTitle(prevState.getTitle());
-				loadCenterScreen(prevState.getFxmlPath(), "Loading...", "Please wait", false);
-			}
-		} else {
-			// If no history exists, back button does nothing
-			// (or falls back to dashboard)
-			openDashboard(event);
-		}
-	}
-
-	@FXML
-	public void loadClientLedger(MouseEvent event) {
+	private void loadClientLedger(MouseEvent event) {
 		loadCenterScreen("/fxml/client_ledger.fxml",
 				"Loading Client Ledger...",
 				"Fetching financial records...");
@@ -516,7 +448,7 @@ public class MainController implements Initializable {
 	}
 
 	@FXML
-	public void loadViewJob(MouseEvent event) {
+	private void loadViewJob(MouseEvent event) {
 		loadCenterScreen("/fxml/view_job.fxml",
 				"Loading Dashboard...",
 				"Please wait");
@@ -571,7 +503,7 @@ public class MainController implements Initializable {
 	}
 
 	@FXML
-	public void loadUserSettings(MouseEvent event) {
+	private void loadUserSettings(MouseEvent event) {
 		loadCenterScreen("/fxml/user_settings.fxml",
 				"Loading User Settings...",
 				"Please wait");
@@ -610,34 +542,10 @@ public class MainController implements Initializable {
 	}
 
 	@FXML
-	public void showSettingSubmenu(MouseEvent event) {
+	private void showSettingSubmenu(MouseEvent event) {
 
 		showOnly(settingsSidebar);
 		setPageTitle("Genral Settings");
 	}
 
-	// User Profile Logic
-	@FXML
-	private javafx.scene.control.Label userNameLabel;
-
-	@FXML
-	private void handleSignOut(javafx.event.ActionEvent event) {
-		utils.SessionManager.getInstance().logout();
-		try {
-			FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
-			Parent loginRoot = loader.load();
-			Stage stage = (Stage) root.getScene().getWindow();
-			stage.setScene(new Scene(loginRoot));
-			stage.centerOnScreen();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	@FXML
-	private void handleProfileSettings(javafx.event.ActionEvent event) {
-		loadCenterScreen("/fxml/profile_settings.fxml",
-				"Loading Profile...",
-				"Please wait");
-	}
 }

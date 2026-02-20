@@ -1,0 +1,49 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------< sunny_group:Sunny_Printers >---------------------
+[INFO] Building Sunny Printers 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ Sunny_Printers ---
+[INFO] Copying 78 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ Sunny_Printers ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 82 source files with javac [debug target 17] to target\classes
+[INFO] /C:/Users/VishalGoswami/eclipse-workspace/Sunny_Printers/src/main/java/controller/BindingTabController.java: Some input files use or override a deprecated API.
+[INFO] /C:/Users/VishalGoswami/eclipse-workspace/Sunny_Printers/src/main/java/controller/BindingTabController.java: Recompile with -Xlint:deprecation for details.
+[INFO] -------------------------------------------------------------
+[WARNING] COMPILATION WARNING : 
+[INFO] -------------------------------------------------------------
+[WARNING] location of system modules is not set in conjunction with -source 17
+  not setting the location of system modules may lead to class files that cannot run on JDK 17
+    --release 17 is recommended instead of -source 17 -target 17 because it sets the location of system modules automatically
+[INFO] 1 warning
+[INFO] -------------------------------------------------------------
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/VishalGoswami/eclipse-workspace/Sunny_Printers/src/main/java/controller/ClientLedgerController.java:[284,41] cannot find symbol
+  symbol:   method openRecordPayment(boolean)
+  location: class controller.MainController
+[INFO] 1 error
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  2.993 s
+[INFO] Finished at: 2026-02-20T17:45:25+05:30
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project Sunny_Printers: Compilation failure
+[ERROR] /C:/Users/VishalGoswami/eclipse-workspace/Sunny_Printers/src/main/java/controller/ClientLedgerController.java:[284,41] cannot find symbol
+[ERROR]   symbol:   method openRecordPayment(boolean)
+[ERROR]   location: class controller.MainController
+[ERROR] 
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

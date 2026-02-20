@@ -1,11 +1,9 @@
 package sunnyprinters;
 
 import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
 public class Main extends Application {
@@ -23,17 +21,28 @@ public class Main extends Application {
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 
-		FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dashboard.fxml"));
+		// BYPASS LOGIN FOR DEV
+		model.User admin = new model.User();
+		admin.setUsername("Admin");
+		admin.setRole("Administrator");
+		// Ensure SessionManager exists and has a login method
+		utils.SessionManager.getInstance().login(admin);
 
-		StackPane root = loader.load(); // ✅ MUST be StackPane
+		FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dashboard.fxml"));
+		Parent root = loader.load();
+
+		// FXMLLoader loginLoader = new
+		// FXMLLoader(getClass().getResource("/fxml/login.fxml"));
+		// Parent root = loginLoader.load(); // Login root is AnchorPane
 
 		Scene scene = new Scene(root);
 
+		primaryStage.setMaximized(true);
 		primaryStage.setScene(scene);
 		primaryStage.setTitle("Sunny Printers");
 
 		// ✅ init loader system BEFORE showing stage
-		utils.LoaderManager.init(root);
+		// utils.LoaderManager.setHost(primaryStage);
 
 		primaryStage.show();
 	}
