@@ -40,23 +40,21 @@
 		<!-- LEFT SIDEBAR -->
 		<left>
 
+			<StackPane fx:id="sidebarStack" maxWidth="240"
+				minWidth="50" styleClass="sidebar-background" BorderPane.alignment="CENTER_LEFT">
+				<BorderPane.margin>
+					<Insets right="10.0" />
+				</BorderPane.margin>
 
-			<ScrollPane fx:id="sidebarScroll" fitToWidth="true"
-				hbarPolicy="NEVER" maxWidth="240" minWidth="70" pannable="false"
-				styleClass="sidebar-scroll" stylesheets="@../css/sidebar.css"
-				vbarPolicy="AS_NEEDED" BorderPane.alignment="CENTER_LEFT">
+				<ScrollPane fx:id="sidebarScroll" fitToWidth="true"
+					hbarPolicy="NEVER" pannable="true" styleClass="sidebar-scroll" 
+					vbarPolicy="NEVER">
 
-
-				<content>
-
-					<StackPane fx:id="sidebarStack" maxWidth="240"
-						minWidth="70" styleClass="sidebar-background">
-
-							
-							
-						<!-- MAIN SIDEBAR -->
-						<VBox fx:id="mainSidebar" fillWidth="true"
-							maxWidth="Infinity" spacing="4" styleClass="sidebar">
+					<content>
+						<StackPane>
+							<!-- MAIN SIDEBAR -->
+							<VBox fx:id="mainSidebar" fillWidth="true"
+								maxWidth="Infinity" spacing="5" styleClass="sidebar">
 
 
 
@@ -173,69 +171,7 @@
 								</children>
 							</HBox>
 
-							<!-- QUICK LINKS -->
-							<Label styleClass="sidebar-section-header"
-								text="Quick Links" />
 
-							<HBox onMouseClicked="#loadAddClient"
-								styleClass="sidebar-item" maxWidth="Infinity"
-								HBox.hgrow="ALWAYS">
-								<children>
-									<ImageView fitHeight="20" fitWidth="20"
-										preserveRatio="true">
-										<image>
-											<Image url="@../icons/add_client.png" />
-										</image>
-									</ImageView>
-									<Label maxWidth="Infinity" styleClass="sidebar-text"
-										text="Add Client" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
-
-							<HBox styleClass="sidebar-item" maxWidth="Infinity"
-								HBox.hgrow="ALWAYS"
-								onMouseClicked="#loadRecordPayment">
-								<children>
-									<ImageView fitHeight="20" fitWidth="20"
-										preserveRatio="true">
-										<image>
-											<Image url="@../icons/add_bill.png" />
-										</image>
-									</ImageView>
-									<Label maxWidth="Infinity" styleClass="sidebar-text"
-										text="Create Bill" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
-
-							<HBox styleClass="sidebar-item" maxWidth="Infinity"
-								HBox.hgrow="ALWAYS"
-								onMouseClicked="#loadRecordPayment">
-								<children>
-									<ImageView fitHeight="20" fitWidth="20"
-										preserveRatio="true">
-										<image>
-											<Image url="@../icons/add_job.png" />
-										</image>
-									</ImageView>
-									<Label maxWidth="Infinity" styleClass="sidebar-text"
-										text="Add Job" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
-
-							<HBox styleClass="sidebar-item" maxWidth="Infinity"
-								HBox.hgrow="ALWAYS"
-								onMouseClicked="#loadRecordPayment">
-								<children>
-									<ImageView fitHeight="20" fitWidth="20"
-										preserveRatio="true">
-										<image>
-											<Image url="@../icons/add_payment.png" />
-										</image>
-									</ImageView>
-									<Label maxWidth="Infinity" styleClass="sidebar-text"
-										text="Record Payment" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
 
 						</VBox>
 
@@ -245,10 +181,10 @@
 							and we will apply vgrow only to mainSidebar for auto-height -->
 						<!-- ================= JOBS SUBMENU ================= -->
 						<VBox fx:id="jobsSidebar" managed="false" spacing="4"
-							styleClass="sidebar submenu-sidebar">
+							styleClass="sidebar submenu-sidebar" fillWidth="true" maxWidth="Infinity">
 
 							<HBox onMouseClicked="#handleBack"
-								styleClass="sidebar-item">
+								styleClass="sidebar-item" maxWidth="Infinity" HBox.hgrow="ALWAYS">
 
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
@@ -269,7 +205,7 @@
 								text="Job Details" />
 
 							<HBox alignment="CENTER_LEFT" onMouseClicked="#loadAddJob"
-								styleClass="sidebar-item">
+								styleClass="sidebar-item" maxWidth="Infinity" HBox.hgrow="ALWAYS">
 
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
@@ -283,7 +219,7 @@
 								</children>
 							</HBox>
 							<HBox alignment="CENTER_LEFT" onMouseClicked="#loadViewJob"
-								styleClass="sidebar-item">
+								styleClass="sidebar-item" maxWidth="Infinity" HBox.hgrow="ALWAYS">
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -312,10 +248,10 @@
 
 						<!-- ================= CLIENTS SUBMENU ================= -->
 						<VBox fx:id="clientsSidebar" managed="false" spacing="4"
-							styleClass="sidebar submenu-sidebar" visible="false">
+							styleClass="sidebar submenu-sidebar" fillWidth="true" maxWidth="Infinity" visible="false">
 
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#handleBack" spacing="14"
+								onMouseClicked="#handleBack" 
 								styleClass="sidebar-item" maxWidth="Infinity"
 								HBox.hgrow="ALWAYS">
 
@@ -335,7 +271,7 @@
 								text="Client Details" />
 
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#loadAddClient" styleClass="sidebar-item">
+								onMouseClicked="#loadAddClient" styleClass="sidebar-item" maxWidth="Infinity" HBox.hgrow="ALWAYS">
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -348,7 +284,7 @@
 								</children>
 							</HBox>
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#loadViewClients" styleClass="sidebar-item">
+								onMouseClicked="#loadViewClients" styleClass="sidebar-item" maxWidth="Infinity" HBox.hgrow="ALWAYS">
 								<children>
 								<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -377,9 +313,9 @@
 
 						<!-- ================= BILLING SUBMENU ================= -->
 						<VBox fx:id="billingSidebar" managed="false" spacing="4"
-							styleClass="sidebar submenu-sidebar" visible="false">
+							styleClass="sidebar submenu-sidebar" fillWidth="true" maxWidth="Infinity" visible="false">
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#handleBack" spacing="14"
+								onMouseClicked="#handleBack" 
 								styleClass="sidebar-item" maxWidth="Infinity"
 								HBox.hgrow="ALWAYS">
 
@@ -399,7 +335,7 @@
 							<Label styleClass="sidebar-section-header" text="Billing" />
 
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#loadInvoiceGenration" styleClass="sidebar-item">
+								onMouseClicked="#loadInvoiceGenration" styleClass="sidebar-item" maxWidth="Infinity" HBox.hgrow="ALWAYS">
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -411,7 +347,7 @@
 										text="Create Bill" HBox.hgrow="ALWAYS" />
 								</children>
 							</HBox>
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item" maxWidth="Infinity" HBox.hgrow="ALWAYS">
 								<children>
 								<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -423,7 +359,7 @@
 										text="View Bills" HBox.hgrow="ALWAYS" />
 								</children>
 							</HBox>
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item" maxWidth="Infinity" HBox.hgrow="ALWAYS">
 								<children>
 								<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -439,10 +375,10 @@
 
 						<!-- ================= PAYMENTS SUBMENU ================= -->
 						<VBox fx:id="paymentSidebar" managed="false" spacing="4"
-							styleClass="sidebar submenu-sidebar" visible="false">
+							styleClass="sidebar submenu-sidebar" fillWidth="true" maxWidth="Infinity" visible="false">
 
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#handleBack" spacing="14"
+								onMouseClicked="#handleBack" 
 								styleClass="sidebar-item" maxWidth="Infinity"
 								HBox.hgrow="ALWAYS">
 
@@ -461,7 +397,7 @@
 
 							<Label styleClass="sidebar-section-header" text="Payments" />
 
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item" maxWidth="Infinity" HBox.hgrow="ALWAYS">
 								<children>
 								<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -473,7 +409,7 @@
 										text="Record Payment" HBox.hgrow="ALWAYS" />
 								</children>
 							</HBox>
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item" maxWidth="Infinity" HBox.hgrow="ALWAYS">
 								<children>
 								<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -489,10 +425,10 @@
 
 						<!-- ================= LEDGER SUBMENU ================= -->
 						<VBox fx:id="ledgerSidebar" managed="false" spacing="4"
-							styleClass="sidebar submenu-sidebar" visible="false">
+							styleClass="sidebar submenu-sidebar" fillWidth="true" maxWidth="Infinity" visible="false">
 
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#handleBack" spacing="14"
+								onMouseClicked="#handleBack" 
 								styleClass="sidebar-item" maxWidth="Infinity"
 								HBox.hgrow="ALWAYS">
 
@@ -523,7 +459,7 @@
 										text="Client Ledger" HBox.hgrow="ALWAYS" />
 								</children>
 							</HBox>
-							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item">
+							<HBox alignment="CENTER_LEFT" styleClass="sidebar-item" maxWidth="Infinity" HBox.hgrow="ALWAYS">
 								<children>
 								<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -545,11 +481,12 @@
 						
 							
 						<VBox fx:id="settingsSidebar" managed="false" spacing="5"
-							styleClass="sidebar submenu-sidebar">
+							styleClass="sidebar submenu-sidebar" fillWidth="true" maxWidth="Infinity">
+
 
 <HBox alignment="CENTER_LEFT"
       onMouseClicked="#handleBack"
-      styleClass="sidebar-item">
+      styleClass="sidebar-item" maxWidth="Infinity" HBox.hgrow="ALWAYS">
 
     <children>
         <ImageView fitHeight="20" fitWidth="20" preserveRatio="true">
@@ -558,12 +495,12 @@
             </image>
         </ImageView>
 
-        <Label text="Back" styleClass="sidebar-text"/>
+        <Label text="Back" styleClass="sidebar-text" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
     </children>
 </HBox>
 
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#loadUserSettings" spacing="14"
+								onMouseClicked="#loadUserSettings" 
 								styleClass="sidebar-item" maxWidth="Infinity"
 								HBox.hgrow="ALWAYS">
 
@@ -582,7 +519,7 @@
 						
 
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#loadInvoiceSettings" styleClass="sidebar-item">
+								onMouseClicked="#loadInvoiceSettings" styleClass="sidebar-item" maxWidth="Infinity" HBox.hgrow="ALWAYS">
 								<children>
 									<ImageView fitHeight="20" fitWidth="20"
 										preserveRatio="true">
@@ -595,16 +532,12 @@
 								</children>
 							</HBox>
 							
-						</VBox>
-						
-						
-
-					</StackPane>
-				</content>
-				<BorderPane.margin>
-					<Insets right="10.0" />
-				</BorderPane.margin>
-			</ScrollPane>
+							</VBox>
+							
+						</StackPane>
+					</content>
+				</ScrollPane>
+			</StackPane>
 		</left>
 
 		<!-- CENTER DASHBOARD AREA -->

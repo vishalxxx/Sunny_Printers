@@ -3,6 +3,7 @@ package utils;
 import java.util.Stack;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.scene.Parent;
 import javafx.scene.layout.VBox;
 
 public class NavigationManager {
@@ -27,7 +28,13 @@ public class NavigationManager {
             history.push(currentState);
             canGoBack.set(true);
         }
-        currentState = new NavState(fxmlPath, title, subtitle, activeSidebarId);
+        currentState = new NavState(fxmlPath, title, subtitle, activeSidebarId, null);
+    }
+
+    public void updateCurrentView(Parent view) {
+        if (currentState != null) {
+            currentState.setView(view);
+        }
     }
 
     public NavState pop() {
@@ -58,12 +65,14 @@ public class NavigationManager {
         private final String title;
         private final String subtitle;
         private final String activeSidebarId;
+        private Parent view;
 
-        public NavState(String fxmlPath, String title, String subtitle, String activeSidebarId) {
+        public NavState(String fxmlPath, String title, String subtitle, String activeSidebarId, Parent view) {
             this.fxmlPath = fxmlPath;
             this.title = title;
             this.subtitle = subtitle;
             this.activeSidebarId = activeSidebarId;
+            this.view = view;
         }
 
         public String getFxmlPath() {
@@ -80,6 +89,14 @@ public class NavigationManager {
 
         public String getActiveSidebarId() {
             return activeSidebarId;
+        }
+
+        public Parent getView() {
+            return view;
+        }
+
+        public void setView(Parent view) {
+            this.view = view;
         }
     }
 }

@@ -3,9 +3,10 @@
    ====================================================== */
 .root {
     -fx-background-color: #000000;
-	-fx-font-size: 1.15em;    /* Slightly larger */
+    -fx-font-size: 1.15em;
+    /* Slightly larger */
     -fx-text-fill: #f5f5f5;
-	-fx-padding: 0.5em;
+    -fx-padding: 0.5em;
 
 }
 
@@ -39,26 +40,7 @@
     -fx-background-color: #191919;
 }
 
-.sidebar {
-	-fx-pref-width: 18em;
-	    -fx-min-width: 18em;
-	    -fx-max-width: 18em;
-}
 
-.sidebar-item {
-    -fx-padding: 0.7em 1em;
-    -fx-spacing: 0.9em;
-    -fx-alignment: CENTER_LEFT;
-    -fx-background-radius: 0.5em;
-	-fx-wrap-text: true;
-	-fx-font-size: 1.3em;
-	
-
-}
-
-.sidebar-item:hover {
-    -fx-background-color: #333333;
-}
 
 .back-item {
     -fx-background-color: #252525;
@@ -125,31 +107,32 @@
 /* ======================================================
    BOTTOM SECTION
    ====================================================== */
-   
-   /*---------------------Recent Activites--------------------------*/
-   .activity-row {
-       -fx-padding: 0.4em 0;
-       -fx-spacing: 0.4em;
-       -fx-alignment: CENTER_LEFT;
-   }
 
-   .activity-row Label {
-       -fx-text-fill: #dddddd;
-       -fx-font-size: 1.1em;
-   }
+/*---------------------Recent Activites--------------------------*/
+.activity-row {
+    -fx-padding: 0.4em 0;
+    -fx-spacing: 0.4em;
+    -fx-alignment: CENTER_LEFT;
+}
 
-   /* Make the LEFT label expand */
-   .activity-text {
-       -fx-max-width: 9999; /* allow it to stretch */
-   }
+.activity-row Label {
+    -fx-text-fill: #dddddd;
+    -fx-font-size: 1.1em;
+}
 
-   /* Force TIME label to stay right aligned */
-   .activity-time {
-       -fx-text-fill: #aaaaaa;
-       -fx-font-size: 1em;
-       -fx-alignment: CENTER_RIGHT;
-       -fx-text-alignment: RIGHT;
-   }
+/* Make the LEFT label expand */
+.activity-text {
+    -fx-max-width: 9999;
+    /* allow it to stretch */
+}
+
+/* Force TIME label to stay right aligned */
+.activity-time {
+    -fx-text-fill: #aaaaaa;
+    -fx-font-size: 1em;
+    -fx-alignment: CENTER_RIGHT;
+    -fx-text-alignment: RIGHT;
+}
 
 
 .bottom-section {
@@ -181,7 +164,8 @@
    NAVIGATION TILE — BLACKISH WITH SHADOW
    ================================================ */
 .nav-tile {
-    -fx-background-color: linear-gradient(to bottom, #2b2b2b, #1f1f1f); /* smooth black gradient */
+    -fx-background-color: linear-gradient(to bottom, #2b2b2b, #1f1f1f);
+    /* smooth black gradient */
     -fx-padding: 0.65em 0.9em;
     -fx-spacing: 0.6em;
     -fx-background-radius: 0.6em;
@@ -189,9 +173,9 @@
     -fx-cursor: hand;
 
     /* Soft shadow */
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 10, 0.15, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 10, 0.15, 0, 2);
 
-    -fx-border-color: rgba(255,255,255,0.08);
+    -fx-border-color: rgba(255, 255, 255, 0.08);
     -fx-border-width: 0.12em;
     -fx-border-radius: 0.6em;
 }
@@ -199,15 +183,17 @@
 /* Hover Effect */
 .nav-tile:hover {
     -fx-background-color: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
-	-fx-effect: dropshadow(gaussian, rgba(255,255,255,0.12), 14, 0.20, 0, 0);
-    -fx-translate-y: -1px; /* slight lift effect */
+    -fx-effect: dropshadow(gaussian, rgba(255, 255, 255, 0.12), 14, 0.20, 0, 0);
+    -fx-translate-y: -1px;
+    /* slight lift effect */
 }
 
 /* Clicking effect */
 .nav-tile:pressed {
     -fx-background-color: linear-gradient(to bottom, #1d1d1d, #141414);
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 5, 0.10, 0, 1);
-    -fx-translate-y: 1px; /* press down */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 5, 0.10, 0, 1);
+    -fx-translate-y: 1px;
+    /* press down */
 }
 
 /* Tile label (white text) */
@@ -228,7 +214,9 @@
    GLOBAL ICON STYLE
    ====================================================== */
 
-.icon, .card-icon, .tile-icon {
+.icon,
+.card-icon,
+.tile-icon {
     -fx-preserve-ratio: true;
 }
 
@@ -242,7 +230,7 @@
     -fx-padding: 0;
 }
 
-.scroll-pane > .viewport {
+.scroll-pane>.viewport {
     -fx-background-color: transparent !important;
 }
 
@@ -261,13 +249,15 @@
 
 /* Scrollbar track */
 .scroll-bar .track {
-    -fx-background-color: #111;   /* dark track */
+    -fx-background-color: #111;
+    /* dark track */
     -fx-background-radius: 5;
 }
 
 /* Scroll thumb (the draggable bar) */
 .scroll-bar .thumb {
-    -fx-background-color: #2d2d2d;  /* stylish gray */
+    -fx-background-color: #2d2d2d;
+    /* stylish gray */
     -fx-background-radius: 5;
 }
 
@@ -294,7 +284,7 @@
 
 /* ✅ Center-area loader overlay */
 .center-loader-overlay {
-    -fx-background-color: rgba(0,0,0,0.45);
+    -fx-background-color: rgba(0, 0, 0, 0.45);
     -fx-alignment: center;
 }
 
@@ -305,9 +295,9 @@
 
     -fx-border-radius: 18;
     -fx-border-width: 1;
-    -fx-border-color: rgba(255,255,255,0.06);
+    -fx-border-color: rgba(255, 255, 255, 0.06);
 
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 28, 0.25, 0, 6);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.55), 28, 0.25, 0, 6);
 }
 
 .center-loader-title {
@@ -317,8 +307,7 @@
 }
 
 .center-loader-subtitle {
-    -fx-text-fill: rgba(255,255,255,0.70);
+    -fx-text-fill: rgba(255, 255, 255, 0.70);
     -fx-font-size: 12px;
     -fx-font-weight: 500;
 }
-

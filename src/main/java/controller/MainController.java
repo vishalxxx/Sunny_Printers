@@ -30,8 +30,8 @@ import javafx.util.Duration;
 
 public class MainController implements Initializable {
 
-	private final double COLLAPSED_WIDTH = 82;
-	private final double EXPANDED_WIDTH = 260;
+	private final double COLLAPSED_WIDTH = 74;
+	private final double EXPANDED_WIDTH = 240;
 	@FXML
 	private StackPane appRoot;
 	@FXML
@@ -131,29 +131,22 @@ public class MainController implements Initializable {
 		setPageTitle("Dashboard");
 		openCenterDashboard();
 		Rectangle clip = new Rectangle();
-		clip.widthProperty().bind(sidebarScroll.widthProperty());
-		clip.heightProperty().bind(sidebarScroll.heightProperty());
+		clip.widthProperty().bind(sidebarStack.widthProperty());
+		clip.heightProperty().bind(sidebarStack.heightProperty());
 
-		sidebarScroll.setClip(clip);
-		sidebarStack.prefWidthProperty().bind(sidebarScroll.widthProperty());
-		sidebarStack.minWidthProperty().bind(sidebarScroll.widthProperty());
-		sidebarStack.maxWidthProperty().bind(sidebarScroll.widthProperty());
-
-		mainSidebar.prefWidthProperty().bind(sidebarScroll.widthProperty());
-		mainSidebar.minWidthProperty().bind(sidebarScroll.widthProperty());
-		mainSidebar.maxWidthProperty().bind(sidebarScroll.widthProperty());
+		sidebarStack.setClip(clip);
 
 		// Collapsable Sidebar Code
 		// ✅ Start in collapsed state
-		sidebarScroll.setPrefWidth(COLLAPSED_WIDTH);
+		sidebarStack.setPrefWidth(COLLAPSED_WIDTH);
 		applyCollapsedStyleToAll(true);
 		sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
 		sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
 		// ✅ Hover expand
-		sidebarScroll.setOnMouseEntered(e -> expandSidebar());
+		sidebarStack.setOnMouseEntered(e -> expandSidebar());
 
 		// ✅ Mouse exit collapse
-		sidebarScroll.setOnMouseExited(e -> collapseSidebar());
+		sidebarStack.setOnMouseExited(e -> collapseSidebar());
 
 		// Collapsable sidebar Code END
 
@@ -213,6 +206,9 @@ public class MainController implements Initializable {
 			}
 
 			// Initialize User Profile
+
+			// ---------------------------------------------------
+
 			if (userNameLabel != null && utils.SessionManager.getInstance().isLoggedIn()) {
 				userNameLabel.setText(utils.SessionManager.getInstance().getCurrentUser().getUsername());
 			} else if (userNameLabel != null) {
@@ -303,6 +299,10 @@ public class MainController implements Initializable {
 
 				Platform.runLater(() -> {
 
+					// 🔒 Store the fully compiled Parent view into the NavigationManager history
+					// map!
+					utils.NavigationManager.getInstance().updateCurrentView(view);
+
 					// 2️⃣ Replace center UI
 					centerContentHost.getChildren().setAll(view);
 
@@ -337,6 +337,7 @@ public class MainController implements Initializable {
 
 	private void expandSidebar() {
 
+		sidebarScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 		applyCollapsedStyleToAll(false);
 
 		sidebarStack.getStyleClass().remove("sidebar-collapsed-bg");
@@ -347,6 +348,7 @@ public class MainController implements Initializable {
 
 	private void collapseSidebar() {
 
+		sidebarScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
 		animateSidebarWidth(COLLAPSED_WIDTH);
 
 		if (anim != null)
@@ -365,7 +367,9 @@ public class MainController implements Initializable {
 
 		anim = new Timeline(
 				new KeyFrame(Duration.millis(180),
-						new KeyValue(sidebarScroll.prefWidthProperty(), width)));
+						new KeyValue(sidebarStack.prefWidthProperty(), width),
+						new KeyValue(sidebarStack.minWidthProperty(), width),
+						new KeyValue(sidebarStack.maxWidthProperty(), width)));
 		anim.play();
 	}
 
@@ -415,6 +419,8 @@ public class MainController implements Initializable {
 
 	@FXML
 	private void openDashboard(MouseEvent event) {
+		utils.NavigationManager.getInstance().clear();
+		System.out.println("DEBUG: Navigation History cleared at Dashboard root.");
 		showOnly(mainSidebar);
 		openCenterDashboard();
 		setPageTitle("Dashboard");
@@ -485,7 +491,17 @@ public class MainController implements Initializable {
 				showOnly(restoredSidebar);
 				lastValidTitle = prevState.getTitle();
 				setPageTitle(prevState.getTitle());
-				loadCenterScreen(prevState.getFxmlPath(), "Loading...", "Please wait", false);
+
+				// ⚡ If the history stack preserved the actual screen memory, restore it
+				// instantly:
+				if (prevState.getView() != null) {
+					System.out.println("DEBUG: Restoring CACHED view from history: " + prevState.getFxmlPath());
+					centerContentHost.getChildren().setAll(prevState.getView());
+				} else {
+					// 🐢 Fallback: Only reload FXML if the memory reference was somehow lost
+					System.out.println("DEBUG: FALLBACK - Re-parsing FXML from disk: " + prevState.getFxmlPath());
+					loadCenterScreen(prevState.getFxmlPath(), "Loading...", "Please wait", false);
+				}
 			}
 		} else {
 			// If no history exists, back button does nothing
