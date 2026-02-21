@@ -208,6 +208,16 @@ public class MainController implements Initializable {
 			// Initialize User Profile
 
 			// ---------------------------------------------------
+			// 3. Absolute Layout Width Lock for Sidebars
+			// ---------------------------------------------------
+			if (sidebarScroll != null && sidebarStack != null) {
+				if (sidebarScroll.getContent() instanceof StackPane innerStack) {
+					// sidebarStack has 8px left/right padding = 16px total.
+					// Locking the innerStack prefWidth to exact layout dimensions,
+					// stripping JavaFX's scrollbar viewport subtraction logic entirely.
+					innerStack.prefWidthProperty().bind(sidebarStack.widthProperty().subtract(16));
+				}
+			}
 
 			if (userNameLabel != null && utils.SessionManager.getInstance().isLoggedIn()) {
 				userNameLabel.setText(utils.SessionManager.getInstance().getCurrentUser().getUsername());
@@ -337,7 +347,6 @@ public class MainController implements Initializable {
 
 	private void expandSidebar() {
 
-		sidebarScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 		applyCollapsedStyleToAll(false);
 
 		sidebarStack.getStyleClass().remove("sidebar-collapsed-bg");
@@ -348,7 +357,6 @@ public class MainController implements Initializable {
 
 	private void collapseSidebar() {
 
-		sidebarScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
 		animateSidebarWidth(COLLAPSED_WIDTH);
 
 		if (anim != null)

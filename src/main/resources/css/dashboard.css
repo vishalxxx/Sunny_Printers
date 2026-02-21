@@ -42,7 +42,7 @@
 
 
 
-.sidebar-item:hover {
+.nav-btn:hover {
     -fx-background-color: #333333;
 }
 
@@ -316,7 +316,7 @@
     -fx-font-weight: 500;
 }
 
-.sidebar-item,
+.nav-btn,
 .back-row {
     -fx-max-width: Infinity;
 }
@@ -329,7 +329,7 @@
 }
 
 /* ✅ Center submenu items when collapsed */
-.sidebar-collapsed .sidebar-item {
+.sidebar-collapsed .nav-btn {
     -fx-alignment: CENTER;
     -fx-padding: 1.2em 0;
 }
@@ -366,10 +366,13 @@
     -fx-max-height: 0;
 }
 
-/* ✅ Vertical scrollbar clean */
+/* ✅ Vertical scrollbar completely removed width layout */
 .sidebar-scroll .scroll-bar:vertical {
     -fx-background-color: transparent;
-    -fx-padding: 2;
+    -fx-pref-width: 0;
+    -fx-max-width: 0;
+    -fx-opacity: 0;
+    -fx-padding: 0;
 }
 
 .sidebar-scroll .scroll-bar:vertical .track {
@@ -391,7 +394,7 @@
    ============================== */
 .sidebar-background {
     -fx-background-radius: 24;
-    -fx-padding: 8;
+    -fx-padding: 30 0 0 7;
 
     /* Transparent Base for Collapsed Mode */
     -fx-background-color: transparent;
@@ -440,9 +443,16 @@
 /* ==============================
    ✅ Sidebar Item (Modern pill)
    ============================== */
-.sidebar-item {
+.nav-btn {
     /* stable height */
     -fx-min-height: 48;
+    -fx-pref-height: 48;
+    -fx-max-height: 48;
+
+    /* exact width mathematics */
+    -fx-min-width: 200;
+    -fx-pref-width: 200;
+    -fx-max-width: 200;
     -fx-pref-height: 48;
     -fx-max-height: 48;
 
@@ -464,7 +474,7 @@
 }
 
 /* ✅ Hover effect: neon glow */
-.sidebar-item:hover {
+.nav-btn:hover {
     -fx-background-color: rgba(140, 170, 255, 0.10);
     -fx-border-color: rgba(150, 110, 255, 0.55);
 
@@ -472,7 +482,7 @@
 }
 
 /* ✅ Active item */
-.sidebar-item-active {
+.nav-btn-active {
     -fx-background-color: rgba(90, 120, 255, 0.22);
     -fx-border-color: rgba(190, 160, 255, 0.75);
     -fx-effect: dropshadow(gaussian, rgba(140, 120, 255, 0.38), 26, 0.28, 0, 0);
@@ -493,7 +503,7 @@
 /* ==============================
    ✅ Icon size stable
    ============================== */
-.sidebar-item ImageView {
+.nav-btn ImageView {
     -fx-fit-width: 20;
     -fx-fit-height: 20;
 }
@@ -517,7 +527,7 @@
 }
 
 /* ✅ Icon tiles (premium small cards) */
-.sidebar-collapsed .sidebar-item {
+.sidebar-collapsed .nav-btn {
     -fx-min-width: 48;
     -fx-pref-width: 48;
     -fx-max-width: 48;
@@ -532,7 +542,7 @@
 }
 
 /* ✅ hover collapsed */
-.sidebar-collapsed .sidebar-item:hover {
+.sidebar-collapsed .nav-btn:hover {
     -fx-background-color: rgba(130, 160, 255, 0.18);
     -fx-border-color: rgba(190, 160, 255, 0.65);
     -fx-effect: dropshadow(gaussian, rgba(150, 120, 255, 0.25), 14, 0.22, 0, 0);
@@ -540,7 +550,7 @@
 
 
 
-.sidebar-collapsed .sidebar-item ImageView {
+.sidebar-collapsed .nav-btn ImageView {
     -fx-opacity: 1;
 }
 
@@ -601,4 +611,258 @@
     -fx-border-color: #1E1E24;
     -fx-border-width: 0 1 0 0;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 18, 0.15, 0, 0);
+}
+
+/* ======================================================
+   CENTER AREA
+   ====================================================== */
+
+.center-area {
+    -fx-padding: 1.5em;
+    -fx-spacing: 1.2em;
+    -fx-background-color: transparent;
+}
+
+.dashboard-title {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 1.8em;
+    -fx-font-weight: bold;
+}
+
+/* ======================================================
+   METRICS CARDS
+   ====================================================== */
+
+.metrics-grid {
+    -fx-hgap: 1.0em;
+    -fx-vgap: 1.0em;
+}
+
+.card-style {
+    -fx-background-color: #212121;
+    -fx-background-radius: 0.8em;
+    -fx-padding: 1em;
+}
+
+.card-content {
+    -fx-spacing: 0.6em;
+}
+
+.card-title {
+    -fx-text-fill: #bbbbbb;
+    -fx-font-size: 1.25em;
+}
+
+.card-value {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 1.9em;
+    -fx-font-weight: bold;
+}
+
+/* ======================================================
+   BOTTOM SECTION
+   ====================================================== */
+
+/*---------------------Recent Activites--------------------------*/
+.activity-row {
+    -fx-padding: 0.4em 0;
+    -fx-spacing: 0.4em;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.activity-row Label {
+    -fx-text-fill: #dddddd;
+    -fx-font-size: 1.1em;
+}
+
+/* Make the LEFT label expand */
+.activity-text {
+    -fx-max-width: 9999;
+    /* allow it to stretch */
+}
+
+/* Force TIME label to stay right aligned */
+.activity-time {
+    -fx-text-fill: #aaaaaa;
+    -fx-font-size: 1em;
+    -fx-alignment: CENTER_RIGHT;
+    -fx-text-alignment: RIGHT;
+}
+
+
+.bottom-section {
+    -fx-spacing: 1em;
+}
+
+.bottom-card {
+    -fx-background-color: #212121;
+    -fx-background-radius: 0.8em;
+    -fx-padding: 1em;
+}
+
+.bottom-title {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 1.2em;
+    -fx-font-weight: bold;
+}
+
+.activity-list {
+    -fx-spacing: 0.4em;
+}
+
+.activity-list .label {
+    -fx-text-fill: #dddddd;
+    -fx-font-size: 1.2em;
+}
+
+/* ================================================
+   NAVIGATION TILE — BLACKISH WITH SHADOW
+   ================================================ */
+.nav-tile {
+    -fx-background-color: linear-gradient(to bottom, #2b2b2b, #1f1f1f);
+    /* smooth black gradient */
+    -fx-padding: 0.65em 0.9em;
+    -fx-spacing: 0.6em;
+    -fx-background-radius: 0.6em;
+    -fx-alignment: CENTER_LEFT;
+    -fx-cursor: hand;
+
+    /* Soft shadow */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 10, 0.15, 0, 2);
+
+    -fx-border-color: rgba(255, 255, 255, 0.08);
+    -fx-border-width: 0.12em;
+    -fx-border-radius: 0.6em;
+}
+
+/* Hover Effect */
+.nav-tile:hover {
+    -fx-background-color: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
+    -fx-effect: dropshadow(gaussian, rgba(255, 255, 255, 0.12), 14, 0.20, 0, 0);
+    -fx-translate-y: -1px;
+    /* slight lift effect */
+}
+
+/* Clicking effect */
+.nav-tile:pressed {
+    -fx-background-color: linear-gradient(to bottom, #1d1d1d, #141414);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 5, 0.10, 0, 1);
+    -fx-translate-y: 1px;
+    /* press down */
+}
+
+/* Tile label (white text) */
+.nav-tile .label {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 1.15em;
+    -fx-font-weight: bold;
+}
+
+/* Tile icon */
+.tile-icon {
+    -fx-fit-width: 26;
+    -fx-fit-height: 26;
+    -fx-opacity: 0.9;
+}
+
+/* ======================================================
+   GLOBAL ICON STYLE
+   ====================================================== */
+
+.icon,
+.card-icon,
+.tile-icon {
+    -fx-preserve-ratio: true;
+}
+
+
+
+/*--------------------------ScrollPane--------------------------*/
+
+
+.scroll-pane {
+    -fx-background-color: transparent !important;
+    -fx-padding: 0;
+}
+
+.scroll-pane>.viewport {
+    -fx-background-color: transparent !important;
+}
+
+.scroll-pane .corner {
+    -fx-background-color: transparent;
+}
+
+
+
+/*--------------------------ScrollBar--------------------------*/
+.scroll-bar:vertical,
+.scroll-bar:horizontal {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+/* Scrollbar track */
+.scroll-bar .track {
+    -fx-background-color: #111;
+    /* dark track */
+    -fx-background-radius: 5;
+}
+
+/* Scroll thumb (the draggable bar) */
+.scroll-bar .thumb {
+    -fx-background-color: #2d2d2d;
+    /* stylish gray */
+    -fx-background-radius: 5;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #3a3a3a;
+}
+
+.scroll-bar .thumb:pressed {
+    -fx-background-color: #4b4b4b;
+}
+
+/* Remove increment/decrement arrows */
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-opacity: 0;
+    -fx-padding: 0;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-opacity: 0;
+}
+
+
+/* ✅ Center-area loader overlay */
+.center-loader-overlay {
+    -fx-background-color: rgba(0, 0, 0, 0.45);
+    -fx-alignment: center;
+}
+
+.center-loader-card {
+    -fx-background-color: rgba(15, 18, 28, 0.96);
+    -fx-background-radius: 18;
+    -fx-padding: 22 26;
+
+    -fx-border-radius: 18;
+    -fx-border-width: 1;
+    -fx-border-color: rgba(255, 255, 255, 0.06);
+
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.55), 28, 0.25, 0, 6);
+}
+
+.center-loader-title {
+    -fx-text-fill: white;
+    -fx-font-size: 15px;
+    -fx-font-weight: 700;
+}
+
+.center-loader-subtitle {
+    -fx-text-fill: rgba(255, 255, 255, 0.70);
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
 }

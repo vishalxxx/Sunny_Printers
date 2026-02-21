@@ -14,8 +14,7 @@
                 fitToHeight="true"
                 fitToWidth="true"
                 hbarPolicy="NEVER"
-                vbarPolicy="AS_NEEDED"
-                stylesheets="@../css/dashboard_ui.css">
+                vbarPolicy="AS_NEEDED">
 
         <content>
             <VBox fx:id="centerRoot"
