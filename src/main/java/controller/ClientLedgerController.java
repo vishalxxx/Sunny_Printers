@@ -73,6 +73,8 @@ public class ClientLedgerController implements Initializable {
     @FXML
     private TableColumn<LedgerEntry, String> colType;
     @FXML
+    private TableColumn<LedgerEntry, String> colMode;
+    @FXML
     private TableColumn<LedgerEntry, Double> colDebit;
     @FXML
     private TableColumn<LedgerEntry, Double> colCredit;
@@ -179,7 +181,37 @@ public class ClientLedgerController implements Initializable {
     private void setupTable() {
         colDate.setCellValueFactory(new PropertyValueFactory<>("date"));
         colRef.setCellValueFactory(new PropertyValueFactory<>("reference"));
+
+        // Custom cell factory to wrap text
+        colRef.setCellFactory(tc -> {
+            TableCell<ClientLedgerController.LedgerEntry, String> cell = new TableCell<>() {
+                private final javafx.scene.text.Text textNode = new javafx.scene.text.Text();
+                {
+                    textNode.wrappingWidthProperty().bind(widthProperty().subtract(24));
+                    textNode.setFill(javafx.scene.paint.Color.web("#e8eefb"));
+                    textNode.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+                    textNode.setStyle(
+                            "-fx-font-size: 12px; -fx-font-family: 'Segoe UI', System; -fx-font-weight: 600;");
+                }
+
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setGraphic(null);
+                        setText(null);
+                    } else {
+                        textNode.setText(item);
+                        setGraphic(textNode);
+                        setText(null);
+                    }
+                }
+            };
+            return cell;
+        });
+
         colType.setCellValueFactory(new PropertyValueFactory<>("type"));
+        colMode.setCellValueFactory(new PropertyValueFactory<>("mode"));
         colDebit.setCellValueFactory(new PropertyValueFactory<>("debit"));
         colCredit.setCellValueFactory(new PropertyValueFactory<>("credit"));
         colBalance.setCellValueFactory(new PropertyValueFactory<>("balance"));
@@ -337,7 +369,8 @@ public class ClientLedgerController implements Initializable {
 
         // Invoices
         sql.append("SELECT invoice_date as txn_date, invoice_no as ref, 'INVOICE' as type, ");
-        sql.append("amount as debit, 0 as credit, status, payment_status ");
+        sql.append("'-' as mode, ");
+        sql.append("0 as debit, amount as credit, status, payment_status ");
         sql.append("FROM invoice_master WHERE client_id = ? ");
         if (from != null)
             sql.append("AND invoice_date >= ? ");
@@ -347,13 +380,38 @@ public class ClientLedgerController implements Initializable {
         sql.append("UNION ALL ");
 
         // Payments
-        sql.append("SELECT payment_date as txn_date, 'PAY-' || id as ref, 'PAYMENT' as type, ");
-        sql.append("0 as debit, amount as credit, 'SUCCESS' as status, '' as payment_status ");
-        sql.append("FROM payments WHERE client_id = ? ");
+        sql.append("SELECT p.payment_date as txn_date, ");
+        sql.append("CASE p.method ");
+        sql.append("  WHEN 'Cheque' THEN ");
+        sql.append(
+                "    'CLG: ' || COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'cheque_number'), '') || ' | To ' || ");
+        sql.append(
+                "    COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'receiver_bank'), '') ");
+        sql.append("  WHEN 'Bank Transfer' THEN ");
+        sql.append(
+                "    COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'utr'), '') || ' | To ' || ");
+        sql.append(
+                "    COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'receiver_bank'), '') || ' A/c' ");
+        sql.append("  WHEN 'UPI' THEN ");
+        sql.append(
+                "    COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'upi_id'), '') || ' | ' || ");
+        sql.append(
+                "    COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'utr'), '') || ' | To ' || ");
+        sql.append(
+                "    COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'receiver_bank'), '') || ' A/c | ' || ");
+        sql.append(
+                "    COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'receiver_upi_id'), '') ");
+        sql.append("  WHEN 'Cash' THEN 'CASH' ");
+        sql.append("  ELSE 'PAY-' || p.id || ' (' || p.method || ')' ");
+        sql.append("END as ref, ");
+        sql.append("'PAYMENT' as type, ");
+        sql.append("p.method as mode, ");
+        sql.append("p.amount as debit, 0 as credit, 'SUCCESS' as status, '' as payment_status ");
+        sql.append("FROM payments p WHERE p.client_id = ? ");
         if (from != null)
-            sql.append("AND payment_date >= ? ");
+            sql.append("AND p.payment_date >= ? ");
         if (to != null)
-            sql.append("AND payment_date <= ? ");
+            sql.append("AND p.payment_date <= ? ");
 
         sql.append(") AS ledger_view ");
 
@@ -393,7 +451,7 @@ public class ClientLedgerController implements Initializable {
             while (rs.next()) {
                 double debit = rs.getDouble("debit");
                 double credit = rs.getDouble("credit");
-                runningBalance = runningBalance + debit - credit;
+                runningBalance = runningBalance + credit - debit;
 
                 totalDebit += debit;
                 totalCredit += credit;
@@ -416,6 +474,7 @@ public class ClientLedgerController implements Initializable {
                         rs.getString("txn_date"),
                         rs.getString("ref"),
                         rs.getString("type"),
+                        rs.getString("mode"),
                         debit > 0 ? debit : null,
                         credit > 0 ? credit : null,
                         runningBalance,
@@ -436,7 +495,7 @@ public class ClientLedgerController implements Initializable {
         if (footerTotalCredit != null)
             footerTotalCredit.setText("₹" + String.format("%.2f", credit));
 
-        double closing = debit - credit;
+        double closing = credit - debit;
         if (footerClosingBalance != null)
             footerClosingBalance.setText("₹" + String.format("%.2f", closing));
     }
@@ -477,16 +536,18 @@ public class ClientLedgerController implements Initializable {
         String reference;
         // String description; // Removed
         String type;
+        String mode;
         Double debit;
         Double credit;
         Double balance;
         String status;
 
-        public LedgerEntry(String date, String reference, String type, Double debit, Double credit,
+        public LedgerEntry(String date, String reference, String type, String mode, Double debit, Double credit,
                 Double balance, String status) {
             this.date = date;
             this.reference = reference;
             this.type = type;
+            this.mode = mode;
             this.debit = debit;
             this.credit = credit;
             this.balance = balance;
@@ -503,6 +564,10 @@ public class ClientLedgerController implements Initializable {
 
         public String getType() {
             return type;
+        }
+
+        public String getMode() {
+            return mode;
         }
 
         public Double getDebit() {

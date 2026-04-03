@@ -153,19 +153,17 @@
                         </Button>
                     </HBox>
 
-                    <TableView fx:id="ledgerTable" fixedCellSize="38">
+                    <TableView fx:id="ledgerTable">
                         <columns>
                             <TableColumn fx:id="colDate" text="DATE" prefWidth="100" />
-                            <TableColumn fx:id="colRef" text="REFERENCE" prefWidth="120" />
+                            <TableColumn fx:id="colRef" text="REFERENCE" prefWidth="350" />
                             <TableColumn fx:id="colType" text="TYPE" prefWidth="100" />
-                            <TableColumn fx:id="colDebit" text="DEBIT (+)" prefWidth="110" styleClass="amount-column"/>
-                            <TableColumn fx:id="colCredit" text="CREDIT (-)" prefWidth="110" styleClass="amount-column"/>
+                            <TableColumn fx:id="colMode" text="MODE" prefWidth="100" />
+                            <TableColumn fx:id="colDebit" text="DEBIT (-)" prefWidth="110" styleClass="amount-column"/>
+                            <TableColumn fx:id="colCredit" text="CREDIT (+)" prefWidth="110" styleClass="amount-column"/>
                             <TableColumn fx:id="colBalance" text="BALANCE" prefWidth="120" styleClass="amount-column"/>
                             <TableColumn fx:id="colStatus" text="STATUS" prefWidth="100" />
                         </columns>
-                        <columnResizePolicy>
-                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
-                        </columnResizePolicy>
                     </TableView>
                     
                     <!-- Footer with Totals and Actions -->

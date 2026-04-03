@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.*?>
+
+<VBox xmlns="http://javafx.com/javafx/23"
+	xmlns:fx="http://javafx.com/fxml/1"
+	fx:controller="controller.ViewInvoiceJobsController" spacing="20"
+	stylesheets="@../css/view_job.css" >
+
+	<Label text="View Invoice Jobs" styleClass="page-heading" />
+
+	<HBox spacing="12" alignment="CENTER_LEFT" styleClass="search-bar">
+        <ComboBox fx:id="clientComboBox"
+                  promptText="Select Client..."
+                  styleClass="combo-box-base"
+                  prefWidth="300"/>
+
+        <ComboBox fx:id="invoiceComboBox"
+                  promptText="Select Invoice..."
+                  styleClass="combo-box-base"
+                  prefWidth="250"
+                  disable="true"/>
+	</HBox>
+
+    <Label fx:id="resultLabel" text="Showing 0 jobs" styleClass="page-heading" />
+
+	<VBox styleClass="table-card" VBox.vgrow="ALWAYS">
+		<TableView fx:id="jobsTable" styleClass="history-table" VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="idCol" text="ID" prefWidth="70" />
+                <TableColumn fx:id="jobNoCol" text="Job No" prefWidth="140" />
+                <TableColumn fx:id="titleCol" text="Job Title" prefWidth="240" />
+                <TableColumn fx:id="dateCol" text="Job Date" prefWidth="120" />
+                <TableColumn fx:id="statusCol" text="Status" prefWidth="120" />
+                <TableColumn fx:id="remarksCol" text="Remarks" prefWidth="220" />
+                <TableColumn fx:id="createdAtCol" text="Created At" prefWidth="170" />
+                <TableColumn fx:id="updatedAtCol" text="Updated At" prefWidth="170" />
+            </columns>
+        </TableView>
+	</VBox>
+</VBox>

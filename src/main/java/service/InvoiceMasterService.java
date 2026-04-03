@@ -274,4 +274,43 @@ public class InvoiceMasterService {
 
         return AtomicDB.run(con -> repo.findRecent(con, limit));
     }
+
+    /* =========================================================
+       UPDATE INDIVIDUAL STATUSES
+       ========================================================= */
+    public void updateInvoiceStatus(int invoiceId, String newStatus) {
+        AtomicDB.runVoid(con -> {
+            InvoiceMaster inv = repo.findById(con, invoiceId);
+            if (inv != null) {
+                inv.setStatus(newStatus);
+                repo.update(con, inv);
+            }
+        });
+    }
+
+    public void updateInvoicePaymentStatus(int invoiceId, String newPaymentStatus) {
+        AtomicDB.runVoid(con -> {
+            // Updating just payment_status without affecting other amounts
+            String sql = "UPDATE invoice_master SET payment_status = ? WHERE id = ?";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, newPaymentStatus);
+                ps.setInt(2, invoiceId);
+                ps.executeUpdate();
+            }
+        });
+    }
+
+    /* =========================================================
+       GET INVOICES BY CLIENT
+       ========================================================= */
+    public List<InvoiceMaster> getInvoicesByClientId(int clientId) {
+        return AtomicDB.run(con -> repo.findByClientId(con, clientId));
+    }
+
+    /* =========================================================
+       GET FILTERED INVOICES (FOR VIEW INVOICES SCREEN)
+       ========================================================= */
+    public List<InvoiceMaster> getFilteredInvoices(Integer clientId, String status, LocalDate start, LocalDate end) {
+        return AtomicDB.run(con -> repo.findFiltered(con, clientId, status, start, end));
+    }
 }

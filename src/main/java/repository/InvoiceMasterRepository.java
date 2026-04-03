@@ -1,7 +1,6 @@
 package repository;
 
 import model.InvoiceMaster;
-import utils.DBConnection;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -9,56 +8,36 @@ import java.util.List;
 import java.util.Optional;
 import java.time.LocalDate;
 
-
 public class InvoiceMasterRepository {
 
-    // Ensure unique indexes exist to prevent duplicates (exclude voided rows so regenerate after cancel works)
     public InvoiceMasterRepository() {
-        try (Connection con = DBConnection.getConnection()) {
-            // Drop old indexes that didn't exclude voided rows
-            try (PreparedStatement ps = con.prepareStatement("DROP INDEX IF EXISTS ux_invoice_master_client_type_period")) {
-                ps.execute();
-            }
-            try (PreparedStatement ps = con.prepareStatement("DROP INDEX IF EXISTS ux_invoice_master_client_period")) {
-                ps.execute();
-            }
-            // One active invoice per client/type/period
-            try (PreparedStatement ps = con.prepareStatement(
-                    "CREATE UNIQUE INDEX ux_invoice_master_client_type_period ON invoice_master(client_id, type, period_from, period_to) WHERE is_void = 0")) {
-                ps.execute();
-            }
-            // One active invoice per client/period (cross-type: monthly vs date range)
-            try (PreparedStatement ps = con.prepareStatement(
-                    "CREATE UNIQUE INDEX ux_invoice_master_client_period ON invoice_master(client_id, period_from, period_to) WHERE period_from IS NOT NULL AND period_to IS NOT NULL AND is_void = 0")) {
-                ps.execute();
-            }
-        } catch (Exception e) {
-            System.err.println("Warning: failed to ensure invoice_master unique index: " + e.getMessage());
-        }
+        // Initialization if needed
     }
 
-    /* =========================================================
-       INSERT NEW INVOICE
-       ========================================================= */
+    /*
+     * =========================================================
+     * INSERT NEW INVOICE
+     * =========================================================
+     */
     public void insert(Connection con, InvoiceMaster inv) throws Exception {
 
         String sql = """
-            INSERT INTO invoice_master (
-                invoice_no, client_id, client_name,
-                invoice_date, period_from, period_to,
-                amount, paid_amount, due_amount, payment_status,
-                last_payment_date, type, status,
-                is_void, void_reason, void_date,
-                replaced_by_invoice_id, status_updated_by, file_path
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-        """;
+                    INSERT INTO invoice_master (
+                        invoice_no, client_id, client_name,
+                        invoice_date, period_from, period_to,
+                        amount, paid_amount, due_amount, payment_status,
+                        last_payment_date, type, status,
+                        is_void, void_reason, void_date,
+                        replaced_by_invoice_id, status_updated_by, file_path
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                """;
 
         try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setString(1, inv.getInvoiceNo());
             ps.setInt(2, inv.getClientId());
             ps.setString(3, inv.getClientName());
-            ps.setString(4, toIso(inv.getInvoiceDate()));  // CHECK requires YYYY-MM-DD
+            ps.setString(4, toIso(inv.getInvoiceDate())); // CHECK requires YYYY-MM-DD
 
             ps.setString(5, toIso(inv.getPeriodFrom()));
             ps.setString(6, toIso(inv.getPeriodTo()));
@@ -95,27 +74,30 @@ public class InvoiceMasterRepository {
         }
     }
 
-    /* =========================================================
-       FIND ACTIVE INVOICE BY CLIENT+PERIOD (ignores type - prevents cross-type duplicates)
-       Used when monthly task and date range task share same period (e.g. Jan 1–31)
-       ========================================================= */
+    /*
+     * =========================================================
+     * FIND ACTIVE INVOICE BY CLIENT+PERIOD (ignores type - prevents cross-type
+     * duplicates)
+     * Used when monthly task and date range task share same period (e.g. Jan 1–31)
+     * =========================================================
+     */
     public Optional<InvoiceMaster> findActiveByClientPeriod(
             Connection con,
             int clientId,
             LocalDate from,
-            LocalDate to
-    ) throws Exception {
+            LocalDate to) throws Exception {
 
-        if (from == null || to == null) return Optional.empty();
+        if (from == null || to == null)
+            return Optional.empty();
 
         String sql = """
-            SELECT * FROM invoice_master
-            WHERE client_id = ?
-              AND period_from = ?
-              AND period_to   = ?
-              AND is_void = 0
-            LIMIT 1
-        """;
+                    SELECT * FROM invoice_master
+                    WHERE client_id = ?
+                      AND period_from = ?
+                      AND period_to   = ?
+                      AND is_void = 0
+                    LIMIT 1
+                """;
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, clientId);
@@ -130,9 +112,11 @@ public class InvoiceMasterRepository {
         }
     }
 
-    /* =========================================================
-       SIMPLE FIND BY ID (used by payments)
-       ========================================================= */
+    /*
+     * =========================================================
+     * SIMPLE FIND BY ID (used by payments)
+     * =========================================================
+     */
     public InvoiceMaster findById(Connection con, int id) throws Exception {
         String sql = "SELECT * FROM invoice_master WHERE id = ?";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -146,26 +130,27 @@ public class InvoiceMasterRepository {
         return null;
     }
 
-    /* =========================================================
-       FIND EXISTING BUSINESS INVOICE (by type - legacy)
-       ========================================================= */
+    /*
+     * =========================================================
+     * FIND EXISTING BUSINESS INVOICE (by type - legacy)
+     * =========================================================
+     */
     public Optional<InvoiceMaster> findActiveByClientPeriodType(
             Connection con,
             int clientId,
             LocalDate from,
             LocalDate to,
-            String type
-    ) throws Exception {
+            String type) throws Exception {
 
         String sql = """
-            SELECT * FROM invoice_master
-            WHERE client_id = ?
-              AND type = ?
-              AND is_void = 0
-              AND period_from = ?
-              AND period_to   = ?
-            LIMIT 1
-        """;
+                    SELECT * FROM invoice_master
+                    WHERE client_id = ?
+                      AND type = ?
+                      AND is_void = 0
+                      AND period_from = ?
+                      AND period_to   = ?
+                    LIMIT 1
+                """;
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
 
@@ -186,21 +171,23 @@ public class InvoiceMasterRepository {
         }
     }
 
-    /* =========================================================
-       UPDATE PAYMENT (partial / full)
-       ========================================================= */
+    /*
+     * =========================================================
+     * UPDATE PAYMENT (partial / full)
+     * =========================================================
+     */
     public void updatePayment(Connection con, int invoiceId,
-                              double paidAmount,
-                              double dueAmount,
-                              String paymentStatus,
-                              LocalDate lastPaymentDate) throws Exception {
+            double paidAmount,
+            double dueAmount,
+            String paymentStatus,
+            LocalDate lastPaymentDate) throws Exception {
 
         String sql = """
-            UPDATE invoice_master
-            SET paid_amount = ?, due_amount = ?,
-                payment_status = ?, last_payment_date = ?
-            WHERE id = ?
-        """;
+                    UPDATE invoice_master
+                    SET paid_amount = ?, due_amount = ?,
+                        payment_status = ?, last_payment_date = ?
+                    WHERE id = ?
+                """;
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setDouble(1, paidAmount);
@@ -212,9 +199,11 @@ public class InvoiceMasterRepository {
         }
     }
 
-    /* =========================================================
-       DELETE INVOICE (used for cancel rollback - no duplicate records)
-       ========================================================= */
+    /*
+     * =========================================================
+     * DELETE INVOICE (used for cancel rollback - no duplicate records)
+     * =========================================================
+     */
     public void deleteInvoice(Connection con, int invoiceId) throws Exception {
         String sql = "DELETE FROM invoice_master WHERE id = ?";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -223,20 +212,22 @@ public class InvoiceMasterRepository {
         }
     }
 
-    /* =========================================================
-       VOID INVOICE
-       ========================================================= */
+    /*
+     * =========================================================
+     * VOID INVOICE
+     * =========================================================
+     */
     public void voidInvoice(Connection con, int invoiceId,
-                            String reason, LocalDate date) throws Exception {
+            String reason, LocalDate date) throws Exception {
 
         String sql = """
-            UPDATE invoice_master
-            SET is_void = 1,
-                void_reason = ?,
-                void_date = ?,
-                payment_status = 'VOID'
-            WHERE id = ?
-        """;
+                    UPDATE invoice_master
+                    SET is_void = 1,
+                        void_reason = ?,
+                        void_date = ?,
+                        payment_status = 'VOID'
+                    WHERE id = ?
+                """;
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, reason);
@@ -246,16 +237,18 @@ public class InvoiceMasterRepository {
         }
     }
 
-    /* =========================================================
-       GET RECENT
-       ========================================================= */
+    /*
+     * =========================================================
+     * GET RECENT
+     * =========================================================
+     */
     public List<InvoiceMaster> findRecent(Connection con, int limit) throws Exception {
 
         String sql = """
-            SELECT * FROM invoice_master
-            ORDER BY created_at DESC
-            LIMIT ?
-        """;
+                    SELECT * FROM invoice_master
+                    ORDER BY created_at DESC
+                    LIMIT ?
+                """;
 
         List<InvoiceMaster> list = new ArrayList<>();
 
@@ -263,15 +256,88 @@ public class InvoiceMasterRepository {
             ps.setInt(1, limit);
             ResultSet rs = ps.executeQuery();
 
-            while (rs.next()) list.add(mapRowPublic(rs));
+            while (rs.next())
+                list.add(mapRowPublic(rs));
         }
 
         return list;
     }
 
-    /* =========================================================
-       MAP ROW
-       ========================================================= */
+    /*
+     * =========================================================
+     * FIND INVOICES BY CLIENT (ALL GENERATED)
+     * =========================================================
+     */
+    public List<InvoiceMaster> findByClientId(Connection con, int clientId) throws Exception {
+
+        String sql = """
+                    SELECT * FROM invoice_master
+                    WHERE client_id = ? AND is_void = 0
+                    ORDER BY invoice_date DESC, id DESC
+                """;
+
+        List<InvoiceMaster> list = new ArrayList<>();
+
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, clientId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapRowPublic(rs));
+                }
+            }
+        }
+        return list;
+    }
+
+    /*
+     * =========================================================
+     * FIND FILTERED INVOICES (FOR VIEW INVOICES SCREEN)
+     * =========================================================
+     */
+    public List<InvoiceMaster> findFiltered(Connection con, Integer clientId, String status, LocalDate start, LocalDate end) throws Exception {
+
+        StringBuilder sql = new StringBuilder("SELECT * FROM invoice_master WHERE is_void = 0");
+        List<Object> params = new ArrayList<>();
+
+        if (clientId != null && clientId > 0) {
+            sql.append(" AND client_id = ?");
+            params.add(clientId);
+        }
+        if (status != null && !status.equalsIgnoreCase("All") && !status.trim().isEmpty()) {
+            sql.append(" AND UPPER(payment_status) = ?");
+            params.add(status.trim().toUpperCase());
+        }
+        if (start != null) {
+            sql.append(" AND DATE(invoice_date) >= ?");
+            params.add(toIso(start));
+        }
+        if (end != null) {
+            sql.append(" AND DATE(invoice_date) <= ?");
+            params.add(toIso(end));
+        }
+
+        sql.append(" ORDER BY invoice_date DESC, id DESC");
+
+        List<InvoiceMaster> list = new ArrayList<>();
+
+        try (PreparedStatement ps = con.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapRowPublic(rs));
+                }
+            }
+        }
+        return list;
+    }
+
+    /*
+     * =========================================================
+     * MAP ROW
+     * =========================================================
+     */
     public InvoiceMaster mapRowPublic(ResultSet rs) throws Exception {
 
         InvoiceMaster inv = new InvoiceMaster();
@@ -292,16 +358,18 @@ public class InvoiceMasterRepository {
         inv.setType(rs.getString("type"));
         inv.setStatus(rs.getString("status"));
 
-        // Load period dates so update() doesn't overwrite with null (causing unique constraint violation)
+        // Load period dates so update() doesn't overwrite with null (causing unique
+        // constraint violation)
         inv.setPeriodFrom(parseDate(rs.getString("period_from")));
         inv.setPeriodTo(parseDate(rs.getString("period_to")));
 
         return inv;
     }
-    
+
     private LocalDate parseDate(String value) {
 
-        if (value == null || value.isBlank()) return null;
+        if (value == null || value.isBlank())
+            return null;
 
         try {
             // ✅ Normal ISO date: 2026-02-12
@@ -323,20 +391,20 @@ public class InvoiceMasterRepository {
     public void update(Connection con, InvoiceMaster inv) throws Exception {
 
         String sql = """
-            UPDATE invoice_master
-            SET
-                invoice_no   = ?,
-                client_id    = ?,
-                client_name  = ?,
-                invoice_date = ?,
-                amount       = ?,
-                type         = ?,
-                status       = ?,
-                period_from  = ?,
-                period_to    = ?,
-                file_path    = ?
-            WHERE id = ?
-        """;
+                    UPDATE invoice_master
+                    SET
+                        invoice_no   = ?,
+                        client_id    = ?,
+                        client_name  = ?,
+                        invoice_date = ?,
+                        amount       = ?,
+                        type         = ?,
+                        status       = ?,
+                        period_from  = ?,
+                        period_to    = ?,
+                        file_path    = ?
+                    WHERE id = ?
+                """;
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
 
@@ -359,9 +427,51 @@ public class InvoiceMasterRepository {
         }
     }
 
+    /*
+     * =========================================================
+     * GET INVOICE MONTHLY COUNTS
+     * =========================================================
+     */
+    public java.util.Map<String, Integer> getInvoiceMonthlyCounts(Connection con, int monthsLimit) throws Exception {
+        String sql = """
+                    SELECT strftime('%Y-%m', invoice_date) as month_val, COUNT(id) as inv_count
+                    FROM invoice_master
+                    WHERE is_void = 0 AND invoice_date IS NOT NULL
+                    GROUP BY month_val
+                    ORDER BY month_val DESC
+                    LIMIT ?
+                """;
 
+        java.util.LinkedHashMap<String, Integer> map = new java.util.LinkedHashMap<>();
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, monthsLimit);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String m = rs.getString("month_val");
+                    int count = rs.getInt("inv_count");
+                    if (m != null) {
+                        map.put(m, count);
+                    }
+                }
+            }
+        }
 
-    /** Returns ISO YYYY-MM-DD string for CHECK constraint compatibility; null for null input. */
+        // Reverse to chronological order
+        java.util.List<String> keys = new ArrayList<>(map.keySet());
+        java.util.Collections.reverse(keys);
+
+        java.util.Map<String, Integer> chronologicalMap = new java.util.LinkedHashMap<>();
+        for (String k : keys) {
+            chronologicalMap.put(k, map.get(k));
+        }
+
+        return chronologicalMap;
+    }
+
+    /**
+     * Returns ISO YYYY-MM-DD string for CHECK constraint compatibility; null for
+     * null input.
+     */
     private String toIso(LocalDate d) {
         return d == null ? null : d.toString();
     }

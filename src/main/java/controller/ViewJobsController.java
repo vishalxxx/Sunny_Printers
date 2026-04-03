@@ -9,6 +9,7 @@ import java.util.Optional;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -38,6 +39,7 @@ public class ViewJobsController {
 
     // ===================== FILTERS =====================
     @FXML private ComboBox<Client> clientComboBox;
+    @FXML private ComboBox<String> statusFilterComboBox;
     @FXML private DatePicker fromDatePicker;
     @FXML private DatePicker toDatePicker;
 
@@ -71,6 +73,14 @@ public class ViewJobsController {
         loadAllJobs();   // default list
         setupAutoPopupDatePicker(fromDatePicker);
         setupAutoPopupDatePicker(toDatePicker);
+        
+        statusFilterComboBox.getItems().addAll("All", "Created", "In Progress", "On Hold", "Completed", "Cancelled");
+        statusFilterComboBox.getSelectionModel().selectFirst();
+        statusFilterComboBox.valueProperty().addListener((obs, oldV, newV) -> {
+            searchField.clear();
+            applyFilters();
+        });
+
         // ✅ filter triggers
         clientComboBox.valueProperty().addListener(this::onClientChanged);
      
@@ -106,6 +116,7 @@ public class ViewJobsController {
         clientComboBox.getSelectionModel().clearSelection();
         fromDatePicker.setValue(null);
         toDatePicker.setValue(null);
+        statusFilterComboBox.getSelectionModel().select("All");
     }
 
     // =========================================================
@@ -174,11 +185,79 @@ public class ViewJobsController {
         titleCol.setCellValueFactory(new PropertyValueFactory<>("jobTitle"));
         dateCol.setCellValueFactory(new PropertyValueFactory<>("jobDate"));
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+        statusCol.setCellFactory(col -> new TableCell<>() {
+            private final ComboBox<String> statusCombo = new ComboBox<>(
+                FXCollections.observableArrayList(
+                    "Created", "In Progress", "On Hold", "Completed", "Cancelled"
+                )
+            );
+
+            {
+                statusCombo.setMaxWidth(Double.MAX_VALUE);
+                statusCombo.setVisibleRowCount(5);
+                statusCombo.getStyleClass().add("combo-box-base");
+                this.setStyle("-fx-padding: 2 5; -fx-alignment: CENTER;");
+                
+                statusCombo.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+                    if (event.getCode() == javafx.scene.input.KeyCode.UP || event.getCode() == javafx.scene.input.KeyCode.DOWN) {
+                        if (!statusCombo.isShowing()) {
+                            statusCombo.show();
+                            event.consume();
+                        }
+                    }
+                });
+
+                statusCombo.setOnAction(e -> {
+                    Job job = getTableRow().getItem();
+                    if (job != null) {
+                        String newStatus = statusCombo.getValue();
+                        if (newStatus != null && !newStatus.equals(job.getStatus())) {
+                            job.setStatus(newStatus);
+                            jobService.updateJobStatus(job.getId(), newStatus);
+                        }
+                    }
+                });
+            }
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                    setGraphic(null);
+                } else {
+                    // Update combobox without triggering action
+                    statusCombo.setOnAction(null);
+                    statusCombo.setValue(item);
+                    
+                    statusCombo.setOnAction(e -> {
+                        if (statusCombo.isShowing()) return; // Ignore mid-navigation changes
+                        
+                        Job job = getTableRow().getItem();
+                        if (job != null) {
+                            String newStatus = statusCombo.getValue();
+                            if (newStatus != null && !newStatus.equals(job.getStatus())) {
+                                job.setStatus(newStatus);
+                                jobService.updateJobStatus(job.getId(), newStatus);
+                            }
+                        }
+                    });
+                    
+                    // Trigger action on close to catch final selection
+                    statusCombo.showingProperty().addListener((obs, wasShowing, isShowing) -> {
+                        if (!isShowing) statusCombo.fireEvent(new ActionEvent());
+                    });
+                    
+                    setGraphic(statusCombo);
+                }
+            }
+        });
+        
         remarksCol.setCellValueFactory(new PropertyValueFactory<>("remarks"));
         createdAtCol.setCellValueFactory(new PropertyValueFactory<>("createdAt"));
         updatedAtCol.setCellValueFactory(new PropertyValueFactory<>("updatedAt"));
 
         jobsTable.setItems(masterJobs);
+        jobsTable.setEditable(true);
 
         // ✅ horizontal scroll support
         jobsTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
@@ -314,7 +393,15 @@ public class ViewJobsController {
                 if (to != null && job.getJobDate().isAfter(to)) matchesDate = false;
             }
 
-            return matchesKeyword && matchesDate;
+            boolean matchesStatus = true;
+            String statusFilter = statusFilterComboBox.getValue();
+            if (statusFilter != null && !statusFilter.equals("All")) {
+                if (job.getStatus() == null || !job.getStatus().equalsIgnoreCase(statusFilter)) {
+                    matchesStatus = false;
+                }
+            }
+
+            return matchesKeyword && matchesDate && matchesStatus;
         });
         
         if (from != null && to != null && from.isAfter(to)) {
@@ -375,6 +462,7 @@ public class ViewJobsController {
 
         fromDatePicker.setValue(null);
         toDatePicker.setValue(null);
+        statusFilterComboBox.getSelectionModel().select("All");
 
         loadAllJobs();
     }

@@ -45,8 +45,6 @@ public class RecordPaymentController implements Initializable {
     @FXML
     private ComboBox<String> paymentModeCombo;
     @FXML
-    private TextField referenceField;
-    @FXML
     private TextField notesField;
     @FXML
     private Label currentDateLabel;
@@ -64,6 +62,10 @@ public class RecordPaymentController implements Initializable {
     private DatePicker chequeDatePicker;
     @FXML
     private DatePicker clearanceDatePicker;
+    @FXML
+    private ComboBox<String> chequeReceiverBankCombo;
+    @FXML
+    private ComboBox<String> chequeStatusCombo;
 
     // UPI details
     @FXML
@@ -72,6 +74,26 @@ public class RecordPaymentController implements Initializable {
     private TextField upiIdField;
     @FXML
     private TextField upiUtrField;
+    @FXML
+    private TextField receiverUpiIdField;
+    @FXML
+    private ComboBox<String> upiReceiverBankCombo;
+    @FXML
+    private ComboBox<String> upiStatusCombo;
+
+    // Bank Transfer details
+    @FXML
+    private VBox bankTransferDetailsBox;
+    @FXML
+    private TextField senderNameField;
+    @FXML
+    private TextField senderAccountField;
+    @FXML
+    private TextField bankTransferUtrField;
+    @FXML
+    private ComboBox<String> receiverBankCombo;
+    @FXML
+    private ComboBox<String> bankTransferStatusCombo;
 
     // Invoice table + footer
     @FXML
@@ -148,7 +170,7 @@ public class RecordPaymentController implements Initializable {
     }
 
     private void setupPaymentModeCombo() {
-        paymentModeCombo.setItems(FXCollections.observableArrayList("Cash", "Cheque", "UPI"));
+        paymentModeCombo.setItems(FXCollections.observableArrayList("Cash", "Cheque", "UPI", "Bank Transfer"));
         paymentModeCombo.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             updateModeSpecificSections(newVal);
             updateAmountEnabledState();
@@ -169,6 +191,16 @@ public class RecordPaymentController implements Initializable {
         setupAutoPopupDatePicker(paymentDatePicker);
         setupAutoPopupDatePicker(chequeDatePicker);
         setupAutoPopupDatePicker(clearanceDatePicker);
+        
+        if (clearanceDatePicker != null && chequeStatusCombo != null) {
+            clearanceDatePicker.valueProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal == null) {
+                    chequeStatusCombo.setValue("Pending");
+                } else {
+                    chequeStatusCombo.setValue("Cleared");
+                }
+            });
+        }
 
         // Guard against missing optional sections in FXML
         if (chequeDetailsBox != null) {
@@ -178,6 +210,10 @@ public class RecordPaymentController implements Initializable {
         if (upiDetailsBox != null) {
             upiDetailsBox.setVisible(false);
             upiDetailsBox.setManaged(false);
+        }
+        if (bankTransferDetailsBox != null) {
+            bankTransferDetailsBox.setVisible(false);
+            bankTransferDetailsBox.setManaged(false);
         }
 
         // Hide excess pill initially (prevents visible yellow border)
@@ -189,8 +225,29 @@ public class RecordPaymentController implements Initializable {
 
         // Bank list
         if (bankNameCombo != null) {
-            bankNameCombo.setEditable(true);
+            bankNameCombo.setEditable(false);
             bankNameCombo.getItems().setAll(getIndianBankNames());
+        }
+        if (chequeReceiverBankCombo != null) {
+            chequeReceiverBankCombo.setEditable(false);
+            chequeReceiverBankCombo.getItems().setAll(getIndianBankNames());
+        }
+        if (chequeStatusCombo != null) {
+            chequeStatusCombo.setItems(FXCollections.observableArrayList("Pending", "Cleared", "Failed"));
+        }
+        if (receiverBankCombo != null) {
+            receiverBankCombo.setEditable(false);
+            receiverBankCombo.getItems().setAll(getIndianBankNames());
+        }
+        if (bankTransferStatusCombo != null) {
+            bankTransferStatusCombo.setItems(FXCollections.observableArrayList("Pending", "Success", "Failed"));
+        }
+        if (upiReceiverBankCombo != null) {
+            upiReceiverBankCombo.setEditable(false);
+            upiReceiverBankCombo.getItems().setAll(getIndianBankNames());
+        }
+        if (upiStatusCombo != null) {
+            upiStatusCombo.setItems(FXCollections.observableArrayList("Pending", "Success", "Failed"));
         }
 
         // Disable all inputs until a client is selected
@@ -202,8 +259,6 @@ public class RecordPaymentController implements Initializable {
         // Top form
         if (paymentDatePicker != null)
             paymentDatePicker.setDisable(!enabled);
-        if (referenceField != null)
-            referenceField.setDisable(!enabled);
         if (paymentModeCombo != null)
             paymentModeCombo.setDisable(!enabled);
         if (notesField != null)
@@ -222,10 +277,32 @@ public class RecordPaymentController implements Initializable {
             chequeDatePicker.setDisable(!enabled);
         if (clearanceDatePicker != null)
             clearanceDatePicker.setDisable(!enabled);
+        if (chequeReceiverBankCombo != null)
+            chequeReceiverBankCombo.setDisable(!enabled);
+        if (chequeStatusCombo != null)
+            chequeStatusCombo.setDisable(!enabled);
         if (upiIdField != null)
             upiIdField.setDisable(!enabled);
         if (upiUtrField != null)
             upiUtrField.setDisable(!enabled);
+        if (receiverUpiIdField != null)
+            receiverUpiIdField.setDisable(!enabled);
+        if (upiReceiverBankCombo != null)
+            upiReceiverBankCombo.setDisable(!enabled);
+        if (upiStatusCombo != null)
+            upiStatusCombo.setDisable(!enabled);
+
+        // Bank Transfer
+        if (senderNameField != null)
+            senderNameField.setDisable(!enabled);
+        if (senderAccountField != null)
+            senderAccountField.setDisable(!enabled);
+        if (bankTransferUtrField != null)
+            bankTransferUtrField.setDisable(!enabled);
+        if (receiverBankCombo != null)
+            receiverBankCombo.setDisable(!enabled);
+        if (bankTransferStatusCombo != null)
+            bankTransferStatusCombo.setDisable(!enabled);
 
         // Allocation table
         if (invoiceTable != null)
@@ -243,6 +320,7 @@ public class RecordPaymentController implements Initializable {
     private void updateModeSpecificSections(String mode) {
         boolean isCheque = "Cheque".equalsIgnoreCase(mode);
         boolean isUpi = "UPI".equalsIgnoreCase(mode);
+        boolean isBankTransfer = "Bank Transfer".equalsIgnoreCase(mode);
 
         if (chequeDetailsBox != null) {
             chequeDetailsBox.setVisible(isCheque);
@@ -254,6 +332,12 @@ public class RecordPaymentController implements Initializable {
             upiDetailsBox.setVisible(isUpi);
             upiDetailsBox.setManaged(isUpi);
             upiDetailsBox.setDisable(!isUpi);
+        }
+
+        if (bankTransferDetailsBox != null) {
+            bankTransferDetailsBox.setVisible(isBankTransfer);
+            bankTransferDetailsBox.setManaged(isBankTransfer);
+            bankTransferDetailsBox.setDisable(!isBankTransfer);
         }
     }
 
@@ -306,6 +390,11 @@ public class RecordPaymentController implements Initializable {
         // Make allocate column editable as a number textfield
         invoiceTable.setEditable(true);
         allocateAmountColumn.setCellFactory(column -> new EditingBigDecimalCell());
+        allocateAmountColumn.setOnEditCommit(event -> {
+            InvoiceRow row = event.getRowValue();
+            row.setAllocateAmount(event.getNewValue());
+            refreshFooterTotals();
+        });
 
         if (invoiceTable.getColumns().isEmpty()) {
             invoiceTable.getColumns().add(selectColumn);
@@ -397,35 +486,45 @@ public class RecordPaymentController implements Initializable {
                     mode = "Cash";
 
                 // 1) Insert into payments
-                int paymentId;
+                int paymentId = -1;
                 try (PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO payments (client_id, amount, payment_date, method) VALUES (?,?,?,?)",
-                        PreparedStatement.RETURN_GENERATED_KEYS)) {
+                        "INSERT INTO payments (client_id, amount, payment_date, method) VALUES (?,?,?,?)")) {
                     ps.setInt(1, clientId);
                     ps.setDouble(2, totalAmount.doubleValue());
                     ps.setString(3,
                             paymentDatePicker.getValue() == null ? null : paymentDatePicker.getValue().toString());
                     ps.setString(4, mode);
                     ps.executeUpdate();
+                }
 
-                    try (ResultSet rs = ps.getGeneratedKeys()) {
-                        if (!rs.next()) {
-                            throw new IllegalStateException("Failed to generate payment id");
+                try (PreparedStatement ps = con.prepareStatement("SELECT last_insert_rowid()")) {
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            paymentId = rs.getInt(1);
+                        } else {
+                            throw new IllegalStateException("Failed to retrieve generated payment id");
                         }
-                        paymentId = rs.getInt(1);
                     }
                 }
 
                 // 2) Allocate amounts
                 InvoiceMasterRepository repo = new InvoiceMasterRepository();
 
+                BigDecimal remainingAmountToAllocate = totalAmount;
+
                 for (InvoiceRow row : invoiceItems) {
                     if (!row.isSelected())
                         continue;
-                    BigDecimal alloc = row.getAllocateAmount();
-                    if (alloc == null || alloc.compareTo(BigDecimal.ZERO) <= 0)
+                        
+                    if (remainingAmountToAllocate.compareTo(BigDecimal.ZERO) <= 0)
+                        break;
+                        
+                    BigDecimal alloc = Math.min(row.getAllocateAmount().doubleValue(), remainingAmountToAllocate.doubleValue()) > 0 ? BigDecimal.valueOf(Math.min(row.getAllocateAmount().doubleValue(), remainingAmountToAllocate.doubleValue())) : BigDecimal.ZERO;
+                    
+                    if (alloc.compareTo(BigDecimal.ZERO) <= 0)
                         continue;
 
+                    remainingAmountToAllocate = remainingAmountToAllocate.subtract(alloc);
                     int invoiceId = row.getInvoiceId();
 
                     // 2a) Insert allocation
@@ -495,7 +594,6 @@ public class RecordPaymentController implements Initializable {
         paymentDatePicker.setValue(LocalDate.now());
         amountField.clear();
         paymentModeCombo.getSelectionModel().clearSelection();
-        referenceField.clear();
         notesField.clear();
 
         chequeNumberField.clear();
@@ -503,9 +601,21 @@ public class RecordPaymentController implements Initializable {
             bankNameCombo.getSelectionModel().clearSelection();
         chequeDatePicker.setValue(null);
         clearanceDatePicker.setValue(null);
+        if (chequeReceiverBankCombo != null) chequeReceiverBankCombo.getSelectionModel().clearSelection();
+        if (chequeStatusCombo != null) chequeStatusCombo.getSelectionModel().clearSelection();
 
         upiIdField.clear();
         upiUtrField.clear();
+        if (receiverUpiIdField != null) receiverUpiIdField.clear();
+        if (upiReceiverBankCombo != null) upiReceiverBankCombo.getSelectionModel().clearSelection();
+        if (upiStatusCombo != null) upiStatusCombo.getSelectionModel().clearSelection();
+
+        // Bank transfer
+        if (senderNameField != null) senderNameField.clear();
+        if (senderAccountField != null) senderAccountField.clear();
+        if (bankTransferUtrField != null) bankTransferUtrField.clear();
+        if (receiverBankCombo != null) receiverBankCombo.getSelectionModel().clearSelection();
+        if (bankTransferStatusCombo != null) bankTransferStatusCombo.getSelectionModel().clearSelection();
 
         // Reload invoices if client is still selected, otherwise clear table
         if (!clearClient && clientCombo.getSelectionModel().getSelectedItem() != null) {
@@ -538,6 +648,7 @@ public class RecordPaymentController implements Initializable {
             String sql = """
                         SELECT * FROM invoice_master
                         WHERE client_id = ? AND is_void = 0 AND due_amount > 0
+                          AND status NOT IN ('DRAFT', 'CANCELLED')
                         ORDER BY invoice_date DESC
                     """;
 
@@ -681,19 +792,6 @@ public class RecordPaymentController implements Initializable {
     }
 
     private void savePaymentDetails(Connection con, int paymentId, String mode) throws Exception {
-        // Ensure supporting table exists
-        try (PreparedStatement ps = con.prepareStatement("""
-                    CREATE TABLE IF NOT EXISTS payment_details (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        payment_id INTEGER NOT NULL,
-                        field_key TEXT NOT NULL,
-                        field_value TEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        UNIQUE(payment_id, field_key)
-                    )
-                """)) {
-            ps.execute();
-        }
 
         insertPaymentDetail(con, paymentId, "mode", mode);
 
@@ -704,14 +802,31 @@ public class RecordPaymentController implements Initializable {
                     chequeDatePicker.getValue() == null ? null : chequeDatePicker.getValue().toString());
             insertPaymentDetail(con, paymentId, "clearance_date",
                     clearanceDatePicker.getValue() == null ? null : clearanceDatePicker.getValue().toString());
+                    
+            if (chequeReceiverBankCombo != null && chequeReceiverBankCombo.getValue() != null) {
+                insertPaymentDetail(con, paymentId, "receiver_bank", chequeReceiverBankCombo.getValue());
+            }
+            if (chequeStatusCombo != null && chequeStatusCombo.getValue() != null) {
+                insertPaymentDetail(con, paymentId, "status", chequeStatusCombo.getValue());
+            } else {
+                String chqStatus = clearanceDatePicker.getValue() == null ? "Pending" : "Cleared";
+                insertPaymentDetail(con, paymentId, "status", chqStatus);
+            }
+            
         } else if ("UPI".equalsIgnoreCase(mode)) {
             insertPaymentDetail(con, paymentId, "upi_id", upiIdField.getText());
             insertPaymentDetail(con, paymentId, "utr", upiUtrField.getText());
+            if (receiverUpiIdField != null) insertPaymentDetail(con, paymentId, "receiver_upi_id", receiverUpiIdField.getText());
+            if (upiReceiverBankCombo != null) insertPaymentDetail(con, paymentId, "receiver_bank", upiReceiverBankCombo.getValue());
+            if (upiStatusCombo != null) insertPaymentDetail(con, paymentId, "status", upiStatusCombo.getValue());
+        } else if ("Bank Transfer".equalsIgnoreCase(mode)) {
+            insertPaymentDetail(con, paymentId, "sender_name", senderNameField.getText());
+            insertPaymentDetail(con, paymentId, "sender_account", senderAccountField.getText());
+            insertPaymentDetail(con, paymentId, "utr", bankTransferUtrField.getText());
+            insertPaymentDetail(con, paymentId, "receiver_bank", receiverBankCombo == null ? null : receiverBankCombo.getValue());
+            insertPaymentDetail(con, paymentId, "status", bankTransferStatusCombo == null ? null : bankTransferStatusCombo.getValue());
         }
 
-        if (referenceField.getText() != null && !referenceField.getText().isBlank()) {
-            insertPaymentDetail(con, paymentId, "reference", referenceField.getText());
-        }
         if (notesField.getText() != null && !notesField.getText().isBlank()) {
             insertPaymentDetail(con, paymentId, "notes", notesField.getText());
         }

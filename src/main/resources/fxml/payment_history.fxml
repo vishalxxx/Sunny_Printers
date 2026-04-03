@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/23"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="controller.PaymentHistoryController"
+            stylesheets="@../css/invoice_genration.css,@../css/record_payment.css"
+            styleClass="app-root">
+
+    <!-- ===================================================== -->
+    <!-- HEADER (FIXED) -->
+    <!-- ===================================================== -->
+    <top>
+        <HBox styleClass="header-bar" alignment="CENTER_LEFT">
+            <!-- LEFT TITLE -->
+            <HBox spacing="12" alignment="CENTER_LEFT">
+                <Label text="📜" styleClass="header-icon"/>
+                <VBox spacing="2">
+                    <Label text="PAYMENT HISTORY" styleClass="header-title"/>
+                    <Label text="ACCOUNTS › HISTORY" styleClass="header-subtitle"/>
+                </VBox>
+            </HBox>
+            <Pane HBox.hgrow="ALWAYS"/>
+            <!-- RIGHT -->
+            <HBox spacing="20" alignment="CENTER_RIGHT">
+                <Label text="👤" styleClass="avatar"/>
+            </HBox>
+        </HBox>
+    </top>
+
+    <!-- ===================================================== -->
+    <!-- CENTER SCROLLABLE CONTENT -->
+    <!-- ===================================================== -->
+    <center>
+        <ScrollPane fitToWidth="true" styleClass="content-scroll">
+            <content>
+                <VBox spacing="24" styleClass="page" fillWidth="true">
+                    
+                    <!-- FILTER CARDS ROW -->
+                    <HBox spacing="18">
+                        <VBox spacing="16" styleClass="card" HBox.hgrow="ALWAYS">
+                            <!-- CLIENT full width -->
+                            <VBox spacing="6">
+                                <Label text="SELECT CLIENT" styleClass="field-label"/>
+                                <ComboBox fx:id="clientCombo" promptText="Select client..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            </VBox>
+
+                            <!-- DATE FILTERS in one row -->
+                            <GridPane hgap="18" vgap="18">
+                                <columnConstraints>
+                                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                                </columnConstraints>
+
+                                <VBox spacing="6" GridPane.columnIndex="0">
+                                    <Label text="FROM DATE" styleClass="field-label"/>
+                                    <DatePicker fx:id="fromDate" promptText="mm/dd/yy" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                                </VBox>
+
+                                <VBox spacing="6" GridPane.columnIndex="1">
+                                    <Label text="TO DATE" styleClass="field-label"/>
+                                    <DatePicker fx:id="toDate" promptText="mm/dd/yy" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                                </VBox>
+                            </GridPane>
+                        </VBox>
+
+                        <VBox spacing="16" styleClass="card" HBox.hgrow="ALWAYS">
+                            <!-- GLOBAL SEARCH -->
+                            <VBox spacing="6">
+                                <Label text="SEARCH PAYMENTS" styleClass="field-label"/>
+                                <TextField fx:id="searchField" promptText="Search amount, ref, method..." styleClass="input"/>
+                            </VBox>
+                            <Region VBox.vgrow="ALWAYS" />
+                            <HBox spacing="12" alignment="BOTTOM_RIGHT">
+                                <Button text="Reset Filters" styleClass="button, outline-btn" onAction="#onReset"/>
+                                <!-- Note: Filter applies automatically on field changes now, but adding Apply button for clarity -->
+                            </HBox>
+                        </VBox>
+                    </HBox>
+
+                    <!-- TABLE SECTION -->
+                    <VBox spacing="14" styleClass="card" VBox.vgrow="ALWAYS">
+                        <HBox alignment="CENTER_LEFT" spacing="10" styleClass="table-header">
+                            <Label text="🧾" styleClass="section-icon"/>
+                            <Label text="PAYMENT RECORDS" styleClass="table-title"/>
+                            <Pane HBox.hgrow="ALWAYS"/>
+                            <Label text="Filtered View" styleClass="status-pill"/>
+                        </HBox>
+
+                        <TableView fx:id="paymentsTable" VBox.vgrow="ALWAYS" style="-fx-pref-height: 400px;" styleClass="history-table">
+                            <columns>
+                                <TableColumn fx:id="colDate" text="DATE" prefWidth="120"/>
+                                <TableColumn fx:id="colClient" text="CLIENT NAME" prefWidth="250"/>
+                                <TableColumn fx:id="colMethod" text="METHOD" prefWidth="150"/>
+                                <TableColumn fx:id="colAmount" text="AMOUNT (₹)" prefWidth="150" style="-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;"/>
+                                <TableColumn fx:id="colReference" text="REFERENCE / UTR" prefWidth="250"/>
+                            </columns>
+                            <columnResizePolicy>
+                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                            </columnResizePolicy>
+                            <placeholder>
+                                <Label text="No payments found matching criteria" style="-fx-text-fill: #94a3b8;"/>
+                            </placeholder>
+                        </TableView>
+                    </VBox>
+                </VBox>
+            </content>
+        </ScrollPane>
+    </center>
+
+    <!-- ===================================================== -->
+    <!-- FOOTER SUMMARY -->
+    <!-- ===================================================== -->
+    <bottom>
+        <HBox alignment="CENTER_RIGHT" styleClass="footer-bar">
+            <HBox spacing="24" alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS">
+                <HBox spacing="8" alignment="CENTER" styleClass="totals-box">
+                    <Label text="TOTAL RECEIVED:" styleClass="total-label"/>
+                    <Label fx:id="totalAmountLabel" text="₹0.00" styleClass="total-green"/>
+                </HBox>
+            </HBox>
+        </HBox>
+    </bottom>
+
+</BorderPane>

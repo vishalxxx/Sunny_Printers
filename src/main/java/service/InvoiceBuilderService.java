@@ -108,6 +108,7 @@ public class InvoiceBuilderService {
 				FROM jobs j
 				JOIN job_items ji ON ji.job_id = j.id
 				WHERE j.client_id = ?
+				  AND j.status IN ('Created', 'In Progress', 'Completed')
 				  AND j.id IN (""" + placeholders + ") " + "ORDER BY j.job_date, j.id, ji.sort_order";
 
 		try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -175,6 +176,7 @@ public class InvoiceBuilderService {
             FROM jobs j
             JOIN clients c ON c.id = j.client_id
             WHERE DATE(j.job_date) BETWEEN ? AND ?
+            AND j.status IN ('Created', 'In Progress', 'Completed')
             ORDER BY c.business_name, c.client_name, c.id
         """;
 
@@ -252,6 +254,7 @@ public class InvoiceBuilderService {
 				JOIN job_items ji ON ji.job_id = j.id
 				WHERE j.client_id = ?
 				AND DATE(j.job_date) BETWEEN ? AND ?
+				AND j.status IN ('Created', 'In Progress', 'Completed')
 				ORDER BY j.job_date, j.id, ji.sort_order
 				""";
 

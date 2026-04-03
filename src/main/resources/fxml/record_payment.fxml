@@ -46,66 +46,44 @@
             <content>
                 <VBox spacing="24" styleClass="page" fillWidth="true">
 
-                    <!-- PAYMENT CARDS ROW -->
-                    <HBox spacing="18">
+                    <!-- PAYMENT CARD -->
+                    <VBox spacing="16" styleClass="card">
+                        <!-- CLIENT full width -->
+                        <VBox spacing="6">
+                            <Label text="SELECT CLIENT" styleClass="field-label"/>
+                            <ComboBox fx:id="clientCombo" promptText="Select client..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                        </VBox>
 
-                        <!-- CARD 1: CLIENT + PAYMENT DATE / AMOUNT -->
-                        <VBox spacing="16" styleClass="card" HBox.hgrow="ALWAYS">
+                        <!-- MODE, DATE, AMOUNT, REF in one grid -->
+                        <GridPane hgap="18" vgap="18">
+                            <columnConstraints>
+                                <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
+                                <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
+                                <ColumnConstraints percentWidth="33.4" hgrow="ALWAYS"/>
+                            </columnConstraints>
 
-                            <!-- CLIENT full width -->
-                            <VBox spacing="6" >
-                                <Label text="SELECT CLIENT" styleClass="field-label"/>
-                                <ComboBox fx:id="clientCombo" promptText="Select client..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                <Label text="PAYMENT MODE" styleClass="field-label"/>
+                                <ComboBox fx:id="paymentModeCombo" promptText="Cash / Cheque / UPI / Bank Transfer" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
                             </VBox>
 
-                            <!-- PAYMENT MODE + PAYMENT DATE in one row -->
-                            <GridPane hgap="18" vgap="0">
-                                <columnConstraints>
-                                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
-                                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
-                                </columnConstraints>
+                            <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                <Label text="PAYMENT DATE" styleClass="field-label"/>
+                                <DatePicker fx:id="paymentDatePicker" promptText="mm/dd/yy" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            </VBox>
+                            
+                            <VBox spacing="6" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                                <Label text="PAYMENT AMOUNT" styleClass="field-label"/>
+                                <TextField fx:id="amountField" promptText="0.00" styleClass="input amount"/>
+                            </VBox>
 
-                                <VBox spacing="6" GridPane.columnIndex="0">
-                                    <Label text="PAYMENT MODE" styleClass="field-label"/>
-                                    <ComboBox fx:id="paymentModeCombo" promptText="Cash / Cheque / UPI" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
-                                </VBox>
-
-                                <VBox spacing="6" GridPane.columnIndex="1">
-                                    <Label text="PAYMENT DATE" styleClass="field-label"/>
-                                    <DatePicker fx:id="paymentDatePicker" promptText="mm/dd/yy" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
-                                </VBox>
-                            </GridPane>
-                        </VBox>
-
-                        <!-- CARD 2: MODE + REFERENCE / NOTES -->
-                        <VBox spacing="16" styleClass="card" HBox.hgrow="ALWAYS">
-
-                            <GridPane hgap="18" vgap="18">
-                                <columnConstraints>
-                                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
-                                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
-                                </columnConstraints>
-
-                                <!-- AMOUNT + REFERENCE (same row) -->
-                                <VBox spacing="6" GridPane.columnIndex="0">
-                                    <Label text="PAYMENT AMOUNT" styleClass="field-label"/>
-                                    <TextField fx:id="amountField" promptText="0.00" styleClass="input amount"/>
-                                </VBox>
-
-                                <VBox spacing="6" GridPane.columnIndex="1">
-                                    <Label text="REFERENCE / UTR" styleClass="field-label"/>
-                                    <TextField fx:id="referenceField" promptText="CHQ / UTR / Ref..." styleClass="input"/>
-                                </VBox>
-
-                                <!-- NOTES full width -->
-                                <VBox spacing="6" GridPane.rowIndex="1" GridPane.columnIndex="0" GridPane.columnSpan="2">
-                                    <Label text="NOTES" styleClass="field-label"/>
-                                    <TextField fx:id="notesField" promptText="Add transaction remarks..." styleClass="input"/>
-                                </VBox>
-                            </GridPane>
-                        </VBox>
-
-                    </HBox>
+                            <!-- NOTES full width -->
+                            <VBox spacing="6" GridPane.rowIndex="1" GridPane.columnIndex="0" GridPane.columnSpan="3">
+                                <Label text="NOTES" styleClass="field-label"/>
+                                <TextField fx:id="notesField" promptText="Add transaction remarks..." styleClass="input"/>
+                            </VBox>
+                        </GridPane>
+                    </VBox>
 
                     <!-- CHEQUE DETAILS (visible only for cheque) -->
                     <VBox fx:id="chequeDetailsBox" spacing="14" styleClass="card">
@@ -121,30 +99,39 @@
 
                         <GridPane hgap="18" vgap="18">
                             <columnConstraints>
-                                <ColumnConstraints percentWidth="20" hgrow="ALWAYS"/>
-                                <ColumnConstraints percentWidth="35" hgrow="ALWAYS"/>
-                                <ColumnConstraints percentWidth="22.5" hgrow="ALWAYS"/>
-                                <ColumnConstraints percentWidth="22.5" hgrow="ALWAYS"/>
+                                <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
+                                <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
+                                <ColumnConstraints percentWidth="33.4" hgrow="ALWAYS"/>
                             </columnConstraints>
 
                             <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
                                 <Label text="CHEQUE NO" styleClass="field-label"/>
-                                <TextField fx:id="chequeNumberField" promptText="No..." styleClass="input"/>
+                                <TextField fx:id="chequeNumberField" promptText="No..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
                             </VBox>
 
                             <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
-                                <Label text="BANK NAME" styleClass="field-label"/>
-                                <ComboBox fx:id="bankNameCombo" promptText="Select bank..." styleClass="input bank-combo"/>
+                                <Label text="SENDER BANK NAME" styleClass="field-label"/>
+                                <ComboBox fx:id="bankNameCombo" promptText="Select bank..." prefWidth="0" maxWidth="Infinity" styleClass="input bank-combo"/>
                             </VBox>
 
                             <VBox spacing="6" GridPane.columnIndex="2" GridPane.rowIndex="0">
                                 <Label text="CHEQUE DATE" styleClass="field-label"/>
-                                <DatePicker fx:id="chequeDatePicker" promptText="mm/dd/yy" styleClass="input"/>
+                                <DatePicker fx:id="chequeDatePicker" promptText="mm/dd/yy" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
                             </VBox>
 
-                            <VBox spacing="6" GridPane.columnIndex="3" GridPane.rowIndex="0">
+                            <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="1">
                                 <Label text="CLEARANCE DATE" styleClass="field-label"/>
-                                <DatePicker fx:id="clearanceDatePicker" promptText="mm/dd/yy" styleClass="input"/>
+                                <DatePicker fx:id="clearanceDatePicker" promptText="mm/dd/yy" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            </VBox>
+
+                            <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                <Label text="RECEIVER BANK A/C" styleClass="field-label"/>
+                                <ComboBox fx:id="chequeReceiverBankCombo" promptText="Select bank..." prefWidth="0" maxWidth="Infinity" styleClass="input bank-combo"/>
+                            </VBox>
+
+                            <VBox spacing="6" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                                <Label text="STATUS" styleClass="field-label"/>
+                                <ComboBox fx:id="chequeStatusCombo" promptText="Select status..." prefWidth="0" maxWidth="Infinity" styleClass="input bank-combo"/>
                             </VBox>
                         </GridPane>
                     </VBox>
@@ -158,18 +145,75 @@
 
                         <GridPane hgap="18" vgap="18">
                             <columnConstraints>
-                                <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
-                                <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                                <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
+                                <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
+                                <ColumnConstraints percentWidth="33.4" hgrow="ALWAYS"/>
                             </columnConstraints>
 
                             <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                                <Label text="UPI ID" styleClass="field-label"/>
-                                <TextField fx:id="upiIdField" promptText="name@bank" styleClass="input"/>
+                                <Label text="SENDER UPI ID" styleClass="field-label"/>
+                                <TextField fx:id="upiIdField" promptText="name@bank" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
                             </VBox>
 
                             <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
                                 <Label text="UTR" styleClass="field-label"/>
-                                <TextField fx:id="upiUtrField" promptText="UTR / reference..." styleClass="input"/>
+                                <TextField fx:id="upiUtrField" promptText="UTR / reference..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            </VBox>
+
+                            <VBox spacing="6" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                                <Label text="RECEIVER UPI ID" styleClass="field-label"/>
+                                <TextField fx:id="receiverUpiIdField" promptText="receiver@bank" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            </VBox>
+
+                            <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                                <Label text="RECEIVER BANK A/C" styleClass="field-label"/>
+                                <ComboBox fx:id="upiReceiverBankCombo" promptText="Select bank..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            </VBox>
+
+                            <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                <Label text="STATUS" styleClass="field-label"/>
+                                <ComboBox fx:id="upiStatusCombo" promptText="Select status..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            </VBox>
+                        </GridPane>
+                    </VBox>
+
+                    <!-- BANK TRANSFER DETAILS (visible only for Bank Transfer) -->
+                    <VBox fx:id="bankTransferDetailsBox" spacing="14" styleClass="card" visible="false" managed="false">
+                        <HBox alignment="CENTER_LEFT" spacing="10">
+                            <Label text="🏦" styleClass="section-icon"/>
+                            <Label text="BANK TRANSFER DETAILS" styleClass="section-title"/>
+                        </HBox>
+
+                        <GridPane hgap="18" vgap="18">
+                            <columnConstraints>
+                                <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
+                                <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
+                                <ColumnConstraints percentWidth="33.4" hgrow="ALWAYS"/>
+                            </columnConstraints>
+
+                            <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                <Label text="SENDER A/C NAME" styleClass="field-label"/>
+                                <TextField fx:id="senderNameField" promptText="Account holder name..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            </VBox>
+
+                            <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                <Label text="SENDER A/C NUMBER" styleClass="field-label"/>
+                                <TextField fx:id="senderAccountField" promptText="Account number..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            </VBox>
+
+                            <VBox spacing="6" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                                <Label text="UTR / REF NO" styleClass="field-label"/>
+                                <TextField fx:id="bankTransferUtrField" promptText="UTR number..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            </VBox>
+                            
+                            <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                                <Label text="RECEIVER BANK A/C" styleClass="field-label"/>
+                                <ComboBox fx:id="receiverBankCombo" promptText="Select bank..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            </VBox>
+
+                            <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                <Label text="STATUS" styleClass="field-label"/>
+                                <ComboBox fx:id="bankTransferStatusCombo" promptText="Select status..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
                             </VBox>
                         </GridPane>
                     </VBox>

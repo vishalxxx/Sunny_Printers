@@ -48,7 +48,7 @@ public class JobService {
 
 			String sql = """
 					    UPDATE jobs
-					    SET client_id = ?, status = 'OPEN'
+					    SET client_id = ?, status = 'Created'
 					    WHERE id = ?
 					""";
 
@@ -62,7 +62,7 @@ public class JobService {
 
 			// 🔥 update in-memory job
 			job.setClientId(clientId);
-			job.setStatus("OPEN");
+			job.setStatus("Created");
 
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to assign client to job", e);
@@ -123,6 +123,25 @@ public class JobService {
 	}
 	public Job getLatestDraftJob() {
 	    return repo.findLatestDraftJob();
+	}
+
+	public List<Job> getJobsByInvoice(model.InvoiceMaster inv) {
+	    return repo.findJobsByInvoice(inv);
+	}
+
+	public void updateJobStatus(int jobId, String status) {
+		try (Connection con = DBConnection.getConnection()) {
+			con.setAutoCommit(false);
+			String sql = "UPDATE jobs SET status = ? WHERE id = ?";
+			try (PreparedStatement ps = con.prepareStatement(sql)) {
+				ps.setString(1, status);
+				ps.setInt(2, jobId);
+				ps.executeUpdate();
+			}
+			con.commit();
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to update job status", e);
+		}
 	}
 	
 

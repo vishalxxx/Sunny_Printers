@@ -1,0 +1,76 @@
+﻿CREATE TABLE invoice_master (
+
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    invoice_no TEXT NOT NULL UNIQUE,
+
+    client_id INTEGER NOT NULL,
+    client_name TEXT NOT NULL,
+
+    -- ≡ƒöÆ FORCE ISO DATE ONLY
+    invoice_date TEXT NOT NULL
+        CHECK (
+            invoice_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+            AND date(invoice_date) IS NOT NULL
+        ),
+
+    period_from TEXT
+        CHECK (
+            period_from IS NULL OR (
+                period_from GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+                AND date(period_from) IS NOT NULL
+            )
+        ),
+
+    period_to TEXT
+        CHECK (
+            period_to IS NULL OR (
+                period_to GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+                AND date(period_to) IS NOT NULL
+            )
+        ),
+
+    amount REAL NOT NULL CHECK(amount >= 0),
+
+    paid_amount REAL NOT NULL DEFAULT 0 CHECK(paid_amount >= 0),
+    due_amount REAL NOT NULL CHECK(due_amount >= 0),
+
+    payment_status TEXT NOT NULL DEFAULT 'UNPAID',
+
+    last_payment_date TEXT
+        CHECK (
+            last_payment_date IS NULL OR (
+                last_payment_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+                AND date(last_payment_date) IS NOT NULL
+            )
+        ),
+
+    type TEXT NOT NULL,
+    status TEXT NOT NULL,
+
+    is_void INTEGER DEFAULT 0 CHECK(is_void IN (0,1)),
+    void_reason TEXT,
+
+    void_date TEXT
+        CHECK (
+            void_date IS NULL OR (
+                void_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+                AND date(void_date) IS NOT NULL
+            )
+        ),
+
+    replaced_by_invoice_id INTEGER,
+
+    status_updated_by TEXT,
+    file_path TEXT,
+
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (client_id) REFERENCES clients(id),
+    FOREIGN KEY (replaced_by_invoice_id) REFERENCES invoice_master(id),
+
+    CHECK(paid_amount <= amount),
+    CHECK(due_amount = amount - paid_amount)
+);
+CREATE UNIQUE INDEX ux_invoice_master_client_type_period ON invoice_master(client_id, type, period_from, period_to) WHERE is_void = 0;
+CREATE UNIQUE INDEX ux_invoice_master_client_period ON invoice_master(client_id, period_from, period_to) WHERE period_from IS NOT NULL AND period_to IS NOT NULL AND is_void = 0;

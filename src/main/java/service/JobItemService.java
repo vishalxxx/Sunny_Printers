@@ -68,105 +68,23 @@ public class JobItemService {
        ===================================================== */
 
     public JobItem addJobItem(int jobId, Object cardData) {
-
-        if (con == null)
-            throw new IllegalStateException("Connection not provided (transaction required)");
-
-        if (jobId <= 0)
-            throw new IllegalArgumentException("Invalid job id");
-
-        if (cardData == null)
-            throw new IllegalArgumentException("Card data is null");
-
-        JobItem savedJobItem;
-
-        // ========================= PRINTING =========================
-        if (cardData instanceof Printing p) {
-
-            validatePrinting(p);
-
-            JobItem ji = new JobItem();
-            ji.setJobId(jobId);
-            ji.setType("PRINTING");
-            ji.setDescription(buildPrintingDescription(p));
-            ji.setAmount(p.getAmount());
-            ji.setSortOrder(1);
-
-            savedJobItem = jobItemRepo.save(con, ji);
-            printingRepo.save(con, savedJobItem.getId(), p);
+        if (con == null) {
+            try (Connection autoCon = DBConnection.getConnection()) {
+                autoCon.setAutoCommit(false);
+                try {
+                    JobItem result = addJobItem(autoCon, jobId, cardData);
+                    autoCon.commit();
+                    return result;
+                } catch (Exception e) {
+                    autoCon.rollback();
+                    throw e;
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to add job item: " + e.getMessage(), e);
+            }
+        } else {
+            return addJobItem(this.con, jobId, cardData);
         }
-
-        // ========================= PAPER =========================
-        else if (cardData instanceof Paper p) {
-
-            validatePaper(p);
-
-            JobItem ji = new JobItem();
-            ji.setJobId(jobId);
-            ji.setType("PAPER");
-            ji.setDescription(buildPaperDescription(p));
-            ji.setAmount(p.getAmount());
-            ji.setSortOrder(2);
-
-            savedJobItem = jobItemRepo.save(con, ji);
-            paperRepo.save(con, savedJobItem.getId(), p);
-        }
-
-        // ========================= BINDING =========================
-        else if (cardData instanceof Binding b) {
-
-            validateBinding(b);
-
-            JobItem ji = new JobItem();
-            ji.setJobId(jobId);
-            ji.setType("BINDING");
-            ji.setDescription(buildBindingDescription(b));
-            ji.setAmount(b.getAmount());
-            ji.setSortOrder(3);
-
-            savedJobItem = jobItemRepo.save(con, ji);
-            bindingRepo.save(con, savedJobItem.getId(), b);
-        }
-
-        // ========================= LAMINATION =========================
-        else if (cardData instanceof Lamination l) {
-
-            validateLamination(l);
-
-            JobItem ji = new JobItem();
-            ji.setJobId(jobId);
-            ji.setType("LAMINATION");
-            ji.setDescription(buildLaminationDescription(l));
-            ji.setAmount(l.getAmount());
-            ji.setSortOrder(4);
-
-            savedJobItem = jobItemRepo.save(con, ji);
-            laminationRepo.save(con, savedJobItem.getId(), l);
-        }
-
-        // ========================= CTP =========================
-        else if (cardData instanceof CtpPlate ctp) {
-
-            validateCtp(ctp);
-
-            JobItem ji = new JobItem();
-            ji.setJobId(jobId);
-            ji.setType("CTP");
-            ji.setDescription(buildCtpDescription(ctp));
-            ji.setAmount(ctp.getAmount());
-            ji.setSortOrder(5);
-
-            savedJobItem = jobItemRepo.save(con, ji);
-            ctpRepo.save(con, ctp);
-        }
-
-        else {
-            throw new IllegalArgumentException(
-                "Unsupported card type: " + cardData.getClass().getName()
-            );
-        }
-
-        return savedJobItem;
     }
     
     public JobItem addJobItem(Connection con, int jobId, Object cardData) {
@@ -183,9 +101,7 @@ public class JobItemService {
 
          // ========================= PRINTING =========================
          if (cardData instanceof Printing p) {
-
              validatePrinting(p);
-
              JobItem ji = new JobItem();
              ji.setJobId(jobId);
              ji.setType("PRINTING");
@@ -194,14 +110,13 @@ public class JobItemService {
              ji.setSortOrder(1);
 
              savedJobItem = jobItemRepo.save(con, ji);
+             p.setJobItemId(savedJobItem.getId());
              printingRepo.save(con, savedJobItem.getId(), p);
          }
 
          // ========================= PAPER =========================
          else if (cardData instanceof Paper p) {
-
              validatePaper(p);
-
              JobItem ji = new JobItem();
              ji.setJobId(jobId);
              ji.setType("PAPER");
@@ -210,14 +125,13 @@ public class JobItemService {
              ji.setSortOrder(2);
 
              savedJobItem = jobItemRepo.save(con, ji);
+             p.setJobItemId(savedJobItem.getId());
              paperRepo.save(con, savedJobItem.getId(), p);
          }
 
          // ========================= BINDING =========================
          else if (cardData instanceof Binding b) {
-
              validateBinding(b);
-
              JobItem ji = new JobItem();
              ji.setJobId(jobId);
              ji.setType("BINDING");
@@ -226,14 +140,13 @@ public class JobItemService {
              ji.setSortOrder(3);
 
              savedJobItem = jobItemRepo.save(con, ji);
+             b.setJobItemId(savedJobItem.getId());
              bindingRepo.save(con, savedJobItem.getId(), b);
          }
 
          // ========================= LAMINATION =========================
          else if (cardData instanceof Lamination l) {
-
              validateLamination(l);
-
              JobItem ji = new JobItem();
              ji.setJobId(jobId);
              ji.setType("LAMINATION");
@@ -242,14 +155,13 @@ public class JobItemService {
              ji.setSortOrder(4);
 
              savedJobItem = jobItemRepo.save(con, ji);
+             l.setJobItemId(savedJobItem.getId());
              laminationRepo.save(con, savedJobItem.getId(), l);
          }
 
          // ========================= CTP =========================
          else if (cardData instanceof CtpPlate ctp) {
-
              validateCtp(ctp);
-
              JobItem ji = new JobItem();
              ji.setJobId(jobId);
              ji.setType("CTP");
@@ -258,6 +170,7 @@ public class JobItemService {
              ji.setSortOrder(5);
 
              savedJobItem = jobItemRepo.save(con, ji);
+             ctp.setJobItemId(savedJobItem.getId());
              ctpRepo.save(con, ctp);
          }
 

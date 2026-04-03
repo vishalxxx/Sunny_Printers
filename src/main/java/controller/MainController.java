@@ -566,10 +566,31 @@ public class MainController implements Initializable {
 	}
 
 	@FXML
+	public void loadViewInvoiceJobs(MouseEvent event) {
+		loadCenterScreen("/fxml/view_invoice_jobs.fxml",
+				"Loading Invoice Jobs...",
+				"Please wait");
+	}
+
+	@FXML
+	public void loadViewBills(MouseEvent event) {
+		loadCenterScreen("/fxml/view_invoices.fxml",
+				"Loading Invoices...",
+				"Fetching billing records...");
+	}
+
+	@FXML
 	public void loadRecordPayment(MouseEvent event) {
 		loadCenterScreen("/fxml/record_payment.fxml",
 				"Loading Payment Screen...",
 				"Loading outstanding invoices and client details...");
+	}
+
+	@FXML
+	public void loadPaymentHistory(MouseEvent event) {
+		loadCenterScreen("/fxml/payment_history.fxml",
+				"Loading Payment History...",
+				"Fetching payment records...");
 	}
 
 	// try {

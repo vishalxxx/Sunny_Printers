@@ -26,7 +26,12 @@
     <ComboBox fx:id="clientComboBox"
               promptText="Select Client..."
               styleClass="combo-box-base"
-              prefWidth="320"/>
+              prefWidth="240"/>
+
+    <ComboBox fx:id="statusFilterComboBox"
+              promptText="Status: All"
+              styleClass="combo-box-base"
+              prefWidth="160"/>
 
     <DatePicker fx:id="fromDatePicker"
                 promptText="From Date"

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.*?>
+
+<VBox xmlns="http://javafx.com/javafx/23"
+	xmlns:fx="http://javafx.com/fxml/1"
+	fx:controller="controller.ViewInvoicesController" spacing="20"
+	stylesheets="@../css/view_job.css" styleClass="view-clients-root">
+
+	<!-- PAGE TITLE -->
+	<Label text="View Invoices" styleClass="page-heading" />
+
+	<!-- FILTER BAR -->
+	<HBox spacing="12" alignment="CENTER">
+
+		<ComboBox fx:id="clientComboBox"
+				  promptText="Select Client..."
+				  styleClass="combo-box-base"
+				  prefWidth="240"/>
+
+		<ComboBox fx:id="statusComboBox"
+				  promptText="Status: All"
+				  styleClass="combo-box-base"
+				  prefWidth="160"/>
+
+		<DatePicker fx:id="startDatePicker"
+					promptText="From Date"
+					styleClass="date-picker"
+					prefWidth="160"/>
+
+		<DatePicker fx:id="endDatePicker"
+					promptText="To Date"
+					styleClass="date-picker"
+					prefWidth="160"/>
+
+		<Button text="Search" fx:id="searchBtn" styleClass="search-button" onAction="#handleSearch"/>
+		<Button text="Clear Filters" fx:id="clearBtn" styleClass="search-button" onAction="#handleClear"/>
+	</HBox>
+
+	<!-- TABLE CARD -->
+	<VBox styleClass="table-card" VBox.vgrow="ALWAYS">
+		<TableView fx:id="invoiceTable" styleClass="history-table" VBox.vgrow="ALWAYS">
+			<columns>
+				<TableColumn fx:id="colInvoiceNo" text="Invoice No" prefWidth="250" />
+				<TableColumn fx:id="colClientName" text="Client Name" prefWidth="250" />
+				<TableColumn fx:id="colInvoiceDate" text="Date" prefWidth="100" />
+				<TableColumn fx:id="colAmount" text="Amount (₹)" prefWidth="120" />
+				<TableColumn fx:id="colPaid" text="Partially Paid (₹)" prefWidth="120" />
+				<TableColumn fx:id="colDue" text="Due (₹)" prefWidth="120" />
+				<TableColumn fx:id="colStatus" text="Status" prefWidth="120" />
+				<TableColumn fx:id="colPaymentStatus" text="Payment Status" prefWidth="130" />
+				<TableColumn fx:id="colType" text="Type" prefWidth="120" />
+				<TableColumn fx:id="colStatusIndicator" text="Tracker" prefWidth="80" />
+			</columns>
+		</TableView>
+	</VBox>
+</VBox>

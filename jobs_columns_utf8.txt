@@ -1,0 +1,10 @@
+﻿0|id|INTEGER|0||1
+1|job_no|TEXT|1||0
+2|client_id|INTEGER|0||0
+3|job_title|TEXT|0||0
+4|job_date|TEXT|1|date('now')|0
+5|status|TEXT|1|'DRAFT'|0
+6|remarks|TEXT|0||0
+7|created_at|TEXT|0|CURRENT_TIMESTAMP|0
+8|updated_at|TEXT|0|CURRENT_TIMESTAMP|0
+9|job_number_mode|TEXT|0||0
