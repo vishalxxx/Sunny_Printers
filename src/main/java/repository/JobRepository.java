@@ -55,8 +55,7 @@ public class JobRepository {
         String sql = """
                     SELECT *
                     FROM jobs
-                    WHERE status = 'DRAFT'
-                    ORDER BY created_at DESC
+                    ORDER BY id DESC
                     LIMIT 1
                 """;
 
@@ -65,7 +64,10 @@ public class JobRepository {
                 ResultSet rs = ps.executeQuery()) {
 
             if (rs.next()) {
-                return mapRowToJob(rs);
+                Job job = mapRowToJob(rs);
+                if ("DRAFT".equalsIgnoreCase(job.getStatus())) {
+                    return job;
+                }
             }
             return null;
 
@@ -84,7 +86,7 @@ public class JobRepository {
 
         String sql = """
                     SELECT id, job_no, client_id, job_title, job_date,
-                           status, remarks, created_at, updated_at
+                           status, remarks, created_at, updated_at, image_path
                     FROM jobs
                     WHERE id = ?
                 """;
@@ -118,7 +120,7 @@ public class JobRepository {
 
         String sql = """
                     SELECT id, job_no, client_id, job_title, job_date,
-                           status, remarks, created_at, updated_at
+                           status, remarks, created_at, updated_at, image_path
                     FROM jobs
                     ORDER BY DATE(job_date) DESC, id DESC
                 """;
@@ -150,7 +152,7 @@ public class JobRepository {
 
         String sql = """
                     SELECT id, job_no, client_id, job_title, job_date,
-                           status, remarks, created_at, updated_at
+                           status, remarks, created_at, updated_at, image_path
                     FROM jobs
                     WHERE LOWER(job_no) LIKE ?
                        OR LOWER(job_title) LIKE ?
@@ -247,6 +249,10 @@ public class JobRepository {
         // ✅ Keep created_at as String (your current model)
         job.setCreatedAt(rs.getString("created_at"));
         job.setUpdatedAt(rs.getString("updated_at"));
+        
+        try {
+            job.setImagePath(rs.getString("image_path"));
+        } catch (SQLException ignore) {}
 
         return job;
     }
@@ -257,7 +263,7 @@ public class JobRepository {
 
         String sql = """
                     SELECT id, job_no, client_id, job_title, job_date,
-                           status, remarks, created_at, updated_at
+                           status, remarks, created_at, updated_at, image_path
                     FROM jobs
                     WHERE client_id = ?
                     ORDER BY id DESC
@@ -439,7 +445,7 @@ public class JobRepository {
 
         String sql = """
                     SELECT id, job_no, client_id, job_title, job_date,
-                           status, remarks, created_at, updated_at
+                           status, remarks, created_at, updated_at, image_path
                     FROM jobs
                     WHERE client_id = ?
                       AND DATE(job_date) BETWEEN ? AND ?

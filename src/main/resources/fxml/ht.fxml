@@ -86,7 +86,7 @@
 
 					<!-- IMAGE PREVIEW -->
 					<ImageView fx:id="jobImagePreview" preserveRatio="true"
-						fitHeight="200" visible="false" managed="false"
+						fitHeight="200" fitWidth="280" visible="false" managed="false"
 						StackPane.alignment="CENTER" />
 
 					<!-- PDF PREVIEW BOX -->

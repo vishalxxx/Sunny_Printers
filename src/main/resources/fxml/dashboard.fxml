@@ -231,19 +231,7 @@
 										text="View Jobs" HBox.hgrow="ALWAYS" />
 								</children>
 							</HBox>
-							<HBox alignment="CENTER_LEFT" styleClass="nav-btn" maxWidth="Infinity" HBox.hgrow="ALWAYS"
-								onMouseClicked="#loadRecordPayment">
-								<children>
-									<ImageView fitHeight="20" fitWidth="20"
-										preserveRatio="true">
-										<image>
-											<Image url="@../icons/job_history.png" />
-										</image>
-									</ImageView>
-									<Label maxWidth="Infinity" styleClass="sidebar-text"
-										text="Job History" HBox.hgrow="ALWAYS" />
-								</children>
-							</HBox>
+
 						</VBox>
 
 						<!-- ================= CLIENTS SUBMENU ================= -->
@@ -511,7 +499,7 @@
 </HBox>
 
 							<HBox alignment="CENTER_LEFT"
-								onMouseClicked="#loadUserSettings" 
+								onMouseClicked="#loadGeneralSettings" 
 								styleClass="nav-btn" maxWidth="Infinity"
 								HBox.hgrow="ALWAYS">
 
@@ -523,7 +511,7 @@
 										</image>
 									</ImageView>
 									<Label maxWidth="Infinity" styleClass="sidebar-text"
-										text="Genral" HBox.hgrow="ALWAYS" />
+										text="General Settings" HBox.hgrow="ALWAYS" />
 								</children>
 							</HBox>
 

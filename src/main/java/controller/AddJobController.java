@@ -40,15 +40,11 @@ public class AddJobController {
 	private Runnable onJobItemAdded;
 
 	public void setOnJobItemAdded(Runnable r) {
-	    this.onJobItemAdded = r;
+		this.onJobItemAdded = r;
 	}
 
-
-
-	
 	/* ========================= STATE ========================= */
 
-	private boolean editMode = false;
 	private Job currentJob;
 
 	public void setCurrentJob(Job job) {
@@ -200,27 +196,28 @@ public class AddJobController {
 	private Button addBindingBtn;
 	@FXML
 	private Button addLaminationBtn;
-	
+
 	@FXML
 	private Label jobNoLabel;
-
 
 	/* ========================= CLIENT COMBO STATE ========================= */
 
 	private final ObservableList<Client> masterClients = javafx.collections.FXCollections.observableArrayList();
 
-	private final javafx.collections.transformation.FilteredList<Client> filteredClients =
-			new javafx.collections.transformation.FilteredList<>(masterClients);
+	private final javafx.collections.transformation.FilteredList<Client> filteredClients = new javafx.collections.transformation.FilteredList<>(
+			masterClients);
 
 	private boolean clientLocked = false;
 	private Client selectedClient = null;
 
-	/* =============================================================
-	   ✅ MAIN FEATURE:
-	   Cards + buttons disabled until:
-	   - client selected
-	   - jobName entered
-	   ============================================================= */
+	/*
+	 * =============================================================
+	 * ✅ MAIN FEATURE:
+	 * Cards + buttons disabled until:
+	 * - client selected
+	 * - jobName entered
+	 * =============================================================
+	 */
 	private void updateFormState() {
 
 		boolean hasClient = selectedClient != null;
@@ -251,51 +248,48 @@ public class AddJobController {
 
 	public void startNewJob() {
 
-	    JobService jobService = new JobService();
+		JobService jobService = new JobService();
 
-	    this.currentJob = jobService.createDraftJob();
-	    this.editMode = false;
+		this.currentJob = jobService.createDraftJob();
 
-	    jobNoLabel.setText("Job No: " + currentJob.getJobNo());
-	    addJobBtn.setText("Add Job ✅");
+		jobNoLabel.setText("Job No: " + currentJob.getJobNo());
+		addJobBtn.setText("Add Job ✅");
 
-	    // reset UI state
-	    clientCombo.setDisable(false);
-	    clientLocked = false;
-	    selectedClient = null;
+		// reset UI state
+		clientCombo.setDisable(false);
+		clientLocked = false;
+		selectedClient = null;
 
-	    jobName.clear();
-	    clientCombo.getSelectionModel().clearSelection();
+		jobName.clear();
+		clientCombo.getSelectionModel().clearSelection();
 
-	    updateFormState();
+		updateFormState();
 
-	    System.out.println("✅ New draft created: " + currentJob.getJobNo());
+		System.out.println("✅ New draft created: " + currentJob.getJobNo());
 	}
-
 
 	public void openForEdit(int jobId) {
 
-	    JobService jobService = new JobService();
-	    Job job = jobService.getJobById(jobId);
+		JobService jobService = new JobService();
+		Job job = jobService.getJobById(jobId);
 
-	    if (job == null) {
-	        toast("❌ Job not found");
-	        return;
-	    }
+		if (job == null) {
+			toast("❌ Job not found");
+			return;
+		}
 
-	    this.currentJob = job;
-	    this.editMode = true;
+		this.currentJob = job;
 
-	    jobNoLabel.setText("Job No: " + currentJob.getJobNo());
-	    addJobBtn.setText("Update Job ✅");
+		jobNoLabel.setText("Job No: " + currentJob.getJobNo());
+		addJobBtn.setText("Add Job ✅");
 
-	    preloadClientIntoCombo();
+		preloadClientIntoCombo();
 
-	    jobName.setText(currentJob.getJobTitle());
+		jobName.setText(currentJob.getJobTitle());
 
-	    updateFormState();
+		updateFormState();
 
-	    System.out.println("✏ Resumed draft: " + currentJob.getJobNo());
+		System.out.println("✏ Resumed draft: " + currentJob.getJobNo());
 	}
 
 	private void preloadClientIntoCombo() {
@@ -319,6 +313,7 @@ public class AddJobController {
 	}
 
 	/* ========================= UPLOAD FILE ========================= */
+	private File selectedImageFile;
 
 	@FXML
 	private void handleUploadFile(ActionEvent event) {
@@ -333,6 +328,8 @@ public class AddJobController {
 			File file = chooser.showOpenDialog(null);
 			if (file == null)
 				return;
+				
+			this.selectedImageFile = file;
 
 			String name = file.getName().toLowerCase();
 
@@ -371,44 +368,83 @@ public class AddJobController {
 		filePlaceholder.setVisible(false);
 		filePlaceholder.setManaged(false);
 	}
+	
+	private void resetUploadView() {
+		jobImagePreview.setImage(null);
+		selectedImageFile = null;
+
+		jobImagePreview.setVisible(false);
+		jobImagePreview.setManaged(false);
+
+		pdfPreviewBox.setVisible(false);
+		pdfPreviewBox.setManaged(false);
+
+		filePlaceholder.setVisible(true);
+		filePlaceholder.setManaged(true);
+	}
 
 	/* ========================= FINAL SAVE / UPDATE ========================= */
 
 	@FXML
 	private void handleAddJobButton() {
 
-	    if (currentJob == null || currentJob.getId() == 0) {
-	        toast("❌ Job not created properly");
-	        return;
-	    }
+		if (currentJob == null || currentJob.getId() == 0) {
+			toast("❌ Job not created properly");
+			return;
+		}
 
-	    if (selectedClient == null) {
-	        toast("Please Select Client..");
-	        return;
-	    }
+		if (selectedClient == null) {
+			toast("Please Select Client..");
+			return;
+		}
 
-	    if (jobName.getText() == null || jobName.getText().isBlank()) {
-	        toast("Please Enter Job Name..");
-	        return;
-	    }
+		if (jobName.getText() == null || jobName.getText().isBlank()) {
+			toast("Please Enter Job Name..");
+			return;
+		}
 
-	    String title = jobName.getText().trim();
+		String title = jobName.getText().trim();
 
-	    // ✅ 1) set in currentJob object
-	    currentJob.setJobTitle(title);
+		// ✅ 1) set in currentJob object
+		currentJob.setJobTitle(title);
 
-	    // ✅ 2) save into database (important)
-	    new JobService().updateJobName(currentJob.getId(), title);
+		// ✅ 2) save into database (important)
+		JobService js = new JobService();
+		js.updateJobName(currentJob.getId(), title);
 
-	    if (!editMode) {
-	        System.out.println("✅ Finalizing NEW job: " + currentJob.getJobNo());
-	        toast("✅ Job Created Successfully!");
-	    } else {
-	        System.out.println("✅ Updating existing job: " + currentJob.getJobNo());
-	        toast("✅ Job Updated Successfully!");
-	    }
+		// ✅ 3) set status to Created
+		js.updateJobStatus(currentJob.getId(), "Created");
+		currentJob.setStatus("Created");
+		
+		// ✅ 4) save Image
+		if (selectedImageFile != null) {
+			try {
+				java.io.File dir = new java.io.File("Images");
+				if (!dir.exists()) dir.mkdirs();
+				String ext = "";
+				String name = selectedImageFile.getName();
+				int dotIndex = name.lastIndexOf('.');
+				if (dotIndex > 0) ext = name.substring(dotIndex);
+				String newFileName = "job_" + currentJob.getId() + "_" + System.currentTimeMillis() + ext;
+				java.io.File targetFile = new java.io.File(dir, newFileName);
+				java.nio.file.Files.copy(selectedImageFile.toPath(), targetFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+				String relativePath = "Images/" + newFileName;
+				js.updateJobImagePath(currentJob.getId(), relativePath);
+				currentJob.setImagePath(relativePath);
+			} catch (Exception e) {
+				System.err.println("Failed to copy image: " + e.getMessage());
+			}
+		}
+
+		// Since we handle both fresh and draft jobs identically visually:
+		System.out.println("✅ Finalizing job: " + currentJob.getJobNo());
+		toast("✅ Job Added Successfully!");
+		
+		resetUploadView();
+
+		// optionally redirect
+		// MainController.getInstance().openCenterDashboard();
 	}
-
 
 	/* ========================= ADD ITEMS ========================= */
 
@@ -824,7 +860,8 @@ public class AddJobController {
 			@Override
 			protected void updateItem(Client c, boolean empty) {
 				super.updateItem(c, empty);
-				setText(empty || c == null ? null : c.getBusinessName() + " | " + c.getClientName() + " | " + c.getGst()+ " | " +c.getPhone()) ;
+				setText(empty || c == null ? null
+						: c.getBusinessName() + " | " + c.getClientName() + " | " + c.getGst() + " | " + c.getPhone());
 			}
 		});
 
@@ -832,14 +869,16 @@ public class AddJobController {
 			@Override
 			protected void updateItem(Client c, boolean empty) {
 				super.updateItem(c, empty);
-				setText(empty || c == null ? null :c.getBusinessName() + " | " + c.getClientName() + " | " + c.getGst()+ " | " +c.getPhone()) ;
+				setText(empty || c == null ? null
+						: c.getBusinessName() + " | " + c.getClientName() + " | " + c.getGst() + " | " + c.getPhone());
 			}
 		});
 
 		clientCombo.setConverter(new StringConverter<>() {
 			@Override
 			public String toString(Client c) {
-				return c == null ? "" : c.getBusinessName() + " | " + c.getClientName() + " | " + c.getGst()+ " | " +c.getPhone();
+				return c == null ? ""
+						: c.getBusinessName() + " | " + c.getClientName() + " | " + c.getGst() + " | " + c.getPhone();
 			}
 
 			@Override

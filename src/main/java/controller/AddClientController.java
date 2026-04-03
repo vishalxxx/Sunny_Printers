@@ -70,6 +70,11 @@ public class AddClientController implements Initializable {
 
 		if (saved) {
 			System.out.println("✔ Client saved successfully!");
+			
+			String emailAddress = emailField.getText().trim();
+			if (!emailAddress.isEmpty()) {
+			    utils.EmailUtil.sendWelcomeEmail(emailAddress, clientNameField.getText().trim());
+			}
 
 			// Clear fields after saving
 			clearForm();

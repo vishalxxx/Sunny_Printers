@@ -42,50 +42,12 @@
 
                     <!-- Page Title -->
                     <VBox spacing="6">
-                        <Label text="Invoice Settings" styleClass="page-title"/>
-                        <Label text="Manage your invoice numbering preferences."
+                        <Label text="Document Numbering Settings" styleClass="page-title"/>
+                        <Label text="Manage your Job Card and Invoice numbering preferences."
                                styleClass="page-subtitle"/>
                     </VBox>
 
-                    <!-- Two Cards Row -->
                     <HBox spacing="20">
-
-                        <!-- ================= LEFT CARD ================= -->
-                        <VBox spacing="18" styleClass="card" HBox.hgrow="ALWAYS">
-
-                            <fx:define>
-                                <ToggleGroup fx:id="modeGroup"/>
-                            </fx:define>
-
-                            <Label text="GENERATION MODE" styleClass="section-label"/>
-
-                            <VBox spacing="14">
-
-                                <RadioButton fx:id="autoRadio"
-                                             text="Automatic Mode"
-                                             toggleGroup="$modeGroup"
-                                             styleClass="radio-title"/>
-
-                                <Label text="System manages sequential invoice numbers automatically."
-                                       wrapText="true"
-                                       styleClass="radio-desc"/>
-
-                                <RadioButton fx:id="manualRadio"
-                                             text="Manual Series Configuration"
-                                             toggleGroup="$modeGroup"
-                                             styleClass="radio-title"/>
-
-                                <Label text="Define custom prefix, start number and padding."
-                                       wrapText="true"
-                                       styleClass="radio-desc"/>
-                            </VBox>
-
-                            <Pane VBox.vgrow="ALWAYS"/>
-
-                            <Label text="Changing mode affects all new invoices immediately."
-                                   styleClass="info-text"/>
-                        </VBox>
-
 
                         <!-- ================= RIGHT CARD ================= -->
                         <VBox fx:id="manualCard"
@@ -131,9 +93,6 @@
                             </VBox>
 
                             <Pane VBox.vgrow="ALWAYS"/>
-
-                         
-
                         </VBox>
 
                     </HBox>

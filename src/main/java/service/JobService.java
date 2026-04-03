@@ -13,12 +13,18 @@ public class JobService {
 
 	private final JobRepository repo = new JobRepository();
 
-	public Job createDraftJob() {
-
-		String jobNo = JobNumberGenerator.generate();
+	public synchronized Job createDraftJob() {
 
 		try (Connection con = DBConnection.getConnection()) {
+			// Double-check inside synchronized block to prevent race conditions
+			Job latest = repo.findLatestDraftJob();
+			if (latest != null) {
+				return latest;
+			}
+
 			con.setAutoCommit(false);
+			
+			String jobNo = JobNumberGenerator.generate(con);
 
 			Job job = repo.insertDraftJob(con, jobNo);
 
@@ -32,8 +38,22 @@ public class JobService {
 
 	public class JobNumberGenerator {
 
-		public static String generate() {
-			return "JOB-" + System.currentTimeMillis();
+		public static String generate(Connection con) throws Exception {
+			repository.SystemSettingsRepository settingsRepo = new repository.SystemSettingsRepository();
+			model.SystemSettings settings = settingsRepo.load(con);
+
+			int nextNo = settings.getLastJobNo() + 1;
+			if (nextNo < settings.getInvoiceStartNo()) {
+			    nextNo = settings.getInvoiceStartNo();
+			}
+
+			String formattedJobNo = String.format("%s%0" + settings.getInvoicePadding() + "d",
+					settings.getInvoicePrefix(), nextNo);
+
+			settings.setLastJobNo(nextNo);
+			settingsRepo.save(con, settings);
+
+			return formattedJobNo;
 		}
 	}
 
@@ -48,7 +68,7 @@ public class JobService {
 
 			String sql = """
 					    UPDATE jobs
-					    SET client_id = ?, status = 'Created'
+					    SET client_id = ?
 					    WHERE id = ?
 					""";
 
@@ -62,7 +82,6 @@ public class JobService {
 
 			// 🔥 update in-memory job
 			job.setClientId(clientId);
-			job.setStatus("Created");
 
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to assign client to job", e);
@@ -100,6 +119,22 @@ public class JobService {
 			throw new RuntimeException("Failed to update job name", e);
 		}
 	}
+
+    public void updateJobImagePath(int jobId, String imagePath) {
+        if (jobId <= 0) throw new IllegalArgumentException("Invalid job id");
+        try (Connection con = DBConnection.getConnection()) {
+            con.setAutoCommit(false);
+            String sql = "UPDATE jobs SET image_path = ? WHERE id = ?";
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, imagePath);
+                ps.setInt(2, jobId);
+                ps.executeUpdate();
+            }
+            con.commit();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update job image", e);
+        }
+    }
 
 	
 	public List<Job> getFullJobsByClientId(int clientId) {

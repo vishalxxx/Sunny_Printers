@@ -10,14 +10,14 @@ public class SystemSettingsRepository {
     private static final String UPSERT = """
         INSERT INTO system_settings
         (id, invoice_mode, invoice_prefix, invoice_start_no,
-         invoice_padding, last_invoice_no)
-        VALUES (1, ?, ?, ?, ?, ?)
+         invoice_padding, last_invoice_no, last_job_no)
+        VALUES (1, 'MANUAL', ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
-            invoice_mode = excluded.invoice_mode,
             invoice_prefix = excluded.invoice_prefix,
             invoice_start_no = excluded.invoice_start_no,
             invoice_padding = excluded.invoice_padding,
             last_invoice_no = excluded.last_invoice_no,
+            last_job_no = excluded.last_job_no,
             updated_at = CURRENT_TIMESTAMP
         """;
 
@@ -27,7 +27,8 @@ public class SystemSettingsRepository {
                invoice_prefix,
                invoice_start_no,
                invoice_padding,
-               last_invoice_no
+               last_invoice_no,
+               last_job_no
         FROM system_settings
         WHERE id = 1
         """;
@@ -47,6 +48,7 @@ public class SystemSettingsRepository {
                 s.setInvoiceStartNo(rs.getInt("invoice_start_no"));
                 s.setInvoicePadding(rs.getInt("invoice_padding"));
                 s.setLastInvoiceNo(rs.getInt("last_invoice_no"));
+                s.setLastJobNo(rs.getInt("last_job_no"));
                 return s;
             }
         }
@@ -58,6 +60,7 @@ public class SystemSettingsRepository {
         def.setInvoiceStartNo(1);
         def.setInvoicePadding(3);
         def.setLastInvoiceNo(0);
+        def.setLastJobNo(0);
         return def;
     }
 
@@ -68,11 +71,11 @@ public class SystemSettingsRepository {
 
         try (PreparedStatement ps = con.prepareStatement(UPSERT)) {
 
-            ps.setString(1, s.getInvoiceMode());
-            ps.setString(2, s.getInvoicePrefix());
-            ps.setInt(3, s.getInvoiceStartNo());
-            ps.setInt(4, s.getInvoicePadding());
-            ps.setInt(5, s.getLastInvoiceNo());
+            ps.setString(1, s.getInvoicePrefix());
+            ps.setInt(2, s.getInvoiceStartNo());
+            ps.setInt(3, s.getInvoicePadding());
+            ps.setInt(4, s.getLastInvoiceNo());
+            ps.setInt(5, s.getLastJobNo());
 
             ps.executeUpdate();
         }

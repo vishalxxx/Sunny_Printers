@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<StackPane xmlns:fx="http://javafx.com/fxml/1"
+           stylesheets="@../css/invoice_settings.css"
+           fx:controller="controller.GeneralSettingsController"
+           styleClass="settings-root">
+
+    <BorderPane>
+        <top>
+            <HBox spacing="16" alignment="CENTER_LEFT" styleClass="top-bar">
+                <padding>
+                    <Insets top="14" right="20" bottom="14" left="20"/>
+                </padding>
+                <Label text="General Settings" styleClass="title" />
+                <Pane HBox.hgrow="ALWAYS" />
+                <Button fx:id="saveBtn" text="Save Configuration" styleClass="btn-primary" />
+            </HBox>
+        </top>
+
+        <center>
+            <ScrollPane fitToWidth="true" styleClass="settings-scroll">
+                <VBox spacing="24" styleClass="content-wrapper">
+                    <padding>
+                        <Insets top="24" right="32" bottom="32" left="32"/>
+                    </padding>
+
+                    <VBox spacing="6">
+                        <Label text="Email Settings" styleClass="page-title"/>
+                        <Label text="Used automatically by Sunny Printers to blast welcome emails and communications." styleClass="page-subtitle"/>
+                    </VBox>
+
+                    <!-- EMAIL CARDS -->
+                    <HBox spacing="24" alignment="TOP_LEFT">
+                        <VBox spacing="16" styleClass="card" HBox.hgrow="ALWAYS" maxWidth="450">
+                            
+                            <VBox spacing="6">
+                                <Label text="SMTP Hostname" styleClass="form-label"/>
+                                <TextField fx:id="smtpHostField" promptText="smtp.gmail.com" />
+                            </VBox>
+                            
+                            <VBox spacing="6">
+                                <Label text="SMTP Port" styleClass="form-label"/>
+                                <TextField fx:id="smtpPortField" promptText="587" />
+                            </VBox>
+
+                            <Separator />
+
+                            <VBox spacing="6">
+                                <Label text="Sender Email Address" styleClass="form-label"/>
+                                <TextField fx:id="senderEmailField" promptText="youremail@gmail.com" />
+                            </VBox>
+
+                            <VBox spacing="6">
+                                <Label text="Sender App Password" styleClass="form-label"/>
+                                <PasswordField fx:id="senderPasswordField" promptText="**** **** **** ****" />
+                            </VBox>
+
+                        </VBox>
+                    </HBox>
+
+                </VBox>
+            </ScrollPane>
+        </center>
+    </BorderPane>
+
+</StackPane>

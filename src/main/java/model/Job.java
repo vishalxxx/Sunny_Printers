@@ -16,6 +16,7 @@ public class Job {
 
     private String createdAt;
     private String updatedAt;
+    private String imagePath;
 
     public Job() {}
 
@@ -45,4 +46,7 @@ public class Job {
 
     public String getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getImagePath() { return imagePath; }
+    public void setImagePath(String imagePath) { this.imagePath = imagePath; }
 }

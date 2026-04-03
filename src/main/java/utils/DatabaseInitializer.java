@@ -155,6 +155,22 @@ public class DatabaseInitializer {
 			        VALUES (1, 'AUTO', 'INV-', 1, 3);
 			""");
 			
+            // ================== EMAIL SETTINGS TABLE ==================
+            stmt.execute("""
+                    CREATE TABLE IF NOT EXISTS email_settings (
+                        id INTEGER PRIMARY KEY CHECK (id = 1),
+                        smtp_host TEXT,
+                        smtp_port TEXT,
+                        sender_email TEXT,
+                        sender_password TEXT,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    );
+            """);
+            stmt.execute("""
+                    INSERT OR IGNORE INTO email_settings 
+                    (id, smtp_host, smtp_port, sender_email, sender_password) 
+                    VALUES (1, 'smtp.gmail.com', '587', '', '');
+            """);
 
             System.out.println("✔ All tables are created and ready!");
         }

@@ -1,17 +1,20 @@
 package controller;
 
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import model.SystemSettings;
 import repository.SystemSettingsRepository;
+import javafx.collections.FXCollections;
 import utils.AtomicDB;
+import utils.DBConnection;
 
-public class SystemSettingsController {
+import java.net.URL;
+import java.sql.Connection;
+import java.util.ResourceBundle;
 
-@FXML private RadioButton autoRadio;
-@FXML private RadioButton manualRadio;
-@FXML private ToggleGroup modeGroup;
+public class SystemSettingsController implements Initializable {
 
 @FXML private VBox manualCard;
 
@@ -29,15 +32,20 @@ private final SystemSettingsRepository repo = new SystemSettingsRepository();
 private SystemSettings settings;
 
 // =====================================================
-@FXML
-private void initialize() {
-
-    paddingCombo.getItems().addAll(3, 4, 5);
+@Override
+public void initialize(URL location, ResourceBundle resources) {
+    // Populate Padding Combo
+    paddingCombo.setItems(FXCollections.observableArrayList(1, 2, 3, 4, 5, 6));
 
     loadSettings();
-    bindEvents();
-    updateUIState();
-    updatePreview();
+
+    // Listeners to update preview dynamically
+    prefixField.textProperty().addListener((obs, oldV, newV) -> updatePreview());
+    startField.textProperty().addListener((obs, oldV, newV) -> updatePreview());
+    paddingCombo.valueProperty().addListener((obs, oldV, newV) -> updatePreview());
+
+    saveBtn.setOnAction(e -> save());
+    resetBtn.setOnAction(e -> reset());
 }
 
 // =====================================================
@@ -51,45 +59,13 @@ private void loadSettings() {
             }
         });
 
-        if (settings.isAuto())
-            autoRadio.setSelected(true);
-        else
-            manualRadio.setSelected(true);
-
         prefixField.setText(settings.getInvoicePrefix());
         startField.setText(String.valueOf(settings.getInvoiceStartNo()));
         paddingCombo.setValue(settings.getInvoicePadding());
+        updatePreview();
 
     } catch (Exception e) {
         showError("Failed to load system settings", e);
-    }
-}
-
-// =====================================================
-private void bindEvents() {
-
-    modeGroup.selectedToggleProperty().addListener((obs, o, n) -> updateUIState());
-
-    prefixField.textProperty().addListener((a, b, c) -> updatePreview());
-    startField.textProperty().addListener((a, b, c) -> updatePreview());
-    paddingCombo.valueProperty().addListener((a, b, c) -> updatePreview());
-
-    saveBtn.setOnAction(e -> save());
-    resetBtn.setOnAction(e -> reset());
-}
-
-// =====================================================
-private void updateUIState() {
-
-    boolean manual = manualRadio.isSelected();
-
-    manualCard.setDisable(!manual);
-
-    if (!manual) {
-        if (!manualCard.getStyleClass().contains("card-disabled"))
-            manualCard.getStyleClass().add("card-disabled");
-    } else {
-        manualCard.getStyleClass().remove("card-disabled");
     }
 }
 
@@ -119,28 +95,24 @@ private void updatePreview() {
 // =====================================================
 private void save() {
 
-    try {
-        AtomicDB.runVoid(con -> {
-            try {
+    try (Connection con = DBConnection.getConnection()) {
+        con.setAutoCommit(false);
+        try {
+            SystemSettings settings = repo.load(con);
 
-                if (autoRadio.isSelected()) {
-                    settings.setInvoiceMode("AUTO");
-                } else {
-                    settings.setInvoiceMode("MANUAL");
-                    settings.setInvoicePrefix(prefixField.getText());
-                    settings.setInvoiceStartNo(Integer.parseInt(startField.getText()));
-                    settings.setInvoicePadding(paddingCombo.getValue());
-                }
+            settings.setInvoiceMode("MANUAL");
+            settings.setInvoicePrefix(prefixField.getText());
+            settings.setInvoiceStartNo(Integer.parseInt(startField.getText()));
+            settings.setInvoicePadding(paddingCombo.getValue());
 
-                repo.save(con, settings);
+            repo.save(con, settings);
 
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-        showInfo("System settings saved successfully.");
-
+            con.commit();
+            showInfo("System settings saved successfully.");
+        } catch (Exception e) {
+            con.rollback();
+            throw e;
+        }
     } catch (Exception e) {
         showError("Save failed", e);
     }
@@ -148,9 +120,7 @@ private void save() {
 
 // =====================================================
 private void reset() {
-    autoRadio.setSelected(true);
-    updateUIState();
-    updatePreview();
+    loadSettings();
 }
 
 // =====================================================

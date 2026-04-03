@@ -593,6 +593,13 @@ public class MainController implements Initializable {
 				"Fetching payment records...");
 	}
 
+	@FXML
+	public void loadGeneralSettings(javafx.scene.input.MouseEvent event) {
+		loadCenterScreen("/fxml/general_settings.fxml",
+				"Loading General Settings...",
+				"Fetching global configurations...");
+	}
+
 	// try {
 	// Parent view =
 	// FXMLLoader.load(getClass().getResource("/fxml/invoice_genration.fxml"));

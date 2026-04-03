@@ -9,7 +9,7 @@ import java.util.Optional;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
+
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -60,7 +60,7 @@ public class ViewJobsController {
     @FXML private TableColumn<Job, String> createdAtCol;
     @FXML private TableColumn<Job, String> updatedAtCol;
 
-    @FXML private TableColumn<Job, Void> actionCol;
+    @FXML private TableColumn<Job, Job> actionCol;
 
     @FXML
     private void initialize() {
@@ -74,7 +74,7 @@ public class ViewJobsController {
         setupAutoPopupDatePicker(fromDatePicker);
         setupAutoPopupDatePicker(toDatePicker);
         
-        statusFilterComboBox.getItems().addAll("All", "Created", "In Progress", "On Hold", "Completed", "Cancelled");
+        statusFilterComboBox.getItems().addAll("All", "Draft", "Created", "In Progress", "Completed", "Cancelled");
         statusFilterComboBox.getSelectionModel().selectFirst();
         statusFilterComboBox.valueProperty().addListener((obs, oldV, newV) -> {
             searchField.clear();
@@ -186,68 +186,41 @@ public class ViewJobsController {
         dateCol.setCellValueFactory(new PropertyValueFactory<>("jobDate"));
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
         statusCol.setCellFactory(col -> new TableCell<>() {
-            private final ComboBox<String> statusCombo = new ComboBox<>(
-                FXCollections.observableArrayList(
-                    "Created", "In Progress", "On Hold", "Completed", "Cancelled"
-                )
-            );
+            private final javafx.scene.shape.Circle circle = new javafx.scene.shape.Circle(5);
+            private final javafx.scene.control.Label textLabel = new javafx.scene.control.Label();
+            private final HBox box = new HBox(6, circle, textLabel);
+            private final javafx.scene.effect.DropShadow glow = new javafx.scene.effect.DropShadow();
 
             {
-                statusCombo.setMaxWidth(Double.MAX_VALUE);
-                statusCombo.setVisibleRowCount(5);
-                statusCombo.getStyleClass().add("combo-box-base");
-                this.setStyle("-fx-padding: 2 5; -fx-alignment: CENTER;");
+                box.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                glow.setRadius(5);
+                glow.setSpread(0.4);
+                circle.setEffect(glow);
                 
-                statusCombo.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
-                    if (event.getCode() == javafx.scene.input.KeyCode.UP || event.getCode() == javafx.scene.input.KeyCode.DOWN) {
-                        if (!statusCombo.isShowing()) {
-                            statusCombo.show();
-                            event.consume();
-                        }
-                    }
-                });
-
-                statusCombo.setOnAction(e -> {
-                    Job job = getTableRow().getItem();
-                    if (job != null) {
-                        String newStatus = statusCombo.getValue();
-                        if (newStatus != null && !newStatus.equals(job.getStatus())) {
-                            job.setStatus(newStatus);
-                            jobService.updateJobStatus(job.getId(), newStatus);
-                        }
-                    }
-                });
+                // Ensure text changes to white when the row is selected
+                textLabel.textFillProperty().bind(textFillProperty());
             }
 
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                if (empty || item == null) {
                     setGraphic(null);
                 } else {
-                    // Update combobox without triggering action
-                    statusCombo.setOnAction(null);
-                    statusCombo.setValue(item);
-                    
-                    statusCombo.setOnAction(e -> {
-                        if (statusCombo.isShowing()) return; // Ignore mid-navigation changes
-                        
-                        Job job = getTableRow().getItem();
-                        if (job != null) {
-                            String newStatus = statusCombo.getValue();
-                            if (newStatus != null && !newStatus.equals(job.getStatus())) {
-                                job.setStatus(newStatus);
-                                jobService.updateJobStatus(job.getId(), newStatus);
-                            }
-                        }
-                    });
-                    
-                    // Trigger action on close to catch final selection
-                    statusCombo.showingProperty().addListener((obs, wasShowing, isShowing) -> {
-                        if (!isShowing) statusCombo.fireEvent(new ActionEvent());
-                    });
-                    
-                    setGraphic(statusCombo);
+                    textLabel.setText(item);
+                    javafx.scene.paint.Color color;
+                    switch (item.toLowerCase()) {
+                        case "completed": color = javafx.scene.paint.Color.web("#4CAF50"); break; // Green
+                        case "in progress": color = javafx.scene.paint.Color.web("#2196F3"); break; // Blue
+                        case "created": color = javafx.scene.paint.Color.web("#FF9800"); break; // Orange
+                        case "cancelled":
+                        case "cancel": color = javafx.scene.paint.Color.web("#F44336"); break; // Red
+                        case "draft": color = javafx.scene.paint.Color.GRAY; break;
+                        default: color = javafx.scene.paint.Color.LIGHTGRAY; break;
+                    }
+                    circle.setFill(color);
+                    glow.setColor(color);
+                    setGraphic(box);
                 }
             }
         });
@@ -255,6 +228,44 @@ public class ViewJobsController {
         remarksCol.setCellValueFactory(new PropertyValueFactory<>("remarks"));
         createdAtCol.setCellValueFactory(new PropertyValueFactory<>("createdAt"));
         updatedAtCol.setCellValueFactory(new PropertyValueFactory<>("updatedAt"));
+        
+        actionCol.setCellValueFactory(param -> new javafx.beans.property.ReadOnlyObjectWrapper<>(param.getValue()));
+
+        TableColumn<Job, String> imageCol = new TableColumn<>("Job Image");
+        imageCol.setCellValueFactory(new PropertyValueFactory<>("imagePath"));
+        imageCol.setCellFactory(col -> new TableCell<>() {
+            private final javafx.scene.control.Hyperlink link = new javafx.scene.control.Hyperlink("View Image");
+            {
+                link.setStyle("-fx-text-fill: #1E88E5; -fx-underline: true; -fx-border-color: transparent;");
+                link.setOnAction(e -> {
+                    link.setVisited(false);
+                    String path = getItem();
+                    if (path != null && !path.trim().isEmpty()) {
+                        try {
+                            java.awt.Desktop.getDesktop().open(new java.io.File(path).getAbsoluteFile());
+                        } catch (Exception ex) {
+                            System.err.println("Failed to open image: " + ex.getMessage());
+                        }
+                    }
+                });
+            }
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null || item.trim().isEmpty()) {
+                    setGraphic(null);
+                } else {
+                    setGraphic(link);
+                }
+            }
+        });
+        
+        int actionColIdx = jobsTable.getColumns().indexOf(actionCol);
+        if (actionColIdx != -1) {
+            jobsTable.getColumns().add(actionColIdx, imageCol);
+        } else {
+            jobsTable.getColumns().add(imageCol);
+        }
 
         jobsTable.setItems(masterJobs);
         jobsTable.setEditable(true);
@@ -307,15 +318,21 @@ public class ViewJobsController {
     // =========================================================
     private void setupActionsColumn() {
 
+        actionCol.setMinWidth(330);
+        
         actionCol.setCellFactory(col -> new TableCell<>() {
 
-            private final Button editBtn = new Button("Edit");
-            private final Button deleteBtn = new Button("Delete");
-            private final HBox box = new HBox(8, editBtn, deleteBtn);
+            private final Button editBtn = new Button("✏ Edit");
+            private final Button startBtn = new Button("▶ Start");
+            private final Button completedBtn = new Button("✔ Completed");
+            private final Button cancelBtn = new Button("✖ Cancel");
+            private final HBox box = new HBox(5, editBtn, startBtn, completedBtn, cancelBtn);
 
             {
-                editBtn.getStyleClass().add("edit-button");
-                deleteBtn.getStyleClass().add("delete-button");
+                editBtn.setStyle("-fx-background-color: #FF9800; -fx-text-fill: white; -fx-cursor: hand; -fx-padding: 3 6; -fx-font-size: 11px;");
+                startBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white; -fx-cursor: hand; -fx-padding: 3 6; -fx-font-size: 11px;");
+                completedBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-cursor: hand; -fx-padding: 3 6; -fx-font-size: 11px;");
+                cancelBtn.setStyle("-fx-background-color: #F44336; -fx-text-fill: white; -fx-cursor: hand; -fx-padding: 3 6; -fx-font-size: 11px;");
                 box.setAlignment(javafx.geometry.Pos.CENTER);
 
                 editBtn.setOnAction(e -> {
@@ -325,18 +342,54 @@ public class ViewJobsController {
                     }
                 });
 
-                deleteBtn.setOnAction(e -> {
+                startBtn.setOnAction(e -> {
                     Job job = getTableRow().getItem();
                     if (job != null) {
-                        onDeleteJob(job);
+                        jobService.updateJobStatus(job.getId(), "In Progress");
+                        job.setStatus("In Progress");
+                        getTableView().refresh();
+                    }
+                });
+
+                completedBtn.setOnAction(e -> {
+                    Job job = getTableRow().getItem();
+                    if (job != null) {
+                        jobService.updateJobStatus(job.getId(), "Completed");
+                        job.setStatus("Completed");
+                        getTableView().refresh();
+                    }
+                });
+
+                cancelBtn.setOnAction(e -> {
+                    Job job = getTableRow().getItem();
+                    if (job != null) {
+                        jobService.updateJobStatus(job.getId(), "Cancelled");
+                        job.setStatus("Cancelled");
+                        getTableView().refresh();
                     }
                 });
             }
 
             @Override
-            protected void updateItem(Void item, boolean empty) {
-                super.updateItem(item, empty);
-                setGraphic(empty ? null : box);
+            protected void updateItem(Job job, boolean empty) {
+                super.updateItem(job, empty);
+                if (empty || job == null) {
+                    setGraphic(null);
+                } else {
+                    String status = job.getStatus() != null ? job.getStatus().toLowerCase() : "";
+                    boolean isCancelled = status.startsWith("cancel");
+                    boolean isCompleted = status.equals("completed");
+                    boolean isInProgress = status.equals("in progress");
+                    
+                    boolean disableAll = isCancelled || isCompleted;
+                    
+                    editBtn.setDisable(disableAll || isInProgress);
+                    startBtn.setDisable(disableAll);
+                    completedBtn.setDisable(disableAll);
+                    cancelBtn.setDisable(disableAll);
+
+                    setGraphic(box);
+                }
             }
         });
     }
@@ -493,19 +546,7 @@ public class ViewJobsController {
 
 
 
-    private void onDeleteJob(Job job) {
 
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Delete Job");
-        alert.setHeaderText("Are you sure you want to delete this job?");
-        alert.setContentText("Job No: " + job.getJobNo());
-
-        Optional<ButtonType> result = alert.showAndWait();
-
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            System.out.println("🗑 Delete job: " + job.getJobNo());
-        }
-    }
     
     private void toast(String message) {
 		Stage stage = (Stage) ((Node) clientComboBox).getScene().getWindow();
