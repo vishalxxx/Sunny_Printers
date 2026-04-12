@@ -10,14 +10,19 @@ public class SystemSettingsRepository {
     private static final String UPSERT = """
         INSERT INTO system_settings
         (id, invoice_mode, invoice_prefix, invoice_start_no,
-         invoice_padding, last_invoice_no, last_job_no)
-        VALUES (1, 'MANUAL', ?, ?, ?, ?, ?)
+         invoice_padding, last_invoice_no, last_job_no,
+         job_prefix, job_start_no, job_padding, last_temp_invoice_no)
+        VALUES (1, 'MANUAL', ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
             invoice_prefix = excluded.invoice_prefix,
             invoice_start_no = excluded.invoice_start_no,
             invoice_padding = excluded.invoice_padding,
             last_invoice_no = excluded.last_invoice_no,
             last_job_no = excluded.last_job_no,
+            job_prefix = excluded.job_prefix,
+            job_start_no = excluded.job_start_no,
+            job_padding = excluded.job_padding,
+            last_temp_invoice_no = excluded.last_temp_invoice_no,
             updated_at = CURRENT_TIMESTAMP
         """;
 
@@ -28,7 +33,11 @@ public class SystemSettingsRepository {
                invoice_start_no,
                invoice_padding,
                last_invoice_no,
-               last_job_no
+               last_job_no,
+               job_prefix,
+               job_start_no,
+               job_padding,
+               last_temp_invoice_no
         FROM system_settings
         WHERE id = 1
         """;
@@ -49,6 +58,11 @@ public class SystemSettingsRepository {
                 s.setInvoicePadding(rs.getInt("invoice_padding"));
                 s.setLastInvoiceNo(rs.getInt("last_invoice_no"));
                 s.setLastJobNo(rs.getInt("last_job_no"));
+                
+                s.setJobPrefix(rs.getString("job_prefix"));
+                s.setJobStartNo(rs.getInt("job_start_no"));
+                s.setJobPadding(rs.getInt("job_padding"));
+                s.setLastTempInvoiceNo(rs.getInt("last_temp_invoice_no"));
                 return s;
             }
         }
@@ -61,6 +75,10 @@ public class SystemSettingsRepository {
         def.setInvoicePadding(3);
         def.setLastInvoiceNo(0);
         def.setLastJobNo(0);
+        def.setJobPrefix("SUN-");
+        def.setJobStartNo(1);
+        def.setJobPadding(4);
+        def.setLastTempInvoiceNo(0);
         return def;
     }
 
@@ -76,6 +94,11 @@ public class SystemSettingsRepository {
             ps.setInt(3, s.getInvoicePadding());
             ps.setInt(4, s.getLastInvoiceNo());
             ps.setInt(5, s.getLastJobNo());
+            
+            ps.setString(6, s.getJobPrefix() == null ? "SUN-" : s.getJobPrefix());
+            ps.setInt(7, s.getJobStartNo());
+            ps.setInt(8, s.getJobPadding());
+            ps.setInt(9, s.getLastTempInvoiceNo());
 
             ps.executeUpdate();
         }

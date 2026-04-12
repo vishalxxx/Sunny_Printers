@@ -9,9 +9,9 @@
 	fx:controller="controller.ViewInvoiceJobsController" spacing="20"
 	stylesheets="@../css/view_job.css" >
 
-	<Label text="View Invoice Jobs" styleClass="page-heading" />
+	<Label fx:id="lblPageHeading" text="View Invoice Jobs" styleClass="page-heading" />
 
-	<HBox spacing="12" alignment="CENTER_LEFT" styleClass="search-bar">
+	<HBox fx:id="searchModeBox" spacing="12" alignment="CENTER_LEFT" styleClass="search-bar">
         <ComboBox fx:id="clientComboBox"
                   promptText="Select Client..."
                   styleClass="combo-box-base"
@@ -24,7 +24,49 @@
                   disable="true"/>
 	</HBox>
 
-    <Label fx:id="resultLabel" text="Showing 0 jobs" styleClass="page-heading" />
+	<VBox fx:id="editModeBox" managed="false" visible="false" spacing="15" styleClass="card" style="-fx-background-color: #0f0f0f; -fx-padding: 15; -fx-border-color: #27272a; -fx-border-radius: 5; -fx-background-radius: 5;">
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <VBox spacing="5" HBox.hgrow="SOMETIMES">
+                <Label text="Client Name" styleClass="field-label" />
+                <TextField fx:id="txtClientName" editable="false" prefWidth="240" styleClass="text-field" />
+            </VBox>
+            <VBox spacing="5">
+                <Label text="Invoice No" styleClass="field-label" />
+                <TextField fx:id="txtInvoiceNo" editable="false" prefWidth="130" styleClass="text-field" />
+            </VBox>
+            <VBox spacing="5">
+                <Label text="Invoice Date" styleClass="field-label" />
+                <DatePicker fx:id="dpInvoiceDate" prefWidth="130" styleClass="date-picker" promptText="YYYY-MM-DD" />
+            </VBox>
+            <VBox spacing="5">
+                <Label text="Payment Status" styleClass="field-label" />
+                <HBox spacing="8" alignment="CENTER_LEFT" minWidth="120" style="-fx-padding: 6 10; -fx-background-color: #1e1e1e; -fx-background-radius: 4; -fx-border-color: #3f3f46; -fx-border-radius: 4;">
+                    <javafx.scene.shape.Circle fx:id="statusCircle" radius="6" fill="#71717a" />
+                    <Label fx:id="lblInvoiceStatus" text="UNPAID" style="-fx-text-fill: #e4e4e7; -fx-font-weight: bold; -fx-font-size: 13px;" />
+                </HBox>
+            </VBox>
+            <VBox spacing="5">
+                <Label text="Process Status" styleClass="field-label" />
+                <TextField fx:id="txtProcessStatus" editable="false" prefWidth="120" styleClass="text-field" />
+            </VBox>
+            <Region HBox.hgrow="ALWAYS" minWidth="20" />
+            <Button fx:id="btnDiscard" text="Discard" onAction="#handleDiscardChanges" minWidth="90" style="-fx-background-color: transparent; -fx-text-fill: #9ca3af; -fx-font-weight: bold; -fx-cursor: hand;" />
+            <Button fx:id="btnSave" text="Save Changes" onAction="#handleSaveChanges" minWidth="140" styleClass="btn-primary" />
+        </HBox>
+	</VBox>
+
+    <Label fx:id="resultLabel" text="Showing 0 jobs" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #ffffff;" />
+
+	<!-- JOB ACTIONS -->
+	<HBox fx:id="jobActionsBox" spacing="10" alignment="CENTER_LEFT" styleClass="action-bar" managed="false" visible="false">
+		<Button fx:id="btnJobView" text="View" onAction="#handleJobViewAction" disable="true" />
+		<Button fx:id="btnJobEdit" text="Edit" onAction="#handleJobEditAction" disable="true" />
+		<Button fx:id="btnJobStart" text="Start Processing" onAction="#handleJobStartAction" disable="true" />
+		<Button fx:id="btnJobCancel" text="Cancel Job" onAction="#handleJobCancelAction" disable="true" />
+		<Button fx:id="btnJobUnlink" text="Unlink Job" onAction="#handleJobUnlinkAction" disable="true" />
+		<Region HBox.hgrow="ALWAYS" />
+		<Button fx:id="btnAddJob" text="Add Jobs" onAction="#handleAddJobsToInvoice" style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;" />
+	</HBox>
 
 	<VBox styleClass="table-card" VBox.vgrow="ALWAYS">
 		<TableView fx:id="jobsTable" styleClass="history-table" VBox.vgrow="ALWAYS">
@@ -33,10 +75,9 @@
                 <TableColumn fx:id="jobNoCol" text="Job No" prefWidth="140" />
                 <TableColumn fx:id="titleCol" text="Job Title" prefWidth="240" />
                 <TableColumn fx:id="dateCol" text="Job Date" prefWidth="120" />
+                <TableColumn fx:id="jobTotalCol" text="Job Total" prefWidth="120" />
                 <TableColumn fx:id="statusCol" text="Status" prefWidth="120" />
                 <TableColumn fx:id="remarksCol" text="Remarks" prefWidth="220" />
-                <TableColumn fx:id="createdAtCol" text="Created At" prefWidth="170" />
-                <TableColumn fx:id="updatedAtCol" text="Updated At" prefWidth="170" />
             </columns>
         </TableView>
 	</VBox>

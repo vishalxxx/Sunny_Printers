@@ -101,6 +101,7 @@ public class PrintingTabController {
                         deleteBtn.setVisible(false);
                         deleteBtn.setManaged(false);
                     }
+                    applyInvoicedState(newItem == null);
                 });
 
         /* ===== Row click deselect ===== */
@@ -203,6 +204,27 @@ public class PrintingTabController {
 
         clearEditor();
         addUpdateBtn.setText("Add Printing");
+        applyInvoicedState(true);
+    }
+
+    private void applyInvoicedState(boolean isNewSelection) {
+        boolean isJobStatusInvoiced = currentJob != null && "invoiced".equalsIgnoreCase(currentJob.getStatus());
+        String invStatus = (currentJob != null && currentJob.getInvoiceStatus() != null) ? currentJob.getInvoiceStatus().trim().toLowerCase() : "";
+        boolean isLocked = isJobStatusInvoiced && !(invStatus.equals("draft") || invStatus.equals("final"));
+
+        qtyField.setDisable(isLocked);
+        unitsField.setDisable(isLocked);
+        colorField.setDisable(isLocked);
+        sideField.setDisable(isLocked);
+        ctpCheckBox.setDisable(isLocked);
+        setsField.setDisable(isLocked);
+        amountField.setDisable(isLocked);
+        notesField.setDisable(isLocked);
+        
+        if (isLocked) {
+            addUpdateBtn.setDisable(true);
+            deleteBtn.setVisible(false);
+        }
     }
 
     /* ========================= ADD / UPDATE ========================= */
@@ -317,5 +339,11 @@ public class PrintingTabController {
         printingTable.refresh();
         printingTable.getSelectionModel().clearSelection();
         clearEditor();
+    }
+
+    public void commitEditor() {
+        if (selectedItem != null && isEditorChanged()) {
+            handleAddOrUpdate();
+        }
     }
 }

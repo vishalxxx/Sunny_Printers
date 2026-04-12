@@ -323,3 +323,134 @@
 	-fx-text-fill: #ffffff;
 }
 
+
+/* =========================================================
+   DATE PICKER
+   ========================================================= */
+.date-picker {
+    -fx-background-color: #0b0b0c;
+    -fx-background-radius: 0.85em;
+    -fx-border-radius: 0.85em;
+    -fx-border-color: #3f3f46;
+}
+
+.date-picker:focused {
+    -fx-border-color: #ffffff;
+    -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.18), 14, 0.25, 0, 0);
+}
+
+.date-picker > .text-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #ffffff;
+    -fx-padding: 0.8em 1em;
+}
+
+.date-picker .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.date-picker .arrow-button .arrow {
+    -fx-background-color: transparent;
+}
+/* =========================================================
+   DATE PICKER POPUP
+   ========================================================= */
+.date-picker-popup {
+    -fx-background-color: #18181b;
+    -fx-border-color: #27272a;
+    -fx-border-radius: 0.9em;
+    -fx-background-radius: 0.9em;
+}
+
+.date-picker-popup > .month-year-pane {
+    -fx-background-color: #111827;
+    -fx-border-color: #27272a;
+}
+
+.date-picker-popup > .month-year-pane .label {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: 700;
+}
+
+.date-picker-popup .day-name-cell {
+    -fx-background-color: #18181b;
+    -fx-text-fill: #e5e7eb;
+    -fx-font-weight: 700;
+}
+
+.date-picker-popup .calendar-grid {
+    -fx-background-color: #18181b;
+}
+
+.date-picker-popup .day-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: 600;
+    -fx-background-radius: 0.6em;
+}
+
+.date-picker-popup .day-cell:hover {
+    -fx-background-color: rgba(59,130,246,0.25);
+}
+
+.date-picker-popup .day-cell:selected {
+    -fx-background-color: #3b82f6;
+    -fx-text-fill: white;
+}
+
+.date-picker-popup .day-cell:previous-month,
+.date-picker-popup .day-cell:next-month {
+    -fx-text-fill: rgba(255,255,255,0.35);
+}
+
+/* =========================================================
+   TOP HEADER FIELDS (Matched with DatePicker)
+   ========================================================= */
+
+.top-text-field {
+    -fx-background-color: #0b0b0c;
+    -fx-background-radius: 0.85em;
+    -fx-border-radius: 0.85em;
+    -fx-border-color: #3f3f46;
+    -fx-text-fill: #ffffff;
+    -fx-padding: 0.8em 1em;
+}
+
+.top-text-field:focused {
+    -fx-border-color: #ffffff;
+    -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.18), 14, 0.25, 0, 0);
+}
+
+.top-combo-box {
+    -fx-background-color: #0b0b0c;
+    -fx-background-radius: 0.85em;
+    -fx-border-radius: 0.85em;
+    -fx-border-color: #3f3f46;
+}
+
+.top-combo-box:focused {
+    -fx-border-color: #ffffff;
+    -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.18), 14, 0.25, 0, 0);
+}
+
+.top-combo-box > .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #ffffff;
+    -fx-padding: 0.8em 1em;
+}
+.top-combo-box > .text-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #ffffff;
+    -fx-padding: 0.8em 1em;
+}
+.top-combo-box .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0.3em 0.85em;
+}
+
+.top-combo-box .arrow {
+    -fx-background-color: #9ca3af;
+}

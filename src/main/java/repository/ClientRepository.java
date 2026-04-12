@@ -18,8 +18,9 @@ public class ClientRepository {
 		String sql = "INSERT INTO clients (business_name, client_name, nick_name, phone, alt_phone, email, gst, pan, billing_address, shipping_address, notes) "
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-		try  {
-			Connection conn = DBConnection.getConnection(); PreparedStatement ps = conn.prepareStatement(sql);
+		try {
+			Connection conn = DBConnection.getConnection();
+			PreparedStatement ps = conn.prepareStatement(sql);
 			ps.setString(1, client.getBusinessName());
 			ps.setString(2, client.getClientName());
 			ps.setString(3, client.getNickName());

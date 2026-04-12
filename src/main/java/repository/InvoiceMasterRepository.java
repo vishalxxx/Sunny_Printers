@@ -28,8 +28,8 @@ public class InvoiceMasterRepository {
                         amount, paid_amount, due_amount, payment_status,
                         last_payment_date, type, status,
                         is_void, void_reason, void_date,
-                        replaced_by_invoice_id, status_updated_by, file_path
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        replaced_by_invoice_id, parent_invoice_id, status_updated_by, file_path
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """;
 
         try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -61,8 +61,13 @@ public class InvoiceMasterRepository {
             else
                 ps.setNull(17, Types.INTEGER);
 
-            ps.setString(18, inv.getStatusUpdatedBy());
-            ps.setString(19, inv.getFilePath());
+            if (inv.getParentInvoiceId() != null)
+                ps.setInt(18, inv.getParentInvoiceId());
+            else
+                ps.setNull(18, Types.INTEGER);
+
+            ps.setString(19, inv.getStatusUpdatedBy());
+            ps.setString(20, inv.getFilePath());
 
             ps.executeUpdate();
 
@@ -96,6 +101,7 @@ public class InvoiceMasterRepository {
                       AND period_from = ?
                       AND period_to   = ?
                       AND is_void = 0
+                      AND status IN ('DRAFT', 'FINAL')
                     LIMIT 1
                 """;
 
@@ -147,6 +153,7 @@ public class InvoiceMasterRepository {
                     WHERE client_id = ?
                       AND type = ?
                       AND is_void = 0
+                      AND status IN ('DRAFT', 'FINAL')
                       AND period_from = ?
                       AND period_to   = ?
                     LIMIT 1
@@ -294,8 +301,7 @@ public class InvoiceMasterRepository {
      * FIND FILTERED INVOICES (FOR VIEW INVOICES SCREEN)
      * =========================================================
      */
-    public List<InvoiceMaster> findFiltered(Connection con, Integer clientId, String status, LocalDate start, LocalDate end) throws Exception {
-
+    public List<InvoiceMaster> findFiltered(Connection con, Integer clientId, String status, LocalDate start, LocalDate end, String invoiceNo) throws Exception {
         StringBuilder sql = new StringBuilder("SELECT * FROM invoice_master WHERE is_void = 0");
         List<Object> params = new ArrayList<>();
 
@@ -306,6 +312,10 @@ public class InvoiceMasterRepository {
         if (status != null && !status.equalsIgnoreCase("All") && !status.trim().isEmpty()) {
             sql.append(" AND UPPER(payment_status) = ?");
             params.add(status.trim().toUpperCase());
+        }
+        if (invoiceNo != null && !invoiceNo.trim().isEmpty()) {
+            sql.append(" AND invoice_no LIKE ?");
+            params.add("%" + invoiceNo.trim() + "%");
         }
         if (start != null) {
             sql.append(" AND DATE(invoice_date) >= ?");
@@ -337,33 +347,55 @@ public class InvoiceMasterRepository {
      * =========================================================
      * MAP ROW
      * =========================================================
-     */
-    public InvoiceMaster mapRowPublic(ResultSet rs) throws Exception {
-
+     */    public InvoiceMaster mapRowPublic(ResultSet rs) throws Exception {
         InvoiceMaster inv = new InvoiceMaster();
-
         inv.setId(rs.getInt("id"));
         inv.setInvoiceNo(rs.getString("invoice_no"));
         inv.setClientId(rs.getInt("client_id"));
         inv.setClientName(rs.getString("client_name"));
-
-        // 🔥 SAFE DATE PARSING (handles ISO + epoch millis)
         inv.setInvoiceDate(parseDate(rs.getString("invoice_date")));
-
         inv.setAmount(rs.getDouble("amount"));
         inv.setPaidAmount(rs.getDouble("paid_amount"));
         inv.setDueAmount(rs.getDouble("due_amount"));
         inv.setPaymentStatus(rs.getString("payment_status"));
-
         inv.setType(rs.getString("type"));
         inv.setStatus(rs.getString("status"));
-
-        // Load period dates so update() doesn't overwrite with null (causing unique
-        // constraint violation)
         inv.setPeriodFrom(parseDate(rs.getString("period_from")));
         inv.setPeriodTo(parseDate(rs.getString("period_to")));
+        
+        int replacedId = rs.getInt("replaced_by_invoice_id");
+        if (!rs.wasNull()) inv.setReplacedByInvoiceId(replacedId);
+        int parentId = rs.getInt("parent_invoice_id");
+        if (!rs.wasNull()) inv.setParentInvoiceId(parentId);
+        inv.setFilePath(rs.getString("file_path"));
+
+        // Efficiently fetch adjustment summaries only if needed or keep it robust
+        fetchAdjustmentSummaries(rs.getStatement().getConnection(), inv);
 
         return inv;
+    }
+
+    private void fetchAdjustmentSummaries(Connection con, InvoiceMaster inv) {
+        String sql = "SELECT type, SUM(amount), COUNT(*) FROM invoice_adjustments WHERE invoice_id = ? GROUP BY type";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, inv.getId());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String type = rs.getString(1);
+                    double sum = rs.getDouble(2);
+                    int count = rs.getInt(3);
+                    if ("Credit Note".equalsIgnoreCase(type)) {
+                        inv.setCnAmount(sum);
+                        inv.setCnCount(count);
+                    } else if ("Debit Note".equalsIgnoreCase(type)) {
+                        inv.setDnAmount(sum);
+                        inv.setDnCount(count);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Silently ignore if table doesn't exist or other issues; default values 0 and null are fine
+        }
     }
 
     private LocalDate parseDate(String value) {
@@ -402,7 +434,9 @@ public class InvoiceMasterRepository {
                         status       = ?,
                         period_from  = ?,
                         period_to    = ?,
-                        file_path    = ?
+                        file_path    = ?,
+                        replaced_by_invoice_id = ?,
+                        parent_invoice_id = ?
                     WHERE id = ?
                 """;
 
@@ -421,11 +455,33 @@ public class InvoiceMasterRepository {
 
             ps.setString(10, inv.getFilePath());
 
-            ps.setInt(11, inv.getId());
+            if (inv.getReplacedByInvoiceId() != null)
+                ps.setInt(11, inv.getReplacedByInvoiceId());
+            else
+                ps.setNull(11, Types.INTEGER);
+
+            if (inv.getParentInvoiceId() != null)
+                ps.setInt(12, inv.getParentInvoiceId());
+            else
+                ps.setNull(12, Types.INTEGER);
+
+            ps.setInt(13, inv.getId());
 
             ps.executeUpdate();
         }
     }
+
+    public int countRevisions(Connection con, int parentId) throws Exception {
+        String sql = "SELECT COUNT(*) FROM invoice_master WHERE parent_invoice_id = ?";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, parentId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        }
+        return 0;
+    }
+
 
     /*
      * =========================================================

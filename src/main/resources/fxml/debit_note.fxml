@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<ScrollPane xmlns="http://javafx.com/javafx/25"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="controller.DebitNoteController"
+            stylesheets="@../css/invoice_genration.css"
+            fitToWidth="true" fitToHeight="true">
+
+<VBox xmlns="http://javafx.com/javafx/23"
+      xmlns:fx="http://javafx.com/fxml/1"
+      spacing="24"
+      styleClass="invoice-page"
+      fillWidth="true"
+      maxWidth="Infinity">
+
+    <padding>
+        <Insets top="28" right="28" bottom="28" left="28"/>
+    </padding>
+
+    <!-- HEADER -->
+    <HBox alignment="CENTER_LEFT" spacing="20">
+        <!-- LEFT SIDE -->
+        <VBox spacing="6">
+            <Label text="Debit Note" styleClass="page-title"/>
+            <Label text="Generate a debit note for a specific client." styleClass="page-subtitle"/>
+        </VBox>
+    </HBox>
+
+    <!-- FORM CARD -->
+    <VBox spacing="14" styleClass="card" maxWidth="800">
+        
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <Label text="💳" styleClass="card-icon"/>
+            <VBox spacing="2">
+                <Label text="Debit Note Details" styleClass="card-title"/>
+                <Label text="Select client and enter note details" styleClass="hint"/>
+            </VBox>
+        </HBox>
+
+        <VBox spacing="6">
+            <Label text="Select Client" styleClass="field-label"/>
+            <ComboBox fx:id="clientComboBox"
+                      promptText="Select a client..."
+                      maxWidth="Infinity"/>
+        </VBox>
+
+        <HBox spacing="12">
+            <VBox spacing="6" HBox.hgrow="ALWAYS">
+                <Label text="Date" styleClass="field-label"/>
+                <DatePicker fx:id="datePicker"
+                            promptText="Select Date"
+                            maxWidth="Infinity"/>
+            </VBox>
+
+            <VBox spacing="6" HBox.hgrow="ALWAYS">
+                <Label text="Amount" styleClass="field-label"/>
+                <TextField fx:id="amountField" promptText="Enter amount" />
+            </VBox>
+        </HBox>
+
+        <VBox spacing="6">
+            <Label text="Reason / Remarks" styleClass="field-label"/>
+            <TextArea fx:id="reasonField" prefRowCount="3" promptText="Enter reason for the debit note..." />
+        </VBox>
+
+        <Region VBox.vgrow="ALWAYS" prefHeight="10"/>
+
+        <Button text="Save Debit Note" 
+                maxWidth="Infinity" 
+                styleClass="btn-primary" 
+                onAction="#handleSaveDebitNote">
+            <graphic>
+                <Label text="✔" style="-fx-text-fill: white; -fx-font-size: 1.05em; -fx-font-weight: 900;"/>
+            </graphic>
+        </Button>
+    </VBox>
+
+</VBox>
+</ScrollPane>

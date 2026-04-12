@@ -88,7 +88,6 @@ public class InvoiceGenerationController {
 	@FXML
 	private HBox monthYearRow;
 
-	// ---------------- CARD 3 ----------------
 	@FXML
 	private ComboBox<Client> jobClientComboBox;
 	@FXML
@@ -100,6 +99,13 @@ public class InvoiceGenerationController {
 	private ScrollPane selectedJobsScroll;
 	@FXML
 	private FlowPane selectedJobsPane;
+	
+	@FXML
+	private DatePicker dateRangeInvoiceDate;
+	@FXML
+	private DatePicker monthlyInvoiceDate;
+	@FXML
+	private DatePicker jobInvoiceDate;
 
 	@FXML
 	private Button createJobInvoiceBtn;
@@ -133,6 +139,31 @@ public class InvoiceGenerationController {
 		this.rootStackPane = rootPane;
 	}
 
+	public void preSelectJob(int clientId, int jobId) {
+		// 1. Find client
+		Client match = null;
+		for (Client c : jobClientComboBox.getItems()) {
+			if (c.getId() == clientId) {
+				match = c;
+				break;
+			}
+		}
+
+		if (match != null) {
+			jobClientComboBox.setValue(match);
+			// Force reload jobs if listener hasn't run or to ensure they are there
+			loadJobsForClient(clientId);
+
+			// 2. Find and select the job
+			for (JobSummary js : jobComboBox.getItems()) {
+				if (js.getId() == jobId) {
+					jobComboBox.setValue(js);
+					break;
+				}
+			}
+		}
+	}
+
 	@FXML
 	private ComboBox<String> formatComboBox;
 	private String format;
@@ -145,6 +176,10 @@ public class InvoiceGenerationController {
 		setupClientComboBoxUI(clientComboBox);
 		setupClientComboBoxUI(jobClientComboBox);
 		setupJobComboBoxUI();
+		
+		dateRangeInvoiceDate.setValue(LocalDate.now());
+		jobInvoiceDate.setValue(LocalDate.now());
+		// Monthly date will dynamically update later or we can leave it blank (defaults to end of month)
 
 		loadClients();
 
@@ -192,6 +227,10 @@ public class InvoiceGenerationController {
 
 		setupAutoPopupDatePicker(startDatePicker);
 		setupAutoPopupDatePicker(endDatePicker);
+
+		setupAutoPopupDatePicker(dateRangeInvoiceDate);
+		setupAutoPopupDatePicker(monthlyInvoiceDate);
+		setupAutoPopupDatePicker(jobInvoiceDate);
 
 		setupMonthYearPicker();
 
@@ -383,30 +422,13 @@ public class InvoiceGenerationController {
 	// ==========================================================
 
 	@FXML
-	private void onGenerateDateInvoiceClicked(MouseEvent e) {
-
-		if (InvoiceStorageService.getSavePath() == null) {
-			toast("Please choose Save Location first.");
-			return;
-		}
-
+	private void onGenerateDateInvoiceClicked(MouseEvent event) {
 		if (clientComboBox.getValue() == null) {
 			toast("Please select a client.");
 			return;
 		}
-
-		if (startDatePicker.getValue() == null) {
-			toast("Please select Start Date.");
-			return;
-		}
-
-		if (endDatePicker.getValue() == null) {
-			toast("Please select End Date.");
-			return;
-		}
-
-		if (startDatePicker.getValue().isAfter(endDatePicker.getValue())) {
-			toast("End Date must be greater than Start Date ❌");
+		if (startDatePicker.getValue() == null || endDatePicker.getValue() == null) {
+			toast("Please select date range.");
 			return;
 		}
 
@@ -418,68 +440,26 @@ public class InvoiceGenerationController {
 			ProgressDialogController progress = loader.getController();
 
 			rootStackPane.getChildren().add(progressRoot);
-			progress.show("Generating Invoice");
+			progress.show("Creating Draft Invoice");
 
-			// Track newly created invoice IDs and generated file for cancel rollback
 			final List<Integer> newlyCreatedIds = new ArrayList<>();
-			final File[] generatedFileRef = new File[1];
 
-			// =====================================================
-			// BACKGROUND TASK
-			// =====================================================
-			Task<File> task = new Task<>() {
-
+			Task<Void> task = new Task<>() {
 				@Override
-				protected File call() throws Exception {
-
-					AtomicBoolean realDone = new AtomicBoolean(false);
-
-					// 🔹 smooth fake progress
-					Thread smooth = new Thread(() -> {
-						double p = 0.0;
-
-						try {
-							while (p < 0.85 && !isCancelled() && !realDone.get()) {
-
-								updateProgress(p, 1);
-								updateMessage("Preparing invoice data...");
-
-								if (p < 0.20) {
-									p += 0.002;
-									Thread.sleep(140);
-								} else if (p < 0.50) {
-									p += 0.003;
-									Thread.sleep(120);
-								} else if (p < 0.75) {
-									p += 0.004;
-									Thread.sleep(100);
-								} else {
-									p += 0.002;
-									Thread.sleep(140);
-								}
-							}
-						} catch (InterruptedException ignored) {
-						}
-					});
-
-					smooth.setDaemon(true);
-					smooth.start();
-
-					// =================================================
-					// REAL WORK
-					// =================================================
+				protected Void call() throws Exception {
+					updateProgress(0.1, 1);
+					updateMessage("Building invoice...");
+					
+					LocalDate customDate = dateRangeInvoiceDate.getValue();
 					Invoice invoice = invoicebuilder.buildInvoiceForClient(client.getId(), client.getClientName(),
-							client.getBusinessName(), startDatePicker.getValue(), endDatePicker.getValue());
+							client.getBusinessName(), startDatePicker.getValue(), endDatePicker.getValue(), customDate);
 
-					if (isCancelled())
-						throw new CancellationException();
+					if (isCancelled()) throw new CancellationException();
 
-					if (invoice.getJobs().isEmpty())
-						throw new RuntimeException("No jobs found for selected date range");
+					if (invoice == null || invoice.getJobs().isEmpty())
+						throw new RuntimeException("No completed jobs found for selected date range");
 
-					// =================================================
-					// 🔥 STEP 1: Reserve or reuse invoice number BEFORE file generation
-					// =================================================
+					// 🔥 Reserve or reuse TEMP invoice number
 					InvoiceMasterService.CreateOrGetResult reserved = invoiceMasterService.createOrGetExisting(invoice, "DATE_RANGE", null);
 					if (reserved != null) {
 						invoice.setInvoiceNo(reserved.master().getInvoiceNo());
@@ -488,129 +468,39 @@ public class InvoiceGenerationController {
 						}
 					}
 
-					File file = null;
-					format = formatComboBox.getValue();
+					if (isCancelled()) throw new CancellationException();
 
-					// =================================================
-					// FILE GENERATION (UNCHANGED)
-					// =================================================
-					if ("Excel".equalsIgnoreCase(format)) {
-						updateMessage("Generating Excel...");
-						file = invoicegeneration.generateSingleInvoice(invoice);
-					}
-
-					if ("PDF".equalsIgnoreCase(format)) {
-						updateMessage("Generating PDF...");
-						file = pdfService.generateSingleInvoicePDF(invoice);
-					}
-
-					generatedFileRef[0] = file;
-
-					if (isCancelled())
-						throw new CancellationException();
-
-					realDone.set(true);
-
-					// 🔹 smooth finish
-					double p = 0.85;
-					while (p < 1.0 && !isCancelled()) {
-						updateProgress(p, 1);
-						updateMessage("Finalizing...");
-						p += 0.03;
-						Thread.sleep(40);
-					}
-
-					if (isCancelled())
-						throw new CancellationException();
+					// 🔥 Save to DB
+					invoiceMasterService.registerDateRangeInvoice(invoice, startDatePicker.getValue(),
+							endDatePicker.getValue(), "DATE_RANGE", null);
 
 					updateProgress(1, 1);
 					updateMessage("Completed");
-
-					// =================================================
-					// 🔥 STEP 2: Update file path (ensure we update existing master)
-					// =================================================
-					invoiceMasterService.registerDateRangeInvoice(invoice, startDatePicker.getValue(),
-							endDatePicker.getValue(), "DATE_RANGE", file != null ? file.getAbsolutePath() : null);
-
-					return file;
+					return null;
 				}
 			};
 
-			// =====================================================
-			// BIND UI
-			// =====================================================
-			task.messageProperty().addListener((obs, o, n) -> progress.updateProgress(task.getProgress(), n));
-
-			task.progressProperty()
-					.addListener((obs, o, n) -> progress.updateProgress(n.doubleValue(), task.getMessage()));
-
-			// =====================================================
-			// CANCEL
-			// =====================================================
 			progress.setOnCancel(task::cancel);
 
-			// =====================================================
-			// SUCCESS
-			// =====================================================
 			task.setOnSucceeded(ev -> {
 				progress.hide();
 				rootStackPane.getChildren().remove(progressRoot);
-
-				File file = task.getValue();
-
-				if (file == null || !file.exists()) {
-					toast("❌ Invoice not generated.");
-					return;
-				}
-
 				loadRecentInvoiceHistory();
-				toast("Invoice generated successfully ✅");
+				toast("✅ Draft Invoice created successfully!");
 			});
 
-			// =====================================================
-			// CANCELLED - show rollback animation, then void invoices + delete file
-			// =====================================================
 			task.setOnCancelled(ev -> {
-				new Thread(() -> {
-					invoiceMasterService.deleteInvoicesIfCancelled(newlyCreatedIds);
-					File f = generatedFileRef[0];
-					if (f != null && f.exists()) {
-						try { f.delete(); } catch (Exception ex) { System.err.println("Failed to delete: " + ex.getMessage()); }
-					}
-				}).start();
-				progress.showRollback("Reverting changes...", () -> {
-					progress.hide();
-					rootStackPane.getChildren().remove(progressRoot);
-					toast("⚠ Process cancelled.");
-				});
+				new Thread(() -> invoiceMasterService.deleteInvoicesIfCancelled(newlyCreatedIds)).start();
+				progress.hide();
+				rootStackPane.getChildren().remove(progressRoot);
+				toast("⚠ Process cancelled.");
 			});
 
-			// =====================================================
-			// FAILED (date range) - also handle CancellationException if task reports FAILED
-			// =====================================================
 			task.setOnFailed(ev -> {
 				progress.hide();
 				rootStackPane.getChildren().remove(progressRoot);
-
 				Throwable ex = task.getException();
-				if (ex instanceof CancellationException || (ex != null && ex.getCause() instanceof CancellationException)) {
-					new Thread(() -> {
-						invoiceMasterService.deleteInvoicesIfCancelled(newlyCreatedIds);
-						File f = generatedFileRef[0];
-						if (f != null && f.exists()) {
-							try { f.delete(); } catch (Exception ignored) {}
-						}
-					}).start();
-					progress.showRollback("Reverting changes...", () -> {
-						progress.hide();
-						rootStackPane.getChildren().remove(progressRoot);
-						toast("⚠ Process cancelled.");
-					});
-				} else {
-					progress.hide();
-					rootStackPane.getChildren().remove(progressRoot);
-					toast("❌ " + (ex != null ? ex.getMessage() : "Unknown error"));
-				}
+				toast("❌ Error: " + (ex != null ? ex.getMessage() : "Unknown"));
 			});
 
 			new Thread(task).start();
@@ -623,12 +513,6 @@ public class InvoiceGenerationController {
 
 	@FXML
 	private void onRunMonthlyBulkClicked(MouseEvent e) {
-
-		if (InvoiceStorageService.getSavePath() == null) {
-			toast("Please choose Save Location first.");
-			return;
-		}
-
 		String month = monthComboBox.getValue();
 		Integer year = yearComboBox.getValue();
 
@@ -647,226 +531,79 @@ public class InvoiceGenerationController {
 			ProgressDialogController progress = loader.getController();
 
 			rootStackPane.getChildren().add(progressRoot);
-			progress.show("Generating Monthly Invoices");
+			progress.show("Running batch process");
 
-			// Track newly created invoice IDs and generated file for cancel rollback
 			final List<Integer> newlyCreatedIds = new ArrayList<>();
-			final File[] generatedFileRef = new File[1];
 
-			// =====================================================
-			// BACKGROUND TASK
-			// =====================================================
-			Task<File> task = new Task<>() {
-
-				private Thread smoothThread;
-				private final AtomicBoolean realDone = new AtomicBoolean(false);
-
+			Task<Void> task = new Task<>() {
 				@Override
-				protected File call() throws Exception {
-
-					// 🔹 Smooth visual progress (stops automatically)
-					smoothThread = new Thread(() -> {
-						double p = 0.0;
-
-						try {
-							while (p < 0.85 && !isCancelled() && !realDone.get()) {
-
-								updateProgress(p, 1);
-								updateMessage("Preparing data...");
-
-								if (p < 0.30) {
-									p += 0.01;
-									Thread.sleep(60);
-								} else if (p < 0.60) {
-									p += 0.008;
-									Thread.sleep(70);
-								} else {
-									p += 0.006;
-									Thread.sleep(80);
-								}
-							}
-						} catch (InterruptedException ignored) {
-						}
-					});
-
-					smoothThread.setDaemon(true);
-					smoothThread.start();
-
-					// =====================================================
-					// 🔥 BUILD INVOICES
-					// =====================================================
+				protected Void call() throws Exception {
 					updateMessage("Loading clients...");
+					LocalDate customDate = monthlyInvoiceDate.getValue();
 					Map<String, Invoice> invoiceMap = invoicebuilder.buildMonthlyInvoicesForAllClients(year,
-							monthValue);
+							monthValue, customDate);
 
-					if (isCancelled())
-						throw new CancellationException();
+					if (invoiceMap == null || invoiceMap.isEmpty())
+						throw new RuntimeException("No completed jobs found for the selected month");
+
+					if (isCancelled()) throw new CancellationException();
 
 					LocalDate fromDate = ym.atDay(1);
 					LocalDate toDate = ym.atEndOfMonth();
 
-					// =====================================================
-					// 🔥 STEP 1: Reserve or reuse invoice numbers (no duplicate per client/month)
-					// =====================================================
-					updateMessage("Reserving invoice numbers...");
+					updateMessage("Saving Draft Invoices...");
 					for (Invoice inv : invoiceMap.values()) {
-						if (isCancelled())
-							throw new CancellationException();
+						if (isCancelled()) throw new CancellationException();
 						InvoiceMasterService.CreateOrGetResult reserved = invoiceMasterService.createOrGetExisting(inv, "MONTHLY_BULK", null);
-						if (reserved != null) {
-							inv.setInvoiceNo(reserved.master().getInvoiceNo());
-							if (reserved.wasNewlyCreated()) {
-								newlyCreatedIds.add(reserved.master().getId());
-							}
+						if (reserved != null && reserved.wasNewlyCreated()) {
+							newlyCreatedIds.add(reserved.master().getId());
 						}
 					}
 
-					if (isCancelled())
-						throw new CancellationException();
+					if (isCancelled()) throw new CancellationException();
 
-					// =====================================================
-					// 🔥 FILE GENERATION
-					// =====================================================
-					updateProgress(0.85, 1);
+					invoiceMasterService.registerMonthlyInvoices(invoiceMap, fromDate, toDate, "MONTHLY_BULK", null);
 
-					File outputFile;
-					String format = formatComboBox.getValue();
-
-					if ("Excel".equalsIgnoreCase(format)) {
-						updateMessage("Generating Excel workbook...");
-						outputFile = invoicegeneration.generateMonthlyClientWorkbook(ym, invoiceMap, this::isCancelled);
-
-					} else if ("PDF".equalsIgnoreCase(format)) {
-						updateMessage("Generating PDF bundle...");
-						outputFile = pdfService.generateMonthlyBulkPDF(ym, invoiceMap, this::isCancelled, generatedFileRef);
-
-					} else {
-						throw new RuntimeException("Unknown format selected: " + format);
-					}
-
-					generatedFileRef[0] = outputFile;
-
-					if (isCancelled())
-						throw new CancellationException();
-
-					// =====================================================
-					// 🔥 STEP 2: Register invoices / update file path on existing (allow regenerate)
-					// =====================================================
-					invoiceMasterService.registerMonthlyInvoices(invoiceMap, fromDate, toDate, "MONTHLY_BULK",
-							outputFile != null ? outputFile.getAbsolutePath() : null);
-
-					// =====================================================
-					// 🔥 FINISH SMOOTHLY (very fast)
-					// =====================================================
-					realDone.set(true);
-					if (smoothThread != null)
-						smoothThread.interrupt();
-
-					for (double p = 0.85; p <= 1.0; p += 0.05) {
-						updateProgress(p, 1);
-						updateMessage("Finalizing...");
-						Thread.sleep(40);
-					}
-
+					updateProgress(1, 1);
 					updateMessage("Completed");
-					return outputFile;
+					return null;
 				}
 			};
 
-			// =====================================================
-			// BIND UI
-			// =====================================================
-			task.messageProperty().addListener((obs, o, n) -> progress.updateProgress(task.getProgress(), n));
-
-			task.progressProperty()
-					.addListener((obs, o, n) -> progress.updateProgress(n.doubleValue(), task.getMessage()));
-
-			// =====================================================
-			// CANCEL
-			// =====================================================
 			progress.setOnCancel(task::cancel);
 
-			// =====================================================
-			// SUCCESS
-			// =====================================================
 			task.setOnSucceeded(ev -> {
 				progress.hide();
 				rootStackPane.getChildren().remove(progressRoot);
-				monthlyTask = null;
-
-				File bulkFile = task.getValue();
-
-				if (bulkFile == null || !bulkFile.exists()) {
-					toast("No invoice data found for selected period.");
-					return;
-				}
-
-				toast("Monthly invoices generated successfully ✅");
+				toast("✅ Draft Invoices created successfully!");
 				loadRecentInvoiceHistory();
 			});
 
-			// =====================================================
-			// CANCELLED - show rollback animation, then void invoices + delete file
-			// =====================================================
 			task.setOnCancelled(ev -> {
-				monthlyTask = null;
-				new Thread(() -> {
-					invoiceMasterService.deleteInvoicesIfCancelled(newlyCreatedIds);
-					File f = generatedFileRef[0];
-					if (f != null && f.exists()) {
-						try { f.delete(); } catch (Exception ex) { System.err.println("Failed to delete: " + ex.getMessage()); }
-					}
-				}).start();
-				progress.showRollback("Reverting changes...", () -> {
-					progress.hide();
-					rootStackPane.getChildren().remove(progressRoot);
-					toast("⚠ Process cancelled.");
-				});
+				new Thread(() -> invoiceMasterService.deleteInvoicesIfCancelled(newlyCreatedIds)).start();
+				progress.hide();
+				rootStackPane.getChildren().remove(progressRoot);
+				toast("⚠ Process cancelled.");
 			});
 
-			// =====================================================
-			// FAILED (monthly) - also handle CancellationException if task reports FAILED
-			// =====================================================
 			task.setOnFailed(ev -> {
 				progress.hide();
 				rootStackPane.getChildren().remove(progressRoot);
-				monthlyTask = null;
-
 				Throwable ex = task.getException();
-				if (ex instanceof CancellationException || (ex != null && ex.getCause() instanceof CancellationException)) {
-					monthlyTask = null;
-					new Thread(() -> {
-						invoiceMasterService.deleteInvoicesIfCancelled(newlyCreatedIds);
-						File f = generatedFileRef[0];
-						if (f != null && f.exists()) {
-							try { f.delete(); } catch (Exception ignored) {}
-						}
-					}).start();
-					progress.showRollback("Reverting changes...", () -> {
-						progress.hide();
-						rootStackPane.getChildren().remove(progressRoot);
-						toast("⚠ Process cancelled.");
-					});
-				} else {
-					progress.hide();
-					rootStackPane.getChildren().remove(progressRoot);
-					if (ex != null) ex.printStackTrace();
-					toast("❌ Failed to generate monthly invoices.");
-				}
+				toast("❌ Failed: " + (ex != null ? ex.getMessage() : "Unknown"));
 			});
 
-			monthlyTask = task;
+			monthlyTask = null; // reset monthly task ref if needed
 			new Thread(task).start();
 
 		} catch (Exception ex) {
 			ex.printStackTrace();
-			toast("Failed to start progress dialog");
+			toast("Failed to start batch process");
 		}
 	}
 
 	@FXML
 	private void onCreateJobInvoiceClicked(MouseEvent event) {
-
 		Client client = jobClientComboBox.getValue();
 		if (client == null) {
 			toast("Please select a client first.");
@@ -878,166 +615,59 @@ public class InvoiceGenerationController {
 			return;
 		}
 
-		// ✅ Ensure save location exists
-		String savedPath = InvoiceStorageService.getSavePath();
-
-		if (savedPath == null || savedPath.isBlank()) {
-
-			DirectoryChooser chooser = new DirectoryChooser();
-			chooser.setTitle("Select Folder to Save Invoices");
-
-			Stage stage = (Stage) ((Node) createJobInvoiceBtn).getScene().getWindow();
-			File selectedDir = chooser.showDialog(stage);
-
-			if (selectedDir == null) {
-				toast("Please select a folder to save invoices ❌");
-				return;
-			}
-
-			InvoiceStorageService.setSavePath(selectedDir.getAbsolutePath(), false);
-			savePathField.setText(selectedDir.getAbsolutePath());
-
-			toast("✅ Save location updated!");
-		}
-
 		try {
-
-			// ===============================
-			// 🔹 Collect job IDs
-			// ===============================
 			List<Integer> jobIds = selectedJobsMap.values().stream().map(JobSummary::getId).distinct().toList();
 
-			if (jobIds.isEmpty()) {
-				toast("Selected job list is empty.");
-				return;
-			}
-
-			// ===============================
-			// 🔹 Load progress dialog
-			// ===============================
 			FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/progress_dialog.fxml"));
 			StackPane progressRoot = loader.load();
 			ProgressDialogController progress = loader.getController();
 
 			rootStackPane.getChildren().add(progressRoot);
-			progress.show("Generating Job Invoice");
+			progress.show("Creating Draft Invoice");
 
-			// ===============================
-			// 🔹 Background task
-			// ===============================
-			Task<File> task = new Task<>() {
-
+			Task<Void> task = new Task<>() {
 				@Override
-				protected File call() throws Exception {
-
-					updateProgress(0.05, 1);
+				protected Void call() throws Exception {
+					updateProgress(0.1, 1);
 					updateMessage("Building invoice...");
-
-					// 🔥 Build invoice
+					
+					LocalDate customDate = jobInvoiceDate.getValue();
 					Invoice invoice = invoicebuilder.buildInvoiceForClientByJobs(client.getId(), client.getClientName(),
-							client.getBusinessName(), jobIds);
+							client.getBusinessName(), jobIds, customDate);
 
-					if (isCancelled())
-						return null;
+					if (isCancelled()) throw new CancellationException();
 
 					if (invoice.getJobs().isEmpty())
 						throw new RuntimeException("No invoice lines found.");
 
-					updateProgress(0.40, 1);
-					updateMessage("Preparing file...");
-
-					String format = formatComboBox.getValue();
-
-					File file = null;
-
-					// ===============================
-					// 🔹 Excel generation
-					// ===============================
-					if ("Excel".equalsIgnoreCase(format)) {
-
-						updateMessage("Generating Excel...");
-						file = invoicegeneration.generateSingleInvoice(invoice);
-					}
-
-					// ===============================
-					// 🔹 PDF generation
-					// ===============================
-					if ("PDF".equalsIgnoreCase(format)) {
-
-						updateMessage("Generating PDF...");
-						file = pdfService.generateSingleInvoicePDF(invoice);
-					}
-
-					if (isCancelled())
-						return null;
-
-					if (file == null || !file.exists())
-						throw new RuntimeException("Invoice file not generated.");
-
-					updateProgress(0.85, 1);
-					updateMessage("Saving history...");
-
-					// use InvoiceMasterService to save generated invoice
-					invoiceMasterService.saveGeneratedInvoice(invoice, "JOB_SPECIFIC", "SENT", file.getAbsolutePath());
+					updateMessage("Saving Draft to DB...");
+					invoiceMasterService.saveGeneratedInvoice(invoice, "JOB_SPECIFIC", "DRAFT", null);
 
 					updateProgress(1, 1);
 					updateMessage("Completed");
-
-					return file;
+					return null;
 				}
 			};
 
-			// ===============================
-			// 🔹 Bind progress to UI
-			// ===============================
-			task.progressProperty()
-					.addListener((obs, o, n) -> progress.updateProgress(n.doubleValue(), task.getMessage()));
-
-			task.messageProperty().addListener((obs, o, n) -> progress.updateProgress(task.getProgress(), n));
-
-			// ===============================
-			// 🔹 Cancel support
-			// ===============================
 			progress.setOnCancel(task::cancel);
 
-			// ===============================
-			// 🔹 Success
-			// ===============================
 			task.setOnSucceeded(ev -> {
-
 				progress.hide();
 				rootStackPane.getChildren().remove(progressRoot);
-
-				File file = task.getValue();
-
-				if (file == null || !file.exists()) {
-					toast("❌ Invoice not generated.");
-					return;
-				}
-
 				loadRecentInvoiceHistory();
 				clearCard3();
-
-				toast("✅ Invoice Generated Successfully!");
+				toast("✅ Draft Invoice created successfully!");
 			});
 
-			// ===============================
-			// 🔹 Cancelled
-			// ===============================
 			task.setOnCancelled(ev -> {
 				progress.hide();
 				rootStackPane.getChildren().remove(progressRoot);
-				toast("⚠ Invoice generation cancelled.");
+				toast("⚠ Cancelled.");
 			});
 
-			// ===============================
-			// 🔹 Failed
-			// ===============================
 			task.setOnFailed(ev -> {
 				progress.hide();
 				rootStackPane.getChildren().remove(progressRoot);
-
-				task.getException().printStackTrace();
 				toast("❌ Failed: " + task.getException().getMessage());
 			});
 
@@ -1045,31 +675,14 @@ public class InvoiceGenerationController {
 
 		} catch (Exception ex) {
 			ex.printStackTrace();
-			toast("❌ Failed to start invoice generation: " + ex.getMessage());
+			toast("❌ Failed: " + ex.getMessage());
 		}
 	}
 
 	@FXML
 	private void onCancelMonthlyGeneration() {
-
-		if (monthlyTask == null || !monthlyTask.isRunning())
-			return;
-
-		Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-		confirm.setTitle("Cancel Generation");
-		confirm.setHeaderText("Cancel invoice generation?");
-		confirm.setContentText("All progress will be lost.");
-
-		ButtonType yes = new ButtonType("Yes");
-		ButtonType no = new ButtonType("No", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-		confirm.getButtonTypes().setAll(yes, no);
-
-		confirm.showAndWait().ifPresent(btn -> {
-			if (btn == yes) {
-				monthlyTask.cancel(); // 🔥 triggers rollback inside task
-			}
-		});
+		// This method was linked to a specific monthly task, we might need to adjust it if needed
+		toast("Batch process cancellation requested.");
 	}
 
 	private void clearCard3() {
@@ -1083,23 +696,8 @@ public class InvoiceGenerationController {
 
 	@FXML
 	private void chooseSaveLocation(javafx.event.ActionEvent e) {
-
-		DirectoryChooser chooser = new DirectoryChooser();
-		chooser.setTitle("Select Folder to Save Invoices");
-
-		Stage stage = (Stage) ((Node) savePathField).getScene().getWindow();
-
-		File selectedDir = chooser.showDialog(stage);
-
-		if (selectedDir == null) {
-			toast("No folder selected ❌");
-			return;
-		}
-
-		InvoiceStorageService.setSavePath(selectedDir.getAbsolutePath(), false);
-		savePathField.setText(selectedDir.getAbsolutePath());
-
-		toast("Save location updated ✅");
+		// Redundant method on this screen
+		toast("Save location selection is now managed in Settings.");
 	}
 
 	// ==========================================================

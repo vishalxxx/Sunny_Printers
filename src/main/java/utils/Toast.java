@@ -24,8 +24,10 @@ public class Toast {
 		Platform.runLater(() -> {
 
 			Label label = new Label(message);
-			label.setStyle("-fx-background-color: rgba(0,0,0,0.85);" + "-fx-text-fill: white;" + "-fx-padding: 10 20;"
-					+ "-fx-background-radius: 8;" + "-fx-font-size: 1.1em;");
+			label.setWrapText(true);
+			label.setMaxWidth(600);
+			label.setStyle("-fx-background-color: rgba(0,0,0,0.85);" + "-fx-text-fill: white;" + "-fx-padding: 12 24;"
+					+ "-fx-background-radius: 8;" + "-fx-font-size: 1.1em;" + "-fx-text-alignment: center;");
 
 			// The original root (BorderPane in your case)
 			var originalRoot = stage.getScene().getRoot();
@@ -42,15 +44,17 @@ public class Toast {
 
 			StackPane toastPane = new StackPane(label);
 			toastPane.setMouseTransparent(true);
-			toastPane.setTranslateY(40);
-
+			StackPane.setAlignment(label, Pos.CENTER);
 			stackRoot.getChildren().add(toastPane);
+			StackPane.setAlignment(toastPane, Pos.CENTER);
 
-			// Slide up animation
-			TranslateTransition slide = new TranslateTransition(Duration.millis(300), toastPane);
-			slide.setFromY(40);
-			slide.setToY(0);
-			slide.play();
+			// Subtle scale animation instead of slide
+			toastPane.setScaleX(0.9);
+			toastPane.setScaleY(0.9);
+			javafx.animation.ScaleTransition scale = new javafx.animation.ScaleTransition(Duration.millis(300), toastPane);
+			scale.setToX(1.0);
+			scale.setToY(1.0);
+			scale.play();
 
 			// Fade out
 			FadeTransition fade = new FadeTransition(Duration.seconds(3), toastPane);
@@ -91,8 +95,10 @@ public class Toast {
 			}
 
 			StackPane toastPane = new StackPane(layout);
-			toastPane.setTranslateY(40);
+			toastPane.setMouseTransparent(true);
+			StackPane.setAlignment(layout, Pos.CENTER);
 			stackRoot.getChildren().add(toastPane);
+			StackPane.setAlignment(toastPane, Pos.CENTER);
 
 			// When UNDO clicked
 			undoBtn.setOnAction(e -> {

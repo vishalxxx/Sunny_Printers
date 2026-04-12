@@ -26,19 +26,19 @@ public class InvoiceBuilderService {
 	// ✅ BUILD SINGLE INVOICE BY CLIENT ID (BEST METHOD)
 	// =========================================================
 	public Invoice buildInvoiceForClient(int clientId, String clientName, String businessName, LocalDate fromDate,
-			LocalDate toDate) {
+			LocalDate toDate, LocalDate invoiceDate) {
 
 		return AtomicDB.run(con -> {
 
 			Invoice invoice = new Invoice();
 
 			try {
-				invoice.setInvoiceNo(settingsService.generateNextInvoiceNumber(con));
+				invoice.setInvoiceNo(settingsService.generateNextTempInvoiceNumber(con));
 			} catch (Exception e) {
-				throw new RuntimeException("Failed to generate invoice number", e);
+				throw new RuntimeException("Failed to generate temp invoice number", e);
 			}
 
-			invoice.setInvoiceDate(LocalDate.now());
+			invoice.setInvoiceDate(invoiceDate != null ? invoiceDate : LocalDate.now());
 
 			invoice.setCompanyName("SUNNY PRINTERS");
 			invoice.setCompanyAddress("B-234, Naraina Industrial Area,\nPhase-1, New Delhi-110028");
@@ -50,7 +50,7 @@ public class InvoiceBuilderService {
 			invoice.setToDate(toDate);
 			invoice.setClientId(clientId);
 			invoice.setInvoiceType("DATE_RANGE");
-			invoice.setStatus("SENT");
+			invoice.setStatus("DRAFT");
 
 			loadJobsIntoInvoice(con, invoice, clientId, fromDate, toDate);
 
@@ -59,19 +59,19 @@ public class InvoiceBuilderService {
 	}
 
 	public Invoice buildInvoiceForClientByJobs(int clientId, String clientName, String businessName,
-			List<Integer> jobIds) {
+			List<Integer> jobIds, LocalDate invoiceDate) {
 
 		return AtomicDB.run(con -> {
 
 			Invoice invoice = new Invoice();
 
 			try {
-				invoice.setInvoiceNo(settingsService.generateNextInvoiceNumber(con));
+				invoice.setInvoiceNo(settingsService.generateNextTempInvoiceNumber(con));
 			} catch (Exception e) {
-				throw new RuntimeException("Failed to generate invoice number", e);
+				throw new RuntimeException("Failed to generate temp invoice number", e);
 			}
 
-			invoice.setInvoiceDate(LocalDate.now());
+			invoice.setInvoiceDate(invoiceDate != null ? invoiceDate : LocalDate.now());
 
 			invoice.setCompanyName("SUNNY PRINTERS");
 			invoice.setCompanyAddress("B-234, Naraina Industrial Area,\nPhase-1, New Delhi-110028");
@@ -81,7 +81,7 @@ public class InvoiceBuilderService {
 			invoice.setClientName(businessName + " (" + clientName + ")");
 			invoice.setClientId(clientId);
 			invoice.setInvoiceType("JOB_SPECIFIC");
-			invoice.setStatus("SENT");
+			invoice.setStatus("DRAFT");
 
 			loadSelectedJobs(con, invoice, clientId, jobIds);
 
@@ -108,7 +108,8 @@ public class InvoiceBuilderService {
 				FROM jobs j
 				JOIN job_items ji ON ji.job_id = j.id
 				WHERE j.client_id = ?
-				  AND j.status IN ('Created', 'In Progress', 'Completed')
+				  AND j.status = 'Completed'
+				  AND j.invoice_id IS NULL
 				  AND j.id IN (""" + placeholders + ") " + "ORDER BY j.job_date, j.id, ji.sort_order";
 
 		try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -157,7 +158,7 @@ public class InvoiceBuilderService {
 	// =========================================================
 	// ✅ BUILD MONTHLY INVOICES FOR ALL CLIENTS (BY ID)
 	// =========================================================
-	public Map<String, Invoice> buildMonthlyInvoicesForAllClients(int year, int month) {
+	public Map<String, Invoice> buildMonthlyInvoicesForAllClients(int year, int month, LocalDate invoiceDate) {
 
     return AtomicDB.run(con -> {
 
@@ -176,7 +177,8 @@ public class InvoiceBuilderService {
             FROM jobs j
             JOIN clients c ON c.id = j.client_id
             WHERE DATE(j.job_date) BETWEEN ? AND ?
-            AND j.status IN ('Created', 'In Progress', 'Completed')
+            AND j.status = 'Completed'
+            AND j.invoice_id IS NULL
             ORDER BY c.business_name, c.client_name, c.id
         """;
 
@@ -204,14 +206,14 @@ public class InvoiceBuilderService {
                 invoice.setClientId(clientId);
                 invoice.setClientName(businessName + " (" + clientName + ")");
 
-                // ✅ Monthly invoice date should be end of month
-                invoice.setInvoiceDate(toDate);
+                // ✅ Monthly invoice date should be custom or default to end of month
+                invoice.setInvoiceDate(invoiceDate != null ? invoiceDate : toDate);
 
                 invoice.setFromDate(fromDate);
                 invoice.setToDate(toDate);
 
                 invoice.setInvoiceType("MONTHLY_BULK");
-                invoice.setStatus("SENT");
+                invoice.setStatus("DRAFT");
 
                 // 🔹 Load jobs
                 loadJobsIntoInvoice(con, invoice, clientId, fromDate, toDate);
@@ -225,8 +227,8 @@ public class InvoiceBuilderService {
             throw new RuntimeException("Failed building monthly invoices for " + ym, e);
         }
 
-        // 🔥 Generate invoice numbers in ONE DB call
-        String[] numbers = settingsService.generateNextInvoiceNumbers(con, invoiceMap.size());
+        // 🔥 Generate temp invoice numbers in ONE DB call
+        String[] numbers = settingsService.generateNextTempInvoiceNumbers(con, invoiceMap.size());
 
         int i = 0;
         for (Invoice inv : invoiceMap.values()) {
@@ -254,7 +256,8 @@ public class InvoiceBuilderService {
 				JOIN job_items ji ON ji.job_id = j.id
 				WHERE j.client_id = ?
 				AND DATE(j.job_date) BETWEEN ? AND ?
-				AND j.status IN ('Created', 'In Progress', 'Completed')
+				AND j.status = 'Completed'
+				AND j.invoice_id IS NULL
 				ORDER BY j.job_date, j.id, ji.sort_order
 				""";
 

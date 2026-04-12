@@ -15,12 +15,30 @@ import repository.*;
 import service.JobItemService;
 import utils.Toast;
 
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.stage.FileChooser;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import service.JobService;
+
 public class EditJobController {
 
     /* =====================================================
        CURRENT JOB
        ===================================================== */
     private Job currentJob;
+    private File selectedImageFile;
+
+    /* =====================================================
+       GENERAL TAB
+       ===================================================== */
+    @FXML private Tab generalTab;
+    @FXML private ImageView jobImagePreview;
+    @FXML private Label filePlaceholder;
+    @FXML private javafx.scene.control.Button uploadJobImageBtn;
+    @FXML private javafx.scene.control.TextArea jobRemarksArea;
 
     /* =====================================================
        TABS
@@ -107,10 +125,33 @@ public class EditJobController {
                         : job.getJobTitle()
         );
 
+        // General Tab
+        if (job.getRemarks() != null) jobRemarksArea.setText(job.getRemarks());
+        if (job.getImagePath() != null && !job.getImagePath().isBlank()) {
+            File f = new File(job.getImagePath());
+            if (f.exists()) {
+                jobImagePreview.setImage(new Image(f.toURI().toString()));
+                jobImagePreview.setVisible(true); jobImagePreview.setManaged(true);
+                filePlaceholder.setVisible(false); filePlaceholder.setManaged(false);
+            }
+        }
+        
+        applyInvoicedStateOnGeneralTab();
+
         if (paperTab.isSelected() && !paperLoaded) {
             loadPaperTab();
             paperLoaded = true;
         }
+    }
+
+    private void applyInvoicedStateOnGeneralTab() {
+        if (currentJob == null) return;
+        boolean isInvoicedStatus = "invoiced".equalsIgnoreCase(currentJob.getStatus());
+        String invStatus = (currentJob.getInvoiceStatus() != null) ? currentJob.getInvoiceStatus().trim().toLowerCase() : "";
+        boolean isLocked = isInvoicedStatus && !(invStatus.equals("draft") || invStatus.equals("final"));
+
+        jobRemarksArea.setDisable(isLocked);
+        uploadJobImageBtn.setDisable(isLocked);
     }
 
     /* =====================================================
@@ -193,27 +234,73 @@ public class EditJobController {
             con.setAutoCommit(false);
             JobItemService jobItemService = new JobItemService(con);
 
-            if (paperTabController != null)
+            if (paperTabController != null) {
+                paperTabController.commitEditor();
                 anythingSaved |= savePaperItems(con, jobItemService);
+            }
 
-            if (printingTabController != null)
+            if (printingTabController != null) {
+                printingTabController.commitEditor();
                 anythingSaved |= savePrintingItems(con, jobItemService);
+            }
 
-            if (bindingTabController != null)
+            if (bindingTabController != null) {
+                bindingTabController.commitEditor();
                 anythingSaved |= saveBindingItems(con,jobItemService);
+            }
 
-            if (laminationTabController != null)
+            if (laminationTabController != null) {
+                laminationTabController.commitEditor();
                 anythingSaved |= saveLaminationItems(con, jobItemService);
+            }
 
-            if (ctpTabController != null)
+            if (ctpTabController != null) {
+                ctpTabController.commitEditor();
                 anythingSaved |= saveCtpItems(con,jobItemService);
+            }
+
+            // Save Job Remarks and Image
+            JobService js = new JobService();
+            if (jobRemarksArea.getText() != null && !jobRemarksArea.getText().equals(currentJob.getRemarks())) {
+                String updateQuery = "UPDATE jobs SET remarks = ? WHERE id = ?";
+                try (java.sql.PreparedStatement ps = con.prepareStatement(updateQuery)) {
+                    ps.setString(1, jobRemarksArea.getText());
+                    ps.setInt(2, currentJob.getId());
+                    ps.executeUpdate();
+                }
+                currentJob.setRemarks(jobRemarksArea.getText());
+                anythingSaved = true;
+            }
+
+            if (selectedImageFile != null) {
+                File dir = new File("Images");
+                if (!dir.exists()) dir.mkdirs();
+                String ext = "";
+                String name = selectedImageFile.getName();
+                int dotIndex = name.lastIndexOf('.');
+                if (dotIndex > 0) ext = name.substring(dotIndex);
+                String newFileName = "job_" + currentJob.getId() + "_" + System.currentTimeMillis() + ext;
+                File targetFile = new File(dir, newFileName);
+                Files.copy(selectedImageFile.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                String relativePath = "Images/" + newFileName;
+                
+                String updateImgQuery = "UPDATE jobs SET image_path = ? WHERE id = ?";
+                try (java.sql.PreparedStatement ps = con.prepareStatement(updateImgQuery)) {
+                    ps.setString(1, relativePath);
+                    ps.setInt(2, currentJob.getId());
+                    ps.executeUpdate();
+                }
+                currentJob.setImagePath(relativePath);
+                anythingSaved = true;
+            }
 
             con.commit();
 
-            reloadAllTabs();
+            Stage stage = (Stage) jobNumberLabel.getScene().getWindow();
+            MainController.getInstance().handleBack(null);
 
             Toast.show(
-                    (Stage) jobNumberLabel.getScene().getWindow(),
+                    stage,
                     anythingSaved ? "Changes saved ✅" : "No changes detected"
             );
 
@@ -244,6 +331,7 @@ public class EditJobController {
 
         boolean changed = false;
         PaperItemRepository repo = new PaperItemRepository();
+        JobItemRepository jobItemRepo = new JobItemRepository();
 
         for (Paper p : paperTabController.getItems()) {
 
@@ -272,6 +360,7 @@ public class EditJobController {
             if (p.isUpdated()) {
                 if (!p.isSameAsOriginal()) {
                     repo.update(con, p);
+                    jobItemRepo.updateBaseItem(con, p.getJobItemId(), service.buildPaperDescription(p), p.getAmount());
                     changed = true;
                 }
                 p.captureOriginal();   // 🔥 NEW
@@ -287,6 +376,7 @@ public class EditJobController {
 
         boolean changed = false;
         PrintingItemRepository repo = new PrintingItemRepository();
+        JobItemRepository jobItemRepo = new JobItemRepository();
 
         for (Printing p : printingTabController.getItems()) {
 
@@ -315,6 +405,7 @@ public class EditJobController {
             if (p.isUpdated()) {
                 if (!p.isSameAsOriginal()) {
                     repo.update(con, p);
+                    jobItemRepo.updateBaseItem(con, p.getJobItemId(), service.buildPrintingDescription(p), p.getAmount());
                     changed = true;
                 }
                 p.captureOriginal();   // 🔥 IMPORTANT
@@ -329,6 +420,7 @@ public class EditJobController {
 
         boolean changed = false;
         BindingItemRepository repo = new BindingItemRepository();
+        JobItemRepository jobItemRepo = new JobItemRepository();
 
         for (Binding b : bindingTabController.getItems()) {
 
@@ -357,6 +449,7 @@ public class EditJobController {
             if (b.isUpdated()) {
                 if (!b.isSameAsOriginal()) {
                     repo.update(con, b);
+                    jobItemRepo.updateBaseItem(con, b.getJobItemId(), service.buildBindingDescription(b), b.getAmount());
                     changed = true;
                 }
                 b.captureOriginal();   // 🔥 VERY IMPORTANT
@@ -371,6 +464,7 @@ public class EditJobController {
 
         boolean changed = false;
         LaminationItemRepository repo = new LaminationItemRepository();
+        JobItemRepository jobItemRepo = new JobItemRepository();
 
         for (Lamination l : laminationTabController.getItems()) {
 
@@ -399,6 +493,7 @@ public class EditJobController {
             if (l.isUpdated()) {
                 if (!l.isSameAsOriginal()) {
                     repo.update(con, l);
+                    jobItemRepo.updateBaseItem(con, l.getJobItemId(), service.buildLaminationDescription(l), l.getAmount());
                     changed = true;
                 }
                 l.captureOriginal();   // 🔥 baseline reset
@@ -413,6 +508,7 @@ public class EditJobController {
 
         boolean changed = false;
         CtpItemRepository repo = new CtpItemRepository();
+        JobItemRepository jobItemRepo = new JobItemRepository();
 
         for (CtpPlate c : ctpTabController.getItems()) {
 
@@ -441,6 +537,7 @@ public class EditJobController {
             if (c.isUpdated()) {
                 if (!c.isSameAsOriginal()) {
                     repo.update(con, c);
+                    jobItemRepo.updateBaseItem(con, c.getJobItemId(), service.buildCtpDescription(c), c.getAmount());
                     changed = true;
                 }
                 c.captureOriginal();   // 🔥 reset baseline
@@ -456,22 +553,31 @@ public class EditJobController {
        ===================================================== */
     @FXML
     private void handleDiscardChanges() {
-
         if (currentJob == null) return;
-
-        if (paperTabController != null) paperTabController.loadForJob(currentJob);
-        if (printingTabController != null) printingTabController.loadForJob(currentJob);
-        if (bindingTabController != null) bindingTabController.loadForJob(currentJob);
-        if (laminationTabController != null) laminationTabController.loadForJob(currentJob);
-        if (ctpTabController != null) ctpTabController.loadForJob(currentJob);
-
-        Toast.show(
-                (Stage) jobNumberLabel.getScene().getWindow(),
-                "Unsaved changes discarded ↩"
-        );
+        MainController.getInstance().handleBack(null);
     }
 
-    private void reloadAllTabs() {
-        handleDiscardChanges();
+    @FXML
+    private void handleUploadFile() {
+        try {
+            FileChooser chooser = new FileChooser();
+            chooser.setTitle("Select Image");
+            chooser.getExtensionFilters().addAll(
+                    new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg")
+            );
+
+            File file = chooser.showOpenDialog(null);
+            if (file == null) return;
+            this.selectedImageFile = file;
+
+            Image img = new Image(file.toURI().toString());
+            jobImagePreview.setImage(img);
+            jobImagePreview.setVisible(true);
+            jobImagePreview.setManaged(true);
+            filePlaceholder.setVisible(false);
+            filePlaceholder.setManaged(false);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

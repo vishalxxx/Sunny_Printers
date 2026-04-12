@@ -12,8 +12,24 @@
 	<!-- PAGE TITLE -->
 	<Label text="View Invoices" styleClass="page-heading" />
 
+	<!-- ACTION BUTTONS -->
+	<HBox spacing="10" alignment="CENTER_LEFT" styleClass="action-bar">
+		<Button fx:id="btnEdit" text="Edit" onAction="#handleEditAction" disable="true"/>
+		<Button fx:id="btnFinalize" text="Finalize" onAction="#handleFinalizeAction" disable="true"/>
+		<Button fx:id="btnSend" text="Send" onAction="#handleSendAction" disable="true"/>
+		<Button fx:id="btnRevised" text="Revised" onAction="#handleRevisedAction" disable="true"/>
+		<Button fx:id="btnPayment" text="Payment" onAction="#handlePaymentAction" disable="true"/>
+		<Button fx:id="btnRaiseCnDn" text="Raise CN/DN" onAction="#handleRaiseCnDnAction" disable="true"/>
+		<Button fx:id="btnCancel" text="Cancel Invoice" onAction="#handleCancelAction" disable="true"/>
+	</HBox>
+
 	<!-- FILTER BAR -->
-	<HBox spacing="12" alignment="CENTER">
+	<HBox spacing="12" alignment="CENTER_LEFT">
+
+		<TextField fx:id="invoiceSearchField"
+				   promptText="Invoice No..."
+				   styleClass="search-field"
+				   prefWidth="160"/>
 
 		<ComboBox fx:id="clientComboBox"
 				  promptText="Select Client..."
@@ -47,12 +63,12 @@
 				<TableColumn fx:id="colClientName" text="Client Name" prefWidth="250" />
 				<TableColumn fx:id="colInvoiceDate" text="Date" prefWidth="100" />
 				<TableColumn fx:id="colAmount" text="Amount (₹)" prefWidth="120" />
-				<TableColumn fx:id="colPaid" text="Partially Paid (₹)" prefWidth="120" />
+				<TableColumn fx:id="colAdjustment" text="Adjustment" prefWidth="200" />
+				<TableColumn fx:id="colPaid" text="Paid (₹)" prefWidth="120" />
 				<TableColumn fx:id="colDue" text="Due (₹)" prefWidth="120" />
-				<TableColumn fx:id="colStatus" text="Status" prefWidth="120" />
-				<TableColumn fx:id="colPaymentStatus" text="Payment Status" prefWidth="130" />
+				<TableColumn fx:id="colStatus" text="Status" prefWidth="180" />
+				<TableColumn fx:id="colPaymentStatus" text="Payment Status" prefWidth="180" />
 				<TableColumn fx:id="colType" text="Type" prefWidth="120" />
-				<TableColumn fx:id="colStatusIndicator" text="Tracker" prefWidth="80" />
 			</columns>
 		</TableView>
 	</VBox>

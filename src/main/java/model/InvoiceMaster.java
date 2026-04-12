@@ -25,11 +25,17 @@ public class InvoiceMaster {
     private String type;
     private String status;
 
+    private Double cnAmount;
+    private Double dnAmount;
+    private int cnCount;
+    private int dnCount;
+
     private boolean isVoid;
     private String voidReason;
     private LocalDate voidDate;
 
     private Integer replacedByInvoiceId;
+    private Integer parentInvoiceId;
 
     private String statusUpdatedBy;
 
@@ -55,8 +61,8 @@ public class InvoiceMaster {
         this.paidAmount = 0;
         this.dueAmount = amount;
         
-        if ("DRAFT".equalsIgnoreCase(status) || "CANCELLED".equalsIgnoreCase(status)) {
-            this.paymentStatus = null;
+        if ("CANCELLED".equalsIgnoreCase(status)) {
+            this.paymentStatus = "VOID";
         } else {
             this.paymentStatus = "UNPAID";
         }
@@ -91,7 +97,11 @@ public class InvoiceMaster {
     public double getPaidAmount() { return paidAmount; }
     public void setPaidAmount(double paidAmount) { this.paidAmount = paidAmount; }
 
-    public double getDueAmount() { return dueAmount; }
+    public double getDueAmount() {
+        double cn = cnAmount != null ? cnAmount : 0;
+        double dn = dnAmount != null ? dnAmount : 0;
+        return amount + (dn - cn) - paidAmount;
+    }
     public void setDueAmount(double dueAmount) { this.dueAmount = dueAmount; }
 
     public String getPaymentStatus() { return paymentStatus; }
@@ -106,6 +116,38 @@ public class InvoiceMaster {
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
+    public Double getCnAmount() { return cnAmount; }
+    public void setCnAmount(Double cnAmount) { this.cnAmount = cnAmount; }
+
+    public Double getDnAmount() { return dnAmount; }
+    public void setDnAmount(Double dnAmount) { this.dnAmount = dnAmount; }
+
+    public int getCnCount() { return cnCount; }
+    public void setCnCount(int cnCount) { this.cnCount = cnCount; }
+
+    public int getDnCount() { return dnCount; }
+    public void setDnCount(int dnCount) { this.dnCount = dnCount; }
+
+    public String getAdjustment() {
+        double cn = cnAmount != null ? cnAmount : 0;
+        double dn = dnAmount != null ? dnAmount : 0;
+        double net = dn - cn;
+        if (net == 0) return "-";
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("%s%.1f", net > 0 ? "+" : "", net));
+        
+        if (cnCount > 0 || dnCount > 0) {
+            sb.append(" (");
+            if (cnCount > 0) sb.append("C").append(cnCount);
+            if (cnCount > 0 && dnCount > 0) sb.append(" | ");
+            if (dnCount > 0) sb.append("D").append(dnCount);
+            sb.append(")");
+        }
+        
+        return sb.toString();
+    }
+
     public boolean isVoid() { return isVoid; }
     public void setVoid(boolean isVoid) { this.isVoid = isVoid; }
 
@@ -117,6 +159,9 @@ public class InvoiceMaster {
 
     public Integer getReplacedByInvoiceId() { return replacedByInvoiceId; }
     public void setReplacedByInvoiceId(Integer replacedByInvoiceId) { this.replacedByInvoiceId = replacedByInvoiceId; }
+
+    public Integer getParentInvoiceId() { return parentInvoiceId; }
+    public void setParentInvoiceId(Integer parentInvoiceId) { this.parentInvoiceId = parentInvoiceId; }
 
     public String getStatusUpdatedBy() { return statusUpdatedBy; }
     public void setStatusUpdatedBy(String statusUpdatedBy) { this.statusUpdatedBy = statusUpdatedBy; }

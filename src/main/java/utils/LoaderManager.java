@@ -40,7 +40,8 @@ public class LoaderManager {
 
     public static void show(String title, String subtitle, String status, String hint) {
         Platform.runLater(() -> {
-            if (overlay == null) return;
+            if (overlay == null)
+                return;
 
             controller.setTitle(title);
             controller.setSubtitle(subtitle);
@@ -55,18 +56,20 @@ public class LoaderManager {
 
     public static void setProgress(double value) {
         Platform.runLater(() -> {
-            if (controller != null) controller.setProgress(value);
+            if (controller != null)
+                controller.setProgress(value);
         });
     }
 
     public static void hide() {
         Platform.runLater(() -> {
-            if (overlay == null) return;
+            if (overlay == null)
+                return;
             overlay.setVisible(false);
             overlay.setManaged(false);
         });
     }
-    
+
     public static void show(String title, String subtitle) {
         show(title, subtitle, "", "");
     }
@@ -129,16 +132,18 @@ public class LoaderManager {
 
     public static void hideScreenLoader() {
         Platform.runLater(() -> {
-            if (centerOverlay == null) return;
+            if (centerOverlay == null)
+                return;
 
             FadeTransition ft = new FadeTransition();
             ft.setDuration(Duration.millis(180));
-            ft.setNode(centerOverlay);            ft.setFromValue(centerOverlay.getOpacity());
+            ft.setNode(centerOverlay);
+            ft.setFromValue(centerOverlay.getOpacity());
             ft.setToValue(0);
 
             ft.setOnFinished(e -> centerOverlay.setVisible(false));
             ft.play();
         });
     }
-    
+
 }

@@ -41,6 +41,8 @@ public class RecordPaymentController implements Initializable {
     @FXML
     private DatePicker paymentDatePicker;
     @FXML
+    private ComboBox<String> paymentTypeCombo;
+    @FXML
     private TextField amountField;
     @FXML
     private ComboBox<String> paymentModeCombo;
@@ -48,6 +50,8 @@ public class RecordPaymentController implements Initializable {
     private TextField notesField;
     @FXML
     private Label currentDateLabel;
+    @FXML
+    private Label totalOutstandingLabel;
     @FXML
     private Label footerClientLabel;
 
@@ -103,6 +107,8 @@ public class RecordPaymentController implements Initializable {
     @FXML
     private TableColumn<InvoiceRow, String> invoiceNoColumn;
     @FXML
+    private TableColumn<InvoiceRow, String> statusColumn;
+    @FXML
     private TableColumn<InvoiceRow, String> invoiceDateColumn;
     @FXML
     private TableColumn<InvoiceRow, BigDecimal> totalAmountColumn;
@@ -127,6 +133,8 @@ public class RecordPaymentController implements Initializable {
     private final ObservableList<InvoiceRow> invoiceItems = FXCollections.observableArrayList();
     private final ClientService clientService = new ClientService();
 
+    public static InvoiceMaster pendingPrefillInvoice = null;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setupPaymentModeCombo();
@@ -135,9 +143,43 @@ public class RecordPaymentController implements Initializable {
         setupInvoiceTable();
         refreshFooterTotals();
 
-        // Load invoices initially when client is selected
         clientCombo.setOnAction(e -> onClientSelected());
+        setupPaymentTypeCombo();
         amountField.textProperty().addListener((obs, o, n) -> refreshFooterTotals());
+
+        if (pendingPrefillInvoice != null) {
+            prefillForInvoice(pendingPrefillInvoice);
+            pendingPrefillInvoice = null;
+        }
+    }
+
+    private void prefillForInvoice(InvoiceMaster invoice) {
+        if (invoice == null) return;
+        
+        // Find and select the client in the combo box
+        System.out.println("Prefill: Searching for client ID " + invoice.getClientId() + " in " + clientCombo.getItems().size() + " items");
+        for (Client c : clientCombo.getItems()) {
+            if (c.getId() == invoice.getClientId()) {
+                clientCombo.getSelectionModel().select(c);
+                onClientSelected(); // Explicitly trigger loading to ensure it's not pending
+                System.out.println("Prefill: Selected client " + c.getClientName());
+                break;
+            }
+        }
+        
+        // The selection of client triggered loading of invoices. So we use Platform.runLater to let it finish.
+        javafx.application.Platform.runLater(() -> {
+            System.out.println("Prefill: Checking " + invoiceItems.size() + " items for invoice ID " + invoice.getId());
+            for (InvoiceRow row : invoiceItems) {
+                if (row.getInvoiceId() == invoice.getId()) {
+                    row.setSelected(true);
+                    amountField.setText(row.getDueAmount().toString());
+                    System.out.println("Prefill: Successfully matched and selected invoice " + invoice.getInvoiceNo());
+                    break;
+                }
+            }
+            refreshFooterTotals();
+        });
     }
 
     private void onClientSelected() {
@@ -168,6 +210,18 @@ public class RecordPaymentController implements Initializable {
             e.printStackTrace();
         }
     }
+
+    private void setupPaymentTypeCombo() {
+        if (paymentTypeCombo != null) {
+            paymentTypeCombo.setItems(FXCollections.observableArrayList("Payment", "Refund"));
+            paymentTypeCombo.setValue("Payment");
+            paymentTypeCombo.setOnAction(e -> {
+                onClientSelected(); // Refresh invoices list based on type
+                updateAmountEnabledState();
+            });
+        }
+    }
+
 
     private void setupPaymentModeCombo() {
         paymentModeCombo.setItems(FXCollections.observableArrayList("Cash", "Cheque", "UPI", "Bank Transfer"));
@@ -259,6 +313,8 @@ public class RecordPaymentController implements Initializable {
         // Top form
         if (paymentDatePicker != null)
             paymentDatePicker.setDisable(!enabled);
+        if (paymentTypeCombo != null)
+            paymentTypeCombo.setDisable(!enabled);
         if (paymentModeCombo != null)
             paymentModeCombo.setDisable(!enabled);
         if (notesField != null)
@@ -354,6 +410,10 @@ public class RecordPaymentController implements Initializable {
             invoiceNoColumn = new TableColumn<>("Invoice No");
             invoiceNoColumn.setPrefWidth(140);
         }
+        if (statusColumn == null) {
+            statusColumn = new TableColumn<>("Status");
+            statusColumn.setPrefWidth(100);
+        }
         if (invoiceDateColumn == null) {
             invoiceDateColumn = new TableColumn<>("Date");
             invoiceDateColumn.setPrefWidth(110);
@@ -381,6 +441,7 @@ public class RecordPaymentController implements Initializable {
         selectColumn.setEditable(true);
 
         invoiceNoColumn.setCellValueFactory(param -> param.getValue().invoiceNoProperty());
+        statusColumn.setCellValueFactory(param -> param.getValue().statusProperty());
         invoiceDateColumn.setCellValueFactory(param -> param.getValue().invoiceDateProperty());
         totalAmountColumn.setCellValueFactory(param -> param.getValue().totalAmountProperty());
         alreadyPaidColumn.setCellValueFactory(param -> param.getValue().alreadyPaidProperty());
@@ -399,6 +460,7 @@ public class RecordPaymentController implements Initializable {
         if (invoiceTable.getColumns().isEmpty()) {
             invoiceTable.getColumns().add(selectColumn);
             invoiceTable.getColumns().add(invoiceNoColumn);
+            invoiceTable.getColumns().add(statusColumn);
             invoiceTable.getColumns().add(invoiceDateColumn);
             invoiceTable.getColumns().add(totalAmountColumn);
             invoiceTable.getColumns().add(alreadyPaidColumn);
@@ -410,6 +472,18 @@ public class RecordPaymentController implements Initializable {
     }
 
     private BigDecimal parseAmountField() {
+        try {
+            String txt = amountField.getText();
+            if (txt == null || txt.trim().isEmpty()) {
+                return BigDecimal.ZERO;
+            }
+            return new BigDecimal(txt.trim());
+        } catch (Exception e) {
+            return BigDecimal.ZERO;
+        }
+    }
+
+    private BigDecimal parseAmountFieldInternal() {
         try {
             String txt = amountField.getText();
             if (txt == null || txt.trim().isEmpty()) {
@@ -476,9 +550,17 @@ public class RecordPaymentController implements Initializable {
             AtomicDB.runVoid(con -> {
                 int clientId = getSelectedClientId(con);
 
-                BigDecimal totalAmount = parseAmountField();
-                if (totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
-                    throw new IllegalArgumentException("Amount must be greater than zero");
+                BigDecimal totalAmount = parseAmountFieldInternal();
+                String type = paymentTypeCombo.getValue();
+                if (type == null) type = "Payment";
+
+                if ("Payment".equals(type) && totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new IllegalArgumentException("Payment amount must be greater than zero. Current: " + totalAmount);
+                }
+                if ("Refund".equals(type) && totalAmount.compareTo(BigDecimal.ZERO) >= 0) {
+                    // Try to auto-correct if it's positive but they selected Refund
+                    totalAmount = totalAmount.negate();
+                    System.out.println("Auto-correcting Refund amount to negative: " + totalAmount);
                 }
 
                 String mode = paymentModeCombo.getSelectionModel().getSelectedItem();
@@ -488,12 +570,13 @@ public class RecordPaymentController implements Initializable {
                 // 1) Insert into payments
                 int paymentId = -1;
                 try (PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO payments (client_id, amount, payment_date, method) VALUES (?,?,?,?)")) {
+                        "INSERT INTO payments (client_id, amount, payment_date, method, type) VALUES (?,?,?,?,?)")) {
                     ps.setInt(1, clientId);
                     ps.setDouble(2, totalAmount.doubleValue());
                     ps.setString(3,
                             paymentDatePicker.getValue() == null ? null : paymentDatePicker.getValue().toString());
                     ps.setString(4, mode);
+                    ps.setString(5, type);
                     ps.executeUpdate();
                 }
 
@@ -511,17 +594,34 @@ public class RecordPaymentController implements Initializable {
                 InvoiceMasterRepository repo = new InvoiceMasterRepository();
 
                 BigDecimal remainingAmountToAllocate = totalAmount;
+                boolean isRefund = "Refund".equalsIgnoreCase(type);
 
                 for (InvoiceRow row : invoiceItems) {
                     if (!row.isSelected())
                         continue;
-                        
-                    if (remainingAmountToAllocate.compareTo(BigDecimal.ZERO) <= 0)
-                        break;
-                        
-                    BigDecimal alloc = Math.min(row.getAllocateAmount().doubleValue(), remainingAmountToAllocate.doubleValue()) > 0 ? BigDecimal.valueOf(Math.min(row.getAllocateAmount().doubleValue(), remainingAmountToAllocate.doubleValue())) : BigDecimal.ZERO;
                     
-                    if (alloc.compareTo(BigDecimal.ZERO) <= 0)
+                    // Stop if no more amount to allocate (positive for Payment, negative for Refund)
+                    if (isRefund) {
+                        if (remainingAmountToAllocate.compareTo(BigDecimal.ZERO) >= 0) break;
+                    } else {
+                        if (remainingAmountToAllocate.compareTo(BigDecimal.ZERO) <= 0) break;
+                    }
+                    
+                    BigDecimal rowAllocRaw = row.getAllocateAmount();
+                    if (rowAllocRaw == null || rowAllocRaw.compareTo(BigDecimal.ZERO) == 0) continue;
+                    
+                    // Normalize sign: If Refund, we need negative internally. If Payment, positive.
+                    BigDecimal rowAlloc = rowAllocRaw;
+                    if (isRefund) {
+                        rowAlloc = rowAlloc.abs().negate();
+                    } else {
+                        rowAlloc = rowAlloc.abs();
+                    }
+
+                    // Calculate allocation capped by remaining
+                    BigDecimal alloc = isRefund ? rowAlloc.max(remainingAmountToAllocate) : rowAlloc.min(remainingAmountToAllocate);
+                    
+                    if (alloc.compareTo(BigDecimal.ZERO) == 0)
                         continue;
 
                     remainingAmountToAllocate = remainingAmountToAllocate.subtract(alloc);
@@ -540,7 +640,12 @@ public class RecordPaymentController implements Initializable {
                     InvoiceMaster inv = repo.findById(con, invoiceId);
                     if (inv != null) {
                         double newPaid = inv.getPaidAmount() + alloc.doubleValue();
-                        double newDue = inv.getAmount() - newPaid;
+                        
+                        // Calculate due following Due = Amount + (DN - CN) - Paid
+                        double cn = inv.getCnAmount() != null ? inv.getCnAmount() : 0;
+                        double dn = inv.getDnAmount() != null ? inv.getDnAmount() : 0;
+                        double newDue = (inv.getAmount() + dn - cn) - newPaid;
+
                         String status;
                         if (newDue <= 0.0001) {
                             status = "PAID";
@@ -644,15 +749,30 @@ public class RecordPaymentController implements Initializable {
                 return;
 
             InvoiceMasterRepository repo = new InvoiceMasterRepository();
-            // Simple example: load recent invoices for client that still have due > 0
-            String sql = """
+            
+            String type = paymentTypeCombo.getValue();
+            boolean isRefund = "Refund".equalsIgnoreCase(type);
+
+            String sql;
+            if (isRefund) {
+                // For refund, show all non-void invoices (even those with 0 due) so we can refund from paid amount
+                sql = """
                         SELECT * FROM invoice_master
-                        WHERE client_id = ? AND is_void = 0 AND due_amount > 0
-                          AND status NOT IN ('DRAFT', 'CANCELLED')
+                        WHERE client_id = ? AND is_void = 0
+                          AND (status = 'SENT TO CLIENT' OR status = 'SENT' OR status = 'PAID' OR status = 'PARTIAL')
                         ORDER BY invoice_date DESC
                     """;
+            } else {
+                sql = """
+                        SELECT * FROM invoice_master
+                        WHERE client_id = ? AND is_void = 0 AND due_amount > 0
+                          AND (status = 'SENT TO CLIENT' OR status = 'SENT' OR status = 'PARTIAL')
+                        ORDER BY invoice_date DESC
+                    """;
+            }
 
             invoiceItems.clear();
+            double totalOutstanding = 0;
 
             try (PreparedStatement ps = con.prepareStatement(sql)) {
                 ps.setInt(1, clientId);
@@ -663,10 +783,13 @@ public class RecordPaymentController implements Initializable {
                         BigDecimal paid = BigDecimal.valueOf(inv.getPaidAmount());
                         BigDecimal total = BigDecimal.valueOf(inv.getAmount());
 
+                        totalOutstanding += inv.getDueAmount();
+
                         invoiceItems.add(new InvoiceRow(
                                 inv.getId(),
                                 inv.getInvoiceNo(),
-                                inv.getInvoiceDate() == null ? "" : inv.getInvoiceDate().toString(),
+                                inv.getStatus(),
+                                inv.getInvoiceDate() == null ? "" : inv.getInvoiceDate().format(java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy")),
                                 total,
                                 paid,
                                 due,
@@ -674,6 +797,10 @@ public class RecordPaymentController implements Initializable {
                         ));
                     }
                 }
+            }
+            
+            if (totalOutstandingLabel != null) {
+                totalOutstandingLabel.setText(formatCurrency(BigDecimal.valueOf(totalOutstanding)));
             }
 
             if (invoiceCountLabel != null) {
@@ -851,6 +978,7 @@ public class RecordPaymentController implements Initializable {
     public static class InvoiceRow {
         private final int invoiceId;
         private final StringProperty invoiceNo = new SimpleStringProperty();
+        private final StringProperty status = new SimpleStringProperty();
         private final StringProperty invoiceDate = new SimpleStringProperty();
         private final ObjectProperty<BigDecimal> totalAmount = new SimpleObjectProperty<>();
         private final ObjectProperty<BigDecimal> alreadyPaid = new SimpleObjectProperty<>();
@@ -860,6 +988,7 @@ public class RecordPaymentController implements Initializable {
 
         public InvoiceRow(int invoiceId,
                 String invoiceNo,
+                String status,
                 String invoiceDate,
                 BigDecimal totalAmount,
                 BigDecimal alreadyPaid,
@@ -867,6 +996,7 @@ public class RecordPaymentController implements Initializable {
                 BigDecimal allocateAmount) {
             this.invoiceId = invoiceId;
             this.invoiceNo.set(invoiceNo);
+            this.status.set(status);
             this.invoiceDate.set(invoiceDate);
             this.totalAmount.set(totalAmount);
             this.alreadyPaid.set(alreadyPaid);
@@ -876,6 +1006,10 @@ public class RecordPaymentController implements Initializable {
 
         public StringProperty invoiceNoProperty() {
             return invoiceNo;
+        }
+
+        public StringProperty statusProperty() {
+            return status;
         }
 
         public StringProperty invoiceDateProperty() {

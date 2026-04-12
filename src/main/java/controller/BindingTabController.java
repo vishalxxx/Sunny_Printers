@@ -77,6 +77,7 @@ public class BindingTabController {
                 deleteBtn.setVisible(false);
                 deleteBtn.setManaged(false);
             }
+            applyInvoicedState(n == null);
         });
 
         /* ===== click again → deselect ===== */
@@ -174,6 +175,24 @@ public class BindingTabController {
         }
 
         clearEditor();
+        applyInvoicedState(true);
+    }
+
+    private void applyInvoicedState(boolean isNewSelection) {
+        boolean isJobStatusInvoiced = currentJob != null && "invoiced".equalsIgnoreCase(currentJob.getStatus());
+        String invStatus = (currentJob != null && currentJob.getInvoiceStatus() != null) ? currentJob.getInvoiceStatus().trim().toLowerCase() : "";
+        boolean isLocked = isJobStatusInvoiced && !(invStatus.equals("draft") || invStatus.equals("final"));
+
+        qtyField.setDisable(isLocked);
+        processField.setDisable(isLocked);
+        rateField.setDisable(isLocked);
+        amountField.setDisable(isLocked);
+        notesField.setDisable(isLocked);
+        
+        if (isLocked) {
+           addUpdateBtn.setDisable(true);
+           deleteBtn.setVisible(false);
+        }
     }
 
     /* ================= ADD / UPDATE ================= */
@@ -271,5 +290,11 @@ public class BindingTabController {
 
     public ObservableList<Binding> getItems() {
         return bindingTable.getItems();
+    }
+
+    public void commitEditor() {
+        if (selectedItem != null && isEditorChanged()) {
+            handleAddOrUpdate();
+        }
     }
 }

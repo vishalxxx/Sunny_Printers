@@ -80,6 +80,29 @@
     -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.18), 14, 0.25, 0, 0);
 }
 
+.text-area {
+    -fx-background-color: #0b0b0c;
+    -fx-text-fill: #ffffff;
+    -fx-background-radius: 0.85em;
+    -fx-border-radius: 0.85em;
+    -fx-border-color: #3f3f46;
+    -fx-padding: 0.4em;
+    -fx-font-size: 0.95em;
+}
+
+.text-area .content {
+    -fx-background-color: transparent;
+}
+
+.text-area:focused {
+    -fx-border-color: #ffffff;
+    -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.18), 14, 0.25, 0, 0);
+}
+
+.text-area .text {
+    -fx-fill: #ffffff;
+}
+
 /* =========================================================
    COMBO BOX
    ========================================================= */

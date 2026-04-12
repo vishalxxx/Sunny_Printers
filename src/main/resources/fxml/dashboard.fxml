@@ -370,6 +370,16 @@
 										text="View Invoice Jobs" HBox.hgrow="ALWAYS" />
 								</children>
 							</HBox>
+							<HBox alignment="CENTER_LEFT" onMouseClicked="#loadCreditDebitNote" styleClass="nav-btn" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+								<children>
+								<ImageView fitHeight="20" fitWidth="20" preserveRatio="true">
+										<image>
+											<Image url="@../icons/add_bill.png" />
+										</image>
+									</ImageView>
+									<Label maxWidth="Infinity" styleClass="sidebar-text" text="Credit/Debit Note" HBox.hgrow="ALWAYS" />
+								</children>
+							</HBox>
 						</VBox>
 
 						<!-- ================= PAYMENTS SUBMENU ================= -->

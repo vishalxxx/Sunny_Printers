@@ -85,10 +85,13 @@ public class JobRepository {
     public Job findJobById(int jobId) {
 
         String sql = """
-                    SELECT id, job_no, client_id, job_title, job_date,
-                           status, remarks, created_at, updated_at, image_path
-                    FROM jobs
-                    WHERE id = ?
+                    SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
+                           j.status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
+                           (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
+                           (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
+                           (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
+                    FROM jobs j
+                    WHERE j.id = ?
                 """;
 
         try (Connection con = DBConnection.getConnection();
@@ -119,10 +122,13 @@ public class JobRepository {
         List<Job> list = new ArrayList<>();
 
         String sql = """
-                    SELECT id, job_no, client_id, job_title, job_date,
-                           status, remarks, created_at, updated_at, image_path
-                    FROM jobs
-                    ORDER BY DATE(job_date) DESC, id DESC
+                    SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
+                           j.status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
+                           (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
+                           (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
+                           (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
+                    FROM jobs j
+                    ORDER BY DATE(j.job_date) DESC, j.id DESC
                 """;
 
         try (Connection con = DBConnection.getConnection();
@@ -151,13 +157,16 @@ public class JobRepository {
         List<Job> list = new ArrayList<>();
 
         String sql = """
-                    SELECT id, job_no, client_id, job_title, job_date,
-                           status, remarks, created_at, updated_at, image_path
-                    FROM jobs
-                    WHERE LOWER(job_no) LIKE ?
-                       OR LOWER(job_title) LIKE ?
-                       OR LOWER(remarks) LIKE ?
-                    ORDER BY DATE(job_date) DESC, id DESC
+                    SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
+                           j.status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
+                           (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
+                           (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
+                           (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
+                    FROM jobs j
+                    WHERE LOWER(j.job_no) LIKE ?
+                       OR LOWER(j.job_title) LIKE ?
+                       OR LOWER(j.remarks) LIKE ?
+                    ORDER BY DATE(j.job_date) DESC, j.id DESC
                 """;
 
         try (Connection con = DBConnection.getConnection();
@@ -251,7 +260,25 @@ public class JobRepository {
         job.setUpdatedAt(rs.getString("updated_at"));
         
         try {
+            int invId = rs.getInt("invoice_id");
+            job.setInvoiceId(rs.wasNull() ? null : invId);
+        } catch (SQLException ignore) {}
+
+        try {
+            double total = rs.getDouble("job_total");
+            job.setJobTotal(rs.wasNull() ? null : total);
+        } catch (SQLException ignore) {}
+
+        try {
             job.setImagePath(rs.getString("image_path"));
+        } catch (SQLException ignore) {}
+
+        try {
+            job.setInvoiceNo(rs.getString("invoice_no"));
+        } catch (SQLException ignore) {}
+
+        try {
+            job.setInvoiceStatus(rs.getString("invoice_status"));
         } catch (SQLException ignore) {}
 
         return job;
@@ -262,11 +289,14 @@ public class JobRepository {
         List<Job> list = new ArrayList<>();
 
         String sql = """
-                    SELECT id, job_no, client_id, job_title, job_date,
-                           status, remarks, created_at, updated_at, image_path
-                    FROM jobs
-                    WHERE client_id = ?
-                    ORDER BY id DESC
+                    SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
+                           j.status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
+                           (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
+                           (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
+                           (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
+                    FROM jobs j
+                    WHERE j.client_id = ?
+                    ORDER BY j.id DESC
                 """;
 
         try (Connection con = DBConnection.getConnection();
@@ -276,27 +306,7 @@ public class JobRepository {
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-
-                Job job = new Job();
-                job.setId(rs.getInt("id"));
-                job.setJobNo(rs.getString("job_no"));
-
-                Integer cid = rs.getObject("client_id") != null
-                        ? rs.getInt("client_id")
-                        : null;
-                job.setClientId(cid);
-
-                job.setJobTitle(rs.getString("job_title"));
-
-                String jobDate = rs.getString("job_date");
-                job.setJobDate(jobDate != null ? LocalDate.parse(jobDate) : null);
-
-                job.setStatus(rs.getString("status"));
-                job.setRemarks(rs.getString("remarks"));
-                job.setCreatedAt(rs.getString("created_at"));
-                job.setUpdatedAt(rs.getString("updated_at"));
-
-                list.add(job);
+                list.add(mapRowToJob(rs));
             }
 
         } catch (Exception e) {
@@ -314,7 +324,7 @@ public class JobRepository {
         String sql = """
                     SELECT id, job_no, job_title, job_date
                     FROM jobs
-                    WHERE client_id = ? AND status IN ('Created', 'In Progress', 'Completed')
+                    WHERE client_id = ? AND status = 'Completed' AND invoice_id IS NULL
                     ORDER BY id DESC
                 """;
 
@@ -344,6 +354,34 @@ public class JobRepository {
         return list;
     }
 
+    public List<Job> findCompletedJobsByClientId(int clientId) {
+        List<Job> list = new ArrayList<>();
+        String sql = """
+                    SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
+                           j.status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
+                           (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
+                           (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
+                           (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
+                    FROM jobs j
+                    WHERE j.client_id = ? 
+                      AND (j.status = 'Completed' OR j.status = 'COMPLETED')
+                      AND j.invoice_id IS NULL
+                    ORDER BY j.id DESC
+                """;
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, clientId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapRowToJob(rs));
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch completed jobs for clientId=" + clientId, e);
+        }
+        return list;
+    }
+
     /*
      * =====================================================
      * DASHBOARD AGGREGATIONS
@@ -355,7 +393,7 @@ public class JobRepository {
         String sql = """
                     SELECT
                         j.job_no,
-                        c.name as client_name,
+                        COALESCE(c.business_name, c.client_name) as client_name,
                         j.job_title,
                         j.job_date,
                         j.status as workflow,
@@ -439,25 +477,25 @@ public class JobRepository {
 
         List<Job> list = new ArrayList<>();
 
-        if (inv == null || inv.getPeriodFrom() == null || inv.getPeriodTo() == null) {
+        if (inv == null) {
             return list;
         }
 
         String sql = """
-                    SELECT id, job_no, client_id, job_title, job_date,
-                           status, remarks, created_at, updated_at, image_path
-                    FROM jobs
-                    WHERE client_id = ?
-                      AND DATE(job_date) BETWEEN ? AND ?
-                    ORDER BY DATE(job_date) ASC, id ASC
+                    SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
+                           j.status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
+                           (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
+                           (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
+                           (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
+                    FROM jobs j
+                    WHERE j.invoice_id = ?
+                    ORDER BY DATE(j.job_date) ASC, j.id ASC
                 """;
 
         try (Connection con = DBConnection.getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
 
-            ps.setInt(1, inv.getClientId());
-            ps.setString(2, inv.getPeriodFrom().toString());
-            ps.setString(3, inv.getPeriodTo().toString());
+            ps.setInt(1, inv.getId());
             
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {

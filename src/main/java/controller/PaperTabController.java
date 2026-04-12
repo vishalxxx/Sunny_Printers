@@ -158,6 +158,7 @@ public class PaperTabController {
 				deleteBtn.setVisible(false);
 				deleteBtn.setManaged(false);
 			}
+            applyInvoicedState(newItem == null);
 		});
 
 		/* ===== Click same row again → deselect ===== */
@@ -274,7 +275,32 @@ public class PaperTabController {
 
 		updateFooter();
 		clearEditor();
+        applyInvoicedState(true);
 	}
+
+    private void applyInvoicedState(boolean isNewSelection) {
+        boolean isJobStatusInvoiced = currentJob != null && "invoiced".equalsIgnoreCase(currentJob.getStatus());
+        String invStatus = (currentJob != null && currentJob.getInvoiceStatus() != null) ? currentJob.getInvoiceStatus().trim().toLowerCase() : "";
+        boolean isLocked = isJobStatusInvoiced && !(invStatus.equals("draft") || invStatus.equals("final"));
+
+        qtyField.setDisable(isLocked);
+        unitsField.setDisable(isLocked);
+        sizeField.setDisable(isLocked);
+        gsmField.setDisable(isLocked);
+        typeField.setDisable(isLocked);
+        amountField.setDisable(isLocked);
+        ourRadio.setDisable(isLocked);
+        clientRadio.setDisable(isLocked);
+        notesField.setDisable(isLocked);
+        
+        if (isLocked) {
+            addUpdateBtn.setDisable(true);
+            deleteBtn.setVisible(false);
+        } else {
+            // Normal behavior: only enable Add/Update if editor changed (handled by listener)
+            // or if it is a new selection
+        }
+    }
 
 	/*
 	 * ========================= EDITOR LOAD =========================
@@ -466,4 +492,9 @@ public class PaperTabController {
 		loadForJob(currentJob); // 🔥 reload from DB
 	}
 
+    public void commitEditor() {
+        if (selectedItem != null && isEditorChanged()) {
+            handleAddOrUpdate();
+        }
+    }
 }

@@ -36,7 +36,7 @@ public class SettingsService {
 
         return String.format(
                 "%s%0" + s.getInvoicePadding() + "d",
-                s.getInvoicePrefix(),
+                (s.getInvoicePrefix() != null ? s.getInvoicePrefix() : ""),
                 nextNumber
         );
     }
@@ -67,7 +67,7 @@ public class SettingsService {
 
             numbers[i] = String.format(
                     "%s%0" + s.getInvoicePadding() + "d",
-                    s.getInvoicePrefix(),
+                    (s.getInvoicePrefix() != null ? s.getInvoicePrefix() : ""),
                     current
             );
         }
@@ -76,6 +76,31 @@ public class SettingsService {
         s.setLastInvoiceNo(current);
         repo.save(con, s);
 
+        return numbers;
+    }
+
+    // =========================================================
+    // TEMP NUMBERS
+    // =========================================================
+    public synchronized String generateNextTempInvoiceNumber(Connection con) throws Exception {
+        SystemSettings s = repo.load(con);
+        int next = s.getLastTempInvoiceNo() + 1;
+        s.setLastTempInvoiceNo(next);
+        repo.save(con, s);
+        return String.format("TEMP-%03d", next);
+    }
+
+    public synchronized String[] generateNextTempInvoiceNumbers(Connection con, int count) throws Exception {
+        if (count <= 0) return new String[0];
+        SystemSettings s = repo.load(con);
+        String[] numbers = new String[count];
+        int current = s.getLastTempInvoiceNo();
+        for (int i = 0; i < count; i++) {
+            current++;
+            numbers[i] = String.format("TEMP-%03d", current);
+        }
+        s.setLastTempInvoiceNo(current);
+        repo.save(con, s);
         return numbers;
     }
 }

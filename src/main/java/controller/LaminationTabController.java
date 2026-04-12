@@ -88,6 +88,7 @@ public class LaminationTabController {
                 deleteBtn.setVisible(false);
                 deleteBtn.setManaged(false);
             }
+            applyInvoicedState(n == null);
         });
 
         /* ===== Row click toggle ===== */
@@ -171,6 +172,28 @@ public class LaminationTabController {
         itemCount.setText(String.valueOf(count));
         totalAmount.setText("₹ " + String.format("%.2f", total));
         clearEditor();
+        applyInvoicedState(true);
+    }
+
+    private void applyInvoicedState(boolean isNewSelection) {
+        boolean isJobStatusInvoiced = currentJob != null && "invoiced".equalsIgnoreCase(currentJob.getStatus());
+        String invStatus = (currentJob != null && currentJob.getInvoiceStatus() != null) ? currentJob.getInvoiceStatus().trim().toLowerCase() : "";
+        boolean isLocked = isJobStatusInvoiced && !(invStatus.equals("draft") || invStatus.equals("final"));
+
+        qtyField.setDisable(isLocked);
+        unitField.setDisable(isLocked);
+        typeField.setDisable(isLocked);
+        sideField.setDisable(isLocked);
+        sizeField.setDisable(isLocked);
+        amountField.setDisable(isLocked);
+        notesField.setDisable(isLocked);
+        
+        if (isLocked) {
+            addUpdateBtn.setDisable(true);
+            deleteBtn.setVisible(false);
+        } else {
+            notesField.setDisable(false);
+        }
     }
 
     /* ================= ADD / UPDATE ================= */
@@ -265,5 +288,11 @@ public class LaminationTabController {
 
     public ObservableList<Lamination> getItems() {
         return laminationTable.getItems();
+    }
+
+    public void commitEditor() {
+        if (selectedItem != null && isEditorChanged()) {
+            handleAddOrUpdate();
+        }
     }
 }

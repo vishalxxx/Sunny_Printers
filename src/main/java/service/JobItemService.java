@@ -221,10 +221,11 @@ public class JobItemService {
        DESCRIPTION BUILDERS
        ===================================================== */
 
-    private String buildPrintingDescription(Printing p) {
+    public String buildPrintingDescription(Printing p) {
         StringBuilder sb = new StringBuilder("Printing ");
         if (p.getQty() > 0) sb.append(p.getQty()).append(" ");
         if (p.getUnits() != null) sb.append(p.getUnits()).append(" ");
+        if (p.getSets() != null && !p.getSets().isBlank()) sb.append("[").append(p.getSets()).append(" Sets] ");
         if (p.getColor() != null) sb.append(p.getColor()).append(" ");
         if (p.isWithCtp()) sb.append("with CTP ");
         if (p.getNotes() != null && !p.getNotes().isBlank())
@@ -232,7 +233,7 @@ public class JobItemService {
         return sb.toString().trim();
     }
 
-    private String buildPaperDescription(Paper p) {
+    public String buildPaperDescription(Paper p) {
         StringBuilder sb = new StringBuilder("Paper ");
         if (p.getQty() > 0) sb.append(p.getQty()).append(" ");
         if (p.getUnits() != null) sb.append(p.getUnits()).append(" ");
@@ -245,7 +246,7 @@ public class JobItemService {
         return sb.toString().trim();
     }
 
-    private String buildBindingDescription(Binding b) {
+    public String buildBindingDescription(Binding b) {
         StringBuilder sb = new StringBuilder("Binding ");
         if (b.getQty() > 0) sb.append(b.getQty()).append(" ");
         if (b.getProcess() != null) sb.append(b.getProcess()).append(" ");
@@ -255,7 +256,7 @@ public class JobItemService {
         return sb.toString().trim();
     }
 
-    private String buildLaminationDescription(Lamination l) {
+    public String buildLaminationDescription(Lamination l) {
         StringBuilder sb = new StringBuilder("Lamination ");
         if (l.getQty() > 0) sb.append(l.getQty()).append(" ");
         if (l.getUnit() != null) sb.append(l.getUnit()).append(" ");
@@ -267,7 +268,7 @@ public class JobItemService {
         return sb.toString().trim();
     }
 
-    private String buildCtpDescription(CtpPlate ctp) {
+    public String buildCtpDescription(CtpPlate ctp) {
         StringBuilder sb = new StringBuilder("CTP Plate ");
         sb.append(ctp.getQty()).append(" pcs ");
         if (ctp.getPlateSize() != null) sb.append(ctp.getPlateSize()).append(" ");

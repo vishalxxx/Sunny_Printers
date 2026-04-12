@@ -133,6 +133,7 @@ public class CtpTabController {
                 deleteBtn.setVisible(false);
                 deleteBtn.setManaged(false);
             }
+            applyInvoicedState(n == null);
         });
 
         /* ================= CLICK AGAIN = DESELECT ================= */
@@ -199,6 +200,27 @@ public class CtpTabController {
         }
 
         clearEditor();
+        applyInvoicedState(true);
+    }
+
+    private void applyInvoicedState(boolean isNewSelection) {
+        boolean isJobStatusInvoiced = currentJob != null && "invoiced".equalsIgnoreCase(currentJob.getStatus());
+        String invStatus = (currentJob != null && currentJob.getInvoiceStatus() != null) ? currentJob.getInvoiceStatus().trim().toLowerCase() : "";
+        boolean isLocked = isJobStatusInvoiced && !(invStatus.equals("draft") || invStatus.equals("final"));
+
+        qtyField.setDisable(isLocked);
+        supplierField.setDisable(isLocked);
+        plateSizeField.setDisable(isLocked);
+        gaugeField.setDisable(isLocked);
+        backingField.setDisable(isLocked);
+        colorField.setDisable(isLocked);
+        amountField.setDisable(isLocked);
+        notesField.setDisable(isLocked);
+        
+        if (isLocked) {
+           addUpdateBtn.setDisable(true);
+           deleteBtn.setVisible(false);
+        }
     }
 
     /* ================= ADD / UPDATE ================= */
@@ -319,5 +341,11 @@ public class CtpTabController {
 
     public ObservableList<CtpPlate> getItems() {
         return ctpTable.getItems();
+    }
+
+    public void commitEditor() {
+        if (selectedItem != null && isEditorChanged()) {
+            handleAddOrUpdate();
+        }
     }
 }

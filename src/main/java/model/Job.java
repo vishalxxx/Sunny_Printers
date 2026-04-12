@@ -14,6 +14,9 @@ public class Job {
     private String status;
     private String remarks;
 
+    private Integer invoiceId;
+    private Double jobTotal;
+
     private String createdAt;
     private String updatedAt;
     private String imagePath;
@@ -41,6 +44,12 @@ public class Job {
     public String getRemarks() { return remarks; }
     public void setRemarks(String remarks) { this.remarks = remarks; }
 
+    public Integer getInvoiceId() { return invoiceId; }
+    public void setInvoiceId(Integer invoiceId) { this.invoiceId = invoiceId; }
+
+    public Double getJobTotal() { return jobTotal; }
+    public void setJobTotal(Double jobTotal) { this.jobTotal = jobTotal; }
+
     public String getCreatedAt() { return createdAt; }
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
 
@@ -49,4 +58,12 @@ public class Job {
 
     public String getImagePath() { return imagePath; }
     public void setImagePath(String imagePath) { this.imagePath = imagePath; }
+
+    private String invoiceNo;
+    public String getInvoiceNo() { return invoiceNo; }
+    public void setInvoiceNo(String invoiceNo) { this.invoiceNo = invoiceNo; }
+
+    private String invoiceStatus;
+    public String getInvoiceStatus() { return invoiceStatus; }
+    public void setInvoiceStatus(String invoiceStatus) { this.invoiceStatus = invoiceStatus; }
 }

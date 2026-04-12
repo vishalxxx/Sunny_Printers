@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<ScrollPane xmlns="http://javafx.com/javafx/25"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="controller.CreditDebitNoteController"
+            stylesheets="@../css/invoice_genration.css"
+            fitToWidth="true" fitToHeight="true">
+
+<VBox xmlns="http://javafx.com/javafx/23"
+      xmlns:fx="http://javafx.com/fxml/1"
+      spacing="24"
+      styleClass="invoice-page"
+      fillWidth="true">
+
+    <padding>
+        <Insets top="28" right="28" bottom="28" left="28"/>
+    </padding>
+
+    <!-- HEADER -->
+    <HBox alignment="CENTER_LEFT" spacing="20" maxWidth="Infinity">
+        <VBox spacing="6">
+            <Label text="Credit / Debit Note" style="-fx-font-size: 1.8em; -fx-font-weight: 800; -fx-text-fill: white;"/>
+            <Label text="Generate a credit or debit note for a client." styleClass="page-subtitle"/>
+        </VBox>
+    </HBox>
+
+    <!-- CENTERED CONTAINER FOR THE FORM CARD -->
+    <StackPane VBox.vgrow="ALWAYS">
+    <!-- FORM CARD -->
+    <VBox spacing="18" styleClass="card" maxWidth="800" alignment="CENTER_LEFT">
+
+        <HBox spacing="16">
+            <VBox spacing="6" HBox.hgrow="ALWAYS" prefWidth="200" minWidth="50">
+                <Label text="Note Type" styleClass="field-label"/>
+                <ComboBox fx:id="noteTypeComboBox"
+                          promptText="Select Type..."
+                          minWidth="50" prefWidth="200"
+                          maxWidth="Infinity"/>
+            </VBox>
+
+            <VBox spacing="6" HBox.hgrow="ALWAYS" prefWidth="200" minWidth="50">
+                <Label text="Select Client" styleClass="field-label"/>
+                <ComboBox fx:id="clientComboBox"
+                          promptText="Select a client..."
+                          minWidth="50" prefWidth="200"
+                          maxWidth="Infinity"/>
+            </VBox>
+        </HBox>
+        
+        <HBox spacing="16">
+            <VBox spacing="6" HBox.hgrow="ALWAYS" prefWidth="200" minWidth="50">
+                <Label text="Select Invoice" styleClass="field-label"/>
+                <ComboBox fx:id="invoiceComboBox"
+                          promptText="Select an invoice..."
+                          minWidth="50" prefWidth="200"
+                          maxWidth="Infinity"/>
+            </VBox>
+
+            <VBox spacing="6" HBox.hgrow="ALWAYS" prefWidth="200" minWidth="50">
+                <Label text="Date" styleClass="field-label"/>
+                <DatePicker fx:id="datePicker"
+                            promptText="Select Date"
+                            minWidth="50" prefWidth="200"
+                            maxWidth="Infinity"/>
+            </VBox>
+        </HBox>
+
+        <VBox spacing="6">
+            <Label text="Amount" styleClass="field-label"/>
+            <TextField fx:id="amountField" promptText="Enter amount" styleClass="text-field" />
+        </VBox>
+
+        <VBox spacing="6">
+            <Label text="Reason / Remarks" styleClass="field-label"/>
+            <TextArea fx:id="reasonField" prefRowCount="3" promptText="Enter reason..." styleClass="text-area" />
+        </VBox>
+
+        <Region VBox.vgrow="ALWAYS" prefHeight="10"/>
+
+        <Button text="Save Note" 
+                maxWidth="Infinity" 
+                styleClass="btn-primary" 
+                onAction="#handleSaveNote">
+            <graphic>
+                <Label text="✔" style="-fx-text-fill: white; -fx-font-size: 1.05em; -fx-font-weight: 900;"/>
+            </graphic>
+        </Button>
+    </VBox>
+    </StackPane>
+
+</VBox>
+</ScrollPane>

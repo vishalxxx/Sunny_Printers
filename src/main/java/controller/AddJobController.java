@@ -12,6 +12,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.ToggleGroup;
@@ -35,6 +36,8 @@ import service.JobService;
 import service.SupplierService;
 import utils.Toast;
 
+import java.util.List;
+
 public class AddJobController {
 
 	private Runnable onJobItemAdded;
@@ -43,7 +46,55 @@ public class AddJobController {
 		this.onJobItemAdded = r;
 	}
 
+	private int itemCount = 0;
+
+	private void updateItemCount() {
+		if (currentJob != null && currentJob.getId() > 0) {
+			List<?> items = new JobItemService().getJobItems(currentJob.getId());
+			itemCount = (items != null) ? items.size() : 0;
+		} else {
+			itemCount = 0;
+		}
+	}
+
 	/* ========================= STATE ========================= */
+
+	private void setupJobDatePicker(DatePicker dp) {
+
+		dp.setEditable(false);
+
+		// ✅ Disable future dates
+		dp.setDayCellFactory(picker -> new javafx.scene.control.DateCell() {
+			@Override
+			public void updateItem(java.time.LocalDate date, boolean empty) {
+				super.updateItem(date, empty);
+
+				if (empty || date == null) return;
+
+				if (date.isAfter(java.time.LocalDate.now())) {
+					setDisable(true);
+					setStyle("-fx-opacity: 0.35;");
+				}
+			}
+		});
+
+		// ✅ extra safety
+		dp.valueProperty().addListener((obs, oldVal, newVal) -> {
+			if (newVal != null && newVal.isAfter(java.time.LocalDate.now())) {
+				dp.setValue(oldVal);
+				System.out.println("Future dates not allowed ❌");
+			}
+		});
+
+		// ✅ Auto open on click
+		dp.addEventFilter(javafx.scene.input.MouseEvent.MOUSE_PRESSED, e -> {
+			if (!dp.isShowing()) dp.show();
+		});
+
+		dp.focusedProperty().addListener((obs, oldV, newV) -> {
+			if (newV && !dp.isShowing()) dp.show();
+		});
+	}
 
 	private Job currentJob;
 
@@ -58,6 +109,9 @@ public class AddJobController {
 
 	@FXML
 	private TextField jobName;
+
+	@FXML
+	private DatePicker jobDate;
 
 	@FXML
 	private ComboBox<Client> clientCombo;
@@ -242,6 +296,9 @@ public class AddJobController {
 			addBindingBtn.setDisable(!isBindingValid());
 			addLaminationBtn.setDisable(!isLaminationValid());
 		}
+
+		// ✅ disable Add Job button until at least 1 item is added
+		addJobBtn.setDisable(!allowCards || itemCount == 0);
 	}
 
 	/* ========================= JOB FLOW ========================= */
@@ -261,8 +318,10 @@ public class AddJobController {
 		selectedClient = null;
 
 		jobName.clear();
+		jobDate.setValue(java.time.LocalDate.now());
 		clientCombo.getSelectionModel().clearSelection();
 
+		updateItemCount();
 		updateFormState();
 
 		System.out.println("✅ New draft created: " + currentJob.getJobNo());
@@ -286,8 +345,21 @@ public class AddJobController {
 		preloadClientIntoCombo();
 
 		jobName.setText(currentJob.getJobTitle());
+		if (currentJob.getJobDate() != null) {
+			jobDate.setValue(currentJob.getJobDate());
+		} else {
+			jobDate.setValue(java.time.LocalDate.now());
+		}
 
+		updateItemCount();
 		updateFormState();
+
+		if (currentJob.getImagePath() != null && !currentJob.getImagePath().isBlank()) {
+			java.io.File f = new java.io.File(currentJob.getImagePath());
+			if (f.exists()) {
+				showImagePreview(f);
+			}
+		}
 
 		System.out.println("✏ Resumed draft: " + currentJob.getJobNo());
 	}
@@ -403,14 +475,21 @@ public class AddJobController {
 			return;
 		}
 
+		java.time.LocalDate date = jobDate.getValue();
+		if (date == null) {
+			toast("Please Select Job Date..");
+			return;
+		}
+
 		String title = jobName.getText().trim();
 
 		// ✅ 1) set in currentJob object
 		currentJob.setJobTitle(title);
+		currentJob.setJobDate(date);
 
 		// ✅ 2) save into database (important)
 		JobService js = new JobService();
-		js.updateJobName(currentJob.getId(), title);
+		js.updateJobDetails(currentJob.getId(), title, date);
 
 		// ✅ 3) set status to Created
 		js.updateJobStatus(currentJob.getId(), "Created");
@@ -433,6 +512,7 @@ public class AddJobController {
 				currentJob.setImagePath(relativePath);
 			} catch (Exception e) {
 				System.err.println("Failed to copy image: " + e.getMessage());
+				e.printStackTrace();
 			}
 		}
 
@@ -481,18 +561,24 @@ public class AddJobController {
 			return;
 		}
 
-		JobItemService js = new JobItemService();
-		js.addJobItem(currentJob.getId(), p);
+		try {
+			JobItemService js = new JobItemService();
+			js.addJobItem(currentJob.getId(), p);
 
-		toast("Printing Added ✅");
-		clearPrintingFields();
-		updateFormState();
+			toast("Printing Added ✅");
+			clearPrintingFields();
+			updateItemCount();
+			updateFormState();
+		} catch (Exception e) {
+			toast("Failed to add Printing: " + e.getMessage() + " ❌");
+			e.printStackTrace();
+		}
 	}
 
 	private void clearPrintingFields() {
 		printQtyField.clear();
 		printUnitsCombo.setValue(null);
-		printSetField.setText(null);
+		printSetField.clear();
 		printColorCombo.setValue(null);
 		printSideCombo.setValue(null);
 		printCtpCombo.setValue(null);
@@ -538,21 +624,27 @@ public class AddJobController {
 			return;
 		}
 
-		JobItemService js = new JobItemService();
-		js.addJobItem(currentJob.getId(), c);
+		try {
+			JobItemService js = new JobItemService();
+			js.addJobItem(currentJob.getId(), c);
 
-		toast("CTP Plate Added ✅");
-		clearCtpFields();
-		updateFormState();
+			toast("CTP Plate Added ✅");
+			clearCtpFields();
+			updateItemCount();
+			updateFormState();
+		} catch (Exception e) {
+			toast("Failed to add CTP: " + e.getMessage() + " ❌");
+			e.printStackTrace();
+		}
 	}
 
 	private void clearCtpFields() {
-		ctpQtyField.setText(null);
+		ctpQtyField.clear();
 		ctpSizeCombo.setValue(null);
+		ctpColorCombo.setValue(null);
 		ctpGaugeCombo.setValue(null);
 		ctpBackingCombo.setValue(null);
 		ctpSupplierCombo.setValue(null);
-
 		ctpNotesArea.clear();
 		ctpAmountField.clear();
 	}
@@ -594,12 +686,18 @@ public class AddJobController {
 			return;
 		}
 
-		JobItemService js = new JobItemService();
-		js.addJobItem(currentJob.getId(), p);
+		try {
+			JobItemService js = new JobItemService();
+			js.addJobItem(currentJob.getId(), p);
 
-		toast("Paper Added ✅");
-		clearPaperFields();
-		updateFormState();
+			toast("Paper Added ✅");
+			clearPaperFields();
+			updateItemCount();
+			updateFormState();
+		} catch (Exception e) {
+			toast("Failed to add Paper: " + e.getMessage() + " ❌");
+			e.printStackTrace();
+		}
 	}
 
 	private void clearPaperFields() {
@@ -650,12 +748,18 @@ public class AddJobController {
 			return;
 		}
 
-		JobItemService js = new JobItemService();
-		js.addJobItem(currentJob.getId(), b);
+		try {
+			JobItemService js = new JobItemService();
+			js.addJobItem(currentJob.getId(), b);
 
-		toast("Binding Added ✅");
-		clearBindingFields();
-		updateFormState();
+			toast("Binding Added ✅");
+			clearBindingFields();
+			updateItemCount();
+			updateFormState();
+		} catch (Exception e) {
+			toast("Failed to add Binding: " + e.getMessage() + " ❌");
+			e.printStackTrace();
+		}
 	}
 
 	private void clearBindingFields() {
@@ -698,12 +802,18 @@ public class AddJobController {
 			return;
 		}
 
-		JobItemService js = new JobItemService();
-		js.addJobItem(currentJob.getId(), l);
+		try {
+			JobItemService js = new JobItemService();
+			js.addJobItem(currentJob.getId(), l);
 
-		toast("Lamination Added ✅");
-		clearLaminationFields();
-		updateFormState();
+			toast("Lamination Added ✅");
+			clearLaminationFields();
+			updateItemCount();
+			updateFormState();
+		} catch (Exception e) {
+			toast("Failed to add Lamination: " + e.getMessage() + " ❌");
+			e.printStackTrace();
+		}
 	}
 
 	private void clearLaminationFields() {
@@ -731,12 +841,7 @@ public class AddJobController {
 	/* ========================= PRINTING VALIDATION ========================= */
 
 	private boolean isPrintingValid() {
-		boolean fullEntry = notEmpty(printQtyField.getText()) && printUnitsCombo.getValue() != null
-				&& notEmpty(printSetField.getText()) && notEmpty(printAmountField.getText());
-
-		boolean notesEntry = notEmpty(printNotesArea.getText()) && notEmpty(printAmountField.getText());
-
-		return fullEntry || notesEntry;
+		return notEmpty(printAmountField.getText());
 	}
 
 	private void setupPrintingValidation() {
@@ -754,12 +859,7 @@ public class AddJobController {
 	/* ========================= CTP VALIDATION ========================= */
 
 	private boolean isCtpValid() {
-		boolean fullEntry = notEmpty(ctpQtyField.getText()) && ctpSizeCombo.getValue() != null
-				&& notEmpty(ctpAmountField.getText()) && ctpSupplierCombo.getValue() != null;
-
-		boolean notesEntry = notEmpty(ctpNotesArea.getText()) && notEmpty(ctpAmountField.getText());
-
-		return fullEntry || notesEntry;
+		return notEmpty(ctpAmountField.getText());
 	}
 
 	private void setupCtpValidation() {
@@ -777,12 +877,7 @@ public class AddJobController {
 	/* ========================= PAPER VALIDATION ========================= */
 
 	private boolean isPaperValid() {
-		boolean fullEntry = notEmpty(paperQtyField.getText()) && paperUnitsCombo.getValue() != null
-				&& paperSizeCombo.getValue() != null && notEmpty(paperAmountField.getText());
-
-		boolean notesEntry = notEmpty(paperNotesArea.getText()) && notEmpty(paperAmountField.getText());
-
-		return fullEntry || notesEntry;
+		return notEmpty(paperAmountField.getText());
 	}
 
 	private void setupPaperValidation() {
@@ -800,12 +895,7 @@ public class AddJobController {
 	/* ========================= BINDING VALIDATION ========================= */
 
 	private boolean isBindingValid() {
-		boolean fullEntry = bindingProcessCombo.getValue() != null && notEmpty(bindingQtyField.getText())
-				&& notEmpty(bindingRateField.getText()) && notEmpty(bindingAmountField.getText());
-
-		boolean notesEntry = notEmpty(bindingNotesArea.getText()) && notEmpty(bindingAmountField.getText());
-
-		return fullEntry || notesEntry;
+		return notEmpty(bindingAmountField.getText());
 	}
 
 	private void setupBindingValidation() {
@@ -823,12 +913,7 @@ public class AddJobController {
 	/* ========================= LAMINATION VALIDATION ========================= */
 
 	private boolean isLaminationValid() {
-		boolean fullEntry = notEmpty(lamQtyField.getText()) && lamUnitCombo.getValue() != null
-				&& lamTypeCombo.getValue() != null && notEmpty(lamAmountField.getText());
-
-		boolean notesEntry = notEmpty(lamNotesArea.getText()) && notEmpty(lamAmountField.getText());
-
-		return fullEntry || notesEntry;
+		return notEmpty(lamAmountField.getText());
 	}
 
 	private void setupLaminationValidation() {
@@ -847,6 +932,7 @@ public class AddJobController {
 
 	@FXML
 	public void initialize() {
+		setupJobDatePicker(jobDate);
 
 		filteredClients.setPredicate(c -> true);
 

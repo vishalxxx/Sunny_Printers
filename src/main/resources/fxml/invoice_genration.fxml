@@ -81,6 +81,13 @@
                                 maxWidth="Infinity"/>
                 </VBox>
             </HBox>
+            
+            <VBox spacing="6">
+                <Label text="Invoice Date" styleClass="field-label"/>
+                <DatePicker fx:id="dateRangeInvoiceDate"
+                            promptText="Today"
+                            maxWidth="Infinity"/>
+            </VBox>
 
             <Region VBox.vgrow="ALWAYS"/>
 
@@ -88,7 +95,7 @@
                     maxWidth="Infinity"
                     onMouseClicked="#onGenerateDateInvoiceClicked"
                     styleClass="btn-primary"
-                    text="Generate Invoice">
+                    text="Generate Draft invoice">
                 <graphic>
                     <Label text="➤"
                            style="-fx-text-fill: white; -fx-font-size: 1.05em; -fx-font-weight: 900;"/>
@@ -124,6 +131,13 @@
                           maxWidth="Infinity"
                           HBox.hgrow="ALWAYS"/>
             </HBox>
+            
+            <VBox spacing="6">
+                <Label text="Invoice Date" styleClass="field-label"/>
+                <DatePicker fx:id="monthlyInvoiceDate"
+                            promptText="End of Selected Month"
+                            maxWidth="Infinity"/>
+            </VBox>
 
             <CheckBox fx:id="autoEmailCheck"
                       text="Auto-email invoices to clients"/>
@@ -131,7 +145,7 @@
             <Region VBox.vgrow="ALWAYS"/>
 
             <Button fx:id="runBatchBtn"
-                    text="Run Batch Process"
+                    text="Run batch process"
                     maxWidth="Infinity"
                     onMouseClicked="#onRunMonthlyBulkClicked"
                     styleClass="btn-purple"/>
@@ -177,12 +191,19 @@
                               maxWidth="Infinity"/>
                 </ScrollPane>
             </VBox>
+            
+            <VBox spacing="6">
+                <Label text="Invoice Date" styleClass="field-label"/>
+                <DatePicker fx:id="jobInvoiceDate"
+                            promptText="Today"
+                            maxWidth="Infinity"/>
+            </VBox>
 
             <Button fx:id="createJobInvoiceBtn"
                     maxWidth="Infinity"
                     onMouseClicked="#onCreateJobInvoiceClicked"
                     styleClass="btn-green"
-                    text="Create Job Invoice">
+                    text="Create Draft Invoice">
                 <graphic>
                     <Label text="🧾"
                            style="-fx-text-fill: white; -fx-font-size: 1.05em; -fx-font-weight: 900;"/>
@@ -192,8 +213,8 @@
 
     </GridPane>
 
-    <!-- SAVE LOCATION -->
-    <HBox spacing="14" alignment="CENTER_LEFT" styleClass="save-bar">
+    <!-- SAVE LOCATION (Hidden for Draft-only) -->
+    <HBox spacing="14" alignment="CENTER_LEFT" styleClass="save-bar" visible="false" managed="false">
         <Label text="SAVE LOCATION:" styleClass="save-label"/>
 
         <TextField fx:id="savePathField"

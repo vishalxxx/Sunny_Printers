@@ -8,7 +8,12 @@ public class SystemSettings {
     private int invoiceStartNo;
     private int invoicePadding;
     private int lastInvoiceNo;
+    
+    private String jobPrefix;
+    private int jobStartNo;
+    private int jobPadding;
     private int lastJobNo;
+    private int lastTempInvoiceNo;
 
     // ================= BUSINESS HELPERS =================
     public boolean isAuto() {
@@ -66,5 +71,37 @@ public class SystemSettings {
 
     public void setLastJobNo(int lastJobNo) {
         this.lastJobNo = lastJobNo;
+    }
+
+    public String getJobPrefix() {
+        return jobPrefix;
+    }
+
+    public void setJobPrefix(String jobPrefix) {
+        this.jobPrefix = jobPrefix;
+    }
+
+    public int getJobStartNo() {
+        return jobStartNo;
+    }
+
+    public void setJobStartNo(int jobStartNo) {
+        this.jobStartNo = jobStartNo;
+    }
+
+    public int getJobPadding() {
+        return jobPadding;
+    }
+
+    public void setJobPadding(int jobPadding) {
+        this.jobPadding = jobPadding;
+    }
+
+    public int getLastTempInvoiceNo() {
+        return lastTempInvoiceNo;
+    }
+
+    public void setLastTempInvoiceNo(int lastTempInvoiceNo) {
+        this.lastTempInvoiceNo = lastTempInvoiceNo;
     }
 }

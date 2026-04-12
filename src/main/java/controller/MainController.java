@@ -42,6 +42,16 @@ public class MainController implements Initializable {
 	private Timeline anim;
 
 	Job currentJob = new Job();
+	private int currentLoadTaskId = 0;
+
+	private Integer pendingInvoicingClientId;
+	private Integer pendingInvoicingJobId;
+
+	public void loadInvoiceWithJob(int clientId, int jobId) {
+		this.pendingInvoicingClientId = clientId;
+		this.pendingInvoicingJobId = jobId;
+		loadInvoiceGenration();
+	}
 	// Center content container
 
 	public void goDashboard() {
@@ -269,8 +279,9 @@ public class MainController implements Initializable {
 	private String lastValidTitle = "Dashboard";
 
 	private void loadCenterScreen(String fxmlPath, String loaderTitle, String loaderSubtitle, boolean pushToHistory) {
+		final int taskId = ++currentLoadTaskId;
 		System.out.println(
-				"DEBUG: loadCenterScreen called with path: " + fxmlPath + " | pushToHistory: " + pushToHistory);
+				"DEBUG: loadCenterScreen called with path: " + fxmlPath + " | taskId: " + taskId + " | pushToHistory: " + pushToHistory);
 		if (pushToHistory) {
 			String sidebarId = (currentSidebar != null) ? currentSidebar.getId() : null;
 			System.out.println(
@@ -308,6 +319,10 @@ public class MainController implements Initializable {
 				Job finalDraftJob = draftJob;
 
 				Platform.runLater(() -> {
+					if (taskId != currentLoadTaskId) {
+						System.out.println("DEBUG: Ignoring superseded load for taskId: " + taskId);
+						return;
+					}
 
 					// 🔒 Store the fully compiled Parent view into the NavigationManager history
 					// map!
@@ -325,6 +340,14 @@ public class MainController implements Initializable {
 						} else {
 							// 🆕 Create new draft
 							addJobController.startNewJob();
+						}
+					}
+
+					if (controller instanceof InvoiceGenerationController invController) {
+						if (pendingInvoicingClientId != null && pendingInvoicingJobId != null) {
+							invController.preSelectJob(pendingInvoicingClientId, pendingInvoicingJobId);
+							pendingInvoicingClientId = null;
+							pendingInvoicingJobId = null;
 						}
 					}
 
@@ -493,6 +516,7 @@ public class MainController implements Initializable {
 	@FXML
 	public void handleBack(MouseEvent event) {
 		if (utils.NavigationManager.getInstance().hasHistory()) {
+			currentLoadTaskId++; // Cancel any pending background loads
 			utils.NavigationManager.NavState prevState = utils.NavigationManager.getInstance().pop();
 			if (prevState != null) {
 				VBox restoredSidebar = findSidebarById(prevState.getActiveSidebarId());
@@ -574,9 +598,20 @@ public class MainController implements Initializable {
 
 	@FXML
 	public void loadViewBills(MouseEvent event) {
+		switchToInvoices();
+	}
+
+	public void switchToInvoices() {
 		loadCenterScreen("/fxml/view_invoices.fxml",
 				"Loading Invoices...",
 				"Fetching billing records...");
+	}
+
+	@FXML
+	public void loadCreditDebitNote(MouseEvent event) {
+		loadCenterScreen("/fxml/credit_debit_note.fxml",
+				"Loading Note...",
+				"Please wait");
 	}
 
 	@FXML

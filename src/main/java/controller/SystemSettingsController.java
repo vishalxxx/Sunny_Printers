@@ -25,6 +25,13 @@ public class SystemSettingsController implements Initializable {
 @FXML private Label previewBadge;
 @FXML private Label sequencePreview;
 
+@FXML private TextField jobPrefixField;
+@FXML private TextField jobStartField;
+@FXML private ComboBox<Integer> jobPaddingCombo;
+
+@FXML private Label jobPreviewBadge;
+@FXML private Label jobSequencePreview;
+
 @FXML private Button saveBtn;
 @FXML private Button resetBtn;
 
@@ -43,6 +50,12 @@ public void initialize(URL location, ResourceBundle resources) {
     prefixField.textProperty().addListener((obs, oldV, newV) -> updatePreview());
     startField.textProperty().addListener((obs, oldV, newV) -> updatePreview());
     paddingCombo.valueProperty().addListener((obs, oldV, newV) -> updatePreview());
+    
+    jobPaddingCombo.setItems(FXCollections.observableArrayList(1, 2, 3, 4, 5, 6));
+
+    jobPrefixField.textProperty().addListener((obs, oldV, newV) -> updateJobPreview());
+    jobStartField.textProperty().addListener((obs, oldV, newV) -> updateJobPreview());
+    jobPaddingCombo.valueProperty().addListener((obs, oldV, newV) -> updateJobPreview());
 
     saveBtn.setOnAction(e -> save());
     resetBtn.setOnAction(e -> reset());
@@ -62,7 +75,13 @@ private void loadSettings() {
         prefixField.setText(settings.getInvoicePrefix());
         startField.setText(String.valueOf(settings.getInvoiceStartNo()));
         paddingCombo.setValue(settings.getInvoicePadding());
+        
+        jobPrefixField.setText(settings.getJobPrefix() != null ? settings.getJobPrefix() : "SUN-");
+        jobStartField.setText(String.valueOf(settings.getJobStartNo() > 0 ? settings.getJobStartNo() : 1));
+        jobPaddingCombo.setValue(settings.getJobPadding() > 0 ? settings.getJobPadding() : 3);
+        
         updatePreview();
+        updateJobPreview();
 
     } catch (Exception e) {
         showError("Failed to load system settings", e);
@@ -93,6 +112,27 @@ private void updatePreview() {
 }
 
 // =====================================================
+private void updateJobPreview() {
+    try {
+        String pPrefix = jobPrefixField.getText();
+        int pStart = Integer.parseInt(jobStartField.getText());
+        int pPadding = jobPaddingCombo.getValue();
+
+        String formatted = String.format("%s%0" + pPadding + "d", pPrefix, pStart);
+
+        jobPreviewBadge.setText(formatted);
+        jobSequencePreview.setText(
+                formatted + ", " +
+                String.format("%s%0" + pPadding + "d", pPrefix, pStart + 1) +
+                "..."
+        );
+    } catch (Exception ignored) {
+        jobPreviewBadge.setText("—");
+        jobSequencePreview.setText("Invalid configuration");
+    }
+}
+
+// =====================================================
 private void save() {
 
     try (Connection con = DBConnection.getConnection()) {
@@ -104,6 +144,10 @@ private void save() {
             settings.setInvoicePrefix(prefixField.getText());
             settings.setInvoiceStartNo(Integer.parseInt(startField.getText()));
             settings.setInvoicePadding(paddingCombo.getValue());
+            
+            settings.setJobPrefix(jobPrefixField.getText());
+            settings.setJobStartNo(Integer.parseInt(jobStartField.getText()));
+            settings.setJobPadding(jobPaddingCombo.getValue());
 
             repo.save(con, settings);
 

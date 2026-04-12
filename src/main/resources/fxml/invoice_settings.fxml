@@ -49,14 +49,14 @@
 
                     <HBox spacing="20">
 
-                        <!-- ================= RIGHT CARD ================= -->
+                        <!-- ================= LEFT CARD (INVOICE) ================= -->
                         <VBox fx:id="manualCard"
                               spacing="18"
                               styleClass="card"
                               HBox.hgrow="ALWAYS">
 
                             <HBox alignment="CENTER_LEFT">
-                                <Label text="MANUAL CONFIGURATION" styleClass="section-label"/>
+                                <Label text="INVOICE CONFIGURATION" styleClass="section-label"/>
                                 <Pane HBox.hgrow="ALWAYS"/>
                                 <Label fx:id="previewBadge"
                                        text="INV-001"
@@ -89,6 +89,52 @@
                                 <Label text="SEQUENCE EXAMPLE" styleClass="sequence-label"/>
                                 <Label fx:id="sequencePreview"
                                        text="INV-002, INV-003..."
+                                       styleClass="sequence-value"/>
+                            </VBox>
+
+                            <Pane VBox.vgrow="ALWAYS"/>
+                        </VBox>
+                        
+                        <!-- ================= RIGHT CARD (JOB NUMBER) ================= -->
+                        <VBox fx:id="jobCard"
+                              spacing="18"
+                              styleClass="card"
+                              HBox.hgrow="ALWAYS">
+
+                            <HBox alignment="CENTER_LEFT">
+                                <Label text="JOB CONFIGURATION" styleClass="section-label"/>
+                                <Pane HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="jobPreviewBadge"
+                                       text="SUN-0001"
+                                       styleClass="preview-badge"/>
+                            </HBox>
+
+                            <!-- Prefix -->
+                            <VBox spacing="6">
+                                <Label text="DOCUMENT PREFIX" styleClass="field-label"/>
+                                <TextField fx:id="jobPrefixField" promptText="SUN-"/>
+                            </VBox>
+
+                            <!-- Start + Padding -->
+                            <HBox spacing="14">
+
+                                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                                    <Label text="STARTING NO." styleClass="field-label"/>
+                                    <TextField fx:id="jobStartField" promptText="1"/>
+                                </VBox>
+
+                                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                                    <Label text="PADDING" styleClass="field-label"/>
+                                    <ComboBox fx:id="jobPaddingCombo"/>
+                                </VBox>
+
+                            </HBox>
+
+                            <!-- Sequence Preview -->
+                            <VBox spacing="6" styleClass="sequence-box">
+                                <Label text="SEQUENCE EXAMPLE" styleClass="sequence-label"/>
+                                <Label fx:id="jobSequencePreview"
+                                       text="SUN-0002, SUN-0003..."
                                        styleClass="sequence-value"/>
                             </VBox>
 

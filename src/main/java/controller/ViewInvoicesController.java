@@ -1,338 +1,473 @@
 package controller;
 
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.SVGPath;
+import javafx.stage.Stage;
 import model.Client;
 import model.InvoiceMaster;
+import model.InvoiceAdjustment;
 import service.ClientService;
 import service.InvoiceMasterService;
 import utils.Toast;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 public class ViewInvoicesController {
 
-    @FXML
-    private ComboBox<Client> clientComboBox;
-    @FXML
-    private ComboBox<String> statusComboBox;
-    @FXML
-    private DatePicker startDatePicker;
-    @FXML
-    private DatePicker endDatePicker;
-    @FXML
-    private Button searchBtn;
-    @FXML
-    private Button clearBtn;
+    @FXML private ComboBox<Client> clientComboBox;
+    @FXML private ComboBox<String> statusComboBox;
+    @FXML private DatePicker startDatePicker;
+    @FXML private DatePicker endDatePicker;
+    @FXML private TextField invoiceSearchField;
+    @FXML private Button searchBtn, clearBtn;
 
-    @FXML
-    private TableView<InvoiceMaster> invoiceTable;
-    @FXML
-    private TableColumn<InvoiceMaster, String> colInvoiceNo;
-    @FXML
-    private TableColumn<InvoiceMaster, String> colClientName;
-    @FXML
-    private TableColumn<InvoiceMaster, String> colInvoiceDate;
-    @FXML
-    private TableColumn<InvoiceMaster, Double> colAmount;
-    @FXML
-    private TableColumn<InvoiceMaster, Double> colPaid;
-    @FXML
-    private TableColumn<InvoiceMaster, Double> colDue;
-    @FXML
-    private TableColumn<InvoiceMaster, String> colStatus;
-    @FXML
-    private TableColumn<InvoiceMaster, String> colPaymentStatus;
+    @FXML private TableView<InvoiceMaster> invoiceTable;
+    @FXML private TableColumn<InvoiceMaster, String> colInvoiceNo;
+    @FXML private TableColumn<InvoiceMaster, String> colClientName;
+    @FXML private TableColumn<InvoiceMaster, String> colInvoiceDate;
+    @FXML private TableColumn<InvoiceMaster, Double> colAmount;
+    @FXML private TableColumn<InvoiceMaster, String> colAdjustment;
+    @FXML private TableColumn<InvoiceMaster, Double> colPaid;
+    @FXML private TableColumn<InvoiceMaster, Double> colDue;
+    @FXML private TableColumn<InvoiceMaster, String> colStatus;
+    @FXML private TableColumn<InvoiceMaster, String> colPaymentStatus;
+    @FXML private TableColumn<InvoiceMaster, String> colType;
 
-    @FXML
-    private TableColumn<InvoiceMaster, String> colType;
-    @FXML
-    private TableColumn<InvoiceMaster, String> colStatusIndicator;
+    @FXML private Button btnEdit, btnFinalize, btnSend, btnPayment, btnCancel, btnRevised, btnRaiseCnDn;
 
+    public static String pendingSearchInvoiceNo;
     private final ClientService clientService = new ClientService();
     private final InvoiceMasterService invoiceMasterService = new InvoiceMasterService();
     private final ObservableList<InvoiceMaster> invoiceList = FXCollections.observableArrayList();
 
-    @FXML
-    public void initialize() {
-        setupTableColumns();
-        loadClients();
-        loadStatuses();
-        
-        setupAutoPopupDatePicker(startDatePicker);
-        setupAutoPopupDatePicker(endDatePicker);
-        
-        // Initial load of recent invoices
+    private static ViewInvoicesController instance;
+    public static ViewInvoicesController getInstance() { return instance; }
+
+    public void refresh() {
         handleSearch(null);
     }
 
-    private void setupAutoPopupDatePicker(DatePicker dp) {
+    @FXML
+    public void initialize() {
+        try {
+            instance = this;
+            setupTableColumns();
+            loadClients();
+            loadStatuses();
+            
+            setupAutoPopupDatePicker(startDatePicker);
+            setupAutoPopupDatePicker(endDatePicker);
 
-        dp.setEditable(false);
+            // Styling - wrap in safety
+            applyButtonStyles();
+            applyButtonIcons();
 
-        // ✅ Disable future dates
-        dp.setDayCellFactory(picker -> new DateCell() {
-            @Override
-            public void updateItem(LocalDate date, boolean empty) {
-                super.updateItem(date, empty);
+            invoiceTable.setItems(invoiceList);
 
-                if (empty || date == null) return;
+            invoiceTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+                updateButtonStates(newSel);
+            });
 
-                if (date.isAfter(LocalDate.now())) {
-                    setDisable(true);
-                    setStyle("-fx-opacity: 0.35;");
-                }
-            }
-        });
-
-        // ✅ extra safety
-        dp.valueProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal != null && newVal.isAfter(LocalDate.now())) {
-                dp.setValue(oldVal);
-            }
-        });
-
-        // ✅ Auto open on click
-        dp.addEventFilter(javafx.scene.input.MouseEvent.MOUSE_PRESSED, e -> {
-            if (!dp.isShowing()) dp.show();
-        });
-
-        dp.focusedProperty().addListener((obs, oldV, newV) -> {
-            if (newV && !dp.isShowing()) dp.show();
-        });
-    }
-
-    // ==========================================
-    // MAP FOR DIRECT TRACKER UPDATES
-    // ==========================================
-    private final java.util.Map<InvoiceMaster, javafx.scene.shape.Circle> trackerMap = new java.util.HashMap<>();
-
-    private void updateCircleColor(javafx.scene.shape.Circle circle, String status) {
-        if (circle == null || status == null) return;
-        switch(status.toUpperCase()) {
-            case "PAID":
-                circle.setFill(javafx.scene.paint.Color.LIMEGREEN);
-                circle.setStyle("-fx-effect: dropshadow(gaussian, limegreen, 8, 0.4, 0, 0);");
-                break;
-            case "PARTIAL PAID":
-            case "PARTIAL_PAID":
-                circle.setFill(javafx.scene.paint.Color.ORANGE);
-                circle.setStyle("-fx-effect: dropshadow(gaussian, orange, 8, 0.4, 0, 0);");
-                break;
-            case "SENT":
-                circle.setFill(javafx.scene.paint.Color.DODGERBLUE);
-                circle.setStyle("-fx-effect: dropshadow(gaussian, dodgerblue, 8, 0.4, 0, 0);");
-                break;
-            case "OVERDUE":
-            case "VOID":
-                circle.setFill(javafx.scene.paint.Color.RED);
-                circle.setStyle("-fx-effect: dropshadow(gaussian, red, 8, 0.4, 0, 0);");
-                break;
-            case "UNPAID":
-            default:
-                circle.setFill(javafx.scene.paint.Color.GRAY);
-                circle.setStyle("-fx-effect: dropshadow(gaussian, gray, 8, 0.4, 0, 0);");
-                break;
-        }
-        Tooltip t = new Tooltip(status);
-        Tooltip.install(circle, t);
-    }
-
-    private void setupTableColumns() {
-        invoiceTable.setEditable(true); // make table editable to allow combo box interactions
-        colInvoiceNo.setCellValueFactory(new PropertyValueFactory<>("invoiceNo"));
-        colClientName.setCellValueFactory(new PropertyValueFactory<>("clientName"));
-        colInvoiceDate.setCellValueFactory(cellData -> {
-            LocalDate date = cellData.getValue().getInvoiceDate();
-            return new SimpleStringProperty(date != null ? date.toString() : "");
-        });
-        colAmount.setCellValueFactory(new PropertyValueFactory<>("amount"));
-        colPaid.setCellValueFactory(new PropertyValueFactory<>("paidAmount"));
-        colDue.setCellValueFactory(new PropertyValueFactory<>("dueAmount"));
-        colType.setCellValueFactory(new PropertyValueFactory<>("type"));
-
-        // ==========================================
-        // Invoice Status ComboBox Column
-        // ==========================================
-        colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
-        colStatus.setCellFactory(col -> new TableCell<>() {
-            private final ComboBox<String> combo = new ComboBox<>(FXCollections.observableArrayList(
-                "DRAFT", "SENT", "CANCELLED"
-            ));
-            {
-                combo.setMaxWidth(Double.MAX_VALUE);
-                combo.getStyleClass().add("combo-box-base");
-                this.setStyle("-fx-padding: 2 5; -fx-alignment: CENTER;");
-                
-                combo.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
-                    if (event.getCode() == javafx.scene.input.KeyCode.UP || event.getCode() == javafx.scene.input.KeyCode.DOWN) {
-                        if (!combo.isShowing()) {
-                            combo.show();
-                            event.consume();
+            invoiceTable.setRowFactory(tv -> {
+                TableRow<InvoiceMaster> row = new TableRow<>();
+                row.setOnMouseClicked(event -> {
+                    if (event.getClickCount() == 2 && (!row.isEmpty())) {
+                        InvoiceMaster selected = row.getItem();
+                        String stat = selected.getStatus() != null ? selected.getStatus().toUpperCase() : "";
+                        if ("DRAFT".equals(stat)) {
+                            handleEditAction(null);
+                        } else {
+                            Toast.show((Stage) invoiceTable.getScene().getWindow(), "⚠️ Only DRAFT invoices can be opened for editing.");
                         }
                     }
                 });
-            }
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
-                    setGraphic(null);
-                } else {
-                    combo.setOnAction(null);
-                    combo.setValue(item == null ? "DRAFT" : item.toUpperCase());
-                    
-                    combo.setOnAction(e -> {
-                        if (combo.isShowing()) return; // Ignore mid-navigation changes
-                        
-                        InvoiceMaster inv = getTableRow().getItem();
-                        if (inv != null) {
-                            String newlySelected = combo.getValue();
-                            if (newlySelected != null && !newlySelected.equalsIgnoreCase(inv.getStatus())) {
-                                String upperStatus = newlySelected.toUpperCase();
-                                inv.setStatus(upperStatus);
-                                invoiceMasterService.updateInvoiceStatus(inv.getId(), upperStatus);
-                                
-                                // Process payment status rules based on new invoice status
-                                if (upperStatus.equals("DRAFT") || upperStatus.equals("CANCELLED")) {
-                                    inv.setPaymentStatus(null);
-                                    invoiceMasterService.updateInvoicePaymentStatus(inv.getId(), null);
-                                    
-                                    javafx.scene.shape.Circle c = trackerMap.get(inv);
-                                    if (c != null) updateCircleColor(c, null);
-                                } else if (upperStatus.equals("SENT")) {
-                                    if (inv.getPaymentStatus() == null || inv.getPaymentStatus().isEmpty()) {
-                                        inv.setPaymentStatus("UNPAID");
-                                        invoiceMasterService.updateInvoicePaymentStatus(inv.getId(), "UNPAID");
-                                        
-                                        javafx.scene.shape.Circle c = trackerMap.get(inv);
-                                        if (c != null) updateCircleColor(c, "UNPAID");
-                                    }
-                                }
-                                
-                                // Force table to refresh the row to show the updated Payment Status text
-                                javafx.application.Platform.runLater(() -> {
-                                    getTableView().refresh();
-                                });
-                            }
-                        }
-                    });
-                    
-                    // Trigger action on close to catch final selection
-                    combo.showingProperty().addListener((obs, wasShowing, isShowing) -> {
-                        if (!isShowing) combo.fireEvent(new ActionEvent());
-                    });
-                    
-                    setGraphic(combo);
-                }
-            }
-        });
+                return row;
+            });
 
-        // ==========================================
-        // Payment Status Column (Read-Only)
-        // ==========================================
-        colPaymentStatus.setCellValueFactory(new PropertyValueFactory<>("paymentStatus"));
-
-
-        // ==========================================
-        // Status Indicator Column
-        // ==========================================
-        colStatusIndicator.setCellValueFactory(new PropertyValueFactory<>("paymentStatus"));
-        colStatusIndicator.setCellFactory(col -> new TableCell<>() {
-            private final javafx.scene.shape.Circle circle = new javafx.scene.shape.Circle(6);
-            
-            @Override
-            protected void updateItem(String status, boolean empty) {
-                super.updateItem(status, empty);
-                if (empty || status == null || getTableRow() == null || getTableRow().getItem() == null) {
-                    setGraphic(null);
-                } else {
-                    InvoiceMaster inv = getTableRow().getItem();
-                    trackerMap.put(inv, circle);
-                    
-                    updateCircleColor(circle, status);
-                    
-                    setGraphic(circle);
-                    setAlignment(javafx.geometry.Pos.CENTER);
-                }
-            }
-        });
-
-        invoiceTable.setItems(invoiceList);
+            Platform.runLater(() -> {
+                try {
+                    if (pendingSearchInvoiceNo != null) {
+                        if (invoiceSearchField != null) invoiceSearchField.setText(pendingSearchInvoiceNo);
+                        pendingSearchInvoiceNo = null;
+                    }
+                    handleSearch(null);
+                } catch (Exception e) { e.printStackTrace(); }
+            });
+        } catch (Exception e) {
+            System.err.println("CRITICAL ERROR initializing ViewInvoicesController: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
-    private void loadClients() {
-        List<Client> clients = clientService.getAllClients();
-        clientComboBox.getItems().setAll(clients);
+    private void applyButtonStyles() {
+        String btnStyle = "-fx-font-size: 11.5px; -fx-padding: 5 10; -fx-cursor: hand; -fx-font-weight: bold; -fx-background-radius: 4px;";
+        if (btnEdit != null) btnEdit.setStyle(btnStyle + " -fx-background-color: #FF9800; -fx-text-fill: white;");
+        if (btnFinalize != null) btnFinalize.setStyle(btnStyle + " -fx-background-color: #28a745; -fx-text-fill: white;");
+        if (btnSend != null) btnSend.setStyle(btnStyle + " -fx-background-color: #17a2b8; -fx-text-fill: white;");
+        if (btnPayment != null) btnPayment.setStyle(btnStyle + " -fx-background-color: #007bff; -fx-text-fill: white;");
+        if (btnCancel != null) btnCancel.setStyle(btnStyle + " -fx-background-color: #dc3545; -fx-text-fill: white;");
+        if (btnRevised != null) btnRevised.setStyle(btnStyle + " -fx-background-color: #fd7e14; -fx-text-fill: white;");
+        if (btnRaiseCnDn != null) btnRaiseCnDn.setStyle(btnStyle + " -fx-background-color: #6c757d; -fx-text-fill: white;");
+    }
 
-        clientComboBox.setButtonCell(new ListCell<>() {
-            @Override
-            protected void updateItem(Client item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText("Select a client...");
-                } else {
-                    setText(item.getBusinessName() + " (" + item.getClientName() + ")");
-                }
-            }
+    private void applyButtonIcons() {
+        if (btnEdit != null) btnEdit.setGraphic(createIcon("M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"));
+        if (btnFinalize != null) btnFinalize.setGraphic(createIcon("M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"));
+        if (btnSend != null) btnSend.setGraphic(createIcon("M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"));
+        if (btnPayment != null) btnPayment.setGraphic(createIcon("M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"));
+        if (btnCancel != null) btnCancel.setGraphic(createIcon("M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"));
+        if (btnRevised != null) btnRevised.setGraphic(createIcon("M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"));
+        if (btnRaiseCnDn != null) btnRaiseCnDn.setGraphic(createIcon("M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 14h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zm-3-7V3.5L18.5 9H13z"));
+    }
+
+    private void setupTableColumns() {
+        if (colInvoiceNo != null) colInvoiceNo.setCellValueFactory(new PropertyValueFactory<>("invoiceNo"));
+        if (colClientName != null) colClientName.setCellValueFactory(new PropertyValueFactory<>("clientName"));
+        if (colInvoiceDate != null) colInvoiceDate.setCellValueFactory(cellData -> {
+            LocalDate date = cellData.getValue().getInvoiceDate();
+            return new SimpleStringProperty(date != null ? date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy")) : "");
         });
+        if (colAmount != null) colAmount.setCellValueFactory(new PropertyValueFactory<>("amount"));
+        if (colAdjustment != null) {
+            colAdjustment.setCellValueFactory(new PropertyValueFactory<>("adjustment"));
+            colAdjustment.setCellFactory(col -> new AdjustmentCell());
+        }
+        if (colPaid != null) colPaid.setCellValueFactory(new PropertyValueFactory<>("paidAmount"));
+        if (colDue != null) colDue.setCellValueFactory(new PropertyValueFactory<>("dueAmount"));
+        if (colType != null) colType.setCellValueFactory(new PropertyValueFactory<>("type"));
 
-        clientComboBox.setCellFactory(cb -> new ListCell<>() {
-            @Override
-            protected void updateItem(Client item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
+        if (colStatus != null) {
+            colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
+            colStatus.setCellFactory(col -> new StatusCell());
+        }
+        if (colPaymentStatus != null) {
+            colPaymentStatus.setCellValueFactory(new PropertyValueFactory<>("paymentStatus"));
+            colPaymentStatus.setCellFactory(col -> new StatusCell());
+        }
+    }
+
+    private Node createIcon(String pathStr) {
+        SVGPath svg = new SVGPath();
+        svg.setContent(pathStr);
+        svg.setFill(Color.WHITE);
+        svg.setScaleX(0.7); svg.setScaleY(0.7);
+        StackPane pane = new StackPane(svg);
+        pane.setPrefSize(16, 16);
+        return pane;
+    }
+
+    private class StatusCell extends TableCell<InvoiceMaster, String> {
+        private final Circle circle = new Circle(6);
+        private final Label label = new Label();
+        private final HBox box = new HBox(10, circle, label);
+        { box.setAlignment(Pos.CENTER_LEFT); label.setStyle("-fx-text-fill: white; -fx-font-weight: bold;"); }
+        @Override
+        protected void updateItem(String status, boolean empty) {
+            super.updateItem(status, empty);
+            if (empty || status == null) { 
+                setGraphic(null); 
+                setText(null); 
+            } else {
+                label.setText(status);
+                updateCircleColor(circle, status);
+                setGraphic(box);
+                setText(null);
+            }
+        }
+    }
+
+    private class AdjustmentCell extends TableCell<InvoiceMaster, String> {
+        private final Label textLabel = new Label();
+        private final SVGPath eyeIcon = new SVGPath();
+        private final HBox box = new HBox(6, textLabel, eyeIcon);
+
+        public AdjustmentCell() {
+            box.setAlignment(Pos.CENTER);
+            textLabel.setAlignment(Pos.CENTER);
+            eyeIcon.setContent("M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z");
+            eyeIcon.setScaleX(0.85);
+            eyeIcon.setScaleY(0.85);
+            box.setStyle("-fx-cursor: hand;");
+            
+            box.setOnMouseClicked(e -> {
+                InvoiceMaster inv = (getTableRow() != null) ? getTableRow().getItem() : null;
+                if (inv != null && !"-".equals(inv.getAdjustment())) {
+                    showAdjustmentDetails(inv);
+                }
+                e.consume();
+            });
+        }
+
+        @Override
+        protected void updateItem(String item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty || item == null) {
+                setGraphic(null);
+                setText(null);
+            } else {
+                InvoiceMaster inv = (getTableRow() != null) ? getTableRow().getItem() : null;
+                if (inv == null || item.equals("-")) {
+                    textLabel.setText(item != null ? item : "-");
+                    textLabel.setStyle("-fx-text-fill: white;");
+                    eyeIcon.setVisible(false);
+                    setGraphic(box);
                     setText(null);
                 } else {
-                    setText(item.getBusinessName() + " (" + item.getClientName() + ")");
+                    double cn = inv.getCnAmount() != null ? inv.getCnAmount() : 0;
+                    double dn = inv.getDnAmount() != null ? inv.getDnAmount() : 0;
+                    double net = dn - cn;
+
+                    String colorStr = "white";
+                    if (net > 0) colorStr = "#28a745"; // Green
+                    else if (net < 0) colorStr = "#dc3545"; // Red
+                    
+                    textLabel.setText(item);
+                    textLabel.setStyle("-fx-text-fill: " + colorStr + "; -fx-font-weight: bold;");
+                    eyeIcon.setFill(Color.web(colorStr.equals("white") ? "#a0a0a0" : colorStr));
+                    
+                    eyeIcon.setVisible(true);
+                    
+                    setGraphic(box);
+                    setText(null);
                 }
             }
-        });
+        }
     }
 
-    private void loadStatuses() {
-        statusComboBox.getItems().setAll("All", "UNPAID", "PARTIAL PAID", "PAID", "OVERDUE");
-        statusComboBox.getSelectionModel().selectFirst();
+    private void updateCircleColor(Circle circle, String status) {
+        if (circle == null || status == null) return;
+        String color;
+        switch(status.toUpperCase()) {
+            case "DRAFT": color = "#6f42c1"; break;
+            case "FINAL": color = "#28a745"; break;
+            case "SENT":
+            case "SENT TO CLIENT": color = "#17a2b8"; break;
+            case "PAID": color = "#28a745"; break;
+            case "PARTIAL PAID":
+            case "PARTIAL_PAID": color = "#007bff"; break;
+            case "OVERDUE": color = "#dc3545"; break;
+            case "CANCELLED":
+            case "VOID": color = "#dc3545"; break;
+            case "REVISED": color = "#fd7e14"; break;
+            default: color = "#808080"; break;
+        }
+        circle.setFill(Color.web(color));
+        circle.setStyle("-fx-effect: dropshadow(three-pass-box, " + color + ", 10, 0, 0, 0);");
+    }
+
+    private void updateButtonStates(InvoiceMaster inv) {
+        if (inv == null) { disableAllButtons(); return; }
+        String status = inv.getStatus() != null ? inv.getStatus().toUpperCase() : "";
+        String pStatus = inv.getPaymentStatus() != null ? inv.getPaymentStatus().toUpperCase() : "";
+        boolean isDraft = "DRAFT".equals(status);
+        boolean isFinal = "FINAL".equals(status);
+        boolean isSent = "SENT TO CLIENT".equals(status) || "SENT".equals(status);
+        boolean isPaid = "PAID".equals(pStatus);
+        
+        boolean hasPayments = inv.getPaidAmount() > 0;
+        
+        if (btnEdit != null) btnEdit.setDisable(!"DRAFT".equals(status));
+        if (btnFinalize != null) btnFinalize.setDisable(!isDraft);
+        if (btnSend != null) {
+            btnSend.setDisable(!(isFinal || isSent));
+            btnSend.setText(isSent ? "Send Again" : "Send");
+        }
+        if (btnRevised != null) btnRevised.setDisable(!isSent || hasPayments);
+        if (btnPayment != null) btnPayment.setDisable(!isSent);
+        if (btnRaiseCnDn != null) btnRaiseCnDn.setDisable(!isSent);
+        if (btnCancel != null) btnCancel.setDisable(isPaid || "REVISED".equals(status));
+    }
+
+    private void disableAllButtons() {
+        if (btnEdit != null) btnEdit.setDisable(true); 
+        if (btnFinalize != null) btnFinalize.setDisable(true);
+        if (btnSend != null) btnSend.setDisable(true); 
+        if (btnPayment != null) btnPayment.setDisable(true); 
+        if (btnCancel != null) btnCancel.setDisable(true);
+        if (btnRevised != null) btnRevised.setDisable(true); 
+        if (btnRaiseCnDn != null) btnRaiseCnDn.setDisable(true);
     }
 
     @FXML
     private void handleSearch(ActionEvent event) {
-        Integer clientId = null;
-        if (clientComboBox.getValue() != null) {
-            clientId = clientComboBox.getValue().getId();
-        }
+        Integer clientId = (clientComboBox != null && clientComboBox.getValue() != null) ? clientComboBox.getValue().getId() : null;
+        String status = (statusComboBox != null) ? statusComboBox.getValue() : "All";
+        LocalDate start = (startDatePicker != null) ? startDatePicker.getValue() : null;
+        LocalDate end = (endDatePicker != null) ? endDatePicker.getValue() : null;
+        String invoiceNo = (invoiceSearchField != null) ? invoiceSearchField.getText() : "";
 
-        String status = statusComboBox.getValue();
-        LocalDate start = startDatePicker.getValue();
-        LocalDate end = endDatePicker.getValue();
-
-        try {
-            List<InvoiceMaster> results = invoiceMasterService.getFilteredInvoices(clientId, status, start, end);
-            invoiceList.setAll(results);
-            
-            if (results.isEmpty() && event != null) {
-                Toast.show((javafx.stage.Stage) searchBtn.getScene().getWindow(), "No invoices found for the selected criteria.");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            if (event != null) {
-                Toast.show((javafx.stage.Stage) searchBtn.getScene().getWindow(), "Error fetching invoices.");
-            }
-        }
+        new Thread(() -> {
+            try {
+                List<InvoiceMaster> results = invoiceMasterService.getFilteredInvoices(clientId, status, start, end, invoiceNo);
+                Platform.runLater(() -> {
+                    invoiceList.setAll(results);
+                    if (results.isEmpty() && event != null && searchBtn != null && searchBtn.getScene() != null) {
+                        Toast.show((Stage) searchBtn.getScene().getWindow(), "No matching invoices found.");
+                    }
+                });
+            } catch (Exception e) { e.printStackTrace(); }
+        }).start();
     }
 
     @FXML
     private void handleClear(ActionEvent event) {
-        clientComboBox.setValue(null);
-        statusComboBox.getSelectionModel().selectFirst();
-        startDatePicker.setValue(null);
-        endDatePicker.setValue(null);
-        handleSearch(null); // Reload all active invoices without filters
+        if (clientComboBox != null) clientComboBox.setValue(null);
+        if (statusComboBox != null) statusComboBox.getSelectionModel().selectFirst();
+        if (startDatePicker != null) startDatePicker.setValue(null);
+        if (endDatePicker != null) endDatePicker.setValue(null);
+        if (invoiceSearchField != null) invoiceSearchField.clear();
+        handleSearch(null);
+    }
+
+    @FXML private void handleFinalizeAction(ActionEvent e) {
+        InvoiceMaster inv = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
+        if (inv != null) {
+            try {
+                String newNo = invoiceMasterService.finalizeInvoice(inv.getId());
+                handleSearch(null); // Refresh table
+                Toast.show((Stage) invoiceTable.getScene().getWindow(), "✅ Invoice Finalized as: " + newNo);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                Toast.show((Stage) invoiceTable.getScene().getWindow(), "❌ Failed to finalize: " + ex.getMessage());
+            }
+        }
+    }
+    @FXML private void handleSendAction(ActionEvent e) { updateStatus("SENT TO CLIENT"); }
+    @FXML private void handleCancelAction(ActionEvent e) { updateStatus("CANCELLED"); }
+
+    private void updateStatus(String status) {
+        InvoiceMaster inv = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
+        if (inv != null) {
+            invoiceMasterService.updateInvoiceStatus(inv.getId(), status);
+            handleSearch(null);
+        }
+    }
+
+    @FXML private void handleRevisedAction(ActionEvent event) {
+        InvoiceMaster inv = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
+        if (inv == null) return;
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Create revision?", ButtonType.YES, ButtonType.NO);
+        confirm.showAndWait().ifPresent(res -> {
+            if (res == ButtonType.YES) {
+                try {
+                    invoiceMasterService.reviseInvoice(inv);
+                    handleSearch(null);
+                } catch (Exception e) { e.printStackTrace(); }
+            }
+        });
+    }
+
+    @FXML private void handlePaymentAction(ActionEvent event) {
+        InvoiceMaster inv = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
+        if (inv != null) {
+            RecordPaymentController.pendingPrefillInvoice = inv;
+            MainController.getInstance().loadRecordPayment(null);
+        }
+    }
+
+    @FXML private void handleEditAction(ActionEvent event) {
+        InvoiceMaster inv = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
+        if (inv != null) {
+            ViewInvoiceJobsController.pendingPrefillInvoice = inv;
+            MainController.getInstance().loadViewInvoiceJobs(null);
+        }
+    }
+
+    @FXML private void handleRaiseCnDnAction(ActionEvent event) {
+        InvoiceMaster inv = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
+        if (inv != null) {
+            CreditDebitNoteController.pendingPrefillInvoice = inv;
+            MainController.getInstance().loadCreditDebitNote(null);
+        }
+    }
+
+    private void loadClients() { if (clientComboBox != null) clientComboBox.getItems().setAll(clientService.getAllClients()); }
+    private void loadStatuses() {
+        if (statusComboBox != null) {
+            statusComboBox.getItems().setAll("All", "UNPAID", "PARTIAL PAID", "PAID", "OVERDUE");
+            statusComboBox.getSelectionModel().selectFirst();
+        }
+    }
+
+    private void setupAutoPopupDatePicker(DatePicker dp) {
+        if (dp == null) return;
+        dp.setEditable(false);
+        dp.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> { if (!dp.isShowing()) dp.show(); });
+    }
+
+    private void showAdjustmentDetails(InvoiceMaster inv) {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Notes: " + inv.getInvoiceNo());
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        TableView<InvoiceAdjustment> table = new TableView<>();
+        table.setPrefWidth(500); table.setPrefHeight(300);
+        TableColumn<InvoiceAdjustment, String> cType = new TableColumn<>("Type");
+        cType.setCellValueFactory(new PropertyValueFactory<>("type"));
+        TableColumn<InvoiceAdjustment, String> cNo = new TableColumn<>("No");
+        cNo.setCellValueFactory(new PropertyValueFactory<>("noteNo"));
+        TableColumn<InvoiceAdjustment, Double> cAmt = new TableColumn<>("Amount");
+        cAmt.setCellValueFactory(new PropertyValueFactory<>("amount"));
+        cAmt.setCellFactory(col -> new TableCell<InvoiceAdjustment, Double>() {
+            private final Label label = new Label();
+
+            @Override
+            protected void updateItem(Double amount, boolean empty) {
+                super.updateItem(amount, empty);
+                if (empty || amount == null) {
+                    setGraphic(null);
+                    setText(null);
+                } else {
+                    InvoiceAdjustment adj = getTableRow() != null ? getTableRow().getItem() : null;
+                    label.setText(String.valueOf(amount));
+                    if (adj != null) {
+                        String type = adj.getType() != null ? adj.getType() : "";
+                        String colorStyle = "";
+                        if ("Credit Note".equalsIgnoreCase(type)) colorStyle = "-fx-text-fill: #dc3545; -fx-font-weight: bold;";
+                        else if ("Debit Note".equalsIgnoreCase(type)) colorStyle = "-fx-text-fill: #28a745; -fx-font-weight: bold;";
+                        
+                        label.setStyle(colorStyle);
+                    } else {
+                        label.setStyle("");
+                    }
+                    setGraphic(label);
+                    setText(null);
+                }
+            }
+        });
+        TableColumn<InvoiceAdjustment, String> cReason = new TableColumn<>("Reason");
+        cReason.setCellValueFactory(new PropertyValueFactory<>("reason"));
+        table.getColumns().addAll(cType, cNo, cAmt, cReason);
+        List<InvoiceAdjustment> adjs = new ArrayList<>();
+        try (java.sql.Connection con = utils.DBConnection.getConnection();
+             java.sql.PreparedStatement ps = con.prepareStatement("SELECT * FROM invoice_adjustments WHERE invoice_id = ?")) {
+            ps.setInt(1, inv.getId());
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while(rs.next()) {
+                    InvoiceAdjustment a = new InvoiceAdjustment();
+                    a.setType(rs.getString("type")); a.setNoteNo(rs.getString("note_no"));
+                    a.setAmount(rs.getDouble("amount")); a.setReason(rs.getString("reason"));
+                    adjs.add(a);
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        table.setItems(FXCollections.observableArrayList(adjs));
+        dialog.getDialogPane().setContent(table);
+        dialog.showAndWait();
     }
 }

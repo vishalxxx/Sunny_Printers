@@ -1,80 +1,44 @@
-﻿mvn : WARNING: A 
-restricted method in 
-java.lang.System has 
-been called
-At line:1 char:1
-+ mvn clean compile > 
-build.log 2>&1
-+ ~~~~~~~~~~~~~~~~~~~~
-~~~~~~~~~~~~~~
-    + CategoryInfo    
-          : NotSpeci  
-  fied: (WARNING: A   
-  rest...has been     
-called:String) []    
-, RemoteException
-    + FullyQualifiedE 
-   rrorId : NativeCo  
-  mmandError
- 
-WARNING: java.lang.Sys
-tem::load has been 
-called by org.fusesour
-ce.jansi.internal.Jans
-iLoader in an unnamed 
-module (file:/C:/Users
-/VishalGoswami/maven/a
-pache-maven-3.9.9/lib/
-jansi-2.4.1.jar)
-WARNING: Use --enable-
-native-access=ALL-UNNA
-MED to avoid a 
-warning for callers 
-in this module
-WARNING: Restricted 
-methods will be 
-blocked in a future 
-release unless native 
-access is enabled
-
-WARNING: A terminally 
-deprecated method in 
-sun.misc.Unsafe has 
-been called
-WARNING: sun.misc.Unsa
-fe::objectFieldOffset 
-has been called by com
-.google.common.util.co
-ncurrent.AbstractFutur
-e$UnsafeAtomicHelper (
-file:/C:/Users/VishalG
-oswami/maven/apache-ma
-ven-3.9.9/lib/guava-33
-.2.1-jre.jar)
-WARNING: Please 
-consider reporting 
-this to the 
-maintainers of class c
-om.google.common.util.
-concurrent.AbstractFut
-ure$UnsafeAtomicHelper
-WARNING: sun.misc.Unsa
-fe::objectFieldOffset 
-will be removed in a 
-future release
-[INFO] Scanning for projects...
+﻿[INFO] Scanning for projects...
 [INFO] 
 [INFO] ---------------------< sunny_group:Sunny_Printers >---------------------
 [INFO] Building Sunny Printers 0.0.1-SNAPSHOT
 [INFO]   from pom.xml
 [INFO] --------------------------------[ jar ]---------------------------------
 [INFO] 
-[INFO] --- clean:3.2.0:clean (default-clean) @ Sunny_Printers ---
-[INFO] Deleting C:\Users\VishalGoswami\eclipse-workspace\Sunny_Printers\target
-[INFO] 
 [INFO] --- resources:3.3.1:resources (default-resources) @ Sunny_Printers ---
-[INFO] Copying 78 resources from src\main\resources to target\classes
+[INFO] Copying 84 resources from src\main\resources to target\classes
 [INFO] 
 [INFO] --- compiler:3.13.0:compile (default-compile) @ Sunny_Printers ---
 [INFO] Recompiling the module because of changed source code.
-[INFO] Compiling 82 source files with javac [debug target 17] to target\classes
+[INFO] Compiling 94 source files with javac [debug target 17] to target\classes
+[INFO] /C:/Users/VishalGoswami/eclipse-workspace/Sunny_Printers/src/main/java/controller/BindingTabController.java: Some input files use or override a deprecated API.
+[INFO] /C:/Users/VishalGoswami/eclipse-workspace/Sunny_Printers/src/main/java/controller/BindingTabController.java: Recompile with -Xlint:deprecation for details.
+[INFO] /C:/Users/VishalGoswami/eclipse-workspace/Sunny_Printers/src/main/java/controller/ViewInvoiceJobsController.java: Some input files use unchecked or unsafe operations.
+[INFO] /C:/Users/VishalGoswami/eclipse-workspace/Sunny_Printers/src/main/java/controller/ViewInvoiceJobsController.java: Recompile with -Xlint:unchecked for details.
+[INFO] -------------------------------------------------------------
+[WARNING] COMPILATION WARNING : 
+[INFO] -------------------------------------------------------------
+[WARNING] system modules path not set in conjunction with -source 17
+[INFO] 1 warning
+[INFO] -------------------------------------------------------------
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/VishalGoswami/eclipse-workspace/Sunny_Printers/src/main/java/controller/AddJobController.java:[908,21] method initialize() is already defined in class controller.AddJobController
+[INFO] 1 error
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  2.978 s
+[INFO] Finished at: 2026-04-05T17:16:45+05:30
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project Sunny_Printers: Compilation failure
+[ERROR] /C:/Users/VishalGoswami/eclipse-workspace/Sunny_Printers/src/main/java/controller/AddJobController.java:[908,21] method initialize() is already defined in class controller.AddJobController
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

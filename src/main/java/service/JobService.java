@@ -43,12 +43,12 @@ public class JobService {
 			model.SystemSettings settings = settingsRepo.load(con);
 
 			int nextNo = settings.getLastJobNo() + 1;
-			if (nextNo < settings.getInvoiceStartNo()) {
-			    nextNo = settings.getInvoiceStartNo();
+			if (nextNo < settings.getJobStartNo()) {
+			    nextNo = settings.getJobStartNo();
 			}
 
-			String formattedJobNo = String.format("%s%0" + settings.getInvoicePadding() + "d",
-					settings.getInvoicePrefix(), nextNo);
+			String formattedJobNo = String.format("%s%0" + settings.getJobPadding() + "d",
+					(settings.getJobPrefix() == null ? "" : settings.getJobPrefix()), nextNo);
 
 			settings.setLastJobNo(nextNo);
 			settingsRepo.save(con, settings);
@@ -88,7 +88,7 @@ public class JobService {
 		}
 	}
 
-	public void updateJobName(int jobId, String jobName) {
+	public void updateJobDetails(int jobId, String jobName, java.time.LocalDate jobDate) {
 
 		if (jobId <= 0) {
 			throw new IllegalArgumentException("Invalid job id");
@@ -103,20 +103,25 @@ public class JobService {
 
 			String sql = """
 					UPDATE jobs
-					SET job_title = ?
+					SET job_title = ?, job_date = ?
 					WHERE id = ?
 					""";
 
 			try (PreparedStatement ps = con.prepareStatement(sql)) {
 				ps.setString(1, jobName.trim());
-				ps.setInt(2, jobId);
+				if (jobDate != null) {
+				    ps.setString(2, jobDate.toString());
+				} else {
+				    ps.setNull(2, java.sql.Types.DATE);
+				}
+				ps.setInt(3, jobId);
 				ps.executeUpdate();
 			}
 
 			con.commit();
 
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to update job name", e);
+			throw new RuntimeException("Failed to update job details", e);
 		}
 	}
 
@@ -177,6 +182,10 @@ public class JobService {
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to update job status", e);
 		}
+	}
+	
+	public List<Job> getCompletedJobsByClient(int clientId) {
+	    return repo.findCompletedJobsByClientId(clientId);
 	}
 	
 

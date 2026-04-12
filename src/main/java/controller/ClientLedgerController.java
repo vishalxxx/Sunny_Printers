@@ -15,12 +15,16 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.Separator;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
@@ -100,6 +104,7 @@ public class ClientLedgerController implements Initializable {
 
         setupAutoPopupDatePicker(dateFrom);
         setupAutoPopupDatePicker(dateTo);
+        setupTableDoubleClickHandler();
 
         searchField.textProperty().addListener((obs, oldVal, newVal) -> filterList(newVal));
 
@@ -229,6 +234,102 @@ public class ClientLedgerController implements Initializable {
         ledgerData.addListener((javafx.collections.ListChangeListener.Change<? extends LedgerEntry> c) -> {
             updateTableHeight();
         });
+    }
+
+    private void setupTableDoubleClickHandler() {
+        ledgerTable.setRowFactory(tv -> {
+            TableRow<LedgerEntry> row = new TableRow<>();
+            
+            // Visual hint: Change cursor to hand on hover
+            row.setOnMouseEntered(event -> {
+                if (!row.isEmpty()) {
+                    row.setCursor(javafx.scene.Cursor.HAND);
+                }
+            });
+            row.setOnMouseExited(event -> {
+                row.setCursor(javafx.scene.Cursor.DEFAULT);
+            });
+
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && (!row.isEmpty())) {
+                    LedgerEntry entry = row.getItem();
+                    // Show details only if it's a payment/refund
+                    if (entry != null && (entry.getType().contains("PAYMENT") || entry.getType().contains("REFUND"))) {
+                        showPaymentDetailsDialog(entry);
+                    }
+                }
+            });
+            return row;
+        });
+    }
+
+    private void showPaymentDetailsDialog(LedgerEntry entry) {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.initOwner(ledgerTable.getScene().getWindow());
+        dialog.setTitle("Payment Details - " + entry.getDate());
+        
+        javafx.scene.layout.VBox content = new javafx.scene.layout.VBox(20);
+        content.setPadding(new javafx.geometry.Insets(20));
+        content.setPrefWidth(500);
+        
+        Label title = new Label("TRANSACTION DETAILS (" + entry.getType() + ")");
+        title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #3b82f6;");
+        
+        javafx.scene.layout.GridPane grid = new javafx.scene.layout.GridPane();
+        grid.setHgap(20);
+        grid.setVgap(12);
+        
+        int r = 0;
+        addDetailRow(grid, r++, "Date", entry.getDate());
+        addDetailRow(grid, r++, "Reference", entry.getReference());
+        addDetailRow(grid, r++, "Amount", "₹" + String.format("%.2f", (entry.getDebit() != null ? entry.getDebit() : entry.getCredit())));
+        addDetailRow(grid, r++, "Method", entry.getMode());
+        
+        try (Connection con = DBConnection.getConnection()) {
+            // Detailed properties
+            String sql = "SELECT field_key, field_value FROM payment_details WHERE payment_id = ?";
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setInt(1, entry.getTxnId());
+                ResultSet rs = ps.executeQuery();
+                while (rs.next()) {
+                    String key = rs.getString("field_key").replace("_", " ").toUpperCase();
+                    addDetailRow(grid, r++, key, rs.getString("field_value"));
+                }
+            }
+            
+            // Allocations
+            String allocSql = "SELECT i.invoice_no, a.allocated_amount FROM payment_allocations a JOIN invoice_master i ON a.invoice_id = i.id WHERE a.payment_id = ?";
+            try (PreparedStatement ps = con.prepareStatement(allocSql)) {
+                ps.setInt(1, entry.getTxnId());
+                ResultSet rs = ps.executeQuery();
+                StringBuilder sb = new StringBuilder();
+                while (rs.next()) {
+                    sb.append(rs.getString("invoice_no")).append(" (₹").append(String.format("%.2f", rs.getDouble("allocated_amount"))).append(")\n");
+                }
+                if (sb.length() > 0) {
+                    addDetailRow(grid, r++, "ALLOCATIONS", sb.toString());
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        content.getChildren().addAll(title, new javafx.scene.control.Separator(), grid);
+        dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().getButtonTypes().add(javafx.scene.control.ButtonType.CLOSE);
+        dialog.getDialogPane().getStylesheets().add(getClass().getResource("/css/record_payment.css").toExternalForm());
+        dialog.getDialogPane().getStyleClass().add("record-payment-root");
+        dialog.showAndWait();
+    }
+
+    private void addDetailRow(javafx.scene.layout.GridPane grid, int row, String label, String value) {
+        Label lbl = new Label(label + ":");
+        lbl.setStyle("-fx-font-weight: bold; -fx-text-fill: #64748b;");
+        Label val = new Label(value);
+        val.setStyle("-fx-text-fill: #1e293b;");
+        val.setWrapText(true);
+        grid.add(lbl, 0, row);
+        grid.add(val, 1, row);
     }
 
     private void updateTableHeight() {
@@ -368,7 +469,7 @@ public class ClientLedgerController implements Initializable {
         sql.append("SELECT * FROM (");
 
         // Invoices
-        sql.append("SELECT invoice_date as txn_date, invoice_no as ref, 'INVOICE' as type, ");
+        sql.append("SELECT id as txn_id, invoice_date as txn_date, invoice_no as ref, 'INVOICE' as type, ");
         sql.append("'-' as mode, ");
         sql.append("0 as debit, amount as credit, status, payment_status ");
         sql.append("FROM invoice_master WHERE client_id = ? ");
@@ -380,31 +481,13 @@ public class ClientLedgerController implements Initializable {
         sql.append("UNION ALL ");
 
         // Payments
-        sql.append("SELECT p.payment_date as txn_date, ");
-        sql.append("CASE p.method ");
-        sql.append("  WHEN 'Cheque' THEN ");
-        sql.append(
-                "    'CLG: ' || COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'cheque_number'), '') || ' | To ' || ");
-        sql.append(
-                "    COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'receiver_bank'), '') ");
-        sql.append("  WHEN 'Bank Transfer' THEN ");
-        sql.append(
-                "    COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'utr'), '') || ' | To ' || ");
-        sql.append(
-                "    COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'receiver_bank'), '') || ' A/c' ");
-        sql.append("  WHEN 'UPI' THEN ");
-        sql.append(
-                "    COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'upi_id'), '') || ' | ' || ");
-        sql.append(
-                "    COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'utr'), '') || ' | To ' || ");
-        sql.append(
-                "    COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'receiver_bank'), '') || ' A/c | ' || ");
-        sql.append(
-                "    COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'receiver_upi_id'), '') ");
-        sql.append("  WHEN 'Cash' THEN 'CASH' ");
-        sql.append("  ELSE 'PAY-' || p.id || ' (' || p.method || ')' ");
-        sql.append("END as ref, ");
-        sql.append("'PAYMENT' as type, ");
+        sql.append("SELECT p.id as txn_id, p.payment_date as txn_date, ");
+        sql.append("COALESCE(");
+        sql.append("  (SELECT GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_id = i.id WHERE a.payment_id = p.id), ");
+        sql.append("  (SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'notes'), ");
+        sql.append("  CASE WHEN p.type = 'Refund' THEN 'Advance Refund' ELSE 'Advance' END");
+        sql.append(") as ref, ");
+        sql.append("UPPER(p.type) as type, ");
         sql.append("p.method as mode, ");
         sql.append("p.amount as debit, 0 as credit, 'SUCCESS' as status, '' as payment_status ");
         sql.append("FROM payments p WHERE p.client_id = ? ");
@@ -449,8 +532,15 @@ public class ClientLedgerController implements Initializable {
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-                double debit = rs.getDouble("debit");
-                double credit = rs.getDouble("credit");
+                double debit = rs.getDouble("debit"); // Payment amount
+                double credit = rs.getDouble("credit"); // Invoice amount
+                
+                // If it's a Refund (negative payment), treat it as a Credit (increases balance)
+                if (debit < 0) {
+                    credit = Math.abs(debit);
+                    debit = 0;
+                }
+                
                 runningBalance = runningBalance + credit - debit;
 
                 totalDebit += debit;
@@ -470,8 +560,18 @@ public class ClientLedgerController implements Initializable {
                     }
                 }
 
+                String dateStr = rs.getString("txn_date");
+                String formattedDate = dateStr;
+                try {
+                    if (dateStr != null && !dateStr.isBlank()) {
+                        String d = dateStr.contains(" ") ? dateStr.split(" ")[0] : dateStr;
+                        formattedDate = java.time.LocalDate.parse(d).format(java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+                    }
+                } catch (Exception e) {}
+
                 ledgerData.add(new LedgerEntry(
-                        rs.getString("txn_date"),
+                        rs.getInt("txn_id"),
+                        formattedDate,
                         rs.getString("ref"),
                         rs.getString("type"),
                         rs.getString("mode"),
@@ -498,6 +598,14 @@ public class ClientLedgerController implements Initializable {
         double closing = credit - debit;
         if (footerClosingBalance != null)
             footerClosingBalance.setText("₹" + String.format("%.2f", closing));
+            
+        // ALSO UPDATE TOP SUMMARY CARD LABELS
+        if (totalDueLabel != null)
+            totalDueLabel.setText(String.format("%.2f", credit));
+        if (paymentLabel != null)
+            paymentLabel.setText(String.format("%.2f", debit));
+        if (netBalanceLabel != null)
+            netBalanceLabel.setText(String.format("%.2f", closing));
     }
 
     private void updateRecordCount() {
@@ -532,6 +640,7 @@ public class ClientLedgerController implements Initializable {
     }
 
     public static class LedgerEntry {
+        int txnId;
         String date;
         String reference;
         // String description; // Removed
@@ -542,8 +651,9 @@ public class ClientLedgerController implements Initializable {
         Double balance;
         String status;
 
-        public LedgerEntry(String date, String reference, String type, String mode, Double debit, Double credit,
+        public LedgerEntry(int txnId, String date, String reference, String type, String mode, Double debit, Double credit,
                 Double balance, String status) {
+            this.txnId = txnId;
             this.date = date;
             this.reference = reference;
             this.type = type;
@@ -553,6 +663,8 @@ public class ClientLedgerController implements Initializable {
             this.balance = balance;
             this.status = status;
         }
+
+        public int getTxnId() { return txnId; }
 
         public String getDate() {
             return date;

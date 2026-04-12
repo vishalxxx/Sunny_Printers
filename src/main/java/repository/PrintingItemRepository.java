@@ -15,8 +15,8 @@ public class PrintingItemRepository {
 
         String sql = """
             INSERT INTO printing_items
-            (job_item_id, qty, units, color, side, with_ctp, notes, amount)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (job_item_id, qty, units, color, side, with_ctp, notes, amount, sets)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -29,6 +29,7 @@ public class PrintingItemRepository {
             ps.setInt(6, p.isWithCtp() ? 1 : 0);
             ps.setString(7, p.getNotes());
             ps.setDouble(8, p.getAmount());
+            ps.setString(9, p.getSets());
 
             ps.executeUpdate();
 
@@ -42,7 +43,7 @@ public class PrintingItemRepository {
     public Printing findByJobItemId(int jobItemId) {
 
         String sql = """
-            SELECT qty, units, color, side, with_ctp, notes, amount
+            SELECT qty, units, color, side, with_ctp, notes, amount, sets
             FROM printing_items
             WHERE job_item_id = ?
         """;
@@ -63,6 +64,7 @@ public class PrintingItemRepository {
                     p.setWithCtp(rs.getInt("with_ctp") == 1);
                     p.setNotes(rs.getString("notes"));
                     p.setAmount(rs.getDouble("amount"));
+                    p.setSets(rs.getString("sets"));
                     return p;
                 }
             }
@@ -81,7 +83,7 @@ public class PrintingItemRepository {
         String sql = """
             UPDATE printing_items
             SET qty = ?, units = ?, color = ?, side = ?, with_ctp = ?,
-                notes = ?, amount = ?
+                notes = ?, amount = ?, sets = ?
             WHERE job_item_id = ?
         """;
 
@@ -95,7 +97,8 @@ public class PrintingItemRepository {
             ps.setInt(5, p.isWithCtp() ? 1 : 0);
             ps.setString(6, p.getNotes());
             ps.setDouble(7, p.getAmount());
-            ps.setInt(8, p.getJobItemId());
+            ps.setString(8, p.getSets());
+            ps.setInt(9, p.getJobItemId());
 
             ps.executeUpdate();
 

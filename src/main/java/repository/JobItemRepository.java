@@ -84,6 +84,20 @@ public class JobItemRepository {
 		return list;
 	}
 
+	/* ================= UPDATE ================= */
+	
+	public void updateBaseItem(Connection con, int id, String description, double amount) {
+		String sql = "UPDATE job_items SET description = ?, amount = ? WHERE id = ?";
+		try (PreparedStatement ps = con.prepareStatement(sql)) {
+			ps.setString(1, description);
+			ps.setDouble(2, amount);
+			ps.setInt(3, id);
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			throw new RuntimeException("Failed to update JobItem base record", e);
+		}
+	}
+
 	/* ================= DELETE ================= */
 
 	public void delete(int itemId) throws Exception {

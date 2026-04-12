@@ -27,20 +27,27 @@
            styleClass="job-no-label"/>
     <GridPane alignment="CENTER" hgap="10" maxWidth="Infinity" styleClass="card-grid">
         <columnConstraints>
-            <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
-            <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+            <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
+            <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
+            <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
         </columnConstraints>
 
         <ComboBox fx:id="clientCombo"
                   promptText="Search client by Name / GST / Mobile"
+                  styleClass="top-combo-box"
                   GridPane.columnIndex="0"
                   maxWidth="Infinity"/>
 
-        
-
         <TextField fx:id="jobName"
                    promptText="Enter Job Title Here"
+                   styleClass="top-text-field"
                    GridPane.columnIndex="1"
+                   maxWidth="Infinity"/>
+
+        <DatePicker fx:id="jobDate"
+                   promptText="Job Date"
+                   styleClass="date-picker"
+                   GridPane.columnIndex="2"
                    maxWidth="Infinity"/>
     </GridPane>
 
