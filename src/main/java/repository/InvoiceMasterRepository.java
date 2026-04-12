@@ -101,7 +101,7 @@ public class InvoiceMasterRepository {
                       AND period_from = ?
                       AND period_to   = ?
                       AND is_void = 0
-                      AND status IN ('DRAFT', 'FINAL')
+                      AND status NOT IN ('REVISED', 'CANCELLED')
                     LIMIT 1
                 """;
 
@@ -347,7 +347,21 @@ public class InvoiceMasterRepository {
      * =========================================================
      * MAP ROW
      * =========================================================
-     */    public InvoiceMaster mapRowPublic(ResultSet rs) throws Exception {
+     */    public InvoiceMaster findByInvoiceNo(Connection con, String invoiceNo) throws Exception {
+        if (invoiceNo == null) return null;
+        String sql = "SELECT * FROM invoice_master WHERE invoice_no = ? LIMIT 1";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, invoiceNo);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapRowPublic(rs);
+                }
+            }
+        }
+        return null;
+    }
+
+    public InvoiceMaster mapRowPublic(ResultSet rs) throws Exception {
         InvoiceMaster inv = new InvoiceMaster();
         inv.setId(rs.getInt("id"));
         inv.setInvoiceNo(rs.getString("invoice_no"));
@@ -430,6 +444,9 @@ public class InvoiceMasterRepository {
                         client_name  = ?,
                         invoice_date = ?,
                         amount       = ?,
+                        paid_amount  = ?,
+                        due_amount   = ?,
+                        payment_status = ?,
                         type         = ?,
                         status       = ?,
                         period_from  = ?,
@@ -450,29 +467,32 @@ public class InvoiceMasterRepository {
             ps.setString(3, inv.getClientName());
             ps.setString(4, toIso(inv.getInvoiceDate()));
             ps.setDouble(5, inv.getAmount());
-            ps.setString(6, inv.getType());
-            ps.setString(7, inv.getStatus());
+            ps.setDouble(6, inv.getPaidAmount());
+            ps.setDouble(7, inv.getDueAmount());
+            ps.setString(8, inv.getPaymentStatus());
+            ps.setString(9, inv.getType());
+            ps.setString(10, inv.getStatus());
 
-            ps.setString(8, toIso(inv.getPeriodFrom()));
-            ps.setString(9, toIso(inv.getPeriodTo()));
+            ps.setString(11, toIso(inv.getPeriodFrom()));
+            ps.setString(12, toIso(inv.getPeriodTo()));
 
-            ps.setString(10, inv.getFilePath());
+            ps.setString(13, inv.getFilePath());
 
             if (inv.getReplacedByInvoiceId() != null)
-                ps.setInt(11, inv.getReplacedByInvoiceId());
+                ps.setInt(14, inv.getReplacedByInvoiceId());
             else
-                ps.setNull(11, Types.INTEGER);
+                ps.setNull(14, Types.INTEGER);
 
             if (inv.getParentInvoiceId() != null)
-                ps.setInt(12, inv.getParentInvoiceId());
+                ps.setInt(15, inv.getParentInvoiceId());
             else
-                ps.setNull(12, Types.INTEGER);
+                ps.setNull(15, Types.INTEGER);
 
-            ps.setInt(13, inv.isVoid() ? 1 : 0);
-            ps.setString(14, inv.getVoidReason());
-            ps.setString(15, toIso(inv.getVoidDate()));
+            ps.setInt(16, inv.isVoid() ? 1 : 0);
+            ps.setString(17, inv.getVoidReason());
+            ps.setString(18, toIso(inv.getVoidDate()));
             
-            ps.setInt(16, inv.getId());
+            ps.setInt(19, inv.getId());
 
             ps.executeUpdate();
         }

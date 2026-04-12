@@ -209,7 +209,7 @@ public class DatabaseInitializer {
                     
                     // 5. Recreate indexes
                     try { stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_invoice_no ON invoice_master(invoice_no);"); } catch (Exception e) {}
-                    try { stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_invoice_active_period ON invoice_master(client_id, type, period_from, period_to) WHERE is_void = 0 AND status != 'REVISED';"); } catch (Exception e) {}
+                    try { stmt.execute("DROP INDEX IF EXISTS ux_invoice_active_period;"); } catch (Exception e) {}
                     
                     System.out.println("✔ Migration: Successfully removed restrictive CHECK constraint.");
                 }
@@ -239,12 +239,18 @@ public class DatabaseInitializer {
             try {
                 // Only enforce uniqueness for active invoices (not void, not revised)
                 // We include 'type' to ensure it covers both monthly and range-based rules if they were separate
-                stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_invoice_active_period ON invoice_master(client_id, type, period_from, period_to) WHERE is_void = 0 AND status != 'REVISED';");
+                // Uniqueness on period is no longer enforced to allow multiple invoices for same period if desired.
+                // We only enforce invoice number uniqueness.
             } catch (Exception e) { }
 
             try {
                 // Ensure invoice numbers remain globally unique
                 stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_invoice_no ON invoice_master(invoice_no);");
+            } catch (Exception e) { }
+
+            try {
+                // Ensure cancelled invoices remain visible in the list (not hidden like VOID)
+                stmt.execute("UPDATE invoice_master SET is_void = 0 WHERE (status = 'CANCELLED' OR status = 'REVISED') AND is_void = 1;");
             } catch (Exception e) { }
 
             // ================== SYSTEM SETTINGS TABLE ==================
@@ -514,6 +520,24 @@ public class DatabaseInitializer {
             try { stmt.execute("ALTER TABLE jobs ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP;"); } catch (Exception e) {}
             try { stmt.execute("ALTER TABLE jobs ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP;"); } catch (Exception e) {}
             try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_temp_invoice_no INTEGER DEFAULT 0;"); } catch (Exception e) {}
+
+            // ================== INVOICE JOB MAPPING TABLE (NEW) ==================
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS invoice_job_mapping (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    invoice_id INTEGER NOT NULL,
+                    job_id INTEGER NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (invoice_id) REFERENCES invoice_master(id) ON DELETE CASCADE,
+                    FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE,
+                    UNIQUE(invoice_id, job_id)
+                );
+            """);
+
+            // Migration: Populate mapping from existing jobs.invoice_id (one-time fix)
+            try {
+                stmt.execute("INSERT OR IGNORE INTO invoice_job_mapping (invoice_id, job_id) SELECT invoice_id, id FROM jobs WHERE invoice_id IS NOT NULL;");
+            } catch (Exception e) {}
 
             System.out.println("✔ All tables are created and ready!");
 

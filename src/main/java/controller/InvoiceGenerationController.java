@@ -466,7 +466,7 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 						throw new RuntimeException("No completed jobs found for selected date range");
 
 					// 🔥 Reserve or reuse TEMP invoice number
-					InvoiceMasterService.CreateOrGetResult reserved = invoiceMasterService.createOrGetExisting(invoice, "DATE_RANGE", null);
+					InvoiceMasterService.CreateOrGetResult reserved = invoiceMasterService.createNewDraftInvoice(invoice, "DATE_RANGE", null);
 					if (reserved != null) {
 						invoice.setInvoiceNo(reserved.master().getInvoiceNo());
 						if (reserved.wasNewlyCreated()) {
@@ -560,7 +560,7 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 					updateMessage("Saving Draft Invoices...");
 					for (Invoice inv : invoiceMap.values()) {
 						if (isCancelled()) throw new CancellationException();
-						InvoiceMasterService.CreateOrGetResult reserved = invoiceMasterService.createOrGetExisting(inv, "MONTHLY_BULK", null);
+						InvoiceMasterService.CreateOrGetResult reserved = invoiceMasterService.createNewDraftInvoice(inv, "MONTHLY_BULK", null);
 						if (reserved != null && reserved.wasNewlyCreated()) {
 							newlyCreatedIds.add(reserved.master().getId());
 						}

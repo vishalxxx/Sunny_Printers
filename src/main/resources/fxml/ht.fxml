@@ -131,7 +131,10 @@
 			<VBox GridPane.columnIndex="1" GridPane.rowIndex="0"
 				spacing="12" styleClass="card" maxWidth="360" fx:id="printingCard">
 
-				<Label text="PRINTING" styleClass="card-title" />
+				<HBox alignment="CENTER_LEFT" spacing="10">
+					<Label text="PRINTING" styleClass="card-title" />
+					<Label fx:id="printCountLabel" text="0" styleClass="card-count-badge" visible="false"/>
+				</HBox>
 
 				<VBox spacing="10">
 
@@ -238,7 +241,10 @@
 			<VBox GridPane.columnIndex="2" GridPane.rowIndex="0"
 				spacing="15" styleClass="card" maxWidth="360" fx:id="ctpCard">
 
-				<Label text="CTP PLATE" styleClass="card-title" />
+				<HBox alignment="CENTER_LEFT" spacing="10">
+					<Label text="CTP PLATE" styleClass="card-title" />
+					<Label fx:id="ctpCountLabel" text="0" styleClass="card-count-badge" visible="false"/>
+				</HBox>
 
 				<VBox spacing="10">
 					<!-- Quantity -->
@@ -347,7 +353,10 @@
 			<VBox GridPane.columnIndex="0" GridPane.rowIndex="1"
 				spacing="15" styleClass="card" maxWidth="360" fx:id="paperCard">
 
-				<Label text="PAPER" styleClass="card-title" />
+				<HBox alignment="CENTER_LEFT" spacing="10">
+					<Label text="PAPER" styleClass="card-title" />
+					<Label fx:id="paperCountLabel" text="0" styleClass="card-count-badge" visible="false"/>
+				</HBox>
 
 				<VBox spacing="10">
 
@@ -489,7 +498,10 @@
 			<VBox GridPane.columnIndex="1" GridPane.rowIndex="1"
 				spacing="15" styleClass="card" maxWidth="360" fx:id="bindingCard">
 
-				<Label text="BINDING" styleClass="card-title" />
+				<HBox alignment="CENTER_LEFT" spacing="10">
+					<Label text="BINDING" styleClass="card-title" />
+					<Label fx:id="bindingCountLabel" text="0" styleClass="card-count-badge" visible="false"/>
+				</HBox>
 
 				<VBox spacing="10">
 
@@ -570,7 +582,10 @@
 			<VBox GridPane.columnIndex="2" GridPane.rowIndex="1"
 				spacing="15" styleClass="card" maxWidth="360" fx:id="laminationCard">
 
-				<Label text="LAMINATION" styleClass="card-title" />
+				<HBox alignment="CENTER_LEFT" spacing="10">
+					<Label text="LAMINATION" styleClass="card-title" />
+					<Label fx:id="laminationCountLabel" text="0" styleClass="card-count-badge" visible="false"/>
+				</HBox>
 
 				<VBox spacing="10">
 

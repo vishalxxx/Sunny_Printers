@@ -56,7 +56,6 @@
 	<HBox fx:id="jobActionsBox" spacing="10" alignment="CENTER_LEFT" styleClass="action-bar" managed="false" visible="false">
 		<Button fx:id="btnJobView" text="View" onAction="#handleJobViewAction" disable="true" />
 		<Button fx:id="btnJobEdit" text="Edit" onAction="#handleJobEditAction" disable="true" />
-		<Button fx:id="btnJobStart" text="Start Processing" onAction="#handleJobStartAction" disable="true" />
 		<Button fx:id="btnJobCancel" text="Cancel Job" onAction="#handleJobCancelAction" disable="true" />
 		<Button fx:id="btnJobUnlink" text="Unlink Job" onAction="#handleJobUnlinkAction" disable="true" />
 		<Region HBox.hgrow="ALWAYS" />

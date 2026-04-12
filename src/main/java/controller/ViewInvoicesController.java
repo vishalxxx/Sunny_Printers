@@ -283,7 +283,7 @@ public class ViewInvoicesController {
         
         boolean hasPayments = inv.getPaidAmount() > 0;
         
-        if (btnEdit != null) btnEdit.setDisable(!"DRAFT".equals(status));
+        if (btnEdit != null) btnEdit.setDisable(!("DRAFT".equals(status) || "FINAL".equals(status)));
         if (btnFinalize != null) btnFinalize.setDisable(!isDraft);
         if (btnSend != null) {
             btnSend.setDisable(!(isFinal || isSent));
@@ -292,7 +292,7 @@ public class ViewInvoicesController {
         if (btnRevised != null) btnRevised.setDisable(!isSent || hasPayments);
         if (btnPayment != null) btnPayment.setDisable(!isSent || isPaid);
         if (btnRaiseCnDn != null) btnRaiseCnDn.setDisable(!isSent);
-        if (btnCancel != null) btnCancel.setDisable(isPaid || isPartialPaid || "REVISED".equals(status));
+        if (btnCancel != null) btnCancel.setDisable(isPaid || isPartialPaid || "REVISED".equals(status) || "CANCELLED".equals(status));
     }
 
     private void disableAllButtons() {
@@ -385,8 +385,10 @@ public class ViewInvoicesController {
     @FXML private void handleEditAction(ActionEvent event) {
         InvoiceMaster inv = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
         if (inv != null) {
+            String stat = inv.getStatus() != null ? inv.getStatus().toUpperCase() : "";
             ViewInvoiceJobsController.pendingPrefillInvoice = inv;
-            ViewInvoiceJobsController.viewOnlyMode = false;
+            // 🔥 Requirement: FINAL status opens in viewOnly mode via Edit button
+            ViewInvoiceJobsController.viewOnlyMode = "FINAL".equals(stat);
             MainController.getInstance().loadViewInvoiceJobs(null);
         }
     }
@@ -410,7 +412,7 @@ public class ViewInvoicesController {
     private void loadClients() { if (clientComboBox != null) clientComboBox.getItems().setAll(clientService.getAllClients()); }
     private void loadStatuses() {
         if (statusComboBox != null) {
-            statusComboBox.getItems().setAll("All", "UNPAID", "PARTIAL PAID", "PAID", "OVERDUE");
+            statusComboBox.getItems().setAll("All", "UNPAID", "PARTIAL PAID", "PAID", "OVERDUE", "CANCELLED");
             statusComboBox.getSelectionModel().selectFirst();
         }
     }

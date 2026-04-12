@@ -10,12 +10,14 @@
       stylesheets="@../css/invoice_genration.css"
             fitToWidth="true" fitToHeight="true">
             
+<StackPane>
 <VBox xmlns="http://javafx.com/javafx/23"
       xmlns:fx="http://javafx.com/fxml/1"
       spacing="24"
       styleClass="invoice-page"
       fillWidth="true"
-      maxWidth="Infinity">
+      maxWidth="1220"
+      alignment="TOP_CENTER">
 
     <padding>
         <Insets top="28" right="28" bottom="28" left="28"/>
@@ -252,4 +254,5 @@
     </VBox>
 
 </VBox>
+</StackPane>
 </ScrollPane>

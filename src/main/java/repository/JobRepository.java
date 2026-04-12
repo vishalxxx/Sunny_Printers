@@ -512,11 +512,12 @@ public class JobRepository {
         String sql = """
                     SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
                            j.status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
-                           (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
-                           (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
+                           (SELECT invoice_no FROM invoice_master invM WHERE invM.id = m.invoice_id) as invoice_no,
+                           (SELECT status FROM invoice_master invM WHERE invM.id = m.invoice_id) as invoice_status,
                            (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
                     FROM jobs j
-                    WHERE j.invoice_id = ?
+                    JOIN invoice_job_mapping m ON j.id = m.job_id
+                    WHERE m.invoice_id = ?
                     ORDER BY DATE(j.job_date) ASC, j.id ASC
                 """;
 

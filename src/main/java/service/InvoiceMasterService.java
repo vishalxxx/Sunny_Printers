@@ -27,31 +27,22 @@ public class InvoiceMasterService {
      * CREATE OR REUSE BUSINESS INVOICE
      * =========================================================
      */
-    public CreateOrGetResult createOrGetExisting(
+    public CreateOrGetResult createNewDraftInvoice(
             Invoice invoice,
             String type,
             String filePath) {
 
         return AtomicDB.run(con -> {
 
-            // Lookup by client+period only (ignores type) - prevents duplicates across
-            // monthly vs date range
-            Optional<InvoiceMaster> existing = repo.findActiveByClientPeriod(
-                    con,
-                    invoice.getClientId(),
-                    invoice.getFromDate(),
-                    invoice.getToDate());
-
             if (invoice.getJobs() == null || invoice.getJobs().isEmpty()) {
                 throw new RuntimeException("Cannot create an empty invoice. No jobs found.");
             }
 
-            if (existing.isPresent()) {
-                return new CreateOrGetResult(existing.get(), false); // 🔥 reuse same invoice
-            }
+            // 🔥 Requirement: Always create a new draft, do not reuse old invoices based on period
+            String tempNo = settingsService.generateNextTempInvoiceNumber(con);
 
             InvoiceMaster inv = new InvoiceMaster(
-                    invoice.getInvoiceNo(),
+                    tempNo,
                     invoice.getClientId(),
                     invoice.getClientName(),
                     invoice.getInvoiceDate(),
@@ -63,23 +54,8 @@ public class InvoiceMasterService {
             inv.setPeriodFrom(invoice.getFromDate());
             inv.setPeriodTo(invoice.getToDate());
 
-            try {
-                repo.insert(con, inv);
-                return new CreateOrGetResult(inv, true); // newly created
-            } catch (Exception e) {
-                // Likely a concurrent insert / unique constraint violation.
-                Optional<InvoiceMaster> retry = repo.findActiveByClientPeriod(
-                        con,
-                        invoice.getClientId(),
-                        invoice.getFromDate(),
-                        invoice.getToDate());
-
-                if (retry.isPresent()) {
-                    return new CreateOrGetResult(retry.get(), false);
-                }
-
-                throw e;
-            }
+            repo.insert(con, inv);
+            return new CreateOrGetResult(inv, true);
         });
     }
 
@@ -138,25 +114,17 @@ public class InvoiceMasterService {
             String filePath) {
 
         AtomicDB.runVoid(con -> {
+            // Find the master created earlier in this session (by invoice_no)
+            InvoiceMaster existing = repo.findByInvoiceNo(con, invoice.getInvoiceNo());
 
-            // Lookup by client+period only (reuse invoice from monthly or date range)
-            Optional<InvoiceMaster> existing = repo.findActiveByClientPeriod(con, invoice.getClientId(), from, to);
-
-            // =====================================================
-            // ♻️ EXISTING INVOICE FOUND
-            // =====================================================
-            if (existing.isPresent()) {
-
-                InvoiceMaster old = existing.get();
-
-                invoice.setInvoiceNo(old.getInvoiceNo());
-
-                // Always update linkage and status even if no file path provided (Draft-first workflow)
-                old.setStatus("DRAFT");
-                repo.update(con, old);
-                linkJobsToInvoice(con, old.getId(), invoice);
-
+            if (existing != null) {
+                // Link jobs to the draft created earlier
+                linkJobsToInvoice(con, existing.getId(), invoice);
                 return;
+            }
+
+            if (invoice.getJobs() == null || invoice.getJobs().isEmpty()) {
+                throw new RuntimeException("Cannot create an empty invoice. No jobs found.");
             }
 
             if (invoice.getJobs() == null || invoice.getJobs().isEmpty()) {
@@ -198,14 +166,27 @@ public class InvoiceMasterService {
 
         String placeholders = jobIds.stream().map(i -> "?").collect(java.util.stream.Collectors.joining(","));
         String updateJobsSql = "UPDATE jobs SET invoice_id = ?, status = 'Invoice Drafted' WHERE id IN (" + placeholders + ")";
+        String insertMappingSql = "INSERT OR IGNORE INTO invoice_job_mapping (invoice_id, job_id) VALUES (?, ?)";
 
-        try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql)) {
+        try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql);
+             java.sql.PreparedStatement psMap = con.prepareStatement(insertMappingSql)) {
+            
+            // 1. Update Jobs
             psUpdate.setInt(1, invoiceId);
             int idx = 2;
             for (int jobId : jobIds) {
                 psUpdate.setInt(idx++, jobId);
             }
             psUpdate.executeUpdate();
+
+            // 2. Insert Mappings
+            for (int jobId : jobIds) {
+                psMap.setInt(1, invoiceId);
+                psMap.setInt(2, jobId);
+                psMap.addBatch();
+            }
+            psMap.executeBatch();
+
         } catch (Exception e) {
             System.err.println("Failed to link jobs to invoice: " + e.getMessage());
         }
@@ -216,7 +197,7 @@ public class InvoiceMasterService {
             DELETE FROM invoice_master 
             WHERE status = 'DRAFT' 
               AND invoice_no LIKE 'TEMP-%'
-              AND id NOT IN (SELECT DISTINCT invoice_id FROM jobs WHERE invoice_id IS NOT NULL)
+              AND id NOT IN (SELECT DISTINCT invoice_id FROM invoice_job_mapping)
         """;
         try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
             ps.executeUpdate();
@@ -227,15 +208,32 @@ public class InvoiceMasterService {
 
     private void unlinkJobsFromInvoice(java.sql.Connection con, int invoiceId) {
         String updateJobsSql = "UPDATE jobs SET invoice_id = NULL, status = 'Completed' WHERE invoice_id = ?";
-        try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql)) {
+        String deleteMappingSql = "DELETE FROM invoice_job_mapping WHERE invoice_id = ?";
+        try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql);
+             java.sql.PreparedStatement psDelMap = con.prepareStatement(deleteMappingSql)) {
+            
             psUpdate.setInt(1, invoiceId);
             psUpdate.executeUpdate();
+            
+            psDelMap.setInt(1, invoiceId);
+            psDelMap.executeUpdate();
             
             // 🔥 Requirement: if temporary invoice is empty, delete it automatically
             deleteEmptyInvoices(con);
             
         } catch (Exception e) {
             System.err.println("Failed to unlink jobs from invoice: " + e.getMessage());
+        }
+    }
+
+    private void releaseJobsKeepHistory(java.sql.Connection con, int invoiceId) {
+        // Releases jobs for reuse but keeps the 'invoice_job_mapping' for history
+        String updateJobsSql = "UPDATE jobs SET invoice_id = NULL, status = 'Completed' WHERE invoice_id = ?";
+        try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql)) {
+            psUpdate.setInt(1, invoiceId);
+            psUpdate.executeUpdate();
+        } catch (Exception e) {
+            System.err.println("Failed to release jobs for history: " + e.getMessage());
         }
     }
 
@@ -287,25 +285,6 @@ public class InvoiceMasterService {
         AtomicDB.runVoid(con -> {
 
             for (Invoice invoice : invoiceMap.values()) {
-
-                // Lookup by client+period only (reuse invoice from date range or monthly)
-                Optional<InvoiceMaster> existing = repo.findActiveByClientPeriod(con, invoice.getClientId(), from, to);
-
-                if (existing.isPresent()) {
-
-                    InvoiceMaster old = existing.get();
-
-                    invoice.setInvoiceNo(old.getInvoiceNo());
-
-                    // If file generated → update path/status (regeneration overwrites)
-                    // Always update linkage and status
-                    old.setStatus("DRAFT");
-                    repo.update(con, old);
-                    linkJobsToInvoice(con, old.getId(), invoice);
-
-                    continue;
-                }
-
                 // Skip clients with no jobs (Enforce: No empty invoices)
                 if (invoice.getJobs() == null || invoice.getJobs().isEmpty()) {
                     continue;
@@ -380,10 +359,15 @@ public class InvoiceMasterService {
 
                 inv.setStatus(newStatus);
                 // If cancelled/void, also update payment status and mark as void for period reuse
-                if ("CANCELLED".equalsIgnoreCase(newStatus) || "VOID".equalsIgnoreCase(newStatus)) {
+                if ("CANCELLED".equalsIgnoreCase(newStatus)) {
+                    inv.setPaymentStatus("Void");
+                    inv.setVoid(false); // Stay visible in table
+                    // 🔥 Requirement: Keep history but release jobs
+                    releaseJobsKeepHistory(con, invoiceId);
+                } else if ("VOID".equalsIgnoreCase(newStatus)) {
                     inv.setPaymentStatus("VOID");
                     inv.setVoid(true);
-                    inv.setVoidReason("User updated status to " + newStatus);
+                    inv.setVoidReason("User updated status to VOID");
                     inv.setVoidDate(LocalDate.now());
                     
                     repo.updatePayment(con, invoiceId, inv.getPaidAmount(), inv.getDueAmount(), "VOID", LocalDate.now());

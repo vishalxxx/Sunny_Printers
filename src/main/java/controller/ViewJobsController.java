@@ -748,7 +748,7 @@ public class ViewJobsController {
             controller.openForEdit(job);
 
             utils.NavigationManager.getInstance().push("/fxml/edit_job.fxml", "Edit Job", "Editing Job...", "jobsSidebar");
-            utils.NavigationManager.getInstance().updateCurrentView(view);
+            utils.NavigationManager.getInstance().updateCurrentState(view, controller);
 
             MainController.getInstance().setCenterView(view);
 

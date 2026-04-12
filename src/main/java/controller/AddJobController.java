@@ -61,6 +61,29 @@ public class AddJobController implements utils.DirtySupport {
 
 	private void updateItemCount() {
 		itemCount = pendingItems.size();
+
+		long printCount = pendingItems.stream().filter(i -> i instanceof model.Printing).count();
+		long ctpCount = pendingItems.stream().filter(i -> i instanceof model.CtpPlate).count();
+		long paperCount = pendingItems.stream().filter(i -> i instanceof model.Paper).count();
+		long bindingCount = pendingItems.stream().filter(i -> i instanceof model.Binding).count();
+		long lamCount = pendingItems.stream().filter(i -> i instanceof model.Lamination).count();
+
+		updateCounterLabel(printCountLabel, printCount);
+		updateCounterLabel(ctpCountLabel, ctpCount);
+		updateCounterLabel(paperCountLabel, paperCount);
+		updateCounterLabel(bindingCountLabel, bindingCount);
+		updateCounterLabel(laminationCountLabel, lamCount);
+	}
+
+	private void updateCounterLabel(Label lbl, long count) {
+		if (lbl == null)
+			return;
+		if (count > 0) {
+			lbl.setText(String.valueOf(count));
+			lbl.setVisible(true);
+		} else {
+			lbl.setVisible(false);
+		}
 	}
 
 	/* ========================= STATE ========================= */
@@ -256,6 +279,17 @@ public class AddJobController implements utils.DirtySupport {
 	private Button addBindingBtn;
 	@FXML
 	private Button addLaminationBtn;
+
+	@FXML
+	private Label printCountLabel;
+	@FXML
+	private Label ctpCountLabel;
+	@FXML
+	private Label paperCountLabel;
+	@FXML
+	private Label bindingCountLabel;
+	@FXML
+	private Label laminationCountLabel;
 
 	@FXML
 	private Label jobNoLabel;

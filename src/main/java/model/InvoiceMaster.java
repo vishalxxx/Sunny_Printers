@@ -62,7 +62,7 @@ public class InvoiceMaster {
         this.dueAmount = amount;
         
         if ("CANCELLED".equalsIgnoreCase(status)) {
-            this.paymentStatus = "VOID";
+            this.paymentStatus = "Void";
         } else {
             this.paymentStatus = "UNPAID";
         }

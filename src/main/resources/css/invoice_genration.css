@@ -7,6 +7,12 @@
 }
 
 .page {
+    -fx-padding: 0;
+    -fx-spacing: 0;
+}
+
+.invoice-page {
+    -fx-background-color: transparent;
     -fx-padding: 1.8em;
     -fx-spacing: 1.6em;
 }
@@ -525,6 +531,5 @@
 
 .invoice-page {
     -fx-background-color: transparent;
-    -fx-max-width: Infinity;
 }
 
