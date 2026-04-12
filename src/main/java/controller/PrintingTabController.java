@@ -346,4 +346,8 @@ public class PrintingTabController {
             handleAddOrUpdate();
         }
     }
+
+    public boolean hasChanges() {
+        return printingTable.getItems().stream().anyMatch(p -> p.isNew() || p.isUpdated() || p.isDeleted());
+    }
 }

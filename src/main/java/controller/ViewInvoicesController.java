@@ -93,7 +93,7 @@ public class ViewInvoicesController {
                         if ("DRAFT".equals(stat)) {
                             handleEditAction(null);
                         } else {
-                            Toast.show((Stage) invoiceTable.getScene().getWindow(), "⚠️ Only DRAFT invoices can be opened for editing.");
+                            handleViewOnlyAction(selected);
                         }
                     }
                 });
@@ -279,6 +279,7 @@ public class ViewInvoicesController {
         boolean isFinal = "FINAL".equals(status);
         boolean isSent = "SENT TO CLIENT".equals(status) || "SENT".equals(status);
         boolean isPaid = "PAID".equals(pStatus);
+        boolean isPartialPaid = "PARTIAL PAID".equals(pStatus);
         
         boolean hasPayments = inv.getPaidAmount() > 0;
         
@@ -289,9 +290,9 @@ public class ViewInvoicesController {
             btnSend.setText(isSent ? "Send Again" : "Send");
         }
         if (btnRevised != null) btnRevised.setDisable(!isSent || hasPayments);
-        if (btnPayment != null) btnPayment.setDisable(!isSent);
+        if (btnPayment != null) btnPayment.setDisable(!isSent || isPaid);
         if (btnRaiseCnDn != null) btnRaiseCnDn.setDisable(!isSent);
-        if (btnCancel != null) btnCancel.setDisable(isPaid || "REVISED".equals(status));
+        if (btnCancel != null) btnCancel.setDisable(isPaid || isPartialPaid || "REVISED".equals(status));
     }
 
     private void disableAllButtons() {
@@ -385,6 +386,15 @@ public class ViewInvoicesController {
         InvoiceMaster inv = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
         if (inv != null) {
             ViewInvoiceJobsController.pendingPrefillInvoice = inv;
+            ViewInvoiceJobsController.viewOnlyMode = false;
+            MainController.getInstance().loadViewInvoiceJobs(null);
+        }
+    }
+
+    private void handleViewOnlyAction(InvoiceMaster inv) {
+        if (inv != null) {
+            ViewInvoiceJobsController.pendingPrefillInvoice = inv;
+            ViewInvoiceJobsController.viewOnlyMode = true;
             MainController.getInstance().loadViewInvoiceJobs(null);
         }
     }

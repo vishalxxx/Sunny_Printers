@@ -42,8 +42,6 @@ public class ViewInvoiceJobsController {
     @FXML private TextField txtClientName;
     @FXML private TextField txtInvoiceNo;
     @FXML private DatePicker dpInvoiceDate;
-    @FXML private Circle statusCircle;
-    @FXML private Label lblInvoiceStatus;
     @FXML private TextField txtProcessStatus;
 
     @FXML private TableColumn<Job, Integer> idCol;
@@ -82,7 +80,12 @@ public class ViewInvoiceJobsController {
         clientComboBox.valueProperty().addListener((obs, oldV, newV) -> onClientSelected(newV));
         invoiceComboBox.valueProperty().addListener((obs, oldV, newV) -> onInvoiceSelected(newV));
 
-        editModeBox.getStylesheets().add(getClass().getResource("/css/invoice_genration.css").toExternalForm());
+        try {
+            var cssUrl = getClass().getResource("/css/invoice_genration.css");
+            if (cssUrl != null) {
+                editModeBox.getStylesheets().add(cssUrl.toExternalForm());
+            }
+        } catch (Exception e) {}
 
         setupJobActionBarStyles();
 
@@ -114,44 +117,14 @@ public class ViewInvoiceJobsController {
             jobActionsBox.setVisible(true);
             jobActionsBox.setManaged(true);
             
-            jobActionsBox.setManaged(true);
-            
-            if (viewOnlyMode) {
-                this.isViewOnly = true;
-                lblPageHeading.setText("View Invoice");
-                dpInvoiceDate.setDisable(true);
-                btnSave.setVisible(false);
-                btnSave.setManaged(false);
-                btnDiscard.setText("Back");
-                // Reset flag for next time
-                viewOnlyMode = false; 
-            } else {
-                this.isViewOnly = false;
-                lblPageHeading.setText("Edit & Revise Invoice");
-                dpInvoiceDate.setDisable(false);
-                btnSave.setVisible(true);
-                btnSave.setManaged(true);
-                btnDiscard.setText("Discard");
-            }
-
-            txtInvoiceNo.setText(prefill.getInvoiceNo());
-            dpInvoiceDate.setValue(prefill.getInvoiceDate());
-            txtProcessStatus.setText(prefill.getStatus());
-            lblInvoiceStatus.setText(prefill.getPaymentStatus() == null ? "UNPAID" : prefill.getPaymentStatus());
-            updateCircleColor(statusCircle, prefill.getPaymentStatus() == null ? "UNPAID" : prefill.getPaymentStatus());
-
-            Client matchingClient = clientComboBox.getItems().stream()
-                .filter(c -> c.getId() == prefill.getClientId())
-                .findFirst().orElse(null);
-
-            if (matchingClient != null) {
-                txtClientName.setText(matchingClient.getBusinessName() + " (" + matchingClient.getClientName() + ")");
-            }
+            lblPageHeading.setText("Invoice Details & Jobs");
+            this.isViewOnly = false; // Status-based logic in updateJobActionBar will handle restrictions
+            viewOnlyMode = false;
 
             onInvoiceSelected(prefill);
         } else {
             isViewOnly = false;
-            lblPageHeading.setText("View Invoice Jobs");
+            lblPageHeading.setText("Invoice Search");
             searchModeBox.setVisible(true);
             searchModeBox.setManaged(true);
             editModeBox.setVisible(false);
@@ -230,6 +203,8 @@ public class ViewInvoiceJobsController {
         boolean isInProgress = status.equals("in progress");
         boolean isInvoiced = job.getInvoiceId() != null && job.getInvoiceId() > 0;
 
+        boolean isInvoiceDrafted = status.equals("invoice drafted") || status.equals("invoice_drafted");
+
         if (isInvoiced || status.equals("invoiced")) {
             btnJobStart.setDisable(true);
             btnJobCancel.setDisable(true);
@@ -242,6 +217,10 @@ public class ViewInvoiceJobsController {
             } else {
                 btnJobEdit.setDisable(true);
             }
+        } else if (isInvoiceDrafted) {
+            btnJobStart.setDisable(true);
+            btnJobCancel.setDisable(true);
+            btnJobEdit.setDisable(true); // User specifically asked to disable for Invoice Drafted status
         } else {
             boolean disableProgressBtns = isCancelled || isCompleted;
             btnJobStart.setDisable(disableProgressBtns || isInProgress);
@@ -251,14 +230,29 @@ public class ViewInvoiceJobsController {
 
         // Final check on action bar based on Invoice Status and View Mode
         if (currentEditInvoice != null) {
-            String invStatus = currentEditInvoice.getStatus() != null ? currentEditInvoice.getStatus().toLowerCase() : "";
-            boolean isEditableInvoice = invStatus.equals("draft") || invStatus.equals("final");
+            String invStatus = currentEditInvoice.getStatus() != null ? currentEditInvoice.getStatus().toUpperCase() : "";
+            boolean isTemporary = "DRAFT".equals(invStatus) || "FINAL".equals(invStatus);
 
-            btnJobUnlink.setDisable(!isEditableInvoice);
-            btnAddJob.setDisable(!isEditableInvoice);
-        }
-
-        if (isViewOnly) {
+            if (isTemporary) {
+                // For temporary invoices, we allow Edit and Unlink even in "View-ish" contexts
+                // but we must honor the general isViewOnly flag if explicitly set (e.g. from table double click)
+                // However, user specifically asked for Edit/Unlink to be enabled for temporary ones.
+                
+                btnJobEdit.setDisable(isInvoiceDrafted); // Keep disabled if job is in "Invoice Drafted" status
+                btnJobUnlink.setDisable(false);
+                btnAddJob.setDisable(false);
+            } else if (isViewOnly) {
+                btnJobEdit.setDisable(true);
+                btnJobStart.setDisable(true);
+                btnJobCancel.setDisable(true);
+                btnJobUnlink.setDisable(true);
+                btnAddJob.setDisable(true);
+            } else {
+                btnJobEdit.setDisable(isInvoiceDrafted);
+                btnJobUnlink.setDisable(!isTemporary);
+                btnAddJob.setDisable(!isTemporary);
+            }
+        } else if (isViewOnly) {
             btnJobEdit.setDisable(true);
             btnJobStart.setDisable(true);
             btnJobCancel.setDisable(true);
@@ -546,9 +540,27 @@ public class ViewInvoiceJobsController {
         jobsToAdd.clear();
         tableData.clear();
         if (invoice == null) {
+            editModeBox.setVisible(false);
+            editModeBox.setManaged(false);
+            jobActionsBox.setVisible(false);
+            jobActionsBox.setManaged(false);
             resultLabel.setText("Showing 0 jobs");
             return;
         }
+
+        // Show the info card and actions
+        editModeBox.setVisible(true);
+        editModeBox.setManaged(true);
+        jobActionsBox.setVisible(true);
+        jobActionsBox.setManaged(true);
+        
+        // Populate client name for search mode too
+        if (clientComboBox.getValue() != null) {
+            Client c = clientComboBox.getValue();
+            txtClientName.setText(c.getBusinessName() + " (" + c.getClientName() + ")");
+        }
+
+        populateInvoiceDetails(invoice);
 
 
         Thread thread = new Thread(() -> {
@@ -565,40 +577,42 @@ public class ViewInvoiceJobsController {
         thread.start();
     }
 
+    private void populateInvoiceDetails(InvoiceMaster inv) {
+        if (inv == null) return;
+        
+        // Populate Client Name automatically
+        Client matchingClient = clientComboBox.getItems().stream()
+                .filter(c -> c.getId() == inv.getClientId())
+                .findFirst().orElse(null);
+        
+        if (matchingClient != null) {
+            txtClientName.setText(matchingClient.getBusinessName() + " (" + matchingClient.getClientName() + ")");
+        } else if (clientComboBox.getValue() != null) {
+             Client c = clientComboBox.getValue();
+             txtClientName.setText(c.getBusinessName() + " (" + c.getClientName() + ")");
+        }
+
+        txtInvoiceNo.setText(inv.getInvoiceNo());
+        dpInvoiceDate.setValue(inv.getInvoiceDate());
+        txtProcessStatus.setText(inv.getStatus());
+
+        String stat = inv.getStatus() != null ? inv.getStatus().toUpperCase() : "";
+        boolean canSave = "DRAFT".equals(stat) || "FINAL".equals(stat);
+        
+        // Always show buttons, but disable save if not allowed
+        btnSave.setVisible(true);
+        btnSave.setManaged(true);
+        btnSave.setDisable(!canSave);
+        
+        btnDiscard.setVisible(true);
+        btnDiscard.setText(pendingPrefillInvoice == null ? "Close" : "Discard");
+        
+        dpInvoiceDate.setDisable(!canSave);
+    }
+
     private void toast(String message) {
         Stage stage = (Stage) ((Node) clientComboBox).getScene().getWindow();
         Platform.runLater(() -> Toast.show(stage, message));
-    }
-
-    private void updateCircleColor(Circle circle, String status) {
-        if (circle == null || status == null) return;
-        switch(status.toUpperCase()) {
-            case "PAID":
-                circle.setFill(Color.LIMEGREEN);
-                circle.setStyle("-fx-effect: dropshadow(gaussian, limegreen, 8, 0.4, 0, 0);");
-                break;
-            case "PARTIAL PAID":
-            case "PARTIAL_PAID":
-                circle.setFill(Color.ORANGE);
-                circle.setStyle("-fx-effect: dropshadow(gaussian, orange, 8, 0.4, 0, 0);");
-                break;
-            case "SENT":
-                circle.setFill(Color.DODGERBLUE);
-                circle.setStyle("-fx-effect: dropshadow(gaussian, dodgerblue, 8, 0.4, 0, 0);");
-                break;
-            case "OVERDUE":
-            case "VOID":
-                circle.setFill(Color.RED);
-                circle.setStyle("-fx-effect: dropshadow(gaussian, red, 8, 0.4, 0, 0);");
-                break;
-            case "UNPAID":
-            default:
-                circle.setFill(Color.GRAY);
-                circle.setStyle("-fx-effect: dropshadow(gaussian, gray, 8, 0.4, 0, 0);");
-                break;
-        }
-        Tooltip t = new Tooltip(status);
-        Tooltip.install(circle, t);
     }
 
     private void setupAutoPopupDatePicker(DatePicker dp) {

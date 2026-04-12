@@ -28,12 +28,13 @@ public class NavigationManager {
             history.push(currentState);
             canGoBack.set(true);
         }
-        currentState = new NavState(fxmlPath, title, subtitle, activeSidebarId, null);
+        currentState = new NavState(fxmlPath, title, subtitle, activeSidebarId, null, null);
     }
 
-    public void updateCurrentView(Parent view) {
+    public void updateCurrentState(Parent view, Object controller) {
         if (currentState != null) {
             currentState.setView(view);
+            currentState.setController(controller);
         }
     }
 
@@ -66,13 +67,15 @@ public class NavigationManager {
         private final String subtitle;
         private final String activeSidebarId;
         private Parent view;
+        private Object controller;
 
-        public NavState(String fxmlPath, String title, String subtitle, String activeSidebarId, Parent view) {
+        public NavState(String fxmlPath, String title, String subtitle, String activeSidebarId, Parent view, Object controller) {
             this.fxmlPath = fxmlPath;
             this.title = title;
             this.subtitle = subtitle;
             this.activeSidebarId = activeSidebarId;
             this.view = view;
+            this.controller = controller;
         }
 
         public String getFxmlPath() {
@@ -97,6 +100,14 @@ public class NavigationManager {
 
         public void setView(Parent view) {
             this.view = view;
+        }
+
+        public Object getController() {
+            return controller;
+        }
+
+        public void setController(Object controller) {
+            this.controller = controller;
         }
     }
 }

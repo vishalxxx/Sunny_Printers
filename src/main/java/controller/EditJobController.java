@@ -23,7 +23,29 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import service.JobService;
 
-public class EditJobController {
+public class EditJobController implements utils.DirtySupport {
+
+    @Override
+    public boolean hasUnsavedChanges() {
+        if (currentJob == null) return false;
+        
+        // Check if any tab has changes
+        boolean changed = (paperTabController != null && paperTabController.hasChanges())
+                || (printingTabController != null && printingTabController.hasChanges())
+                || (bindingTabController != null && bindingTabController.hasChanges())
+                || (laminationTabController != null && laminationTabController.hasChanges())
+                || (ctpTabController != null && ctpTabController.hasChanges());
+        
+        // Check remarks and image
+        if (!changed) {
+            String currentRemarks = jobRemarksArea.getText() != null ? jobRemarksArea.getText() : "";
+            String oldRemarks = currentJob.getRemarks() != null ? currentJob.getRemarks() : "";
+            if (!currentRemarks.equals(oldRemarks)) changed = true;
+            if (selectedImageFile != null) changed = true;
+        }
+        
+        return changed;
+    }
 
     /* =====================================================
        CURRENT JOB

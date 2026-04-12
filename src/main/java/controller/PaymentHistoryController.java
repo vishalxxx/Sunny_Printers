@@ -280,7 +280,6 @@ public class PaymentHistoryController implements Initializable {
                 p.type,
                 COALESCE(
                     (SELECT GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_id = i.id WHERE a.payment_id = p.id),
-                    (SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'notes'),
                     CASE WHEN p.type = 'Refund' THEN 'Advance Refund' ELSE 'Advance' END
                 ) as invoice_ref,
                 p.method, 

@@ -297,4 +297,8 @@ public class BindingTabController {
             handleAddOrUpdate();
         }
     }
+
+    public boolean hasChanges() {
+        return bindingTable.getItems().stream().anyMatch(b -> b.isNew() || b.isUpdated() || b.isDeleted());
+    }
 }

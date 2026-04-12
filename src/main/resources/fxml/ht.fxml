@@ -60,7 +60,8 @@
 	<ScrollPane fitToWidth="true" fitToHeight="false"
 		VBox.vgrow="ALWAYS" styleClass="root-scroll">
 
-		<GridPane hgap="30" vgap="30" styleClass="card-grid">
+		<VBox alignment="TOP_CENTER" fillWidth="true">
+			<GridPane hgap="30" vgap="30" styleClass="card-grid" maxWidth="1220" alignment="TOP_CENTER">
 
 			<!-- Responsive columns -->
 			<columnConstraints>
@@ -677,6 +678,7 @@
 
 
 		</GridPane>
+	</VBox>
 
 	</ScrollPane>
 

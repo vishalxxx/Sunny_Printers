@@ -14,7 +14,26 @@ import java.net.URL;
 import java.sql.Connection;
 import java.util.ResourceBundle;
 
-public class SystemSettingsController implements Initializable {
+public class SystemSettingsController implements Initializable, utils.DirtySupport {
+
+	@Override
+	public boolean hasUnsavedChanges() {
+		if (settings == null)
+			return false;
+
+		try {
+			boolean changed = !prefixField.getText().equals(settings.getInvoicePrefix())
+					|| Integer.parseInt(startField.getText()) != settings.getInvoiceStartNo()
+					|| !paddingCombo.getValue().equals(settings.getInvoicePadding())
+					|| !jobPrefixField.getText().equals(settings.getJobPrefix())
+					|| Integer.parseInt(jobStartField.getText()) != settings.getJobStartNo()
+					|| !jobPaddingCombo.getValue().equals(settings.getJobPadding());
+
+			return changed;
+		} catch (Exception e) {
+			return true; // If parsing fails, something is being typed
+		}
+	}
 
 @FXML private VBox manualCard;
 

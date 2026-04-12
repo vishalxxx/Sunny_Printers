@@ -295,4 +295,8 @@ public class LaminationTabController {
             handleAddOrUpdate();
         }
     }
+
+    public boolean hasChanges() {
+        return laminationTable.getItems().stream().anyMatch(l -> l.isNew() || l.isUpdated() || l.isDeleted());
+    }
 }

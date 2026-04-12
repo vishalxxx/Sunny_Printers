@@ -436,7 +436,10 @@ public class InvoiceMasterRepository {
                         period_to    = ?,
                         file_path    = ?,
                         replaced_by_invoice_id = ?,
-                        parent_invoice_id = ?
+                        parent_invoice_id = ?,
+                        is_void      = ?,
+                        void_reason  = ?,
+                        void_date    = ?
                     WHERE id = ?
                 """;
 
@@ -465,7 +468,11 @@ public class InvoiceMasterRepository {
             else
                 ps.setNull(12, Types.INTEGER);
 
-            ps.setInt(13, inv.getId());
+            ps.setInt(13, inv.isVoid() ? 1 : 0);
+            ps.setString(14, inv.getVoidReason());
+            ps.setString(15, toIso(inv.getVoidDate()));
+            
+            ps.setInt(16, inv.getId());
 
             ps.executeUpdate();
         }

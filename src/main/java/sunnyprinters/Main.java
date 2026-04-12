@@ -37,12 +37,17 @@ public class Main extends Application {
 
 		Scene scene = new Scene(root);
 
-		primaryStage.setMaximized(true);
 		primaryStage.setScene(scene);
 		primaryStage.setTitle("Sunny Printers");
+		primaryStage.setMaximized(true);
 
-		// ✅ init loader system BEFORE showing stage
-		// utils.LoaderManager.setHost(primaryStage);
+		primaryStage.setOnCloseRequest(event -> {
+			if (controller.MainController.getInstance() != null) {
+				if (!controller.MainController.getInstance().canDiscardChanges()) {
+					event.consume();
+				}
+			}
+		});
 
 		primaryStage.show();
 	}

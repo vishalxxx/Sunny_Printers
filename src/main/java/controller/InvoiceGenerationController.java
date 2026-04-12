@@ -48,7 +48,13 @@ import java.sql.Connection;
 
 import javafx.stage.DirectoryChooser;
 
-public class InvoiceGenerationController {
+public class InvoiceGenerationController implements utils.DirtySupport {
+
+	@Override
+	public boolean hasUnsavedChanges() {
+		// Dirty if any job is selected but invoice not generated
+		return !selectedJobs.isEmpty();
+	}
 
 	private InvoiceBuilderService invoicebuilder = new InvoiceBuilderService();
 	private InvoiceGenerationService invoicegeneration = new InvoiceGenerationService();

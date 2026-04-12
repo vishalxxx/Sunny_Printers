@@ -24,34 +24,29 @@
                   disable="true"/>
 	</HBox>
 
-	<VBox fx:id="editModeBox" managed="false" visible="false" spacing="15" styleClass="card" style="-fx-background-color: #0f0f0f; -fx-padding: 15; -fx-border-color: #27272a; -fx-border-radius: 5; -fx-background-radius: 5;">
-        <HBox spacing="10" alignment="CENTER_LEFT">
-            <VBox spacing="5" HBox.hgrow="SOMETIMES">
-                <Label text="Client Name" styleClass="field-label" />
-                <TextField fx:id="txtClientName" editable="false" prefWidth="240" styleClass="text-field" />
+	<VBox fx:id="editModeBox" managed="false" visible="false" spacing="15" styleClass="card" style="-fx-background-color: #141414; -fx-padding: 15; -fx-border-color: #27272a; -fx-border-radius: 8; -fx-background-radius: 8;">
+        <HBox spacing="20" alignment="CENTER_LEFT">
+            <VBox spacing="5" prefWidth="280">
+                <Label text="CLIENT NAME" style="-fx-text-fill: #a1a1aa; -fx-font-size: 10px; -fx-font-weight: bold; -fx-letter-spacing: 1px;" />
+                <TextField fx:id="txtClientName" editable="false" styleClass="text-field" style="-fx-font-size: 13px; -fx-background-color: #09090b; -fx-border-color: #27272a;" />
             </VBox>
-            <VBox spacing="5">
-                <Label text="Invoice No" styleClass="field-label" />
-                <TextField fx:id="txtInvoiceNo" editable="false" prefWidth="130" styleClass="text-field" />
+            <VBox spacing="5" prefWidth="130">
+                <Label text="INVOICE NO" style="-fx-text-fill: #a1a1aa; -fx-font-size: 10px; -fx-font-weight: bold;" />
+                <TextField fx:id="txtInvoiceNo" editable="false" styleClass="text-field" style="-fx-font-size: 13px; -fx-background-color: #09090b; -fx-border-color: #27272a;" />
             </VBox>
-            <VBox spacing="5">
-                <Label text="Invoice Date" styleClass="field-label" />
-                <DatePicker fx:id="dpInvoiceDate" prefWidth="130" styleClass="date-picker" promptText="YYYY-MM-DD" />
+            <VBox spacing="5" prefWidth="130">
+                <Label text="INVOICE DATE" style="-fx-text-fill: #a1a1aa; -fx-font-size: 10px; -fx-font-weight: bold;" />
+                <DatePicker fx:id="dpInvoiceDate" prefWidth="130" styleClass="date-picker" />
             </VBox>
-            <VBox spacing="5">
-                <Label text="Payment Status" styleClass="field-label" />
-                <HBox spacing="8" alignment="CENTER_LEFT" minWidth="120" style="-fx-padding: 6 10; -fx-background-color: #1e1e1e; -fx-background-radius: 4; -fx-border-color: #3f3f46; -fx-border-radius: 4;">
-                    <javafx.scene.shape.Circle fx:id="statusCircle" radius="6" fill="#71717a" />
-                    <Label fx:id="lblInvoiceStatus" text="UNPAID" style="-fx-text-fill: #e4e4e7; -fx-font-weight: bold; -fx-font-size: 13px;" />
-                </HBox>
+            <VBox spacing="5" prefWidth="130">
+                <Label text="PROCESS STATUS" style="-fx-text-fill: #a1a1aa; -fx-font-size: 10px; -fx-font-weight: bold;" />
+                <TextField fx:id="txtProcessStatus" editable="false" styleClass="text-field" style="-fx-font-size: 13px; -fx-background-color: #09090b; -fx-border-color: #27272a;" />
             </VBox>
-            <VBox spacing="5">
-                <Label text="Process Status" styleClass="field-label" />
-                <TextField fx:id="txtProcessStatus" editable="false" prefWidth="120" styleClass="text-field" />
+            <Region HBox.hgrow="ALWAYS" />
+            <VBox spacing="8" alignment="CENTER_RIGHT">
+                <Button fx:id="btnSave" text="Save Changes" onAction="#handleSaveChanges" prefWidth="130" styleClass="btn-primary" />
+                <Button fx:id="btnDiscard" text="Discard" onAction="#handleDiscardChanges" prefWidth="130" style="-fx-background-color: #27272a; -fx-text-fill: #ffffff; -fx-font-weight: bold; -fx-cursor: hand;" />
             </VBox>
-            <Region HBox.hgrow="ALWAYS" minWidth="20" />
-            <Button fx:id="btnDiscard" text="Discard" onAction="#handleDiscardChanges" minWidth="90" style="-fx-background-color: transparent; -fx-text-fill: #9ca3af; -fx-font-weight: bold; -fx-cursor: hand;" />
-            <Button fx:id="btnSave" text="Save Changes" onAction="#handleSaveChanges" minWidth="140" styleClass="btn-primary" />
         </HBox>
 	</VBox>
 

@@ -141,11 +141,16 @@ public class RecordPaymentController implements Initializable {
         setupDefaults();
         loadClients();
         setupInvoiceTable();
+        
+        amountField.textProperty().addListener((obs, o, n) -> {
+            performAutoAllocation();
+            refreshFooterTotals();
+        });
+        
         refreshFooterTotals();
-
+        
         clientCombo.setOnAction(e -> onClientSelected());
         setupPaymentTypeCombo();
-        amountField.textProperty().addListener((obs, o, n) -> refreshFooterTotals());
 
         if (pendingPrefillInvoice != null) {
             prefillForInvoice(pendingPrefillInvoice);
@@ -471,6 +476,38 @@ public class RecordPaymentController implements Initializable {
         invoiceTable.setItems(invoiceItems);
     }
 
+    private boolean isAutoAllocating = false;
+
+    private void performAutoAllocation() {
+        if (isAutoAllocating) return;
+        isAutoAllocating = true;
+        try {
+            BigDecimal remaining = parseAmountField();
+            // User entry is positive. If it's a Refund, we still treat the "budget" as positive here
+            // because row.getDueAmount() is also positive usually.
+            
+            for (InvoiceRow row : invoiceItems) {
+                if (!row.isSelected()) {
+                    row.setAllocateAmount(BigDecimal.ZERO);
+                    continue;
+                }
+
+                BigDecimal due = row.getDueAmount();
+                if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+                    row.setAllocateAmount(BigDecimal.ZERO);
+                } else if (remaining.compareTo(due) >= 0) {
+                    row.setAllocateAmount(due);
+                    remaining = remaining.subtract(due);
+                } else {
+                    row.setAllocateAmount(remaining);
+                    remaining = BigDecimal.ZERO;
+                }
+            }
+        } finally {
+            isAutoAllocating = false;
+        }
+    }
+
     private BigDecimal parseAmountField() {
         try {
             String txt = amountField.getText();
@@ -651,9 +688,9 @@ public class RecordPaymentController implements Initializable {
                             status = "PAID";
                             newDue = 0.0;
                         } else if (newPaid > 0) {
-                            status = "PARTIAL";
+                            status = "PARTIAL PAID";
                         } else {
-                            status = "DUE";
+                            status = "UNPAID";
                         }
                         repo.updatePayment(con, invoiceId, newPaid, newDue, status, paymentDatePicker.getValue());
                     }
@@ -759,15 +796,15 @@ public class RecordPaymentController implements Initializable {
                 sql = """
                         SELECT * FROM invoice_master
                         WHERE client_id = ? AND is_void = 0
-                          AND (status = 'SENT TO CLIENT' OR status = 'SENT' OR status = 'PAID' OR status = 'PARTIAL')
-                        ORDER BY invoice_date DESC
+                          AND (status = 'SENT TO CLIENT' OR status = 'SENT' OR status = 'PAID' OR status = 'PARTIAL PAID')
+                        ORDER BY invoice_no ASC
                     """;
             } else {
                 sql = """
                         SELECT * FROM invoice_master
                         WHERE client_id = ? AND is_void = 0 AND due_amount > 0
-                          AND (status = 'SENT TO CLIENT' OR status = 'SENT' OR status = 'PARTIAL')
-                        ORDER BY invoice_date DESC
+                          AND (status = 'SENT TO CLIENT' OR status = 'SENT' OR status = 'PARTIAL PAID')
+                        ORDER BY invoice_no ASC
                     """;
             }
 
@@ -809,7 +846,10 @@ public class RecordPaymentController implements Initializable {
 
             invoiceItems.forEach(row -> {
                 row.allocateAmountProperty().addListener((obs, o, n) -> refreshFooterTotals());
-                row.selectedProperty().addListener((obs, o, n) -> refreshFooterTotals());
+                row.selectedProperty().addListener((obs, o, n) -> {
+                    performAutoAllocation();
+                    refreshFooterTotals();
+                });
             });
 
         } catch (Exception e) {

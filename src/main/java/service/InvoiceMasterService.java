@@ -379,9 +379,13 @@ public class InvoiceMasterService {
                 }
 
                 inv.setStatus(newStatus);
-                // If cancelled/void, also update payment status
+                // If cancelled/void, also update payment status and mark as void for period reuse
                 if ("CANCELLED".equalsIgnoreCase(newStatus) || "VOID".equalsIgnoreCase(newStatus)) {
                     inv.setPaymentStatus("VOID");
+                    inv.setVoid(true);
+                    inv.setVoidReason("User updated status to " + newStatus);
+                    inv.setVoidDate(LocalDate.now());
+                    
                     repo.updatePayment(con, invoiceId, inv.getPaidAmount(), inv.getDueAmount(), "VOID", LocalDate.now());
                     unlinkJobsFromInvoice(con, invoiceId);
                 }

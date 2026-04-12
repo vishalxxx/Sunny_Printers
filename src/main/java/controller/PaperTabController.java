@@ -497,4 +497,8 @@ public class PaperTabController {
             handleAddOrUpdate();
         }
     }
+
+    public boolean hasChanges() {
+        return paperTable.getItems().stream().anyMatch(p -> p.isNew() || p.isUpdated() || p.isDeleted());
+    }
 }

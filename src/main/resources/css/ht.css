@@ -4,7 +4,8 @@
 .root-scroll {
     -fx-background: #0f0f0f;
     -fx-padding: 0;
-    -fx-border-color: black;
+    -fx-border-color: transparent;
+    -fx-background-color: #0f0f0f;
 }
 
 .root-container {
@@ -29,6 +30,7 @@
     -fx-spacing: 15;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 20, 0.2, 0, 6);
     -fx-fill-height: true;
+    -fx-min-width: 320;
 }
 
 .card-title {

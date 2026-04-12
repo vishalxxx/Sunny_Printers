@@ -348,4 +348,8 @@ public class CtpTabController {
             handleAddOrUpdate();
         }
     }
+
+    public boolean hasChanges() {
+        return ctpTable.getItems().stream().anyMatch(c -> c.isNew() || c.isUpdated() || c.isDeleted());
+    }
 }

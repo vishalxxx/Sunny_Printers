@@ -47,6 +47,8 @@ public class MainController implements Initializable {
 	private Integer pendingInvoicingClientId;
 	private Integer pendingInvoicingJobId;
 
+	private Object currentController; // Tracks the controller of the view currently in center
+
 	public void loadInvoiceWithJob(int clientId, int jobId) {
 		this.pendingInvoicingClientId = clientId;
 		this.pendingInvoicingJobId = jobId;
@@ -278,10 +280,30 @@ public class MainController implements Initializable {
 
 	private String lastValidTitle = "Dashboard";
 
+	public boolean canDiscardChanges() {
+		if (currentController instanceof utils.DirtySupport ds && ds.hasUnsavedChanges()) {
+			javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION);
+			alert.setTitle("Unsaved Changes");
+			alert.setHeaderText("You have unsaved changes.");
+			alert.setContentText("Do you want to leave this page and discard your changes?");
+			alert.getButtonTypes().setAll(javafx.scene.control.ButtonType.YES, javafx.scene.control.ButtonType.NO);
+
+			java.util.Optional<javafx.scene.control.ButtonType> result = alert.showAndWait();
+			return result.isPresent() && result.get() == javafx.scene.control.ButtonType.YES;
+		}
+		return true;
+	}
+
 	private void loadCenterScreen(String fxmlPath, String loaderTitle, String loaderSubtitle, boolean pushToHistory) {
 		final int taskId = ++currentLoadTaskId;
 		System.out.println(
-				"DEBUG: loadCenterScreen called with path: " + fxmlPath + " | taskId: " + taskId + " | pushToHistory: " + pushToHistory);
+				"DEBUG: loadCenterScreen called with path: " + fxmlPath + " | taskId: " + taskId + " | pushToHistory: "
+						+ pushToHistory);
+
+		if (!canDiscardChanges()) {
+			return; // Stop navigation
+		}
+
 		if (pushToHistory) {
 			String sidebarId = (currentSidebar != null) ? currentSidebar.getId() : null;
 			System.out.println(
@@ -303,20 +325,13 @@ public class MainController implements Initializable {
 				FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
 				Parent view = loader.load();
 				Object controller = loader.getController();
+				// 🔑 Controller will be stored once loaded
+				this.currentController = controller;
 
-				Job draftJob = null;
-
-				// 🔑 Only Add Job screen needs draft logic
-				if (controller instanceof AddJobController) {
-					JobService jobService = new JobService();
-					draftJob = jobService.getLatestDraftJob();
-				}
 				// 🔹 Inject root pane into Invoice screen
 				if (controller instanceof InvoiceGenerationController c) {
 					c.setRootPane(appRoot); // 👈 global overlay access
 				}
-
-				Job finalDraftJob = draftJob;
 
 				Platform.runLater(() -> {
 					if (taskId != currentLoadTaskId) {
@@ -324,23 +339,15 @@ public class MainController implements Initializable {
 						return;
 					}
 
-					// 🔒 Store the fully compiled Parent view into the NavigationManager history
+					// 🔒 Store the fully compiled Parent view and its controller into the NavigationManager history
 					// map!
-					utils.NavigationManager.getInstance().updateCurrentView(view);
+					utils.NavigationManager.getInstance().updateCurrentState(view, controller);
 
 					// 2️⃣ Replace center UI
 					centerContentHost.getChildren().setAll(view);
 
-					// 3️⃣ Resume or create job
 					if (controller instanceof AddJobController addJobController) {
-
-						if (finalDraftJob != null) {
-							// 🔁 Resume unfinished draft
-							addJobController.openForEdit(finalDraftJob.getId());
-						} else {
-							// 🆕 Create new draft
-							addJobController.startNewJob();
-						}
+						addJobController.startNewJob();
 					}
 
 					if (controller instanceof InvoiceGenerationController invController) {
@@ -397,7 +404,7 @@ public class MainController implements Initializable {
 			anim.stop();
 
 		anim = new Timeline(
-				new KeyFrame(Duration.millis(180),
+				new KeyFrame(Duration.millis(150),
 						new KeyValue(sidebarStack.prefWidthProperty(), width),
 						new KeyValue(sidebarStack.minWidthProperty(), width),
 						new KeyValue(sidebarStack.maxWidthProperty(), width)));
@@ -516,6 +523,11 @@ public class MainController implements Initializable {
 	@FXML
 	public void handleBack(MouseEvent event) {
 		if (utils.NavigationManager.getInstance().hasHistory()) {
+
+			if (!canDiscardChanges()) {
+				return;
+			}
+
 			currentLoadTaskId++; // Cancel any pending background loads
 			utils.NavigationManager.NavState prevState = utils.NavigationManager.getInstance().pop();
 			if (prevState != null) {
@@ -528,6 +540,7 @@ public class MainController implements Initializable {
 				// instantly:
 				if (prevState.getView() != null) {
 					System.out.println("DEBUG: Restoring CACHED view from history: " + prevState.getFxmlPath());
+					this.currentController = prevState.getController(); // ⚡ RESTORE CONTROLLER
 					centerContentHost.getChildren().setAll(prevState.getView());
 				} else {
 					// 🐢 Fallback: Only reload FXML if the memory reference was somehow lost

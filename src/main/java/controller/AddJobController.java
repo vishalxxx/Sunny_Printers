@@ -38,7 +38,18 @@ import utils.Toast;
 
 import java.util.List;
 
-public class AddJobController {
+public class AddJobController implements utils.DirtySupport {
+
+	private final javafx.collections.ObservableList<Object> pendingItems = javafx.collections.FXCollections.observableArrayList();
+
+	@Override
+	public boolean hasUnsavedChanges() {
+		// Dirty if anything is entered or items are added
+		boolean hasJobName = jobName.getText() != null && !jobName.getText().trim().isEmpty();
+		boolean hasClient = selectedClient != null;
+		boolean hasItems = !pendingItems.isEmpty();
+		return hasJobName || hasClient || hasItems;
+	}
 
 	private Runnable onJobItemAdded;
 
@@ -49,12 +60,7 @@ public class AddJobController {
 	private int itemCount = 0;
 
 	private void updateItemCount() {
-		if (currentJob != null && currentJob.getId() > 0) {
-			List<?> items = new JobItemService().getJobItems(currentJob.getId());
-			itemCount = (items != null) ? items.size() : 0;
-		} else {
-			itemCount = 0;
-		}
+		itemCount = pendingItems.size();
 	}
 
 	/* ========================= STATE ========================= */
@@ -305,11 +311,10 @@ public class AddJobController {
 
 	public void startNewJob() {
 
-		JobService jobService = new JobService();
-
-		this.currentJob = jobService.createDraftJob();
-
-		jobNoLabel.setText("Job No: " + currentJob.getJobNo());
+		this.currentJob = new Job();
+		// We don't call JobService.createDraftJob() anymore.
+		// We just show a local placeholder for Job No if desired, or skip it.
+		jobNoLabel.setText("Job No: NEW");
 		addJobBtn.setText("Add Job ✅");
 
 		// reset UI state
@@ -320,48 +325,34 @@ public class AddJobController {
 		jobName.clear();
 		jobDate.setValue(java.time.LocalDate.now());
 		clientCombo.getSelectionModel().clearSelection();
+		pendingItems.clear();
 
 		updateItemCount();
 		updateFormState();
 
-		System.out.println("✅ New draft created: " + currentJob.getJobNo());
+		System.out.println("✅ New local job object initialized.");
 	}
 
+	// This method might be deprecated or used only for actual resumes of saved but incomplete jobs
 	public void openForEdit(int jobId) {
-
 		JobService jobService = new JobService();
 		Job job = jobService.getJobById(jobId);
-
 		if (job == null) {
 			toast("❌ Job not found");
 			return;
 		}
-
 		this.currentJob = job;
-
 		jobNoLabel.setText("Job No: " + currentJob.getJobNo());
-		addJobBtn.setText("Add Job ✅");
-
+		addJobBtn.setText("Update Job ✅");
 		preloadClientIntoCombo();
-
 		jobName.setText(currentJob.getJobTitle());
-		if (currentJob.getJobDate() != null) {
-			jobDate.setValue(currentJob.getJobDate());
-		} else {
-			jobDate.setValue(java.time.LocalDate.now());
-		}
+		jobDate.setValue(currentJob.getJobDate() != null ? currentJob.getJobDate() : java.time.LocalDate.now());
+		
+		// Load items into pending
+		pendingItems.setAll(new JobItemService().getJobItems(jobId));
 
 		updateItemCount();
 		updateFormState();
-
-		if (currentJob.getImagePath() != null && !currentJob.getImagePath().isBlank()) {
-			java.io.File f = new java.io.File(currentJob.getImagePath());
-			if (f.exists()) {
-				showImagePreview(f);
-			}
-		}
-
-		System.out.println("✏ Resumed draft: " + currentJob.getJobNo());
 	}
 
 	private void preloadClientIntoCombo() {
@@ -459,82 +450,109 @@ public class AddJobController {
 
 	@FXML
 	private void handleAddJobButton() {
-
-		if (currentJob == null || currentJob.getId() == 0) {
-			toast("❌ Job not created properly");
-			return;
-		}
-
 		if (selectedClient == null) {
 			toast("Please Select Client..");
 			return;
 		}
-
 		if (jobName.getText() == null || jobName.getText().isBlank()) {
 			toast("Please Enter Job Name..");
 			return;
 		}
-
 		java.time.LocalDate date = jobDate.getValue();
 		if (date == null) {
 			toast("Please Select Job Date..");
 			return;
 		}
+		if (pendingItems.isEmpty()) {
+			toast("Please add at least one job item (Printing, Paper, etc.)");
+			return;
+		}
 
 		String title = jobName.getText().trim();
-
-		// ✅ 1) set in currentJob object
-		currentJob.setJobTitle(title);
-		currentJob.setJobDate(date);
-
-		// ✅ 2) save into database (important)
 		JobService js = new JobService();
-		js.updateJobDetails(currentJob.getId(), title, date);
+		JobItemService jis = new JobItemService();
 
-		// ✅ 3) set status to Created
-		js.updateJobStatus(currentJob.getId(), "Created");
-		currentJob.setStatus("Created");
-		
-		// ✅ 4) save Image
-		if (selectedImageFile != null) {
-			try {
+		java.sql.Connection con = null;
+		try {
+			con = utils.DBConnection.getConnection();
+			con.setAutoCommit(false);
+
+			// 1. Create Job or Update existing
+			int jobId = currentJob.getId();
+			if (jobId == 0) {
+				// Create NEW job
+				String jobNo = JobService.JobNumberGenerator.generate(con);
+				currentJob.setJobNo(jobNo);
+				currentJob.setClientId(selectedClient.getId());
+				currentJob.setJobTitle(title);
+				currentJob.setJobDate(date);
+				currentJob.setStatus("Created");
+				
+				repository.JobRepository jobRepo = new repository.JobRepository();
+				currentJob = jobRepo.insertJob(con, currentJob); // Insert full job
+				jobId = currentJob.getId();
+			} else {
+				// Update existing (unlikely in this screen now, but for safety)
+				js.updateJobDetails(jobId, title, date);
+				js.updateJobStatus(jobId, "Created");
+			}
+
+			// 2. Save Item details
+			JobItemService transJis = new JobItemService(con);
+			for (Object item : pendingItems) {
+				// If item is already a JobItem (from openForEdit), handle update?
+				// For now, simplify: if it doesn't have an ID, add it.
+				// In AddJobController, they are usually new.
+				transJis.addJobItem(con, jobId, item);
+			}
+
+			// 3. Save Image
+			if (selectedImageFile != null) {
 				java.io.File dir = new java.io.File("Images");
 				if (!dir.exists()) dir.mkdirs();
 				String ext = "";
 				String name = selectedImageFile.getName();
 				int dotIndex = name.lastIndexOf('.');
 				if (dotIndex > 0) ext = name.substring(dotIndex);
-				String newFileName = "job_" + currentJob.getId() + "_" + System.currentTimeMillis() + ext;
+				String newFileName = "job_" + jobId + "_" + System.currentTimeMillis() + ext;
 				java.io.File targetFile = new java.io.File(dir, newFileName);
 				java.nio.file.Files.copy(selectedImageFile.toPath(), targetFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 				String relativePath = "Images/" + newFileName;
-				js.updateJobImagePath(currentJob.getId(), relativePath);
+				
+				String updateImgQuery = "UPDATE jobs SET image_path = ? WHERE id = ?";
+				try (java.sql.PreparedStatement ps = con.prepareStatement(updateImgQuery)) {
+					ps.setString(1, relativePath);
+					ps.setInt(2, jobId);
+					ps.executeUpdate();
+				}
 				currentJob.setImagePath(relativePath);
-			} catch (Exception e) {
-				System.err.println("Failed to copy image: " + e.getMessage());
-				e.printStackTrace();
 			}
+
+			con.commit();
+			System.out.println("✅ Finalizing job: " + currentJob.getJobNo());
+			toast("✅ Job Added Successfully!");
+			
+			// Clear dirty flags
+			pendingItems.clear();
+			jobName.clear();
+			selectedClient = null;
+			
+			resetUploadView();
+			MainController.getInstance().openCenterDashboard();
+
+		} catch (Exception e) {
+			if (con != null) { try { con.rollback(); } catch (Exception ex) {} }
+			e.printStackTrace();
+			toast("❌ Failed to save job: " + e.getMessage());
+		} finally {
+			if (con != null) { try { con.close(); } catch (Exception ex) {} }
 		}
-
-		// Since we handle both fresh and draft jobs identically visually:
-		System.out.println("✅ Finalizing job: " + currentJob.getJobNo());
-		toast("✅ Job Added Successfully!");
-		
-		resetUploadView();
-
-		// optionally redirect
-		// MainController.getInstance().openCenterDashboard();
 	}
 
 	/* ========================= ADD ITEMS ========================= */
 
 	@FXML
 	private void handleAddPrinting() {
-
-		if (currentJob == null || currentJob.getId() <= 0) {
-			toast("Job not created ❌");
-			return;
-		}
 
 		Printing p = new Printing();
 
@@ -561,18 +579,11 @@ public class AddJobController {
 			return;
 		}
 
-		try {
-			JobItemService js = new JobItemService();
-			js.addJobItem(currentJob.getId(), p);
-
-			toast("Printing Added ✅");
-			clearPrintingFields();
-			updateItemCount();
-			updateFormState();
-		} catch (Exception e) {
-			toast("Failed to add Printing: " + e.getMessage() + " ❌");
-			e.printStackTrace();
-		}
+		pendingItems.add(p);
+		toast("Printing Added ✅");
+		clearPrintingFields();
+		updateItemCount();
+		updateFormState();
 	}
 
 	private void clearPrintingFields() {
@@ -588,11 +599,6 @@ public class AddJobController {
 
 	@FXML
 	private void handleAddCtpPlate() {
-
-		if (currentJob == null || currentJob.getId() <= 0) {
-			toast("Job not created ❌");
-			return;
-		}
 
 		CtpPlate c = new CtpPlate();
 
@@ -624,18 +630,11 @@ public class AddJobController {
 			return;
 		}
 
-		try {
-			JobItemService js = new JobItemService();
-			js.addJobItem(currentJob.getId(), c);
-
-			toast("CTP Plate Added ✅");
-			clearCtpFields();
-			updateItemCount();
-			updateFormState();
-		} catch (Exception e) {
-			toast("Failed to add CTP: " + e.getMessage() + " ❌");
-			e.printStackTrace();
-		}
+		pendingItems.add(c);
+		toast("CTP Plate Added ✅");
+		clearCtpFields();
+		updateItemCount();
+		updateFormState();
 	}
 
 	private void clearCtpFields() {
@@ -651,11 +650,6 @@ public class AddJobController {
 
 	@FXML
 	private void handleAddPaper() {
-
-		if (currentJob == null || currentJob.getId() <= 0) {
-			toast("Job not created ❌");
-			return;
-		}
 
 		Paper p = new Paper();
 
@@ -686,18 +680,11 @@ public class AddJobController {
 			return;
 		}
 
-		try {
-			JobItemService js = new JobItemService();
-			js.addJobItem(currentJob.getId(), p);
-
-			toast("Paper Added ✅");
-			clearPaperFields();
-			updateItemCount();
-			updateFormState();
-		} catch (Exception e) {
-			toast("Failed to add Paper: " + e.getMessage() + " ❌");
-			e.printStackTrace();
-		}
+		pendingItems.add(p);
+		toast("Paper Added ✅");
+		clearPaperFields();
+		updateItemCount();
+		updateFormState();
 	}
 
 	private void clearPaperFields() {
@@ -713,11 +700,6 @@ public class AddJobController {
 
 	@FXML
 	private void handleAddBinding() {
-
-		if (currentJob == null || currentJob.getId() <= 0) {
-			toast("Job not created ❌");
-			return;
-		}
 
 		Binding b = new Binding();
 		b.setProcess(bindingProcessCombo.getValue());
@@ -748,18 +730,11 @@ public class AddJobController {
 			return;
 		}
 
-		try {
-			JobItemService js = new JobItemService();
-			js.addJobItem(currentJob.getId(), b);
-
-			toast("Binding Added ✅");
-			clearBindingFields();
-			updateItemCount();
-			updateFormState();
-		} catch (Exception e) {
-			toast("Failed to add Binding: " + e.getMessage() + " ❌");
-			e.printStackTrace();
-		}
+		pendingItems.add(b);
+		toast("Binding Added ✅");
+		clearBindingFields();
+		updateItemCount();
+		updateFormState();
 	}
 
 	private void clearBindingFields() {
@@ -772,11 +747,6 @@ public class AddJobController {
 
 	@FXML
 	private void handleAddLamination() {
-
-		if (currentJob == null || currentJob.getId() <= 0) {
-			toast("Job not created ❌");
-			return;
-		}
 
 		Lamination l = new Lamination();
 
@@ -802,18 +772,11 @@ public class AddJobController {
 			return;
 		}
 
-		try {
-			JobItemService js = new JobItemService();
-			js.addJobItem(currentJob.getId(), l);
-
-			toast("Lamination Added ✅");
-			clearLaminationFields();
-			updateItemCount();
-			updateFormState();
-		} catch (Exception e) {
-			toast("Failed to add Lamination: " + e.getMessage() + " ❌");
-			e.printStackTrace();
-		}
+		pendingItems.add(l);
+		toast("Lamination Added ✅");
+		clearLaminationFields();
+		updateItemCount();
+		updateFormState();
 	}
 
 	private void clearLaminationFields() {
@@ -936,8 +899,20 @@ public class AddJobController {
 
 		filteredClients.setPredicate(c -> true);
 
-		// ✅ Load clients
-		masterClients.setAll(clientService.getAllClients());
+		// ✅ Load clients (Background)
+		new Thread(() -> {
+			try {
+				// Small delay to let UI stabilize
+				Thread.sleep(50);
+				List<Client> clients = clientService.getAllClients();
+				javafx.application.Platform.runLater(() -> {
+					masterClients.setAll(clients);
+					updateFormState();
+				});
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}).start();
 		clientCombo.setItems(filteredClients);
 		clientCombo.setEditable(true);
 
@@ -1084,6 +1059,6 @@ public class AddJobController {
 
 	private void toast(String message) {
 		Stage stage = (Stage) ((Node) clientCombo).getScene().getWindow();
-		Toast.show(stage, message);
+		utils.Toast.show(stage, message);
 	}
 }

@@ -44,6 +44,34 @@ public class JobRepository {
         }
     }
 
+    public Job insertJob(Connection con, Job job) throws SQLException {
+        String sql = """
+                    INSERT INTO jobs (job_no, client_id, job_title, job_date, status, image_path, remarks)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """;
+        try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, job.getJobNo());
+            ps.setObject(2, job.getClientId());
+            ps.setString(3, job.getJobTitle());
+            if (job.getJobDate() != null) {
+                ps.setString(4, job.getJobDate().toString());
+            } else {
+                ps.setNull(4, java.sql.Types.DATE);
+            }
+            ps.setString(5, job.getStatus());
+            ps.setString(6, job.getImagePath());
+            ps.setString(7, job.getRemarks());
+            
+            ps.executeUpdate();
+            
+            ResultSet rs = ps.getGeneratedKeys();
+            if (rs.next()) {
+                job.setId(rs.getInt(1));
+            }
+            return job;
+        }
+    }
+
     /*
      * =====================================================
      * FIND LATEST DRAFT JOB (FOR RESUME)
