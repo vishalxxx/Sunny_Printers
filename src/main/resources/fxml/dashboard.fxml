@@ -34,24 +34,144 @@
                                 <Button onAction="#openDashboard" styleClass="sidebar-btn, sidebar-btn-active" text="Dashboard" maxWidth="Infinity">
                                     <graphic><Region styleClass="sidebar-icon, icon-dashboard"/></graphic>
                                 </Button>
-                                <Button onAction="#showClientsSubmenu" styleClass="sidebar-btn" text="Clients" maxWidth="Infinity">
-                                    <graphic><Region styleClass="sidebar-icon, icon-clients"/></graphic>
-                                </Button>
-                                <Button onAction="#showJobsSubmenu" styleClass="sidebar-btn" text="Jobs" maxWidth="Infinity">
-                                    <graphic><Region styleClass="sidebar-icon, icon-jobs"/></graphic>
-                                </Button>
-                                <Button onAction="#showBillingSubmenu" styleClass="sidebar-btn" text="Invoices" maxWidth="Infinity">
-                                    <graphic><Region styleClass="sidebar-icon, icon-invoices"/></graphic>
-                                </Button>
-                                <Button onAction="#showPaymentSubmenu" styleClass="sidebar-btn" text="Payments" maxWidth="Infinity">
-                                    <graphic><Region styleClass="sidebar-icon, icon-payments"/></graphic>
-                                </Button>
-                                <Button onAction="#showLedgerSubmenu" styleClass="sidebar-btn" text="Ledger" maxWidth="Infinity">
-                                    <graphic><Region styleClass="sidebar-icon, icon-ledger"/></graphic>
-                                </Button>
-                                <Button onAction="#showSettingSubmenu" styleClass="sidebar-btn" text="Settings" maxWidth="Infinity">
-                                    <graphic><Region styleClass="sidebar-icon, icon-settings"/></graphic>
-                                </Button>
+
+                                <!-- CLIENTS SECTION -->
+                                <VBox>
+                                    <Button fx:id="clientsBtn" onAction="#showClientsSubmenu" styleClass="sidebar-btn" maxWidth="Infinity">
+                                        <graphic>
+                                            <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="Infinity" styleClass="header-box">
+                                                <Region styleClass="sidebar-icon, icon-clients"/>
+                                                <Label text="Clients" styleClass="sidebar-label" style="-fx-text-fill: inherit; -fx-font-weight: inherit;"/>
+                                                <Region HBox.hgrow="ALWAYS" styleClass="sidebar-spacer"/>
+                                                <Region fx:id="clientsChevron" styleClass="chevron-icon"/>
+                                            </HBox>
+                                        </graphic>
+                                    </Button>
+                                    <VBox fx:id="clientsSubmenu" visible="false" managed="false" spacing="5" styleClass="submenu-container">
+                                        <Button onAction="#loadAddClient" styleClass="submenu-btn" text="Add Client">
+                                            <graphic><Region styleClass="sidebar-icon, icon-add" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
+                                        </Button>
+                                        <Button onAction="#loadViewClients" styleClass="submenu-btn, submenu-btn-active" text="View Clients">
+                                            <graphic><Region styleClass="sidebar-icon, icon-dot"/></graphic>
+                                        </Button>
+                                        <Button onAction="#loadClientLedger" styleClass="submenu-btn" text="Client Reports">
+                                            <graphic><Region styleClass="sidebar-icon, icon-ledger" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
+                                        </Button>
+                                    </VBox>
+                                </VBox>
+
+                                <!-- JOBS SECTION -->
+                                <VBox>
+                                    <Button fx:id="jobsBtn" onAction="#showJobsSubmenu" styleClass="sidebar-btn" maxWidth="Infinity">
+                                        <graphic>
+                                            <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="Infinity" styleClass="header-box">
+                                                <Region styleClass="sidebar-icon, icon-jobs"/>
+                                                <Label text="Jobs" styleClass="sidebar-label" style="-fx-text-fill: inherit; -fx-font-weight: inherit;"/>
+                                                <Region HBox.hgrow="ALWAYS" styleClass="sidebar-spacer"/>
+                                                <Region fx:id="jobsChevron" styleClass="chevron-icon"/>
+                                            </HBox>
+                                        </graphic>
+                                    </Button>
+                                    <VBox fx:id="jobsSubmenu" visible="false" managed="false" spacing="5" styleClass="submenu-container">
+                                        <Button onAction="#loadAddJob" styleClass="submenu-btn" text="New Print Job">
+                                            <graphic><Region styleClass="sidebar-icon, icon-add" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
+                                        </Button>
+                                        <Button onAction="#loadViewJob" styleClass="submenu-btn" text="View All Jobs">
+                                            <graphic><Region styleClass="sidebar-icon, icon-dot"/></graphic>
+                                        </Button>
+                                    </VBox>
+                                </VBox>
+
+                                <!-- INVOICES SECTION -->
+                                <VBox>
+                                    <Button fx:id="billingBtn" onAction="#showBillingSubmenu" styleClass="sidebar-btn" maxWidth="Infinity">
+                                        <graphic>
+                                            <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="Infinity" styleClass="header-box">
+                                                <Region styleClass="sidebar-icon, icon-invoices"/>
+                                                <Label text="Invoices" styleClass="sidebar-label" style="-fx-text-fill: inherit; -fx-font-weight: inherit;"/>
+                                                <Region HBox.hgrow="ALWAYS" styleClass="sidebar-spacer"/>
+                                                <Region fx:id="billingChevron" styleClass="chevron-icon"/>
+                                            </HBox>
+                                        </graphic>
+                                    </Button>
+                                    <VBox fx:id="billingSubmenu" visible="false" managed="false" spacing="5" styleClass="submenu-container">
+                                        <Button onAction="#loadInvoiceGenration" styleClass="submenu-btn" text="Generate Invoice">
+                                            <graphic><Region styleClass="sidebar-icon, icon-add" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
+                                        </Button>
+                                        <Button onAction="#loadViewBills" styleClass="submenu-btn" text="View Invoices">
+                                            <graphic><Region styleClass="sidebar-icon, icon-dot"/></graphic>
+                                        </Button>
+                                        <Button onAction="#loadCreditDebitNote" styleClass="submenu-btn" text="CN / DN Notes">
+                                            <graphic><Region styleClass="sidebar-icon, icon-ledger" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
+                                        </Button>
+                                    </VBox>
+                                </VBox>
+
+                                <!-- PAYMENTS SECTION -->
+                                <VBox>
+                                    <Button fx:id="paymentBtn" onAction="#showPaymentSubmenu" styleClass="sidebar-btn" maxWidth="Infinity">
+                                        <graphic>
+                                            <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="Infinity" styleClass="header-box">
+                                                <Region styleClass="sidebar-icon, icon-payments"/>
+                                                <Label text="Payments" styleClass="sidebar-label" style="-fx-text-fill: inherit; -fx-font-weight: inherit;"/>
+                                                <Region HBox.hgrow="ALWAYS" styleClass="sidebar-spacer"/>
+                                                <Region fx:id="paymentChevron" styleClass="chevron-icon"/>
+                                            </HBox>
+                                        </graphic>
+                                    </Button>
+                                    <VBox fx:id="paymentSubmenu" visible="false" managed="false" spacing="5" styleClass="submenu-container">
+                                        <Button onAction="#loadRecordPayment" styleClass="submenu-btn" text="Record Payment">
+                                            <graphic><Region styleClass="sidebar-icon, icon-add" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
+                                        </Button>
+                                        <Button onAction="#loadPaymentHistory" styleClass="submenu-btn" text="Payment History">
+                                            <graphic><Region styleClass="sidebar-icon, icon-dot"/></graphic>
+                                        </Button>
+                                    </VBox>
+                                </VBox>
+
+                                <!-- LEDGER SECTION -->
+                                <VBox>
+                                    <Button fx:id="ledgerBtn" onAction="#showLedgerSubmenu" styleClass="sidebar-btn" maxWidth="Infinity">
+                                        <graphic>
+                                            <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="Infinity" styleClass="header-box">
+                                                <Region styleClass="sidebar-icon, icon-ledger"/>
+                                                <Label text="Ledger" styleClass="sidebar-label" style="-fx-text-fill: inherit; -fx-font-weight: inherit;"/>
+                                                <Region HBox.hgrow="ALWAYS" styleClass="sidebar-spacer"/>
+                                                <Region fx:id="ledgerChevron" styleClass="chevron-icon"/>
+                                            </HBox>
+                                        </graphic>
+                                    </Button>
+                                    <VBox fx:id="ledgerSubmenu" visible="false" managed="false" spacing="5" styleClass="submenu-container">
+                                        <Button onAction="#loadClientLedger" styleClass="submenu-btn" text="Client Ledger">
+                                            <graphic><Region styleClass="sidebar-icon, icon-dot"/></graphic>
+                                        </Button>
+                                    </VBox>
+                                </VBox>
+
+                                <!-- SETTINGS SECTION -->
+                                <VBox>
+                                    <Button fx:id="settingsBtn" onAction="#showSettingSubmenu" styleClass="sidebar-btn" maxWidth="Infinity">
+                                        <graphic>
+                                            <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="Infinity" styleClass="header-box">
+                                                <Region styleClass="sidebar-icon, icon-settings"/>
+                                                <Label text="Settings" styleClass="sidebar-label" style="-fx-text-fill: inherit; -fx-font-weight: inherit;"/>
+                                                <Region HBox.hgrow="ALWAYS" styleClass="sidebar-spacer"/>
+                                                <Region fx:id="settingsChevron" styleClass="chevron-icon"/>
+                                            </HBox>
+                                        </graphic>
+                                    </Button>
+                                    <VBox fx:id="settingsSubmenu" visible="false" managed="false" spacing="5" styleClass="submenu-container">
+                                        <Button onAction="#loadGeneralSettings" styleClass="submenu-btn" text="General Settings">
+                                            <graphic><Region styleClass="sidebar-icon, icon-dot"/></graphic>
+                                        </Button>
+                                        <Button onAction="#loadInvoiceSettings" styleClass="submenu-btn" text="Invoice Templates">
+                                            <graphic><Region styleClass="sidebar-icon, icon-brush" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
+                                        </Button>
+                                        <Button onAction="#loadUserSettings" styleClass="submenu-btn" text="User Permissions">
+                                            <graphic><Region styleClass="sidebar-icon, icon-clients" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
+                                        </Button>
+                                    </VBox>
+                                </VBox>
 
                                 <Region VBox.vgrow="ALWAYS"/>
                                 <VBox style="-fx-padding: 30 0 0 0;">
@@ -61,13 +181,8 @@
                                 </VBox>
                             </VBox>
                         </VBox>
-                        
-                        <VBox fx:id="jobsSidebar" visible="false" managed="false"/>
-                        <VBox fx:id="clientsSidebar" visible="false" managed="false"/>
-                        <VBox fx:id="billingSidebar" visible="false" managed="false"/>
-                        <VBox fx:id="paymentSidebar" visible="false" managed="false"/>
-                        <VBox fx:id="ledgerSidebar" visible="false" managed="false"/>
-                        <VBox fx:id="settingsSidebar" visible="false" managed="false"/>
+
+
                     </StackPane>
                 </ScrollPane>
             </StackPane>

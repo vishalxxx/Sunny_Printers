@@ -18,6 +18,9 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.Region;
+import javafx.scene.control.Button;
+import javafx.event.Event;
 import javafx.stage.Stage;
 import javafx.scene.Scene;
 import java.io.IOException;
@@ -153,19 +156,28 @@ public class MainController implements Initializable {
 	// Sidebar containers
 	@FXML
 	private VBox mainSidebar;
-	@FXML
-	private VBox jobsSidebar;
-	@FXML
-	private VBox clientsSidebar;
-	@FXML
-	private VBox billingSidebar;
-	@FXML
-	private VBox paymentSidebar;
-	@FXML
-	private VBox ledgerSidebar;
+	@FXML private VBox jobsSubmenu;
+	@FXML private VBox clientsSubmenu;
+	@FXML private VBox billingSubmenu;
+	@FXML private VBox paymentSubmenu;
+	@FXML private VBox ledgerSubmenu;
+	@FXML private VBox settingsSubmenu;
 
-	@FXML
-	private VBox settingsSidebar;
+    // Accordion Headers (Buttons)
+    @FXML private Button jobsBtn;
+    @FXML private Button clientsBtn;
+    @FXML private Button billingBtn;
+    @FXML private Button paymentBtn;
+    @FXML private Button ledgerBtn;
+    @FXML private Button settingsBtn;
+
+    // Chevrons
+    @FXML private Region jobsChevron;
+    @FXML private Region clientsChevron;
+    @FXML private Region billingChevron;
+    @FXML private Region paymentChevron;
+    @FXML private Region ledgerChevron;
+    @FXML private Region settingsChevron;
 
 	// ScrollPanes
 	@FXML
@@ -309,12 +321,12 @@ public class MainController implements Initializable {
 
 		VBox[] sidebars = {
 				mainSidebar,
-				jobsSidebar,
-				clientsSidebar,
-				billingSidebar,
-				paymentSidebar,
-				ledgerSidebar,
-				settingsSidebar
+				jobsSubmenu,
+				clientsSubmenu,
+				billingSubmenu,
+				paymentSubmenu,
+				ledgerSubmenu,
+				settingsSubmenu
 		};
 
 		for (VBox s : sidebars) {
@@ -620,7 +632,7 @@ public class MainController implements Initializable {
 	}
 
 	private void collapseSidebar() {
-
+		collapseAllSubmenus();
 		applyCollapsedStyleToAll(true);
         sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
 		sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
@@ -651,26 +663,24 @@ public class MainController implements Initializable {
 		}
 	}
 
-	private void hideAllSidebars() {
-		hideSidebar(mainSidebar);
-		hideSidebar(jobsSidebar);
-		hideSidebar(clientsSidebar);
-		hideSidebar(billingSidebar);
-		hideSidebar(paymentSidebar);
-		hideSidebar(ledgerSidebar);
-		hideSidebar(settingsSidebar);
-	}
+    private void collapseAllSubmenus() {
+        VBox[] submenus = {jobsSubmenu, clientsSubmenu, billingSubmenu, paymentSubmenu, ledgerSubmenu, settingsSubmenu};
+        Region[] chevrons = {jobsChevron, clientsChevron, billingChevron, paymentChevron, ledgerChevron, settingsChevron};
+        Button[] buttons = {jobsBtn, clientsBtn, billingBtn, paymentBtn, ledgerBtn, settingsBtn};
+        
+        for(int i=0; i<submenus.length; i++) {
+            if(submenus[i] != null) {
+                submenus[i].setVisible(false);
+                submenus[i].setManaged(false);
+                if(chevrons[i] != null) chevrons[i].setRotate(0);
+                if(buttons[i] != null) buttons[i].getStyleClass().remove("sidebar-btn-expanded");
+            }
+        }
+    }
 
 	private void showOnly(VBox target) {
-		hideAllSidebars();
-		currentSidebar = target;
-		if (target != null) {
-			target.setVisible(true);
-			target.setManaged(true);
-		}
-
-		else
-			System.out.println("Null SideBAR");
+		if (target == null) return;
+        // mainSidebar is always visible in the accordion model
 	}
 
 	private void setPageTitle(String title) {
@@ -688,60 +698,33 @@ public class MainController implements Initializable {
 	private void openDashboard(javafx.event.ActionEvent event) {
 		utils.NavigationManager.getInstance().clear();
 		System.out.println("DEBUG: Navigation History cleared at Dashboard root.");
-		showOnly(mainSidebar);
+		collapseAllSubmenus();
 		openCenterDashboard();
 		setPageTitle("Dashboard");
 	}
 
-	@FXML
-	public void showJobsSubmenu(javafx.event.ActionEvent event) {
-		showOnly(jobsSidebar);
-		setPageTitle("Job Details");
-	}
+    private void toggleSubmenu(VBox submenu, Region chevron, Button parentBtn) {
+        boolean wasVisible = submenu.isVisible();
+        collapseAllSubmenus();
 
-	@FXML
-	public void showClientsSubmenu(javafx.event.ActionEvent event) {
-		showOnly(clientsSidebar);
-		setPageTitle("Client Details");
-	}
+        // Toggle target
+        if (!wasVisible) {
+            submenu.setVisible(true);
+            submenu.setManaged(true);
+            if(chevron != null) chevron.setRotate(180);
+            if(parentBtn != null) parentBtn.getStyleClass().add("sidebar-btn-expanded");
+        }
+    }
 
-	@FXML
-	public void showBillingSubmenu(javafx.event.ActionEvent event) {
-		showOnly(billingSidebar);
-		setPageTitle("Billing");
-	}
-
-	@FXML
-	public void showPaymentSubmenu(javafx.event.ActionEvent event) {
-		showOnly(paymentSidebar);
-		setPageTitle("Payments");
-	}
-
-	@FXML
-	public void showLedgerSubmenu(javafx.event.ActionEvent event) {
-		showOnly(ledgerSidebar);
-		setPageTitle("Ledger");
-	}
+	@FXML public void showJobsSubmenu() { toggleSubmenu(jobsSubmenu, jobsChevron, jobsBtn); }
+	@FXML public void showClientsSubmenu() { toggleSubmenu(clientsSubmenu, clientsChevron, clientsBtn); }
+	@FXML public void showBillingSubmenu() { toggleSubmenu(billingSubmenu, billingChevron, billingBtn); }
+	@FXML public void showPaymentSubmenu() { toggleSubmenu(paymentSubmenu, paymentChevron, paymentBtn); }
+	@FXML public void showLedgerSubmenu() { toggleSubmenu(ledgerSubmenu, ledgerChevron, ledgerBtn); }
+	@FXML public void showSettingSubmenu() { toggleSubmenu(settingsSubmenu, settingsChevron, settingsBtn); }
 
 	private VBox findSidebarById(String id) {
-		if (id == null)
-			return mainSidebar;
-		switch (id) {
-			case "jobsSidebar":
-				return jobsSidebar;
-			case "clientsSidebar":
-				return clientsSidebar;
-			case "billingSidebar":
-				return billingSidebar;
-			case "paymentSidebar":
-				return paymentSidebar;
-			case "ledgerSidebar":
-				return ledgerSidebar;
-			case "settingsSidebar":
-				return settingsSidebar;
-			default:
-				return mainSidebar;
-		}
+		return mainSidebar; // Dashboard is now a single-sidebar accordion
 	}
 
 	@FXML
@@ -785,28 +768,28 @@ public class MainController implements Initializable {
 	}
 
 	@FXML
-	public void loadClientLedger(MouseEvent event) {
+	public void loadClientLedger() {
 		loadCenterScreen("/fxml/client_ledger.fxml",
 				"Loading Client Ledger...",
 				"Fetching financial records...");
 	}
 
 	@FXML
-	private void loadAddClient(MouseEvent event) {
+	private void loadAddClient() {
 		loadCenterScreen("/fxml/add_client.fxml",
 				"Loading Dashboard...",
 				"Please wait");
 	}
 
 	@FXML
-	private void loadAddJob(MouseEvent event) {
+	private void loadAddJob() {
 		loadCenterScreen("/fxml/ht.fxml",
 				"Loading Dashboard...",
 				"Please wait");
 	}
 
 	@FXML
-	public void loadViewJob(MouseEvent event) {
+	public void loadViewJob() {
 		loadCenterScreen("/fxml/view_job.fxml",
 				"Loading Dashboard...",
 				"Please wait");
@@ -832,14 +815,14 @@ public class MainController implements Initializable {
 	}
 
 	@FXML
-	public void loadViewInvoiceJobs(MouseEvent event) {
+	public void loadViewInvoiceJobs() {
 		loadCenterScreen("/fxml/view_invoice_jobs.fxml",
 				"Loading Invoice Jobs...",
 				"Please wait");
 	}
 
 	@FXML
-	public void loadViewBills(MouseEvent event) {
+	public void loadViewBills() {
 		switchToInvoices();
 	}
 
@@ -850,28 +833,28 @@ public class MainController implements Initializable {
 	}
 
 	@FXML
-	public void loadCreditDebitNote(MouseEvent event) {
+	public void loadCreditDebitNote() {
 		loadCenterScreen("/fxml/credit_debit_note.fxml",
 				"Loading Note...",
 				"Please wait");
 	}
 
 	@FXML
-	public void loadRecordPayment(MouseEvent event) {
+	public void loadRecordPayment() {
 		loadCenterScreen("/fxml/record_payment.fxml",
 				"Loading Payment Screen...",
 				"Loading outstanding invoices and client details...");
 	}
 
 	@FXML
-	public void loadPaymentHistory(MouseEvent event) {
+	public void loadPaymentHistory() {
 		loadCenterScreen("/fxml/payment_history.fxml",
 				"Loading Payment History...",
 				"Fetching payment records...");
 	}
 
 	@FXML
-	public void loadGeneralSettings(javafx.scene.input.MouseEvent event) {
+	public void loadGeneralSettings() {
 		loadCenterScreen("/fxml/general_settings.fxml",
 				"Loading General Settings...",
 				"Fetching global configurations...");
@@ -900,14 +883,14 @@ public class MainController implements Initializable {
 	}
 
 	@FXML
-	public void loadUserSettings(MouseEvent event) {
+	public void loadUserSettings() {
 		loadCenterScreen("/fxml/user_settings.fxml",
 				"Loading User Settings...",
 				"Please wait");
 	}
 
 	@FXML
-	private void loadInvoiceSettings(MouseEvent event) {
+	private void loadInvoiceSettings() {
 		loadCenterScreen("/fxml/invoice_settings.fxml",
 				"Loading Invoice Settings...",
 				"Please wait");
@@ -938,12 +921,6 @@ public class MainController implements Initializable {
 		}).start();
 	}
 
-	@FXML
-	public void showSettingSubmenu(MouseEvent event) {
-
-		showOnly(settingsSidebar);
-		setPageTitle("Genral Settings");
-	}
 
 	// User Profile Logic
 	@FXML
