@@ -407,9 +407,24 @@ public class InvoiceMasterRepository {
                     }
                 }
             }
-        } catch (Exception e) {
-            // Silently ignore if table doesn't exist or other issues; default values 0 and null are fine
-        }
+        } catch (Exception e) {}
+
+        // Add refund summary
+        String sqlRef = """
+            SELECT SUM(pa.allocated_amount), COUNT(pa.id) 
+            FROM payment_allocations pa 
+            JOIN payments p ON pa.payment_id = p.id 
+            WHERE pa.invoice_id = ? AND p.type = 'Refund'
+        """;
+        try (PreparedStatement ps = con.prepareStatement(sqlRef)) {
+            ps.setInt(1, inv.getId());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    inv.setRefundAmount(rs.getDouble(1));
+                    inv.setRefundCount(rs.getInt(2));
+                }
+            }
+        } catch (Exception e) {}
     }
 
     private LocalDate parseDate(String value) {
@@ -507,6 +522,36 @@ public class InvoiceMasterRepository {
             }
         }
         return 0;
+    }
+
+    public double getClientUnallocatedBalance(Connection con, int clientId) throws Exception {
+        double totalPayments = 0;
+        double totalAllocated = 0;
+
+        // 1. Sum all payments (Payments are +, Refunds are -)
+        String sqlPay = "SELECT SUM(amount) FROM payments WHERE client_id = ?";
+        try (PreparedStatement ps = con.prepareStatement(sqlPay)) {
+            ps.setInt(1, clientId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) totalPayments = rs.getDouble(1);
+            }
+        }
+
+        // 2. Sum all allocations
+        String sqlAlloc = """
+            SELECT SUM(pa.allocated_amount) 
+            FROM payment_allocations pa
+            JOIN payments p ON pa.payment_id = p.id
+            WHERE p.client_id = ?
+        """;
+        try (PreparedStatement ps = con.prepareStatement(sqlAlloc)) {
+            ps.setInt(1, clientId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) totalAllocated = rs.getDouble(1);
+            }
+        }
+
+        return totalPayments - totalAllocated;
     }
 
 

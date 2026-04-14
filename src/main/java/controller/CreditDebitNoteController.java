@@ -234,13 +234,24 @@ public class CreditDebitNoteController {
             return;
         }
 
-        double amount;
+        double rawAmount;
         try {
-            amount = Double.parseDouble(amountStr);
+            rawAmount = Double.parseDouble(amountStr);
+            if (rawAmount < 0) {
+                // If user enters negative, we treat it as absolute. 
+                // Adjustments are already signed based on CN/DN type.
+                rawAmount = Math.abs(rawAmount);
+            }
+            if (rawAmount == 0) {
+                Toast.show((Stage) amountField.getScene().getWindow(), "⚠ Amount cannot be zero!");
+                return;
+            }
         } catch (NumberFormatException e) {
             Toast.show((Stage) amountField.getScene().getWindow(), "Invalid amount format");
             return;
         }
+
+        final double amount = rawAmount;
 
         try {
             utils.AtomicDB.runVoid(con -> {
@@ -260,13 +271,25 @@ public class CreditDebitNoteController {
                     ps.executeUpdate();
                 }
 
-                // 3. Update invoice_master (Update ONLY due_amount)
+                // 3. Update invoice_master (Update due_amount AND payment_status)
                 double adjustment = noteType.startsWith("Credit") ? -amount : amount;
-                String sqlUpdateInv = "UPDATE invoice_master SET due_amount = due_amount + ? WHERE id = ?";
-                try (java.sql.PreparedStatement psU = con.prepareStatement(sqlUpdateInv)) {
-                    psU.setDouble(1, adjustment);
-                    psU.setInt(2, selectedInvoice.getId());
-                    psU.executeUpdate();
+                
+                InvoiceMaster inv = invoiceRepo.findById(con, selectedInvoice.getId());
+                if (inv != null) {
+                    double newPaid = inv.getPaidAmount();
+                    double newDue = inv.getDueAmount() + adjustment;
+                    
+                    String newStatus;
+                    if (newDue <= 0.0001) {
+                        newStatus = "PAID";
+                        newDue = 0;
+                    } else if (newPaid > 0) {
+                        newStatus = "PARTIAL PAID";
+                    } else {
+                        newStatus = "UNPAID";
+                    }
+                    
+                    invoiceRepo.updatePayment(con, selectedInvoice.getId(), newPaid, newDue, newStatus, LocalDate.now());
                 }
                 
                 javafx.application.Platform.runLater(() -> {

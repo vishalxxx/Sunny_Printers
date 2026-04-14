@@ -43,7 +43,8 @@ public class ViewInvoicesController {
     @FXML private TableColumn<InvoiceMaster, String> colInvoiceDate;
     @FXML private TableColumn<InvoiceMaster, Double> colAmount;
     @FXML private TableColumn<InvoiceMaster, String> colAdjustment;
-    @FXML private TableColumn<InvoiceMaster, Double> colPaid;
+    @FXML private TableColumn<InvoiceMaster, Double> colNetAmount;
+    @FXML private TableColumn<InvoiceMaster, Double> colNetPaid;
     @FXML private TableColumn<InvoiceMaster, Double> colDue;
     @FXML private TableColumn<InvoiceMaster, String> colStatus;
     @FXML private TableColumn<InvoiceMaster, String> colPaymentStatus;
@@ -148,7 +149,11 @@ public class ViewInvoicesController {
             colAdjustment.setCellValueFactory(new PropertyValueFactory<>("adjustment"));
             colAdjustment.setCellFactory(col -> new AdjustmentCell());
         }
-        if (colPaid != null) colPaid.setCellValueFactory(new PropertyValueFactory<>("paidAmount"));
+        if (colNetAmount != null) colNetAmount.setCellValueFactory(new PropertyValueFactory<>("netAmount"));
+        if (colNetPaid != null) {
+            colNetPaid.setCellValueFactory(new PropertyValueFactory<>("paidAmount"));
+            colNetPaid.setCellFactory(col -> new NetPaidCell());
+        }
         if (colDue != null) colDue.setCellValueFactory(new PropertyValueFactory<>("dueAmount"));
         if (colType != null) colType.setCellValueFactory(new PropertyValueFactory<>("type"));
 
@@ -226,26 +231,56 @@ public class ViewInvoicesController {
                     textLabel.setText(item != null ? item : "-");
                     textLabel.setStyle("-fx-text-fill: white;");
                     eyeIcon.setVisible(false);
-                    setGraphic(box);
-                    setText(null);
                 } else {
-                    double cn = inv.getCnAmount() != null ? inv.getCnAmount() : 0;
-                    double dn = inv.getDnAmount() != null ? inv.getDnAmount() : 0;
-                    double net = dn - cn;
-
-                    String colorStr = "white";
-                    if (net > 0) colorStr = "#28a745"; // Green
-                    else if (net < 0) colorStr = "#dc3545"; // Red
-                    
                     textLabel.setText(item);
-                    textLabel.setStyle("-fx-text-fill: " + colorStr + "; -fx-font-weight: bold;");
-                    eyeIcon.setFill(Color.web(colorStr.equals("white") ? "#a0a0a0" : colorStr));
-                    
+                    textLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
                     eyeIcon.setVisible(true);
-                    
-                    setGraphic(box);
-                    setText(null);
+                    eyeIcon.setFill(Color.WHITE);
                 }
+                setGraphic(box);
+            }
+        }
+    }
+
+    private class NetPaidCell extends TableCell<InvoiceMaster, Double> {
+        private final Label textLabel = new Label();
+        private final SVGPath eyeIcon = new SVGPath();
+        private final HBox box = new HBox(6, textLabel, eyeIcon);
+
+        public NetPaidCell() {
+            box.setAlignment(Pos.CENTER);
+            textLabel.setAlignment(Pos.CENTER);
+            eyeIcon.setContent("M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z");
+            eyeIcon.setScaleX(0.85);
+            eyeIcon.setScaleY(0.85);
+            box.setStyle("-fx-cursor: hand;");
+            
+            box.setOnMouseClicked(e -> {
+                InvoiceMaster inv = (getTableRow() != null) ? getTableRow().getItem() : null;
+                if (inv != null && inv.getPaidAmount() != 0) {
+                    showPaymentDetails(inv);
+                }
+                e.consume();
+            });
+        }
+
+        @Override
+        protected void updateItem(Double item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty || item == null) {
+                setGraphic(null);
+                setText(null);
+            } else {
+                InvoiceMaster inv = (getTableRow() != null) ? getTableRow().getItem() : null;
+                textLabel.setText(String.format("%.1f", item));
+                textLabel.setStyle("-fx-text-fill: white;");
+                if (inv != null && inv.getPaidAmount() != 0) {
+                    eyeIcon.setVisible(true);
+                    eyeIcon.setFill(Color.WHITE);
+                } else {
+                    eyeIcon.setVisible(false);
+                }
+                setGraphic(box);
             }
         }
     }
@@ -289,10 +324,15 @@ public class ViewInvoicesController {
             btnSend.setDisable(!(isFinal || isSent));
             btnSend.setText(isSent ? "Send Again" : "Send");
         }
-        if (btnRevised != null) btnRevised.setDisable(!isSent || hasPayments);
+        if (btnRevised != null) btnRevised.setDisable(!(isFinal || isSent) || hasPayments);
         if (btnPayment != null) btnPayment.setDisable(!isSent || isPaid);
-        if (btnRaiseCnDn != null) btnRaiseCnDn.setDisable(!isSent);
-        if (btnCancel != null) btnCancel.setDisable(isPaid || isPartialPaid || "REVISED".equals(status) || "CANCELLED".equals(status));
+        if (btnRaiseCnDn != null) btnRaiseCnDn.setDisable(!isSent || "UNPAID".equals(pStatus));
+        if (btnCancel != null) {
+            btnCancel.setDisable(isPaid || isPartialPaid || "REVISED".equals(status) || "CANCELLED".equals(status));
+            String invNo = inv.getInvoiceNo();
+            boolean isTemp = isDraft || (invNo != null && invNo.startsWith("TEMP-"));
+            btnCancel.setText(isTemp ? "Delete" : "Cancel");
+        }
     }
 
     private void disableAllButtons() {
@@ -313,11 +353,28 @@ public class ViewInvoicesController {
         LocalDate end = (endDatePicker != null) ? endDatePicker.getValue() : null;
         String invoiceNo = (invoiceSearchField != null) ? invoiceSearchField.getText() : "";
 
+        // 💾 Save current selection to restore it later
+        InvoiceMaster selected = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
+        final Integer selectedId = (selected != null) ? selected.getId() : null;
+
         new Thread(() -> {
             try {
                 List<InvoiceMaster> results = invoiceMasterService.getFilteredInvoices(clientId, status, start, end, invoiceNo);
                 Platform.runLater(() -> {
                     invoiceList.setAll(results);
+                    
+                    // 🔄 Restore selection if possible
+                    if (selectedId != null && invoiceTable != null) {
+                        for (InvoiceMaster inv : invoiceList) {
+                            if (inv.getId() == selectedId) {
+                                invoiceTable.getSelectionModel().select(inv);
+                                // Ensure the table has focus to show the selection clearly
+                                invoiceTable.requestFocus(); 
+                                break;
+                            }
+                        }
+                    }
+
                     if (results.isEmpty() && event != null && searchBtn != null && searchBtn.getScene() != null) {
                         Toast.show((Stage) searchBtn.getScene().getWindow(), "No matching invoices found.");
                     }
@@ -467,7 +524,7 @@ public class ViewInvoicesController {
         table.getColumns().addAll(cType, cNo, cAmt, cReason);
         List<InvoiceAdjustment> adjs = new ArrayList<>();
         try (java.sql.Connection con = utils.DBConnection.getConnection();
-             java.sql.PreparedStatement ps = con.prepareStatement("SELECT * FROM invoice_adjustments WHERE invoice_id = ?")) {
+             java.sql.PreparedStatement ps = con.prepareStatement("SELECT type, note_no, amount, reason, date FROM invoice_adjustments WHERE invoice_id = ?")) {
             ps.setInt(1, inv.getId());
             try (java.sql.ResultSet rs = ps.executeQuery()) {
                 while(rs.next()) {
@@ -481,5 +538,71 @@ public class ViewInvoicesController {
         table.setItems(FXCollections.observableArrayList(adjs));
         dialog.getDialogPane().setContent(table);
         dialog.showAndWait();
+    }
+
+    private void showPaymentDetails(InvoiceMaster inv) {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Payment History: " + inv.getInvoiceNo());
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        
+        TableView<PaymentRecord> table = new TableView<>();
+        table.setPrefWidth(500); table.setPrefHeight(300);
+        
+        TableColumn<PaymentRecord, String> cType = new TableColumn<>("Mode");
+        cType.setCellValueFactory(new PropertyValueFactory<>("type"));
+        
+        TableColumn<PaymentRecord, String> cDate = new TableColumn<>("Date");
+        cDate.setCellValueFactory(new PropertyValueFactory<>("date"));
+        
+        TableColumn<PaymentRecord, Double> cAmt = new TableColumn<>("Amount");
+        cAmt.setCellValueFactory(new PropertyValueFactory<>("amount"));
+        cAmt.setCellFactory(col -> new TableCell<PaymentRecord, Double>() {
+            @Override protected void updateItem(Double item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) setText(null);
+                else {
+                    setText(String.valueOf(item));
+                    if (item < 0) setStyle("-fx-text-fill: #dc3545; -fx-font-weight: bold;");
+                    else setStyle("-fx-text-fill: #28a745; -fx-font-weight: bold;");
+                }
+            }
+        });
+        
+        table.getColumns().addAll(cType, cDate, cAmt);
+        List<PaymentRecord> records = new ArrayList<>();
+        
+        try (java.sql.Connection con = utils.DBConnection.getConnection();
+             java.sql.PreparedStatement ps = con.prepareStatement(
+                "SELECT p.type, p.payment_date, pa.allocated_amount " +
+                " FROM payment_allocations pa " +
+                " JOIN payments p ON pa.payment_id = p.id " +
+                " WHERE pa.invoice_id = ? ORDER BY p.payment_date DESC")) {
+            ps.setInt(1, inv.getId());
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while(rs.next()) {
+                    PaymentRecord r = new PaymentRecord();
+                    r.setType(rs.getString(1));
+                    r.setDate(rs.getString(2));
+                    r.setAmount(rs.getDouble(3));
+                    records.add(r);
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        
+        table.setItems(FXCollections.observableArrayList(records));
+        dialog.getDialogPane().setContent(table);
+        dialog.showAndWait();
+    }
+
+    public static class PaymentRecord {
+        private String type;
+        private String date;
+        private double amount;
+        public String getType() { return type; }
+        public void setType(String type) { this.type = type; }
+        public String getDate() { return date; }
+        public void setDate(String date) { this.date = date; }
+        public double getAmount() { return amount; }
+        public void setAmount(double amount) { this.amount = amount; }
     }
 }

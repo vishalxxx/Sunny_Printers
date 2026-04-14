@@ -491,7 +491,15 @@ public class InvoiceMasterService {
             old.setReplacedByInvoiceId(newInv.getId());
             repo.update(con, old);
 
-            // 5. Move JOBS from OLD to NEW
+            // 5. Clone Mappings from OLD to NEW in invoice_job_mapping for history
+            String cloneMappingSql = "INSERT OR IGNORE INTO invoice_job_mapping (invoice_id, job_id) SELECT ?, job_id FROM invoice_job_mapping WHERE invoice_id = ?";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(cloneMappingSql)) {
+                ps.setInt(1, newInv.getId());
+                ps.setInt(2, old.getId());
+                ps.executeUpdate();
+            }
+
+            // 6. Move JOBS pointer from OLD to NEW (active assignment)
             String moveJobsSql = "UPDATE jobs SET invoice_id = ? WHERE invoice_id = ?";
             try (java.sql.PreparedStatement ps = con.prepareStatement(moveJobsSql)) {
                 ps.setInt(1, newInv.getId());

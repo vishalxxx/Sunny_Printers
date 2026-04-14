@@ -10,6 +10,11 @@ import javafx.scene.layout.VBox;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.input.MouseEvent;
 
+import javafx.geometry.Pos;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.SVGPath;
+import javafx.scene.layout.HBox;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.Connection;
@@ -17,10 +22,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.ResourceBundle;
 
 import model.Client;
+import model.InvoiceAdjustment;
 import model.InvoiceMaster;
+import javafx.scene.control.cell.PropertyValueFactory;
 import repository.InvoiceMasterRepository;
 import service.ClientService;
 import utils.AtomicDB;
@@ -113,7 +122,11 @@ public class RecordPaymentController implements Initializable {
     @FXML
     private TableColumn<InvoiceRow, BigDecimal> totalAmountColumn;
     @FXML
-    private TableColumn<InvoiceRow, BigDecimal> alreadyPaidColumn;
+    private TableColumn<InvoiceRow, String> adjustmentColumn;
+    @FXML
+    private TableColumn<InvoiceRow, BigDecimal> netTotalColumn;
+    @FXML
+    private TableColumn<InvoiceRow, BigDecimal> netPaidColumn;
     @FXML
     private TableColumn<InvoiceRow, BigDecimal> dueAmountColumn;
     @FXML
@@ -175,9 +188,15 @@ public class RecordPaymentController implements Initializable {
         // The selection of client triggered loading of invoices. So we use Platform.runLater to let it finish.
         javafx.application.Platform.runLater(() -> {
             System.out.println("Prefill: Checking " + invoiceItems.size() + " items for invoice ID " + invoice.getId());
+            
+            // First, deselect EVERYTHING to avoid accidental mass allocation
+            for (InvoiceRow row : invoiceItems) {
+                row.setSelected(false);
+            }
+
             for (InvoiceRow row : invoiceItems) {
                 if (row.getInvoiceId() == invoice.getId()) {
-                    row.setSelected(true);
+                    row.setSelected(true); // Select ONLY this one
                     amountField.setText(row.getDueAmount().toString());
                     System.out.println("Prefill: Successfully matched and selected invoice " + invoice.getInvoiceNo());
                     break;
@@ -427,9 +446,17 @@ public class RecordPaymentController implements Initializable {
             totalAmountColumn = new TableColumn<>("Total");
             totalAmountColumn.setPrefWidth(110);
         }
-        if (alreadyPaidColumn == null) {
-            alreadyPaidColumn = new TableColumn<>("Paid");
-            alreadyPaidColumn.setPrefWidth(110);
+        if (netTotalColumn == null) {
+            netTotalColumn = new TableColumn<>("Net Total");
+            netTotalColumn.setPrefWidth(110);
+        }
+        if (netPaidColumn == null) {
+            netPaidColumn = new TableColumn<>("Net Paid");
+            netPaidColumn.setPrefWidth(110);
+        }
+        if (adjustmentColumn == null) {
+            adjustmentColumn = new TableColumn<>("ADJUSTMENT");
+            adjustmentColumn.setPrefWidth(120);
         }
         if (dueAmountColumn == null) {
             dueAmountColumn = new TableColumn<>("Due");
@@ -449,7 +476,11 @@ public class RecordPaymentController implements Initializable {
         statusColumn.setCellValueFactory(param -> param.getValue().statusProperty());
         invoiceDateColumn.setCellValueFactory(param -> param.getValue().invoiceDateProperty());
         totalAmountColumn.setCellValueFactory(param -> param.getValue().totalAmountProperty());
-        alreadyPaidColumn.setCellValueFactory(param -> param.getValue().alreadyPaidProperty());
+        adjustmentColumn.setCellValueFactory(param -> param.getValue().adjustmentProperty());
+        adjustmentColumn.setCellFactory(col -> new AdjustmentCell());
+        netTotalColumn.setCellValueFactory(param -> param.getValue().netTotalProperty());
+        netPaidColumn.setCellValueFactory(param -> param.getValue().alreadyPaidProperty());
+        netPaidColumn.setCellFactory(col -> new NetPaidCell());
         dueAmountColumn.setCellValueFactory(param -> param.getValue().dueAmountProperty());
         allocateAmountColumn.setCellValueFactory(param -> param.getValue().allocateAmountProperty());
 
@@ -468,7 +499,9 @@ public class RecordPaymentController implements Initializable {
             invoiceTable.getColumns().add(statusColumn);
             invoiceTable.getColumns().add(invoiceDateColumn);
             invoiceTable.getColumns().add(totalAmountColumn);
-            invoiceTable.getColumns().add(alreadyPaidColumn);
+            invoiceTable.getColumns().add(adjustmentColumn);
+            invoiceTable.getColumns().add(netTotalColumn);
+            invoiceTable.getColumns().add(netPaidColumn);
             invoiceTable.getColumns().add(dueAmountColumn);
             invoiceTable.getColumns().add(allocateAmountColumn);
         }
@@ -514,7 +547,8 @@ public class RecordPaymentController implements Initializable {
             if (txt == null || txt.trim().isEmpty()) {
                 return BigDecimal.ZERO;
             }
-            return new BigDecimal(txt.trim());
+            BigDecimal val = new BigDecimal(txt.trim());
+            return val.abs(); // Always treat entry as positive magnitude
         } catch (Exception e) {
             return BigDecimal.ZERO;
         }
@@ -586,18 +620,41 @@ public class RecordPaymentController implements Initializable {
         try {
             AtomicDB.runVoid(con -> {
                 int clientId = getSelectedClientId(con);
+                InvoiceMasterRepository repo = new InvoiceMasterRepository();
 
-                BigDecimal totalAmount = parseAmountFieldInternal();
+                BigDecimal totalAmount = parseAmountField().abs();
                 String type = paymentTypeCombo.getValue();
                 if (type == null) type = "Payment";
 
-                if ("Payment".equals(type) && totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
-                    throw new IllegalArgumentException("Payment amount must be greater than zero. Current: " + totalAmount);
-                }
-                if ("Refund".equals(type) && totalAmount.compareTo(BigDecimal.ZERO) >= 0) {
-                    // Try to auto-correct if it's positive but they selected Refund
+                boolean isRefund = "Refund".equalsIgnoreCase(type);
+                if (isRefund) {
+                    long selectedCount = invoiceItems.stream().filter(InvoiceRow::isSelected).count();
+                    
+                    if (selectedCount > 0) {
+                        // Scenario 1 & 2: Against selected invoice(s)
+                        BigDecimal totalAvailableOnInvoices = invoiceItems.stream()
+                            .filter(InvoiceRow::isSelected)
+                            .map(InvoiceRow::alreadyPaidProperty)
+                            .map(p -> p.get() != null ? p.get() : BigDecimal.ZERO)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        
+                        if (totalAmount.compareTo(totalAvailableOnInvoices) > 0) {
+                            throw new IllegalArgumentException("Refund amount (" + totalAmount + ") cannot exceed the total paid amount on selected invoices (" + formatCurrency(totalAvailableOnInvoices) + ").");
+                        }
+                    } else {
+                        // Scenario 3: No Invoice (Advance Refund)
+                        // This handles: Refund Amount ≤ Total Payments Received - Total Amount Allocated - Total Refunds Already Done
+                        double unallocatedBalance = repo.getClientUnallocatedBalance(con, clientId);
+                        BigDecimal maxRefund = BigDecimal.valueOf(unallocatedBalance);
+                        
+                        if (totalAmount.compareTo(maxRefund) > 0) {
+                             throw new IllegalArgumentException("Advance refund amount (" + totalAmount + ") cannot exceed the client's available unallocated balance (" + formatCurrency(maxRefund) + ").");
+                        }
+                    }
                     totalAmount = totalAmount.negate();
-                    System.out.println("Auto-correcting Refund amount to negative: " + totalAmount);
+                } else if (totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                     // Still check zero for payment
+                     throw new IllegalArgumentException("Amount must be greater than zero.");
                 }
 
                 String mode = paymentModeCombo.getSelectionModel().getSelectedItem();
@@ -628,10 +685,8 @@ public class RecordPaymentController implements Initializable {
                 }
 
                 // 2) Allocate amounts
-                InvoiceMasterRepository repo = new InvoiceMasterRepository();
-
+                
                 BigDecimal remainingAmountToAllocate = totalAmount;
-                boolean isRefund = "Refund".equalsIgnoreCase(type);
 
                 for (InvoiceRow row : invoiceItems) {
                     if (!row.isSelected())
@@ -678,10 +733,8 @@ public class RecordPaymentController implements Initializable {
                     if (inv != null) {
                         double newPaid = inv.getPaidAmount() + alloc.doubleValue();
                         
-                        // Calculate due following Due = Amount + (DN - CN) - Paid
-                        double cn = inv.getCnAmount() != null ? inv.getCnAmount() : 0;
-                        double dn = inv.getDnAmount() != null ? inv.getDnAmount() : 0;
-                        double newDue = (inv.getAmount() + dn - cn) - newPaid;
+                        // Use the new getNetAmount logic for consistency
+                        double newDue = inv.getNetAmount() - newPaid;
 
                         String status;
                         if (newDue <= 0.0001) {
@@ -808,6 +861,12 @@ public class RecordPaymentController implements Initializable {
                     """;
             }
 
+            // Save current selection to restore after reload
+            java.util.Set<Integer> previouslySelectedIds = invoiceItems.stream()
+                .filter(InvoiceRow::isSelected)
+                .map(InvoiceRow::getInvoiceId)
+                .collect(java.util.stream.Collectors.toSet());
+
             invoiceItems.clear();
             double totalOutstanding = 0;
 
@@ -817,20 +876,35 @@ public class RecordPaymentController implements Initializable {
                     while (rs.next()) {
                         InvoiceMaster inv = repo.mapRowPublic(rs);
                         BigDecimal due = BigDecimal.valueOf(inv.getDueAmount());
-                        BigDecimal paid = BigDecimal.valueOf(inv.getPaidAmount());
+                        BigDecimal netPaid = BigDecimal.valueOf(inv.getPaidAmount());
                         BigDecimal total = BigDecimal.valueOf(inv.getAmount());
 
                         totalOutstanding += inv.getDueAmount();
+                        double cn = inv.getCnAmount() != null ? inv.getCnAmount() : 0;
+                        double dn = inv.getDnAmount() != null ? inv.getDnAmount() : 0;
+                        BigDecimal netTotal = BigDecimal.valueOf(inv.getAmount() + dn - cn);
+
+                        boolean shouldBeSelected;
+                        if (!previouslySelectedIds.isEmpty()) {
+                            // Restore if it was selected before
+                            shouldBeSelected = previouslySelectedIds.contains(inv.getId());
+                        } else {
+                            // Default behavior for new loads
+                            shouldBeSelected = !isRefund;
+                        }
 
                         invoiceItems.add(new InvoiceRow(
-                                inv.getId(),
+                                inv,
                                 inv.getInvoiceNo(),
                                 inv.getStatus(),
                                 inv.getInvoiceDate() == null ? "" : inv.getInvoiceDate().format(java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy")),
                                 total,
-                                paid,
+                                inv.getAdjustment(),
+                                netTotal,
+                                netPaid,
                                 due,
-                                due // default allocate full due
+                                due, // default allocate full due
+                                shouldBeSelected
                         ));
                     }
                 }
@@ -1016,32 +1090,40 @@ public class RecordPaymentController implements Initializable {
     // --- Helper classes ---
 
     public static class InvoiceRow {
-        private final int invoiceId;
+        private final InvoiceMaster originalInvoice;
         private final StringProperty invoiceNo = new SimpleStringProperty();
         private final StringProperty status = new SimpleStringProperty();
         private final StringProperty invoiceDate = new SimpleStringProperty();
         private final ObjectProperty<BigDecimal> totalAmount = new SimpleObjectProperty<>();
+        private final StringProperty adjustment = new SimpleStringProperty();
+        private final ObjectProperty<BigDecimal> netTotal = new SimpleObjectProperty<>();
         private final ObjectProperty<BigDecimal> alreadyPaid = new SimpleObjectProperty<>();
         private final ObjectProperty<BigDecimal> dueAmount = new SimpleObjectProperty<>();
         private final ObjectProperty<BigDecimal> allocateAmount = new SimpleObjectProperty<>();
-        private final BooleanProperty selected = new SimpleBooleanProperty(true);
+        private final BooleanProperty selected = new SimpleBooleanProperty(false);
 
-        public InvoiceRow(int invoiceId,
+        public InvoiceRow(InvoiceMaster inv,
                 String invoiceNo,
                 String status,
                 String invoiceDate,
                 BigDecimal totalAmount,
+                String adjustment,
+                BigDecimal netTotal,
                 BigDecimal alreadyPaid,
                 BigDecimal dueAmount,
-                BigDecimal allocateAmount) {
-            this.invoiceId = invoiceId;
+                BigDecimal allocateAmount,
+                boolean initiallySelected) {
+            this.originalInvoice = inv;
             this.invoiceNo.set(invoiceNo);
             this.status.set(status);
             this.invoiceDate.set(invoiceDate);
             this.totalAmount.set(totalAmount);
+            this.adjustment.set(adjustment);
+            this.netTotal.set(netTotal);
             this.alreadyPaid.set(alreadyPaid);
             this.dueAmount.set(dueAmount);
             this.allocateAmount.set(allocateAmount);
+            this.selected.set(initiallySelected);
         }
 
         public StringProperty invoiceNoProperty() {
@@ -1063,6 +1145,13 @@ public class RecordPaymentController implements Initializable {
         public ObjectProperty<BigDecimal> alreadyPaidProperty() {
             return alreadyPaid;
         }
+        public StringProperty adjustmentProperty() {
+            return adjustment;
+        }
+
+        public ObjectProperty<BigDecimal> netTotalProperty() {
+            return netTotal;
+        }
 
         public ObjectProperty<BigDecimal> dueAmountProperty() {
             return dueAmount;
@@ -1077,7 +1166,11 @@ public class RecordPaymentController implements Initializable {
         }
 
         public int getInvoiceId() {
-            return invoiceId;
+            return originalInvoice.getId();
+        }
+
+        public InvoiceMaster getOriginalInvoice() {
+            return originalInvoice;
         }
 
         public boolean isSelected() {
@@ -1162,5 +1255,233 @@ public class RecordPaymentController implements Initializable {
                 setGraphic(null);
             }
         }
+    }
+
+    private class AdjustmentCell extends TableCell<InvoiceRow, String> {
+        private final Label textLabel = new Label();
+        private final SVGPath eyeIcon = new SVGPath();
+        private final HBox box = new HBox(6, textLabel, eyeIcon);
+
+        public AdjustmentCell() {
+            box.setAlignment(Pos.CENTER);
+            textLabel.setAlignment(Pos.CENTER);
+            eyeIcon.setContent("M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z");
+            eyeIcon.setScaleX(0.85);
+            eyeIcon.setScaleY(0.85);
+            box.setStyle("-fx-cursor: hand;");
+            
+            box.setOnMouseClicked(e -> {
+                InvoiceRow row = (getTableRow() != null) ? getTableRow().getItem() : null;
+                if (row != null && row.getOriginalInvoice() != null && !"-".equals(row.getOriginalInvoice().getAdjustment())) {
+                    showAdjustmentDetails(row.getOriginalInvoice());
+                }
+                e.consume();
+            });
+        }
+
+        @Override
+        protected void updateItem(String item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty || item == null) {
+                setGraphic(null);
+                setText(null);
+            } else {
+                InvoiceRow row = (getTableRow() != null) ? getTableRow().getItem() : null;
+                InvoiceMaster inv = row != null ? row.getOriginalInvoice() : null;
+                
+                if (inv == null || item.equals("-")) {
+                    textLabel.setText(item != null ? item : "-");
+                    textLabel.setStyle("-fx-text-fill: white;");
+                    eyeIcon.setVisible(false);
+                    setGraphic(box);
+                    setText(null);
+                } else {
+                    double cn = inv.getCnAmount() != null ? inv.getCnAmount() : 0;
+                    double dn = inv.getDnAmount() != null ? inv.getDnAmount() : 0;
+                    double net = dn - cn;
+
+                    String colorStr = "white";
+                    if (net > 0) colorStr = "#28a745"; // Green
+                    else if (net < 0) colorStr = "#dc3545"; // Red
+                    
+                    textLabel.setText(item);
+                    textLabel.setStyle("-fx-text-fill: " + colorStr + "; -fx-font-weight: bold;");
+                    eyeIcon.setFill(Color.web(colorStr.equals("white") ? "#a0a0a0" : colorStr));
+                    
+                    eyeIcon.setVisible(true);
+                    
+                    setGraphic(box);
+                    setText(null);
+                }
+            }
+        }
+    }
+
+    private void showAdjustmentDetails(InvoiceMaster inv) {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Notes: " + inv.getInvoiceNo());
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        TableView<InvoiceAdjustment> table = new TableView<>();
+        table.setPrefWidth(500); table.setPrefHeight(300);
+        TableColumn<InvoiceAdjustment, String> cType = new TableColumn<>("Type");
+        cType.setCellValueFactory(new PropertyValueFactory<>("type"));
+        TableColumn<InvoiceAdjustment, String> cNo = new TableColumn<>("No");
+        cNo.setCellValueFactory(new PropertyValueFactory<>("noteNo"));
+        TableColumn<InvoiceAdjustment, Double> cAmt = new TableColumn<>("Amount");
+        cAmt.setCellValueFactory(new PropertyValueFactory<>("amount"));
+        cAmt.setCellFactory(col -> new TableCell<InvoiceAdjustment, Double>() {
+            private final Label label = new Label();
+
+            @Override
+            protected void updateItem(Double amount, boolean empty) {
+                super.updateItem(amount, empty);
+                if (empty || amount == null) {
+                    setGraphic(null);
+                    setText(null);
+                } else {
+                    InvoiceAdjustment adj = getTableRow() != null ? getTableRow().getItem() : null;
+                    label.setText(String.valueOf(amount));
+                    if (adj != null) {
+                        String type = adj.getType() != null ? adj.getType() : "";
+                        String colorStyle = "";
+                        if ("Credit Note".equalsIgnoreCase(type)) colorStyle = "-fx-text-fill: #dc3545; -fx-font-weight: bold;";
+                        else if ("Debit Note".equalsIgnoreCase(type)) colorStyle = "-fx-text-fill: #28a745; -fx-font-weight: bold;";
+                        
+                        label.setStyle(colorStyle);
+                    } else {
+                        label.setStyle("");
+                    }
+                    setGraphic(label);
+                    setText(null);
+                }
+            }
+        });
+        TableColumn<InvoiceAdjustment, String> cReason = new TableColumn<>("Reason");
+        cReason.setCellValueFactory(new PropertyValueFactory<>("reason"));
+        table.getColumns().addAll(cType, cNo, cAmt, cReason);
+        List<InvoiceAdjustment> adjs = new ArrayList<>();
+        try (java.sql.Connection con = utils.DBConnection.getConnection();
+             java.sql.PreparedStatement ps = con.prepareStatement("SELECT type, note_no, amount, reason, date FROM invoice_adjustments WHERE invoice_id = ?")) {
+            ps.setInt(1, inv.getId());
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while(rs.next()) {
+                    InvoiceAdjustment a = new InvoiceAdjustment();
+                    a.setType(rs.getString("type")); a.setNoteNo(rs.getString("note_no"));
+                    a.setAmount(rs.getDouble("amount")); a.setReason(rs.getString("reason"));
+                    adjs.add(a);
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        table.setItems(FXCollections.observableArrayList(adjs));
+        dialog.getDialogPane().setContent(table);
+        dialog.showAndWait();
+    }
+
+    private class NetPaidCell extends TableCell<InvoiceRow, BigDecimal> {
+        private final Label textLabel = new Label();
+        private final SVGPath eyeIcon = new SVGPath();
+        private final HBox box = new HBox(6, textLabel, eyeIcon);
+
+        public NetPaidCell() {
+            box.setAlignment(Pos.CENTER);
+            textLabel.setAlignment(Pos.CENTER);
+            eyeIcon.setContent("M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z");
+            eyeIcon.setScaleX(0.85);
+            eyeIcon.setScaleY(0.85);
+            box.setStyle("-fx-cursor: hand;");
+            
+            box.setOnMouseClicked(e -> {
+                InvoiceRow row = (getTableRow() != null) ? getTableRow().getItem() : null;
+                if (row != null && row.getOriginalInvoice() != null && row.alreadyPaidProperty().get().doubleValue() != 0) {
+                    showPaymentDetails(row.getOriginalInvoice());
+                }
+                e.consume();
+            });
+        }
+
+        @Override
+        protected void updateItem(BigDecimal item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty || item == null) {
+                setGraphic(null);
+                setText(null);
+            } else {
+                textLabel.setText(item.toPlainString());
+                textLabel.setStyle("-fx-text-fill: white;");
+                if (item.doubleValue() != 0) {
+                    eyeIcon.setVisible(true);
+                    eyeIcon.setFill(Color.WHITE);
+                } else {
+                    eyeIcon.setVisible(false);
+                }
+                setGraphic(box);
+            }
+        }
+    }
+
+    private void showPaymentDetails(InvoiceMaster inv) {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Payment History: " + inv.getInvoiceNo());
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        
+        TableView<PaymentRecord> table = new TableView<>();
+        table.setPrefWidth(500); table.setPrefHeight(300);
+        
+        TableColumn<PaymentRecord, String> cType = new TableColumn<>("Mode");
+        cType.setCellValueFactory(new PropertyValueFactory<>("type"));
+        
+        TableColumn<PaymentRecord, String> cDate = new TableColumn<>("Date");
+        cDate.setCellValueFactory(new PropertyValueFactory<>("date"));
+        
+        TableColumn<PaymentRecord, Double> cAmt = new TableColumn<>("Amount");
+        cAmt.setCellValueFactory(new PropertyValueFactory<>("amount"));
+        cAmt.setCellFactory(col -> new TableCell<PaymentRecord, Double>() {
+            @Override protected void updateItem(Double item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) setText(null);
+                else {
+                    setText(String.valueOf(item));
+                    if (item < 0) setStyle("-fx-text-fill: #dc3545; -fx-font-weight: bold;");
+                    else setStyle("-fx-text-fill: #28a745; -fx-font-weight: bold;");
+                }
+            }
+        });
+        
+        table.getColumns().addAll(cType, cDate, cAmt);
+        List<PaymentRecord> records = new ArrayList<>();
+        
+        try (java.sql.Connection con = utils.DBConnection.getConnection();
+             java.sql.PreparedStatement ps = con.prepareStatement(
+                "SELECT p.type, p.payment_date, pa.allocated_amount " +
+                " FROM payment_allocations pa " +
+                " JOIN payments p ON pa.payment_id = p.id " +
+                " WHERE pa.invoice_id = ? ORDER BY p.payment_date DESC")) {
+            ps.setInt(1, inv.getId());
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while(rs.next()) {
+                    PaymentRecord r = new PaymentRecord();
+                    r.setType(rs.getString(1));
+                    r.setDate(rs.getString(2));
+                    r.setAmount(rs.getDouble(3));
+                    records.add(r);
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        
+        table.setItems(FXCollections.observableArrayList(records));
+        dialog.getDialogPane().setContent(table);
+        dialog.showAndWait();
+    }
+
+    public static class PaymentRecord {
+        private String type;
+        private String date;
+        private double amount;
+        public String getType() { return type; }
+        public void setType(String type) { this.type = type; }
+        public String getDate() { return date; }
+        public void setDate(String date) { this.date = date; }
+        public double getAmount() { return amount; }
+        public void setAmount(double amount) { this.amount = amount; }
     }
 }

@@ -97,10 +97,32 @@ public class InvoiceMaster {
     public double getPaidAmount() { return paidAmount; }
     public void setPaidAmount(double paidAmount) { this.paidAmount = paidAmount; }
 
-    public double getDueAmount() {
+    public double getNetAmount() {
         double cn = cnAmount != null ? cnAmount : 0;
         double dn = dnAmount != null ? dnAmount : 0;
-        return amount + (dn - cn) - paidAmount;
+        return amount + (dn - cn);
+    }
+
+    /**
+     * "Paid" in the formula (Base + DN - CN) - (Paid - Refund) 
+     * represents the total gross payments received.
+     */
+    public double getActualPaidAmount() {
+        double netPaid = paidAmount; // This is (P - R) stored in DB
+        double r = refundAmount != null ? Math.abs(refundAmount) : 0;
+        return netPaid + r; // Returns P (Gross Payments)
+    }
+
+    /**
+     * "Refund" in the formula (Base + DN - CN) - (Paid - Refund)
+     * represents the absolute total of refunds given back.
+     */
+    public double getActualRefundAmount() {
+        return refundAmount != null ? Math.abs(refundAmount) : 0; // Returns R (Absolute Refunds)
+    }
+
+    public double getDueAmount() {
+        return dueAmount;
     }
     public void setDueAmount(double dueAmount) { this.dueAmount = dueAmount; }
 
@@ -128,10 +150,20 @@ public class InvoiceMaster {
     public int getDnCount() { return dnCount; }
     public void setDnCount(int dnCount) { this.dnCount = dnCount; }
 
+    public Double getRefundAmount() { return refundAmount; }
+    public void setRefundAmount(Double refundAmount) { this.refundAmount = refundAmount; }
+
+    public int getRefundCount() { return refundCount; }
+    public void setRefundCount(int refundCount) { this.refundCount = refundCount; }
+
+    private Double refundAmount;
+    private int refundCount;
+
     public String getAdjustment() {
         double cn = cnAmount != null ? cnAmount : 0;
         double dn = dnAmount != null ? dnAmount : 0;
         double net = dn - cn;
+        
         if (net == 0) return "-";
         
         StringBuilder sb = new StringBuilder();
@@ -139,12 +171,12 @@ public class InvoiceMaster {
         
         if (cnCount > 0 || dnCount > 0) {
             sb.append(" (");
-            if (cnCount > 0) sb.append("C").append(cnCount);
-            if (cnCount > 0 && dnCount > 0) sb.append(" | ");
-            if (dnCount > 0) sb.append("D").append(dnCount);
+            java.util.List<String> labels = new java.util.ArrayList<>();
+            if (cnCount > 0) labels.add("C" + cnCount);
+            if (dnCount > 0) labels.add("D" + dnCount);
+            sb.append(String.join(" | ", labels));
             sb.append(")");
         }
-        
         return sb.toString();
     }
 

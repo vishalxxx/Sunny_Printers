@@ -245,8 +245,10 @@
                                 <TableColumn fx:id="invoiceNoColumn" text="INVOICE NO" prefWidth="140"/>
                                 <TableColumn fx:id="statusColumn" text="STATUS" prefWidth="100"/>
                                 <TableColumn fx:id="invoiceDateColumn" text="DATE" prefWidth="120"/>
-                                <TableColumn fx:id="totalAmountColumn" text="TOTAL" prefWidth="120"/>
-                                <TableColumn fx:id="alreadyPaidColumn" text="PAID" prefWidth="120"/>
+                                <TableColumn fx:id="totalAmountColumn" text="BASE AMT" prefWidth="120"/>
+                                <TableColumn fx:id="adjustmentColumn" text="ADJUSTMENT" prefWidth="150"/>
+                                <TableColumn fx:id="netTotalColumn" text="NET TOTAL" prefWidth="120"/>
+                                <TableColumn fx:id="netPaidColumn" text="NET PAID" prefWidth="120"/>
                                 <TableColumn fx:id="dueAmountColumn" text="DUE" prefWidth="120"/>
                                 <TableColumn fx:id="allocateAmountColumn" text="ALLOCATE" prefWidth="140"/>
                             </columns>
