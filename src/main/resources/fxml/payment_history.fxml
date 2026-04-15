@@ -76,7 +76,7 @@
                             </VBox>
                             <Region VBox.vgrow="ALWAYS" />
                             <HBox spacing="12" alignment="BOTTOM_RIGHT">
-                                <Button text="Reset Filters" styleClass="button, outline-btn" onAction="#onReset"/>
+                                <Button text="Reset Filters" styleClass="button outline-btn" onAction="#onReset"/>
                                 <!-- Note: Filter applies automatically on field changes now, but adding Apply button for clarity -->
                             </HBox>
                         </VBox>

@@ -5,6 +5,10 @@ import javafx.scene.shape.Rectangle;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+import javafx.animation.Interpolator;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
@@ -18,6 +22,8 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.HBox;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.Region;
 import javafx.scene.control.Button;
 import javafx.event.Event;
@@ -29,6 +35,7 @@ import service.JobService;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
+import javafx.animation.Interpolator;
 import javafx.util.Duration;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -51,6 +58,7 @@ public class MainController implements Initializable {
 
 	private final double COLLAPSED_WIDTH = 74;
 	private final double EXPANDED_WIDTH = 240;
+	@FXML private Button backNavBtn;
 	@FXML
 	private StackPane appRoot;
 	@FXML
@@ -128,7 +136,7 @@ public class MainController implements Initializable {
 	}
 
 	public void setCenterContent(Parent view) {
-		centerRoot.getChildren().setAll(view);
+		centerContentHost.getChildren().setAll(view);
 	}
 
 	@FXML
@@ -139,6 +147,8 @@ public class MainController implements Initializable {
 	private Label loaderSubtitle;
 	@FXML
 	private ProgressBar loaderBar;
+
+    private Button activeParent;
 
 	public void showGlobalLoader(String title, String subtitle) {
 		loaderTitle.setText(title);
@@ -170,6 +180,16 @@ public class MainController implements Initializable {
     @FXML private Button paymentBtn;
     @FXML private Button ledgerBtn;
     @FXML private Button settingsBtn;
+    @FXML private Button dashboardBtn;
+
+    // Submenu Buttons
+    @FXML private Button viewClientsSubBtn;
+    @FXML private Button addClientSubBtn;
+    @FXML private Button addJobSubBtn;
+    @FXML private Button genInvoiceSubBtn;
+    @FXML private Button recPaymentSubBtn;
+    @FXML private Button clientLedgerSubBtn;
+    @FXML private Button genSettingsSubBtn;
 
     // Chevrons
     @FXML private Region jobsChevron;
@@ -197,11 +217,34 @@ public class MainController implements Initializable {
 		return root;
 	}
 
+	// Top Search
+	@FXML private HBox mainSearchBox;
+	@FXML private TextField mainSearchField;
+
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
+        if (backNavBtn != null) {
+            backNavBtn.visibleProperty().bind(utils.NavigationManager.getInstance().canGoBackProperty());
+            backNavBtn.managedProperty().bind(backNavBtn.visibleProperty());
+        }
 		setPageTitle("Dashboard");
 		openCenterDashboard();
 		loadDashboardData();
+		
+		if (mainSearchBox != null && mainSearchField != null) {
+		    mainSearchField.focusedProperty().addListener((obs, oldVal, focused) -> {
+		        javafx.animation.Timeline timeline = new javafx.animation.Timeline();
+		        javafx.animation.KeyValue kv;
+		        if (focused) {
+		            kv = new javafx.animation.KeyValue(mainSearchBox.prefWidthProperty(), 460, javafx.animation.Interpolator.EASE_OUT);
+		        } else {
+		            kv = new javafx.animation.KeyValue(mainSearchBox.prefWidthProperty(), 380, javafx.animation.Interpolator.EASE_OUT);
+		        }
+		        javafx.animation.KeyFrame kf = new javafx.animation.KeyFrame(javafx.util.Duration.millis(200), kv);
+		        timeline.getKeyFrames().add(kf);
+		        timeline.play();
+		    });
+		}
 		
 		if (sidebarStack != null) {
 			Rectangle clip = new Rectangle();
@@ -220,6 +263,13 @@ public class MainController implements Initializable {
 
 			// ✅ Mouse exit collapse
 			sidebarStack.setOnMouseExited(e -> collapseSidebar());
+
+            // Force layout update during animation to ensure center content shifts smoothly
+            sidebarStack.widthProperty().addListener((obs, oldV, newV) -> {
+                if (root != null) {
+                    root.requestLayout();
+                }
+            });
 		}
 
 		// Show only the main sidebar initially
@@ -348,14 +398,26 @@ public class MainController implements Initializable {
 		if (dashboardView != null) {
 			dashboardView.setVisible(true);
 			dashboardView.setManaged(true);
-			// Only update if we are not already showing the dashboard or to ensure it's in the hierarchy
-			if (centerContentHost != null && !centerContentHost.getChildren().contains(dashboardView)) {
-                // If dashboardView is already in a VBox (like centerRoot), we don't want to move it 
-                // but for now, we follow the existing pattern if it's direct children.
-                // However, in our new FXML, dashboardView is ALREADY inside centerRoot.
-			}
+			
+            // Show search bar only on dashboard
+            if (mainSearchBox != null) {
+                mainSearchBox.setVisible(true);
+                mainSearchBox.setManaged(true);
+            }
+
+            // Hide breadcrumb on dashboard
+            if (pageTitle != null) {
+                pageTitle.setVisible(false);
+                pageTitle.setManaged(false);
+            }
+
+            // Only update if we are not already showing the dashboard or to ensure it's in the hierarchy
+            if (centerContentHost != null && !centerContentHost.getChildren().contains(dashboardView)) {
+                centerContentHost.getChildren().setAll(dashboardView);
+            }
+
 			loadDashboardData();
-			setPageTitle("Dashboard");
+			setPageTitle("");
 		}
 	}
 
@@ -555,6 +617,18 @@ public class MainController implements Initializable {
 			dashboardView.setManaged(false);
 		}
 
+		// Hide search bar on non-dashboard screens
+		if (mainSearchBox != null) {
+		    mainSearchBox.setVisible(false);
+		    mainSearchBox.setManaged(false);
+		}
+
+		// Hide breadcrumb by default for all list/list-like screens
+		if (pageTitle != null) {
+		    pageTitle.setVisible(false);
+		    pageTitle.setManaged(false);
+		}
+
 		if (pageTitle != null) {
             lastValidTitle = pageTitle.getText();
         }
@@ -632,7 +706,7 @@ public class MainController implements Initializable {
 	}
 
 	private void collapseSidebar() {
-		collapseAllSubmenus();
+		collapseAllSubmenus(false); // Instant hide on sidebar collapse to avoid ghosting
 		applyCollapsedStyleToAll(true);
         sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
 		sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
@@ -644,37 +718,108 @@ public class MainController implements Initializable {
 		if (anim != null)
 			anim.stop();
 
+        // Premium Spline Interpolator for a luxurious feel
+        Interpolator premiumEasing = Interpolator.SPLINE(0.25, 0.1, 0.25, 1.0);
+
 		anim = new Timeline(
-				new KeyFrame(Duration.millis(150),
-						new KeyValue(sidebarStack.prefWidthProperty(), width),
-						new KeyValue(sidebarStack.minWidthProperty(), width),
-						new KeyValue(sidebarStack.maxWidthProperty(), width)));
+				new KeyFrame(Duration.millis(300), 
+						new KeyValue(sidebarStack.prefWidthProperty(), width, premiumEasing),
+						new KeyValue(sidebarStack.minWidthProperty(), width, premiumEasing),
+						new KeyValue(sidebarStack.maxWidthProperty(), width, premiumEasing)));
 		anim.play();
 	}
 
-	// ---------------------------
-	// Sidebar / Page switching
-	// ---------------------------
+    private void toggleSubmenu(VBox submenu, Region chevron, Button parentBtn, Runnable onFinished) {
+        boolean wasVisible = submenu.isVisible() && submenu.getOpacity() > 0;
+        collapseAllSubmenus(false);
 
-	private void hideSidebar(VBox box) {
-		if (box != null) {
-			box.setVisible(false);
-			box.setManaged(false);
-		}
-	}
+        if (!wasVisible) {
+            submenu.setVisible(true);
+            submenu.setManaged(true);
+            
+            // Initial state for animation
+            submenu.setMaxHeight(0);
+            submenu.setOpacity(0);
+            submenu.setTranslateY(-10);
 
-    private void collapseAllSubmenus() {
+            Timeline expand = new Timeline(
+                new KeyFrame(Duration.millis(350), 
+                    new KeyValue(submenu.maxHeightProperty(), 350, Interpolator.EASE_OUT),
+                    new KeyValue(submenu.opacityProperty(), 1, Interpolator.EASE_OUT),
+                    new KeyValue(submenu.translateYProperty(), 0, Interpolator.EASE_OUT)
+                )
+            );
+            
+            if (chevron != null) {
+                expand.getKeyFrames().add(new KeyFrame(Duration.millis(350), 
+                    new KeyValue(chevron.rotateProperty(), 180, Interpolator.EASE_OUT)));
+            }
+            
+            if (parentBtn != null) {
+                parentBtn.getStyleClass().add("sidebar-btn-expanded");
+            }
+            
+            if (onFinished != null) {
+                expand.setOnFinished(e -> onFinished.run());
+            }
+            
+            expand.play();
+        }
+    }
+
+    public void collapseAllSubmenus(boolean animate) {
         VBox[] submenus = {jobsSubmenu, clientsSubmenu, billingSubmenu, paymentSubmenu, ledgerSubmenu, settingsSubmenu};
         Region[] chevrons = {jobsChevron, clientsChevron, billingChevron, paymentChevron, ledgerChevron, settingsChevron};
-        Button[] buttons = {jobsBtn, clientsBtn, billingBtn, paymentBtn, ledgerBtn, settingsBtn};
-        
-        for(int i=0; i<submenus.length; i++) {
-            if(submenus[i] != null) {
-                submenus[i].setVisible(false);
-                submenus[i].setManaged(false);
-                if(chevrons[i] != null) chevrons[i].setRotate(0);
-                if(buttons[i] != null) buttons[i].getStyleClass().remove("sidebar-btn-expanded");
+        Button[] btns = {jobsBtn, clientsBtn, billingBtn, paymentBtn, ledgerBtn, settingsBtn};
+
+        for (int i = 0; i < submenus.length; i++) {
+            VBox sub = submenus[i];
+            Region chv = chevrons[i];
+            Button b = btns[i];
+
+            if (sub != null && sub.isVisible()) {
+                if (b != null) b.getStyleClass().remove("sidebar-btn-expanded");
+                
+                sub.setVisible(false);
+                sub.setManaged(false);
+                sub.setOpacity(0);
+                sub.setMaxHeight(0);
+                sub.setTranslateY(0);
+                if (chv != null) chv.setRotate(0);
             }
+        }
+    }
+
+    private void resetSelectionStyles() {
+        Button[] buttons = {jobsBtn, clientsBtn, billingBtn, paymentBtn, ledgerBtn, settingsBtn, dashboardBtn};
+        for (Button b : buttons) {
+            if (b != null) b.getStyleClass().remove("sidebar-btn-active");
+        }
+    }
+
+    private void highlightActiveMenu(Button parent) {
+        resetSelectionStyles();
+        resetSubmenuStyles();
+        if (parent != null) {
+            parent.getStyleClass().add("sidebar-btn-active");
+            activeParent = parent;
+        }
+    }
+
+    private void highlightSubmenu(Button subBtn) {
+        resetSubmenuStyles();
+        if (subBtn != null) {
+            subBtn.getStyleClass().add("submenu-btn-active");
+        }
+    }
+
+    private void resetSubmenuStyles() {
+        if (mainSidebar != null) {
+            mainSidebar.lookupAll(".submenu-btn").forEach(node -> {
+                if (node instanceof Button b) {
+                    b.getStyleClass().remove("submenu-btn-active");
+                }
+            });
         }
     }
 
@@ -692,36 +837,39 @@ public class MainController implements Initializable {
 		}
 	}
 
-	// Event handlers for sidebar menu items
-
 	@FXML
 	private void openDashboard(javafx.event.ActionEvent event) {
 		utils.NavigationManager.getInstance().clear();
-		System.out.println("DEBUG: Navigation History cleared at Dashboard root.");
-		collapseAllSubmenus();
+		// Navigation History cleared at Dashboard root.
+		collapseAllSubmenus(true);
+		highlightActiveMenu(dashboardBtn);
 		openCenterDashboard();
 		setPageTitle("Dashboard");
 	}
 
-    private void toggleSubmenu(VBox submenu, Region chevron, Button parentBtn) {
-        boolean wasVisible = submenu.isVisible();
-        collapseAllSubmenus();
+	// ---------------------------
+	// Sidebar / Page switching
+	// ---------------------------
 
-        // Toggle target
-        if (!wasVisible) {
-            submenu.setVisible(true);
-            submenu.setManaged(true);
-            if(chevron != null) chevron.setRotate(180);
-            if(parentBtn != null) parentBtn.getStyleClass().add("sidebar-btn-expanded");
-        }
-    }
-
-	@FXML public void showJobsSubmenu() { toggleSubmenu(jobsSubmenu, jobsChevron, jobsBtn); }
-	@FXML public void showClientsSubmenu() { toggleSubmenu(clientsSubmenu, clientsChevron, clientsBtn); }
-	@FXML public void showBillingSubmenu() { toggleSubmenu(billingSubmenu, billingChevron, billingBtn); }
-	@FXML public void showPaymentSubmenu() { toggleSubmenu(paymentSubmenu, paymentChevron, paymentBtn); }
-	@FXML public void showLedgerSubmenu() { toggleSubmenu(ledgerSubmenu, ledgerChevron, ledgerBtn); }
-	@FXML public void showSettingSubmenu() { toggleSubmenu(settingsSubmenu, settingsChevron, settingsBtn); }
+	@FXML public void showJobsSubmenu() { 
+		toggleSubmenu(jobsSubmenu, jobsChevron, jobsBtn, this::loadAddJob); 
+	}
+	@FXML public void showClientsSubmenu() { 
+		toggleSubmenu(clientsSubmenu, clientsChevron, clientsBtn, this::loadViewClients); 
+	}
+	@FXML public void showBillingSubmenu() { 
+		toggleSubmenu(billingSubmenu, billingChevron, billingBtn, this::loadInvoiceGenration); 
+	}
+	@FXML public void showPaymentSubmenu() { 
+		toggleSubmenu(paymentSubmenu, paymentChevron, paymentBtn, this::loadRecordPayment); 
+	}
+	@FXML public void showLedgerSubmenu() { 
+		toggleSubmenu(ledgerSubmenu, ledgerChevron, ledgerBtn, this::loadClientLedger); 
+	}
+	@FXML
+	public void showSettingSubmenu() {
+		toggleSubmenu(settingsSubmenu, settingsChevron, settingsBtn, this::loadGeneralSettings);
+	}
 
 	private VBox findSidebarById(String id) {
 		return mainSidebar; // Dashboard is now a single-sidebar accordion
@@ -733,7 +881,7 @@ public class MainController implements Initializable {
 	}
 
 	@FXML
-	public void handleBack(MouseEvent event) {
+	public void handleBack(javafx.event.Event event) {
 		if (utils.NavigationManager.getInstance().hasHistory()) {
 
 			if (!canDiscardChanges()) {
@@ -746,7 +894,14 @@ public class MainController implements Initializable {
 				VBox restoredSidebar = findSidebarById(prevState.getActiveSidebarId());
 				showOnly(restoredSidebar);
 				lastValidTitle = prevState.getTitle();
-				setPageTitle(prevState.getTitle());
+                
+                // RESTORE VISIBILITY ON BACK
+                boolean isDetailView = prevState.getFxmlPath().contains("client_profile") || prevState.getFxmlPath().contains("edit_client");
+                if (pageTitle != null) {
+                    pageTitle.setVisible(isDetailView);
+                    pageTitle.setManaged(isDetailView);
+                    setPageTitle(prevState.getTitle());
+                }
 
 				// ⚡ If the history stack preserved the actual screen memory, restore it
 				// instantly:
@@ -768,14 +923,18 @@ public class MainController implements Initializable {
 	}
 
 	@FXML
-	public void loadClientLedger() {
+	private void loadClientLedger() {
+		highlightActiveMenu(ledgerBtn);
+		highlightSubmenu(clientLedgerSubBtn);
 		loadCenterScreen("/fxml/client_ledger.fxml",
-				"Loading Client Ledger...",
+				"Loading Ledger...",
 				"Fetching financial records...");
 	}
 
 	@FXML
 	private void loadAddClient() {
+		highlightActiveMenu(clientsBtn);
+		highlightSubmenu(addClientSubBtn);
 		loadCenterScreen("/fxml/add_client.fxml",
 				"Loading Dashboard...",
 				"Please wait");
@@ -783,6 +942,8 @@ public class MainController implements Initializable {
 
 	@FXML
 	private void loadAddJob() {
+		highlightActiveMenu(jobsBtn);
+		highlightSubmenu(addJobSubBtn);
 		loadCenterScreen("/fxml/ht.fxml",
 				"Loading Dashboard...",
 				"Please wait");
@@ -790,6 +951,7 @@ public class MainController implements Initializable {
 
 	@FXML
 	public void loadViewJob() {
+		highlightActiveMenu(jobsBtn);
 		loadCenterScreen("/fxml/view_job.fxml",
 				"Loading Dashboard...",
 				"Please wait");
@@ -797,25 +959,88 @@ public class MainController implements Initializable {
 
 	@FXML
 	public void loadViewClients() {
+		highlightActiveMenu(clientsBtn);
+		highlightSubmenu(viewClientsSubBtn);
 		loadCenterScreen("/fxml/view_client.fxml",
-				"Loading Dashboard...",
+				"Loading Client Directory...",
 				"Please wait");
 	}
+
+    public void loadClientProfile(model.Client client) {
+        if (client == null) return;
+        if (pageTitle != null) {
+            pageTitle.setVisible(true);
+            pageTitle.setManaged(true);
+            setPageTitle("Client Profile / " + client.getBusinessName());
+        }
+        
+        if (centerLoaderIncludeController != null) {
+            centerLoaderIncludeController.show("Loading Profile...", "Fetching detailed insights for " + client.getBusinessName());
+        }
+        
+        new Thread(() -> {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/client_profile.fxml"));
+                Parent view = loader.load();
+                ClientProfileController controller = loader.getController();
+                controller.setClient(client);
+                
+                Platform.runLater(() -> {
+                    centerContentHost.getChildren().setAll(view);
+                    if (centerLoaderIncludeController != null) {
+                        centerLoaderIncludeController.hide();
+                    }
+                    // Push to history manually for deep navigation
+                    utils.NavigationManager.getInstance().push("/fxml/client_profile.fxml", "Client Profile", client.getBusinessName(), clientsSubmenu.getId());
+                    utils.NavigationManager.getInstance().updateCurrentState(view, controller);
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                Platform.runLater(() -> {
+                    if (centerLoaderIncludeController != null) centerLoaderIncludeController.hide();
+                });
+            }
+        }).start();
+    }
+
+    public void loadEditClient(model.Client client) {
+        if (client == null) return;
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/edit_client.fxml"));
+            Parent view = loader.load();
+            EditClientController controller = loader.getController();
+            controller.setClientData(client);
+            
+            centerContentHost.getChildren().setAll(view);
+            if (pageTitle != null) {
+                pageTitle.setVisible(true);
+                pageTitle.setManaged(true);
+                setPageTitle("Edit Client / " + client.getBusinessName());
+            }
+            
+            utils.NavigationManager.getInstance().push("/fxml/edit_client.fxml", "Edit Client", client.getBusinessName(), clientsSubmenu.getId());
+            utils.NavigationManager.getInstance().updateCurrentState(view, controller);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
 	public void setCenterView(Parent view) {
 		centerContentHost.getChildren().setAll(view);
 	}
 
 	@FXML
-	public void loadInvoiceGenration() {
-
-		loadCenterScreen("/fxml/invoice_genration.fxml",
+	private void loadInvoiceGenration() {
+		highlightActiveMenu(billingBtn);
+		highlightSubmenu(genInvoiceSubBtn);
+		loadCenterScreen("/fxml/invoice.fxml",
 				"Loading Dashboard...",
 				"Please wait");
 	}
 
 	@FXML
 	public void loadViewInvoiceJobs() {
+		highlightActiveMenu(billingBtn);
 		loadCenterScreen("/fxml/view_invoice_jobs.fxml",
 				"Loading Invoice Jobs...",
 				"Please wait");
@@ -827,6 +1052,7 @@ public class MainController implements Initializable {
 	}
 
 	public void switchToInvoices() {
+		highlightActiveMenu(billingBtn);
 		loadCenterScreen("/fxml/view_invoices.fxml",
 				"Loading Invoices...",
 				"Fetching billing records...");
@@ -834,6 +1060,7 @@ public class MainController implements Initializable {
 
 	@FXML
 	public void loadCreditDebitNote() {
+		highlightActiveMenu(billingBtn);
 		loadCenterScreen("/fxml/credit_debit_note.fxml",
 				"Loading Note...",
 				"Please wait");
@@ -841,13 +1068,16 @@ public class MainController implements Initializable {
 
 	@FXML
 	public void loadRecordPayment() {
+		highlightActiveMenu(paymentBtn);
+		highlightSubmenu(recPaymentSubBtn);
 		loadCenterScreen("/fxml/record_payment.fxml",
-				"Loading Payment Screen...",
-				"Loading outstanding invoices and client details...");
+				"Loading Payments...",
+				"Please wait");
 	}
 
 	@FXML
 	public void loadPaymentHistory() {
+		highlightActiveMenu(paymentBtn);
 		loadCenterScreen("/fxml/payment_history.fxml",
 				"Loading Payment History...",
 				"Fetching payment records...");
@@ -855,9 +1085,11 @@ public class MainController implements Initializable {
 
 	@FXML
 	public void loadGeneralSettings() {
+		highlightActiveMenu(settingsBtn);
+		highlightSubmenu(genSettingsSubBtn);
 		loadCenterScreen("/fxml/general_settings.fxml",
 				"Loading General Settings...",
-				"Fetching global configurations...");
+				"Please wait");
 	}
 
 	// try {
@@ -884,6 +1116,7 @@ public class MainController implements Initializable {
 
 	@FXML
 	public void loadUserSettings() {
+		highlightActiveMenu(settingsBtn);
 		loadCenterScreen("/fxml/user_settings.fxml",
 				"Loading User Settings...",
 				"Please wait");
@@ -891,6 +1124,7 @@ public class MainController implements Initializable {
 
 	@FXML
 	private void loadInvoiceSettings() {
+		highlightActiveMenu(settingsBtn);
 		loadCenterScreen("/fxml/invoice_settings.fxml",
 				"Loading Invoice Settings...",
 				"Please wait");

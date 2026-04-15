@@ -127,6 +127,7 @@ public class Invoice {
 	}
 
 	public double getGrandTotal() {
+        if (this.grandTotal > 0) return this.grandTotal;
 		return jobs.stream().mapToDouble(InvoiceJob::getJobTotal).sum();
 	}
 

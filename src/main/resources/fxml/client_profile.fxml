@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
+<?import javafx.geometry.Insets?>
+
+<ScrollPane fitToWidth="true" stylesheets="@../css/client_profile.css" styleClass="profile-root" xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.ClientProfileController">
+    <VBox spacing="25" styleClass="content-container">
+        <padding>
+            <Insets top="20" right="30" bottom="20" left="30"/>
+        </padding>
+
+        <!-- HEADER SECTION -->
+        <HBox alignment="CENTER_LEFT" spacing="20">
+            <StackPane styleClass="client-avatar-large">
+                <Label fx:id="lblInitial" text="A" styleClass="avatar-text"/>
+            </StackPane>
+            
+            <VBox spacing="5" HBox.hgrow="ALWAYS">
+                <HBox spacing="15" alignment="CENTER_LEFT">
+                    <Label fx:id="lblBusinessName" text="Artisanal Breads Co." styleClass="profile-title"/>
+                    <Label fx:id="lblStatusTag" text="PREFERRED" styleClass="status-pill-gold"/>
+                </HBox>
+                <HBox spacing="20" styleClass="contact-info-row">
+                    <HBox spacing="8" alignment="CENTER_LEFT">
+                        <Region styleClass="icon-small icon-user"/>
+                        <Label fx:id="lblOwnerName" text="Julian Marchetti (Owner)"/>
+                    </HBox>
+                    <HBox spacing="8" alignment="CENTER_LEFT">
+                        <Region styleClass="icon-small icon-mail"/>
+                        <Label fx:id="lblEmail" text="julian@artisanalbreads.co"/>
+                    </HBox>
+                    <HBox spacing="8" alignment="CENTER_LEFT">
+                        <Region styleClass="icon-small icon-phone"/>
+                        <Label fx:id="lblPhone" text="+1 (555) 924-1102"/>
+                    </HBox>
+                </HBox>
+            </VBox>
+
+            <HBox spacing="12">
+                <Button fx:id="btnEditProfile" text="Edit Profile" styleClass="btn-profile-ghost">
+                    <graphic><Region styleClass="icon-small icon-edit"/></graphic>
+                </Button>
+                <Button text="Message" styleClass="btn-profile-primary">
+                    <graphic><Region styleClass="icon-small icon-msg"/></graphic>
+                </Button>
+            </HBox>
+        </HBox>
+
+        <!-- KPI GRID -->
+        <GridPane hgap="15" vgap="15">
+            <columnConstraints>
+                <ColumnConstraints percentWidth="25"/>
+                <ColumnConstraints percentWidth="25"/>
+                <ColumnConstraints percentWidth="25"/>
+                <ColumnConstraints percentWidth="25"/>
+            </columnConstraints>
+            
+            <VBox styleClass="kpi-card-profile" GridPane.columnIndex="0">
+                <Label text="LIFETIME VALUE" styleClass="kpi-label-profile"/>
+                <Label fx:id="lblLtv" text="₹0" styleClass="kpi-value-profile"/>
+                <HBox spacing="5" alignment="CENTER_LEFT">
+                    <Region styleClass="icon-tiny icon-trend-up"/>
+                    <Label text="+12% from last year" styleClass="kpi-subtext-profile"/>
+                </HBox>
+            </VBox>
+
+            <VBox fx:id="cardBalance" styleClass="kpi-card-profile" GridPane.columnIndex="1">
+                <Label text="OUTSTANDING BALANCE" styleClass="kpi-label-profile"/>
+                <Label fx:id="lblBalance" text="₹0" styleClass="kpi-value-profile"/>
+                <HBox spacing="5" alignment="CENTER_LEFT">
+                    <Region styleClass="icon-tiny icon-clock"/>
+                    <Label fx:id="lblNextDue" text="No pending tasks" styleClass="kpi-subtext-profile"/>
+                </HBox>
+            </VBox>
+
+            <VBox styleClass="kpi-card-profile" GridPane.columnIndex="2">
+                <Label text="ACTIVE JOBS" styleClass="kpi-label-profile"/>
+                <Label fx:id="lblActiveJobs" text="0" styleClass="kpi-value-profile"/>
+                <Label text="Jobs currently in production" styleClass="kpi-subtext-profile"/>
+            </VBox>
+
+            <VBox styleClass="kpi-card-profile" GridPane.columnIndex="3">
+                <Label text="AVG. TURNAROUND" styleClass="kpi-label-profile"/>
+                <Label fx:id="lblTurnaround" text="4.2 days" styleClass="kpi-value-profile"/>
+                <HBox spacing="5" alignment="CENTER_LEFT">
+                    <Region styleClass="icon-tiny icon-bolt"/>
+                    <Label text="Efficiency metrics" styleClass="kpi-subtext-profile"/>
+                </HBox>
+            </VBox>
+        </GridPane>
+
+        <!-- MAIN CONTENT + SIDEBAR -->
+        <HBox spacing="30">
+            <!-- LEFT CONTENT -->
+            <VBox spacing="30" HBox.hgrow="ALWAYS">
+                <!-- ACTIVE PIPELINE -->
+                <VBox spacing="15">
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Active Pipeline" styleClass="section-title"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button text="View All Jobs" styleClass="btn-text-link"/>
+                    </HBox>
+                    
+                    <VBox fx:id="pipelineContainer" spacing="12">
+                        <!-- Dynamic job cards will be injected here -->
+                    </VBox>
+                </VBox>
+
+                <!-- FINANCIAL HISTORY -->
+                <VBox spacing="15">
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Financial History" styleClass="section-title"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button text="Export Statement" styleClass="btn-text-link">
+                            <graphic><Region styleClass="icon-tiny icon-download"/></graphic>
+                        </Button>
+                    </HBox>
+                    
+                    <VBox styleClass="history-container">
+                        <!-- Header Row -->
+                        <HBox styleClass="history-header" spacing="0">
+                            <Label text="INVOICE ID" prefWidth="120" alignment="CENTER" styleClass="header-label"/>
+                            <Label text="ISSUE DATE" prefWidth="150" alignment="CENTER" styleClass="header-label"/>
+                            <Label text="AMOUNT" prefWidth="120" alignment="CENTER" styleClass="header-label"/>
+                            <Label text="STATUS" HBox.hgrow="ALWAYS" maxWidth="Infinity" alignment="CENTER" styleClass="header-label"/>
+                            <Label text="ACTION" prefWidth="60" alignment="CENTER" styleClass="header-label"/>
+                        </HBox>
+                        
+                        <VBox fx:id="historyContainer" spacing="0">
+                            <!-- Dynamic history rows injected here -->
+                        </VBox>
+                    </VBox>
+                </VBox>
+            </VBox>
+
+            <!-- RIGHT SIDEBAR -->
+            <VBox spacing="30" prefWidth="320" minWidth="320">
+                <!-- BUSINESS DETAILS -->
+                <VBox styleClass="sidebar-card-profile">
+                    <Label text="Business Details" styleClass="card-title-profile"/>
+                    <VBox spacing="15" style="-fx-padding: 15 0 0 0;">
+                        <VBox spacing="5">
+                            <Label text="REGISTERED ADDRESS" styleClass="detail-label-profile"/>
+                            <Label fx:id="lblAddress" text="---" wrapText="true" styleClass="detail-value-profile"/>
+                        </VBox>
+                        <VBox spacing="5">
+                            <Label text="GST / TAX ID" styleClass="detail-label-profile"/>
+                            <Label fx:id="lblTaxId" text="---" styleClass="detail-value-profile"/>
+                        </VBox>
+                        <VBox spacing="5">
+                            <Label text="PREFERRED METHODS" styleClass="detail-label-profile"/>
+                            <HBox spacing="10">
+                                <Label text="ACH Transfer" styleClass="pill-small"/>
+                                <Label text="Net 30" styleClass="pill-small"/>
+                            </HBox>
+                        </VBox>
+                    </VBox>
+                </VBox>
+
+                <!-- INTERNAL NOTES -->
+                <VBox styleClass="notes-card-profile">
+                    <Label text="Internal Notes" styleClass="notes-title-profile"/>
+                    <Label fx:id="lblNotes" text="&quot;No internal notes available.&quot;" wrapText="true" styleClass="notes-content-profile"/>
+                </VBox>
+            </VBox>
+        </HBox>
+    </VBox>
+</ScrollPane>

@@ -19,6 +19,13 @@ public class Client {
 	private StringProperty billingAddress = new SimpleStringProperty();
 	private StringProperty shippingAddress = new SimpleStringProperty();
 	private StringProperty notes = new SimpleStringProperty();
+    
+    // UI Transient Metrics
+    private double ltv;
+    private double balance;
+    private int activityScore;
+    private String segment = "Active";
+    private String insight = "";
 
 	// ---------- CONSTRUCTOR ----------
 	public Client(String businessName, String clientName, String nickName, String phone, String altPhone, String email,
@@ -159,5 +166,21 @@ public class Client {
 		if (bn.isBlank()) return cn;
 		return bn + " (" + cn + ")";
 	}
+
+    // --- Analytics Getters/Setters ---
+    public double getLtv() { return ltv; }
+    public void setLtv(double ltv) { this.ltv = ltv; }
+
+    public double getBalance() { return balance; }
+    public void setBalance(double balance) { this.balance = balance; }
+
+    public int getActivityScore() { return activityScore; }
+    public void setActivityScore(int activityScore) { this.activityScore = activityScore; }
+
+    public String getSegment() { return segment; }
+    public void setSegment(String segment) { this.segment = segment; }
+
+    public String getInsight() { return insight; }
+    public void setInsight(String insight) { this.insight = insight; }
 
 }

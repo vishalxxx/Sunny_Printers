@@ -3,54 +3,62 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.*?>
+<?import javafx.scene.shape.*?>
 
-<VBox xmlns="http://javafx.com/javafx"
-	xmlns:fx="http://javafx.com/fxml"
-	fx:controller="controller.ViewClientsController" spacing="20"
-	stylesheets="@../css/view_client.css" styleClass="view-clients-root">
+<VBox xmlns="http://javafx.com/javafx/23"
+	xmlns:fx="http://javafx.com/fxml/1"
+	fx:controller="controller.ViewClientsController" spacing="12"
+	stylesheets="@../css/view_client.css" styleClass="view-clients-root"
+    alignment="TOP_CENTER">
+    <padding><Insets top="10" right="40" bottom="10" left="40"/></padding>
 
-	<!-- PAGE TITLE -->
-	<Label text="View Business Clients" styleClass="page-heading" />
+    <!-- HEADER & KPIs ROW -->
+    <HBox spacing="40" alignment="CENTER_LEFT">
+        <!-- Titles -->
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label text="Client Directory" styleClass="page-heading" />
+            <Label text="Manage your global client relationships, track lifetime value, and oversee outstanding receivables in an editorial layout." styleClass="page-subheading" wrapText="true" maxWidth="450"/>
+            
+            <HBox spacing="15" alignment="CENTER_LEFT" styleClass="search-bar-container">
+				<TextField fx:id="searchField"
+					promptText="Search accounts..."
+					styleClass="search-field" prefWidth="250" />
+                <ComboBox fx:id="insightFilterComboBox" promptText="Filter by Insight" prefWidth="170" styleClass="sort-combo" />
+                <ComboBox fx:id="sortComboBox" promptText="Sort By" prefWidth="150" styleClass="sort-combo" />
+			</HBox>
+        </VBox>
 
-	<!-- SEARCH BAR -->
-	<HBox spacing="12" alignment="CENTER_LEFT" styleClass="search-bar">
-		<TextField fx:id="searchField"
-			promptText="Search by Business Name, Client, Phone, GST..."
-			styleClass="search-field" HBox.hgrow="ALWAYS" />
+        <!-- KPIs -->
+        <HBox spacing="15" style="-fx-padding: 20 0 0 0;">
+            <VBox styleClass="kpi-card" style="-fx-background-color: #F4EAE0;" minWidth="150">
+                <Label text="TOTAL CLIENTS" styleClass="kpi-label"/>
+                <Label fx:id="lblTotalClients" text="1,284" styleClass="kpi-value-dark"/>
+            </VBox>
+            <VBox styleClass="kpi-card" style="-fx-background-color: #E8F0EA;" minWidth="130">
+                <Label text="PREFERRED" styleClass="kpi-label-green"/>
+                <Label fx:id="lblPreferredClients" text="42" styleClass="kpi-value-green"/>
+            </VBox>
+            <VBox styleClass="kpi-card" style="-fx-background-color: #F5EAE5;" minWidth="160">
+                <Label text="TOTAL RECEIVABLES" styleClass="kpi-label-red"/>
+                <Label fx:id="lblTotalReceivables" text="\$248.3k" styleClass="kpi-value-red"/>
+            </VBox>
+        </HBox>
+    </HBox>
 
-		<Button text="Search" styleClass="search-button" />
-	</HBox>
+	<!-- LIST AREA -->
+    <ListView fx:id="clientListView" styleClass="client-list-view" VBox.vgrow="ALWAYS" />
 
-	<!-- TABLE CARD -->
-	<VBox styleClass="table-card">
-
-		<TableView fx:id="clientTable" styleClass="client-table">
-
-			<columns>
-				<TableColumn fx:id="idCol" text="ID" prefWidth="80" />
-				<TableColumn fx:id="businessCol" text="Business Name"
-					prefWidth="200" />
-				<TableColumn fx:id="clientCol" text="Client Name"
-					prefWidth="180" />
-				<TableColumn fx:id="nickCol" text="Nick Name"
-					prefWidth="150" />
-				<TableColumn fx:id="phoneCol" text="Phone"
-					prefWidth="150" />
-				<TableColumn fx:id="altPhoneCol" text="Alt Phone"
-					prefWidth="150" />
-				<TableColumn fx:id="emailCol" text="Email"
-					prefWidth="240" />
-				<TableColumn fx:id="gstCol" text="GST" prefWidth="140" />
-				<TableColumn fx:id="panCol" text="PAN" prefWidth="140" />
-
-				<!-- ⭐ CORRECT — Do NOT add type attribute -->
-				<TableColumn fx:id="actionCol" text="Actions"
-					prefWidth="220" />
-			</columns>
-
-		</TableView>
-
-
-	</VBox>
+    <!-- FOOTER -->
+    <HBox alignment="CENTER_LEFT">
+        <HBox spacing="4">
+            <Label text="Showing" styleClass="footer-text"/>
+            <Label fx:id="lblShowingCount" text="0 of 0" styleClass="footer-text"/>
+            <Label text="premium accounts." styleClass="footer-text"/>
+            <Label text="Download full PDF directory" styleClass="footer-link" style="-fx-cursor: hand;"/>
+        </HBox>
+        <Region HBox.hgrow="ALWAYS"/>
+        <HBox fx:id="paginationContainer" spacing="10" alignment="CENTER">
+        </HBox>
+    </HBox>
 
 </VBox>

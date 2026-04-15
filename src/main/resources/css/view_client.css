@@ -1,167 +1,292 @@
 /* =======================
-   VIEW CLIENTS PAGE
+   VIEW CLIENTS PAGE - WARM EDITORIAL AESTHETIC
    ======================= */
 
 .view-clients-root {
-    -fx-padding: 1.5em;
-    -fx-background-color: transparent;
+    -fx-background-color: #FAF6F0; /* Soft warm beige background matching image */
 }
 
 .page-heading {
-    -fx-text-fill: white;
-    -fx-font-size: 1.6em;
-    -fx-font-weight: bold;
+    -fx-text-fill: #3E312D; /* Dark warm brown */
+    -fx-font-size: 24px;
+    -fx-font-family: 'Manrope';
+    -fx-font-weight: 800;
 }
 
-.search-bar {
-    -fx-spacing: 1em;
+.page-subheading {
+    -fx-text-fill: #7A726D;
+    -fx-font-size: 13px;
+    -fx-font-family: 'Inter';
+}
+
+.search-bar-container {
+    -fx-padding: 10 0 0 0;
 }
 
 .search-field {
-    -fx-background-color: #1f1f1f;
-    -fx-text-fill: white;
-    -fx-prompt-text-fill: #888;
-    -fx-background-radius: 0.5em;
-    -fx-padding: 0.6em 1em;
-    -fx-border-color: #333;
-    -fx-border-radius: 0.5em;
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 20;
+    -fx-background-radius: 20;
+    -fx-padding: 8 15;
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter';
+    -fx-font-size: 13px;
 }
 
-.table-card {
-    -fx-background-color: #141414;
-    -fx-background-radius: 0.8em;
-    -fx-padding: 1em;
+.sort-combo {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 20;
+    -fx-background-radius: 20;
+    -fx-padding: 2 10;
+    -fx-cursor: hand;
 }
 
-/* ===================== TABLE BASE ===================== */
-
-.client-table {
+.sort-combo .list-cell {
     -fx-background-color: transparent;
-    -fx-table-cell-border-color: #333;
-    -fx-padding: 0;
+    -fx-text-fill: #3E312D;
 }
 
-/* ===================== HEADER ===================== */
-/* Background of header row */
-.client-table .column-header-background {
-    -fx-background-color: #111111 !important;   /* deep dark */
-    -fx-border-color: #333333 !important;
-}
-
-/* Individual column header cells */
-.client-table .column-header {
-    -fx-background-color: #111111 !important;
-}
-
-/* Header text */
-.client-table .column-header .label {
-    -fx-text-fill: white !important;
-    -fx-font-size: 1.15em;
-    -fx-font-weight: bold;
-}
-/* ===================== CELL TEXT ===================== */
-
-.client-table .table-cell {
-    -fx-text-fill: #ffffff;        /* full white text (fixed) */
-    -fx-font-size: 1.05em;
-    -fx-alignment: CENTER_LEFT;   /* clean alignment */
-}
-
-/* ===================== ROW BACKGROUND ===================== */
-
-.client-table .table-row-cell {
-    -fx-background-color: #1a1a1a;  /* base row color */
-}
-
-/* Alternate Row */
-.client-table .table-row-cell:odd {
-    -fx-background-color: #1f1f1f;
-}
-
-/* Hover effect */
-.client-table .table-row-cell:hover {
-    -fx-background-color: #333333 !important;    /* clearer hover */
-}
-
-/* Selected Row */
-.client-table .table-row-cell:selected {
-    -fx-background-color: #1e4d57 !important;    /* professional blue selection */
-    -fx-text-fill: white !important;
-}
-
-.client-table .table-row-cell:selected .table-cell {
-    -fx-text-fill: white !important;             /* ensure readable when selected */
-}
-
-
-/* Buttons inside action column */
-.action-view {
-    -fx-background-color: #2d8cff;
-    -fx-text-fill: white;
-    -fx-background-radius: 6;
-    -fx-padding: 4 10;
-    -fx-font-size: 0.95em;
-    -fx-font-weight: bold;
-}
-
-.action-edit {
-    -fx-background-color: #777;
-    -fx-text-fill: white;
-    -fx-background-radius: 6;
-    -fx-padding: 4 10;
-}
-
-.action-delete {
-    -fx-background-color: #c62828;
-    -fx-text-fill: white;
-    -fx-background-radius: 6;
-    -fx-padding: 4 10;
-}
-/* ---------------------- EDIT BUTTON ---------------------- */
-.edit-button {
+.sort-combo .cell {
     -fx-background-color: transparent;
-    -fx-border-color: #4a90e2;
-    -fx-text-fill: #4a90e2;
-    -fx-border-radius: 6;
-    -fx-padding: 4 12;
-    -fx-font-size: 0.9em;
+    -fx-text-fill: #3E312D;
 }
 
-.edit-button:hover {
-    -fx-background-color: rgba(74, 144, 226, 0.15);
+/* ===================== COMBO BOX DROPDOWN ===================== */
+.combo-box .list-view {
+    -fx-background-color: #FAF6F0;
+    -fx-background-radius: 12;
+    -fx-border-color: #CD7B4E;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 10, 0, 0, 5);
 }
 
-/* ---------------------- DELETE BUTTON ---------------------- */
-.delete-button {
+.combo-box .list-cell {
     -fx-background-color: transparent;
-    -fx-border-color: #e74c3c;
-    -fx-text-fill: #e74c3c;
-    -fx-border-radius: 6;
-    -fx-padding: 4 12;
-    -fx-font-size: 0.9em;
-}
-
-.delete-button:hover {
-    -fx-background-color: rgba(231, 76, 60, 0.15);
-}
-
-/* ---------------------- SEARCH BUTTON ---------------------- */
-.search-button {
-    -fx-background-color: #2c2c2c;
-    -fx-text-fill: #e0e0e0;
+    -fx-text-fill: #3E312D;
+    -fx-padding: 8 15;
+    -fx-font-family: 'Inter';
+    -fx-font-size: 13px;
     -fx-background-radius: 8;
-    -fx-padding: 6 18;
-    -fx-font-size: 1em;
-    -fx-border-color: #444;
-    -fx-border-radius: 8;
 }
 
-.search-button:hover {
-    -fx-background-color: #3a3a3a;
+.combo-box .list-view .list-cell:hover {
+    -fx-background-color: #F4EAE0;
+    -fx-text-fill: #3E312D;
 }
 
-.search-button:pressed {
-    -fx-background-color: #1f1f1f;
+.combo-box .list-view .list-cell:selected {
+    -fx-background-color: #CD7B4E;
+    -fx-text-fill: white;
 }
 
+/* Ensure the main button cell stays transparent and doesn't show the orange selection block */
+.sort-combo > .list-cell {
+    -fx-background-color: transparent !important;
+}
+.sort-combo > .list-cell:selected {
+    -fx-background-color: transparent !important;
+}
 
+/* Dropdown list container with inner padding */
+.combo-box .list-view {
+    -fx-background-color: #FAF6F0;
+    -fx-background-radius: 12;
+    -fx-border-color: #CD7B4E;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 4; /* Spacing between border and cells */
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 10, 0, 0, 5);
+}
+
+.combo-box .arrow {
+    -fx-background-color: #CD7B4E;
+}
+
+.combo-box .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 10 0 0;
+}
+
+.search-field:focused {
+    -fx-border-color: #CD7B4E;
+}
+
+/* ===================== KPIs ===================== */
+.kpi-card {
+    -fx-padding: 8 20;
+    -fx-background-radius: 12;
+    -fx-alignment: CENTER_LEFT;
+    -fx-spacing: 2;
+    -fx-border-color: #EBE5DF;
+    -fx-border-radius: 12;
+}
+
+.kpi-beige { -fx-background-color: #F4EAE0; }
+.kpi-green { -fx-background-color: #E8F0EA; }
+.kpi-beige-light { -fx-background-color: #F5EAE5; }
+
+.kpi-label { -fx-text-fill: #A0836D; -fx-font-size: 9px; -fx-font-weight: 800; -fx-letter-spacing: 1.2px; }
+.kpi-label-green { -fx-text-fill: #6C9373; -fx-font-size: 9px; -fx-font-weight: 800; -fx-letter-spacing: 1.2px; }
+.kpi-label-red { -fx-text-fill: #CD7B4E; -fx-font-size: 9px; -fx-font-weight: 800; -fx-letter-spacing: 1.2px; }
+
+.kpi-value-dark { -fx-text-fill: #433934; -fx-font-size: 22px; -fx-font-weight: 800; -fx-font-family: 'Manrope'; }
+.kpi-value-green { -fx-text-fill: #5D8063; -fx-font-size: 22px; -fx-font-weight: 800; -fx-font-family: 'Manrope'; }
+.kpi-value-red { -fx-text-fill: #CD7B4E; -fx-font-size: 22px; -fx-font-weight: 800; -fx-font-family: 'Manrope'; }
+
+
+/* ===================== LIST VIEW & CARDS ===================== */
+
+.client-list-view {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 10 0;
+}
+
+.client-list-view .scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.client-list-view .scroll-bar .thumb {
+    -fx-background-color: rgba(62, 49, 45, 0.1);
+    -fx-background-radius: 5px;
+}
+
+.client-list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 8 0; /* spacing between cards */
+}
+
+.client-list-view .list-cell:empty {
+    -fx-background-color: transparent;
+}
+
+.client-card-cell {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 20;
+    -fx-border-color: #F0EBE5;
+    -fx-border-radius: 20;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.03), 15, 0, 0, 4);
+}
+
+/* ===================== CARD CONTENT ===================== */
+
+.client-icon-box {
+    -fx-background-color: #FAF0E6;
+    -fx-background-radius: 12;
+    -fx-min-width: 50;
+    -fx-min-height: 50;
+    -fx-max-width: 50;
+    -fx-max-height: 50;
+}
+
+.client-icon {
+    -fx-background-color: #C07952;
+    /* Truck icon shape placeholder */
+    -fx-shape: "M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z";
+    -fx-min-width: 20;
+    -fx-min-height: 20;
+    -fx-max-width: 20;
+    -fx-max-height: 20;
+}
+
+.client-name {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 16px;
+    -fx-font-weight: 800;
+}
+
+.client-primary {
+    -fx-text-fill: #867E78;
+    -fx-font-size: 12px;
+}
+
+.client-status-box {
+    -fx-background-radius: 15;
+    -fx-padding: 4 12;
+}
+
+.client-status-text {
+    -fx-font-weight: 700;
+    -fx-font-size: 11px;
+}
+
+.status-preferred { -fx-background-color: #82A089; }
+.status-preferred .client-status-text { -fx-text-fill: white; }
+
+.status-active { -fx-background-color: #DC9D38; }
+.status-active .client-status-text { -fx-text-fill: white; }
+
+.status-inactive { -fx-background-color: #EBE5DF; }
+.status-inactive .client-status-text { -fx-text-fill: #857D77; }
+
+.client-stat-label {
+    -fx-text-fill: #867E78;
+    -fx-font-size: 9px;
+    -fx-font-weight: 800;
+    -fx-letter-spacing: 1px;
+}
+
+.client-stat-value {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 15px;
+    -fx-font-weight: 800;
+}
+
+.activity-bar {
+    -fx-background-color: #C07952;
+    -fx-background-radius: 2;
+    -fx-min-width: 4;
+    -fx-pref-width: 4;
+    -fx-max-width: 4;
+}
+
+.action-btn-ghost {
+    -fx-background-color: #EBE5DF;
+    -fx-text-fill: #433934;
+    -fx-font-weight: 800;
+    -fx-font-size: 12px;
+    -fx-background-radius: 8;
+    -fx-padding: 8 16;
+    -fx-cursor: hand;
+}
+.action-btn-ghost:hover {
+    -fx-background-color: #E2D9D2;
+}
+
+/* ===================== FOOTER ===================== */
+
+.footer-text {
+    -fx-text-fill: #867E78;
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+}
+
+.footer-link {
+    -fx-text-fill: #CD7B4E;
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+    -fx-underline: true;
+}
+
+.page-btn {
+    -fx-background-color: #F1EBE5;
+    -fx-text-fill: #433934;
+    -fx-font-weight: 700;
+    -fx-background-radius: 50;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-max-width: 32;
+    -fx-max-height: 32;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.page-btn-active {
+    -fx-background-color: #C16738;
+    -fx-text-fill: white;
+}

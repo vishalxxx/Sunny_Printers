@@ -31,7 +31,7 @@
 
                             <!-- Navigation -->
                             <VBox spacing="10" VBox.vgrow="ALWAYS" styleClass="sidebar-nav-container">
-                                <Button onAction="#openDashboard" styleClass="sidebar-btn, sidebar-btn-active" text="Dashboard" maxWidth="Infinity">
+                                <Button fx:id="dashboardBtn" onAction="#openDashboard" styleClass="sidebar-btn, sidebar-btn-active" text="Dashboard" maxWidth="Infinity">
                                     <graphic><Region styleClass="sidebar-icon, icon-dashboard"/></graphic>
                                 </Button>
 
@@ -48,11 +48,11 @@
                                         </graphic>
                                     </Button>
                                     <VBox fx:id="clientsSubmenu" visible="false" managed="false" spacing="5" styleClass="submenu-container">
-                                        <Button onAction="#loadAddClient" styleClass="submenu-btn" text="Add Client">
-                                            <graphic><Region styleClass="sidebar-icon, icon-add" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
-                                        </Button>
-                                        <Button onAction="#loadViewClients" styleClass="submenu-btn, submenu-btn-active" text="View Clients">
+                                        <Button fx:id="viewClientsSubBtn" onAction="#loadViewClients" styleClass="submenu-btn" text="View Clients">
                                             <graphic><Region styleClass="sidebar-icon, icon-dot"/></graphic>
+                                        </Button>
+                                        <Button fx:id="addClientSubBtn" onAction="#loadAddClient" styleClass="submenu-btn" text="Add Client">
+                                            <graphic><Region styleClass="sidebar-icon, icon-add" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
                                         </Button>
                                         <Button onAction="#loadClientLedger" styleClass="submenu-btn" text="Client Reports">
                                             <graphic><Region styleClass="sidebar-icon, icon-ledger" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
@@ -73,7 +73,7 @@
                                         </graphic>
                                     </Button>
                                     <VBox fx:id="jobsSubmenu" visible="false" managed="false" spacing="5" styleClass="submenu-container">
-                                        <Button onAction="#loadAddJob" styleClass="submenu-btn" text="New Print Job">
+                                        <Button fx:id="addJobSubBtn" onAction="#loadAddJob" styleClass="submenu-btn" text="New Print Job">
                                             <graphic><Region styleClass="sidebar-icon, icon-add" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
                                         </Button>
                                         <Button onAction="#loadViewJob" styleClass="submenu-btn" text="View All Jobs">
@@ -95,7 +95,7 @@
                                         </graphic>
                                     </Button>
                                     <VBox fx:id="billingSubmenu" visible="false" managed="false" spacing="5" styleClass="submenu-container">
-                                        <Button onAction="#loadInvoiceGenration" styleClass="submenu-btn" text="Generate Invoice">
+                                        <Button fx:id="genInvoiceSubBtn" onAction="#loadInvoiceGenration" styleClass="submenu-btn" text="Generate Invoice">
                                             <graphic><Region styleClass="sidebar-icon, icon-add" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
                                         </Button>
                                         <Button onAction="#loadViewBills" styleClass="submenu-btn" text="View Invoices">
@@ -120,7 +120,7 @@
                                         </graphic>
                                     </Button>
                                     <VBox fx:id="paymentSubmenu" visible="false" managed="false" spacing="5" styleClass="submenu-container">
-                                        <Button onAction="#loadRecordPayment" styleClass="submenu-btn" text="Record Payment">
+                                        <Button fx:id="recPaymentSubBtn" onAction="#loadRecordPayment" styleClass="submenu-btn" text="Record Payment">
                                             <graphic><Region styleClass="sidebar-icon, icon-add" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
                                         </Button>
                                         <Button onAction="#loadPaymentHistory" styleClass="submenu-btn" text="Payment History">
@@ -142,7 +142,7 @@
                                         </graphic>
                                     </Button>
                                     <VBox fx:id="ledgerSubmenu" visible="false" managed="false" spacing="5" styleClass="submenu-container">
-                                        <Button onAction="#loadClientLedger" styleClass="submenu-btn" text="Client Ledger">
+                                        <Button fx:id="clientLedgerSubBtn" onAction="#loadClientLedger" styleClass="submenu-btn" text="Client Ledger">
                                             <graphic><Region styleClass="sidebar-icon, icon-dot"/></graphic>
                                         </Button>
                                     </VBox>
@@ -161,7 +161,7 @@
                                         </graphic>
                                     </Button>
                                     <VBox fx:id="settingsSubmenu" visible="false" managed="false" spacing="5" styleClass="submenu-container">
-                                        <Button onAction="#loadGeneralSettings" styleClass="submenu-btn" text="General Settings">
+                                        <Button fx:id="genSettingsSubBtn" onAction="#loadGeneralSettings" styleClass="submenu-btn" text="General Settings">
                                             <graphic><Region styleClass="sidebar-icon, icon-dot"/></graphic>
                                         </Button>
                                         <Button onAction="#loadInvoiceSettings" styleClass="submenu-btn" text="Invoice Templates">
@@ -190,13 +190,17 @@
 
         <!-- MAIN AREA -->
         <center>
-            <StackPane fx:id="centerContentHost">
-                <VBox fx:id="centerRoot" spacing="0">
+            <VBox fx:id="centerRoot" spacing="0">
                     <!-- HEADER Aligned with Logo (Top Pdg 22px) -->
-                    <HBox alignment="CENTER" spacing="10" style="-fx-padding: 22 50 10 50;">
-                        <HBox alignment="CENTER" spacing="12" styleClass="search-field" prefWidth="380">
+                    <HBox alignment="CENTER_LEFT" spacing="12" style="-fx-padding: 22 50 10 50;">
+                        <!-- Breadcrumb / Page Location (Top Left) -->
+                        <Button fx:id="backNavBtn" onAction="#handleBack" styleClass="back-nav-btn" visible="false" managed="false" translateX="-35">
+                            <graphic><Region styleClass="back-icon"/></graphic>
+                        </Button>
+
+                        <HBox fx:id="mainSearchBox" alignment="CENTER" spacing="12" styleClass="search-field" minWidth="200" prefWidth="380">
                              <Region styleClass="sidebar-icon, icon-search" style="-fx-background-color: -fx-text-muted; -fx-min-width: 16; -fx-min-height: 16;"/>
-                             <TextField promptText="Search orders..." style="-fx-background-color: transparent; -fx-padding: 0; -fx-font-size: 14;" HBox.hgrow="ALWAYS"/>
+                             <TextField fx:id="mainSearchField" promptText="Search orders..." style="-fx-background-color: transparent; -fx-padding: 0; -fx-font-size: 14;" HBox.hgrow="ALWAYS"/>
                         </HBox>
                         
                         <Region HBox.hgrow="ALWAYS"/>
@@ -217,7 +221,7 @@
                             <!-- User Profile -->
                             <HBox spacing="12" alignment="CENTER">
                                 <VBox alignment="CENTER_RIGHT" spacing="0">
-                                    <Label fx:id="pageTitle" text="Alex Mercer" style="-fx-font-weight: 800; -fx-text-fill: -fx-text-dark; -fx-font-size: 14;"/>
+                                    <Label fx:id="userNameLabel" text="Alex Mercer" style="-fx-font-weight: 800; -fx-text-fill: -fx-text-dark; -fx-font-size: 14;"/>
                                     <Label text="PRODUCTION MANAGER" style="-fx-font-size: 8; -fx-font-weight: 900; -fx-text-fill: -fx-text-muted; -fx-letter-spacing: 0.5;"/>
                                 </VBox>
                                 <StackPane styleClass="profile-avatar">
@@ -229,7 +233,8 @@
                     </HBox>
 
                     <!-- CONTENT -->
-                    <ScrollPane fx:id="dashboardView" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="NEVER" style="-fx-background-color: transparent; -fx-background: transparent;">
+                    <StackPane fx:id="centerContentHost" VBox.vgrow="ALWAYS">
+                        <ScrollPane fx:id="dashboardView" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="NEVER" style="-fx-background-color: transparent; -fx-background: transparent;">
                             <!-- CONTENT with Horizontal scaling and Tightened Top Buffer -->
                             <VBox spacing="20" style="-fx-padding: 12 50 40 50;">
                             
@@ -307,8 +312,8 @@
                             <VBox styleClass="pipeline-container" spacing="30">
                                 <HBox alignment="CENTER_LEFT">
                                     <VBox spacing="5">
-                                        <Label text="Production Pipeline" style="-fx-font-size: 24; -fx-font-weight: 800; -fx-text-fill: -fx-text-dark;"/>
-                                        <Label text="Crafting excellence through every stage" style="-fx-font-size: 14; -fx-text-fill: -fx-text-muted;"/>
+                                        <Label text="Production Pipeline" style="-fx-font-size: 18; -fx-font-weight: 800; -fx-text-fill: -fx-text-dark;"/>
+                                        <Label text="Crafting excellence through every stage" style="-fx-font-size: 13; -fx-text-fill: -fx-text-muted;"/>
                                     </VBox>
                                     <Region HBox.hgrow="ALWAYS"/>
                                     <HBox spacing="15" alignment="CENTER">
@@ -318,64 +323,63 @@
                                         </Button>
                                     </HBox>
                                 </HBox>
-
                                 <HBox alignment="CENTER" spacing="0">
-                                    <VBox alignment="CENTER" spacing="15" prefWidth="150">
+                                    <VBox alignment="CENTER" spacing="15" minWidth="120" prefWidth="180" HBox.hgrow="ALWAYS">
                                         <StackPane styleClass="pipeline-icon-circle">
-                                            <Region styleClass="icon-brush" style="-fx-background-color: #8E4D21; -fx-min-width: 32; -fx-min-height: 32; -fx-max-width: 32; -fx-max-height: 32;"/>
+                                            <Region styleClass="icon-brush" style="-fx-background-color: #8E4D21; -fx-min-width: 40; -fx-min-height: 40; -fx-max-width: 40; -fx-max-height: 40;"/>
                                         </StackPane>
                                         <VBox alignment="CENTER" spacing="2">
                                             <Label text="Pre Press" styleClass="pipeline-label"/>
                                             <HBox alignment="CENTER" spacing="4">
-                                                <Label text="12" style="-fx-font-weight: 800; -fx-text-fill: #C87941; -fx-font-size: 18;"/>
-                                                <Label text="(28%)" style="-fx-text-fill: -fx-text-muted; -fx-font-size: 11;"/>
+                                                <Label text="12" style="-fx-font-weight: 800; -fx-text-fill: #C87941; -fx-font-size: 22;"/>
+                                                <Label text="(28%)" style="-fx-text-fill: -fx-text-muted; -fx-font-size: 13;"/>
                                             </HBox>
                                         </VBox>
                                     </VBox>
                                     
-                                    <Label text="›" style="-fx-font-size: 24; -fx-text-fill: -fx-text-muted; -fx-opacity: 0.3; -fx-padding: 0 10;"/>
+                                    <Label text="›" style="-fx-font-size: 28; -fx-text-fill: -fx-text-muted; -fx-opacity: 0.3; -fx-padding: 0 10;"/>
                                     
-                                    <VBox alignment="CENTER" spacing="15" prefWidth="150">
+                                    <VBox alignment="CENTER" spacing="15" minWidth="120" prefWidth="180" HBox.hgrow="ALWAYS">
                                         <StackPane styleClass="pipeline-icon-circle">
-                                            <Region styleClass="icon-printer" style="-fx-background-color: #8E4D21; -fx-min-width: 32; -fx-min-height: 32; -fx-max-width: 32; -fx-max-height: 32;"/>
+                                            <Region styleClass="icon-printer" style="-fx-background-color: #8E4D21; -fx-min-width: 40; -fx-min-height: 40; -fx-max-width: 40; -fx-max-height: 40;"/>
                                         </StackPane>
                                         <VBox alignment="CENTER" spacing="2">
                                             <Label text="Printing" styleClass="pipeline-label"/>
                                             <HBox alignment="CENTER" spacing="4">
-                                                <Label text="18" style="-fx-font-weight: 800; -fx-text-fill: #C87941; -fx-font-size: 18;"/>
-                                                <Label text="(43%)" style="-fx-text-fill: -fx-text-muted; -fx-font-size: 11;"/>
+                                                <Label text="18" style="-fx-font-weight: 800; -fx-text-fill: #C87941; -fx-font-size: 22;"/>
+                                                <Label text="(43%)" style="-fx-text-fill: -fx-text-muted; -fx-font-size: 13;"/>
                                             </HBox>
                                         </VBox>
                                     </VBox>
-
-                                    <Label text="›" style="-fx-font-size: 24; -fx-text-fill: -fx-text-muted; -fx-opacity: 0.3; -fx-padding: 0 10;"/>
-
-                                    <VBox alignment="CENTER" spacing="15" prefWidth="150">
+ 
+                                    <Label text="›" style="-fx-font-size: 28; -fx-text-fill: -fx-text-muted; -fx-opacity: 0.3; -fx-padding: 0 10;"/>
+ 
+                                    <VBox alignment="CENTER" spacing="15" minWidth="120" prefWidth="180" HBox.hgrow="ALWAYS">
                                         <StackPane styleClass="pipeline-icon-circle">
-                                            <Region styleClass="icon-layers" style="-fx-background-color: #8E4D21; -fx-min-width: 32; -fx-min-height: 32; -fx-max-width: 32; -fx-max-height: 32;"/>
+                                            <Region styleClass="icon-layers" style="-fx-background-color: #8E4D21; -fx-min-width: 40; -fx-min-height: 40; -fx-max-width: 40; -fx-max-height: 40;"/>
                                         </StackPane>
                                         <VBox alignment="CENTER" spacing="2">
                                             <Label text="Finishing" styleClass="pipeline-label"/>
                                             <HBox alignment="CENTER" spacing="4">
-                                                <Label text="8" style="-fx-font-weight: 800; -fx-text-fill: #C87941; -fx-font-size: 18;"/>
-                                                <Label text="(19%)" style="-fx-text-fill: -fx-text-muted; -fx-font-size: 11;"/>
+                                                <Label text="8" style="-fx-font-weight: 800; -fx-text-fill: #C87941; -fx-font-size: 22;"/>
+                                                <Label text="(19%)" style="-fx-text-fill: -fx-text-muted; -fx-font-size: 13;"/>
                                             </HBox>
                                         </VBox>
                                     </VBox>
-
-                                    <Label text="›" style="-fx-font-size: 24; -fx-text-fill: -fx-text-muted; -fx-opacity: 0.3; -fx-padding: 0 10;"/>
-
-                                    <VBox alignment="CENTER" spacing="15" prefWidth="150">
+ 
+                                    <Label text="›" style="-fx-font-size: 28; -fx-text-fill: -fx-text-muted; -fx-opacity: 0.3; -fx-padding: 0 10;"/>
+ 
+                                    <VBox alignment="CENTER" spacing="15" minWidth="120" prefWidth="180" HBox.hgrow="ALWAYS">
                                         <StackPane styleClass="pipeline-icon-circle, pipeline-icon-ready">
-                                            <StackPane style="-fx-background-color: white; -fx-background-radius: 100; -fx-min-width: 32; -fx-max-width: 32; -fx-min-height: 32; -fx-max-height: 32;">
-                                                <Region styleClass="icon-check" style="-fx-background-color: #5D6356; -fx-min-width: 16; -fx-min-height: 16; -fx-max-width: 16; -fx-max-height: 16;"/>
+                                            <StackPane style="-fx-background-color: white; -fx-background-radius: 100; -fx-min-width: 40; -fx-max-width: 40; -fx-min-height: 40; -fx-max-height: 40;">
+                                                <Region styleClass="icon-check" style="-fx-background-color: #5D6356; -fx-min-width: 20; -fx-min-height: 20; -fx-max-width: 20; -fx-max-height: 20;"/>
                                             </StackPane>
                                         </StackPane>
                                         <VBox alignment="CENTER" spacing="2">
                                             <Label text="Ready" styleClass="pipeline-label"/>
                                             <HBox alignment="CENTER" spacing="4">
-                                                <Label text="4" style="-fx-font-weight: 800; -fx-text-fill: #5D6356; -fx-font-size: 18;"/>
-                                                <Label text="(10%)" style="-fx-text-fill: -fx-text-muted; -fx-font-size: 11;"/>
+                                                <Label text="4" style="-fx-font-weight: 800; -fx-text-fill: #5D6356; -fx-font-size: 22;"/>
+                                                <Label text="(10%)" style="-fx-text-fill: -fx-text-muted; -fx-font-size: 13;"/>
                                             </HBox>
                                         </VBox>
                                     </VBox>
@@ -385,7 +389,7 @@
                             <!-- CHARTS ROW -->
                             <HBox spacing="30">
                                 <!-- Revenue Analysis (Was AreaChart in controller) -->
-                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="20">
+                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="15">
                                     <HBox alignment="CENTER_LEFT">
                                         <VBox spacing="4">
                                             <Label text="Cash Flow Analysis" style="-fx-font-size: 18; -fx-font-weight: 800; -fx-text-fill: -fx-text-dark;"/>
@@ -435,7 +439,7 @@
                                 </VBox>
 
                                 <!-- Payment Health (PieChart in controller) -->
-                                <VBox styleClass="dashboard-kpi-card" prefWidth="280" minWidth="280" maxWidth="280" spacing="25">
+                                <VBox styleClass="dashboard-kpi-card" prefWidth="280" minWidth="280" maxWidth="280" spacing="20">
                                     <VBox spacing="4">
                                         <Label text="Payment Health" style="-fx-font-size: 18; -fx-font-weight: 800; -fx-text-fill: -fx-text-dark;"/>
                                         <Label text="Portfolio distribution" style="-fx-font-size: 13; -fx-text-fill: -fx-text-muted;"/>
@@ -610,8 +614,8 @@
                     </ScrollPane>
                     
                     <fx:include fx:id="centerLoaderInclude" source="screen_loader.fxml" visible="false" managed="false"/>
+                    </StackPane>
                 </VBox>
-            </StackPane>
         </center>
     </BorderPane>
 </StackPane>

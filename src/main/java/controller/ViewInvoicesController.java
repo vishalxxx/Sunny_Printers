@@ -435,7 +435,7 @@ public class ViewInvoicesController {
         InvoiceMaster inv = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
         if (inv != null) {
             RecordPaymentController.pendingPrefillInvoice = inv;
-            MainController.getInstance().loadRecordPayment(null);
+            MainController.getInstance().loadRecordPayment();
         }
     }
 
@@ -446,7 +446,7 @@ public class ViewInvoicesController {
             ViewInvoiceJobsController.pendingPrefillInvoice = inv;
             // 🔥 Requirement: FINAL status opens in viewOnly mode via Edit button
             ViewInvoiceJobsController.viewOnlyMode = "FINAL".equals(stat);
-            MainController.getInstance().loadViewInvoiceJobs(null);
+            MainController.getInstance().loadViewInvoiceJobs();
         }
     }
 
@@ -454,7 +454,7 @@ public class ViewInvoicesController {
         if (inv != null) {
             ViewInvoiceJobsController.pendingPrefillInvoice = inv;
             ViewInvoiceJobsController.viewOnlyMode = true;
-            MainController.getInstance().loadViewInvoiceJobs(null);
+            MainController.getInstance().loadViewInvoiceJobs();
         }
     }
 
@@ -462,7 +462,7 @@ public class ViewInvoicesController {
         InvoiceMaster inv = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
         if (inv != null) {
             CreditDebitNoteController.pendingPrefillInvoice = inv;
-            MainController.getInstance().loadCreditDebitNote(null);
+            MainController.getInstance().loadCreditDebitNote();
         }
     }
 

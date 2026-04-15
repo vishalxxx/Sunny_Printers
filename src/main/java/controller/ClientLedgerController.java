@@ -414,7 +414,7 @@ public class ClientLedgerController implements Initializable {
     @FXML
     private void onRecordPayment() {
         if (MainController.getInstance() != null) {
-            MainController.getInstance().loadRecordPayment(null);
+            MainController.getInstance().loadRecordPayment();
         } else {
             System.err.println("MainController instance is null");
         }

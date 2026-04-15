@@ -1,0 +1,301 @@
+/* Sidebar */
+.sidebar-container {
+    -fx-background-color: -fx-sidebar-bg;
+}
+.sidebar-logo-container {
+    -fx-padding: 0 20 20 9;
+}
+.sidebar-nav-container {
+    -fx-padding: 0 10 0 10;
+}
+.sidebar-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #4A4B46; /* Dark olive-grey text for unselected state */
+    -fx-font-weight: 700;
+    -fx-font-size: 13px;
+    -fx-padding: 10 16 10 12; 
+    -fx-background-radius: 20;
+    -fx-alignment: CENTER_LEFT;
+    -fx-graphic-text-gap: 10;
+}
+
+.sidebar-btn:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.4);
+}
+
+.sidebar-btn-active {
+    -fx-background-color: white;
+    -fx-text-fill: -fx-primary;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 10, 0, 0, 4);
+    -fx-background-radius: 25; /* Full pill shape */
+}
+
+.sidebar-label {
+    -fx-text-fill: #4A4B46; /* Matching .sidebar-btn default color */
+}
+
+.sidebar-btn-active .sidebar-label {
+    -fx-text-fill: -fx-primary;
+}
+
+/* Sidebar Icons */
+.sidebar-icon {
+    -fx-min-width: 16;
+    -fx-min-height: 16;
+    -fx-max-width: 16;
+    -fx-max-height: 16;
+    -fx-background-color: #63685E; /* Default unselected icon color */
+}
+
+.sidebar-btn:hover .sidebar-icon {
+    -fx-background-color: #383A35; /* Darker on hover */
+}
+
+.sidebar-btn-active .sidebar-icon,
+.sidebar-btn-active .header-box .sidebar-icon {
+    -fx-background-color: -fx-primary !important; /* Force orange when active */
+}
+
+/* Force specific color for New Job icon when parent is active (unlikely but safe) */
+.sidebar-btn-active .new-job-btn .sidebar-icon {
+    -fx-background-color: white !important;
+}
+
+/* Specific Icon Paths */
+.icon-dashboard { -fx-shape: "M3 3h8v8H3zm0 10h8v8H3zM13 3h8v8h-8zm0 10h8v8h-8z"; }
+.icon-clients { 
+    -fx-shape: "M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"; 
+    -fx-min-width: 17;
+    -fx-max-width: 17;
+    -fx-min-height: 15;
+    -fx-max-height: 15;
+}
+.icon-invoices { -fx-shape: "M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"; }
+.icon-jobs { -fx-shape: "M19 8h-1V3H6v5H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zM8 5h8v3H8V5zm8 12v2H8v-4h8v2zm2-2v-2H6v2H4v-4c0-.55.45-1 1-1h14c.55 0 1 .45 1 1v4h-2z"; }
+.icon-payments { -fx-shape: "M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4V6h16v12zm-8-3c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"; }
+.icon-ledger { -fx-shape: "M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zm-4.5-9L2 6v2h19V6l-9.5-5z"; }
+.icon-brush { -fx-shape: "M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2 .92 1.22 2.49 2 4 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm13.71-9.37l-1.34-1.34a.996.996 0 00-1.41 0L9 12.25 11.75 15l8.96-8.96a.996.996 0 000-1.41z"; }
+.icon-printer { -fx-shape: "M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"; }
+.icon-layers { -fx-shape: "M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"; }
+.icon-check { -fx-shape: "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"; }
+.icon-settings { -fx-shape: "M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.06-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.73 8.87a.49.49 0 00.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.06.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .43-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.49-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"; }
+.icon-add { -fx-shape: "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"; }
+.icon-chat { -fx-shape: "M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"; }
+.icon-search { -fx-shape: "M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"; }
+.icon-back { -fx-shape: "M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"; }
+.icon-notification { -fx-shape: "M12 22a2 2 0 0 0 2-2H10a2 2 0 0 0 2 2zm6-6V11a6 6 0 1 0-12 0v5l-2 2v1h16v-1l-2-2z"; }
+.icon-help { -fx-shape: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.67-.93 2.25z"; }
+
+.submenu-title {
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-text-fill: -fx-text-muted;
+    -fx-padding: 10 0 5 18;
+}
+
+/* Accordion Submenu Styles */
+.submenu-container {
+    -fx-padding: 5 0 10 0; /* Align with primary button vertical line */
+}
+
+.submenu-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #6B7280; /* Muted gray for inactive items */
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-padding: 8 12 8 36; 
+    -fx-alignment: CENTER_LEFT;
+    -fx-graphic-text-gap: 15;
+    -fx-min-width: 200; /* Ensure the hover pill has presence */
+    -fx-background-radius: 12;
+}
+
+.submenu-btn:hover {
+    -fx-text-fill: -fx-primary;
+    -fx-background-color: rgba(200, 121, 65, 0.08); /* Slightly richer for 'Taste Design' */
+    -fx-background-radius: 12;
+}
+
+.submenu-btn-active {
+    -fx-text-fill: -fx-primary;
+    -fx-font-weight: 800;
+}
+
+.sidebar-btn-expanded {
+    -fx-background-color: white;
+    -fx-text-fill: -fx-primary;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 5, 0, 0, 2);
+}
+
+.chevron-icon {
+    -fx-shape: "M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z";
+    -fx-background-color: #9CA3AF;
+    -fx-min-width: 10;
+    -fx-max-width: 10;
+    -fx-min-height: 5;
+    -fx-max-height: 5;
+    -fx-opacity: 0; /* Hidden by default */
+}
+
+/* Show arrow on hover or when expanded */
+.sidebar-btn:hover .chevron-icon, .sidebar-btn-expanded .chevron-icon {
+    -fx-background-color: -fx-primary;
+    -fx-opacity: 1;
+}
+
+/* Ensure icons are perfectly centered in collapsed mode */
+.sidebar-collapsed .header-box {
+    -fx-spacing: 0;
+    -fx-alignment: CENTER;
+    -fx-pref-width: 40; /* Force a consistent width smaller than sidebar */
+}
+
+/* Hide everything except icons when collapsed */
+.sidebar-collapsed .sidebar-label,
+.sidebar-collapsed .sidebar-spacer,
+.sidebar-collapsed .chevron-icon,
+.sidebar-collapsed .submenu-container {
+    -fx-opacity: 0;
+    -fx-min-width: 0;
+    -fx-max-width: 0;
+    -fx-min-height: 0;
+    -fx-max-height: 0;
+    -fx-visible: false;
+    -fx-managed: false;
+}
+
+.icon-dot {
+    -fx-shape: "M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2z";
+    -fx-min-width: 6;
+    -fx-max-width: 6;
+    -fx-min-height: 6;
+    -fx-max-height: 6;
+    -fx-background-color: -fx-text-muted;
+}
+
+.submenu-indicator {
+    -fx-background-color: -fx-primary;
+    -fx-min-width: 2;
+    -fx-max-width: 2;
+    -fx-min-height: 15;
+    -fx-max-height: 15;
+    -fx-background-radius: 2;
+}
+
+
+/* Header Elements */
+.header-icon-btn {
+    -fx-padding: 8;
+    -fx-background-color: transparent;
+    -fx-alignment: CENTER;
+    -fx-cursor: hand;
+    -fx-min-width: 40; /* Force circularity during hover */
+    -fx-max-width: 40;
+    -fx-min-height: 40;
+    -fx-max-height: 40;
+}
+
+.header-icon-btn:hover {
+    -fx-background-color: white;
+    -fx-background-radius: 100;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 5, 0, 0, 1);
+}
+
+.profile-avatar {
+    -fx-border-color: #C87941;
+    -fx-border-width: 2;
+    -fx-border-radius: 100;
+    -fx-background-radius: 100;
+}
+
+.notif-dot {
+    -fx-background-color: #EF4444;
+    -fx-background-radius: 100;
+    -fx-min-width: 6;
+    -fx-max-width: 6;
+    -fx-min-height: 6;
+    -fx-max-height: 6;
+}
+
+.sidebar-collapsed .sidebar-btn,
+.sidebar-collapsed .sidebar-btn-active {
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 0 0 0 12; /* Locked offset for 30px center with 16px icon */
+    -fx-min-width: 40;
+    -fx-max-width: 40;
+    -fx-min-height: 40;
+    -fx-max-height: 40;
+    -fx-background-radius: 50; /* Perfect circle */
+    -fx-content-display: GRAPHIC_ONLY;
+    -fx-graphic-text-gap: 0;
+}
+
+/* Center button containers in collapsed mode */
+.sidebar-collapsed .sidebar-nav-container VBox {
+    -fx-alignment: CENTER;
+}
+
+.sidebar-collapsed .sidebar-logo-container {
+    -fx-padding: 0 0 10 0;
+    -fx-alignment: CENTER;
+}
+
+.sidebar-collapsed .sidebar-nav-container {
+    -fx-padding: 0 0 10 0;
+    -fx-alignment: TOP_CENTER;
+}
+
+.sidebar-collapsed .sidebar-label {
+    -fx-opacity: 0;
+    -fx-min-width: 0;
+    -fx-max-width: 0;
+    -fx-min-height: 0;
+    -fx-max-height: 0;
+}
+
+.sidebar-collapsed .sidebar-btn .header-box {
+    -fx-spacing: 0;
+    -fx-alignment: CENTER_LEFT;
+    -fx-pref-width: 40; 
+}
+
+.sidebar-collapsed .logo-text-box {
+    -fx-min-width: 0;
+    -fx-pref-width: 0;
+    -fx-max-width: 0;
+    -fx-opacity: 0;
+    -fx-padding: 0;
+    -fx-managed: false;
+}
+
+.sidebar-collapsed .logo-text-box Label {
+    -fx-font-size: 0.1;
+    -fx-managed: false;
+}
+
+.sidebar-collapsed .new-job-btn {
+    -fx-min-width: 40;
+    -fx-max-width: 40;
+    -fx-min-height: 40;
+    -fx-max-height: 40;
+    -fx-padding: 0 0 0 12; /* Locked offset */
+    -fx-background-radius: 50;
+    -fx-alignment: CENTER_LEFT;
+    -fx-content-display: GRAPHIC_ONLY;
+    -fx-graphic-text-gap: 0;
+}
+
+.new-job-btn {
+    -fx-background-color: #5D6356;
+    -fx-text-fill: white;
+    -fx-font-weight: 800;
+    -fx-background-radius: 25;
+    -fx-padding: 10 16 10 12; 
+    -fx-alignment: CENTER_LEFT;
+    -fx-graphic-text-gap: 10;
+}
+
+.new-job-btn .sidebar-icon {
+    -fx-background-color: white;
+}
+

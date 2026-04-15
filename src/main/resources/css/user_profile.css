@@ -1,0 +1,146 @@
+/* =======================
+   USER PROFILE SETTINGS - TASTE DESIGN
+   ======================= */
+
+.profile-root {
+    -fx-background-color: #FAF6F0; /* Warm champagne base */
+}
+
+.profile-root > .viewport {
+    -fx-background-color: #FAF6F0;
+}
+
+.content-container {
+    -fx-background-color: #FAF6F0;
+}
+
+/* --- HEADER --- */
+.profile-avatar-container {
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.08), 20, 0, 0, 8);
+}
+
+.profile-avatar-large {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 40;
+    -fx-min-width: 140;
+    -fx-min-height: 140;
+    -fx-max-width: 140;
+    -fx-max-height: 140;
+}
+
+.profile-name-title {
+    -fx-font-size: 32px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Manrope', 'Inter', sans-serif;
+}
+
+.profile-role-subtitle {
+    -fx-font-size: 14px;
+    -fx-font-weight: 900;
+    -fx-text-fill: #A0836D;
+    -fx-letter-spacing: 1px;
+}
+
+/* --- CARDS --- */
+.settings-card {
+    -fx-background-color: #FFFFFF;
+    -fx-padding: 40;
+    -fx-background-radius: 24;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.04), 25, 0, 0, 10);
+}
+
+.card-section-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #3E312D;
+    -fx-padding: 0 0 10 0;
+}
+
+/* --- FORM ELEMENTS --- */
+.input-label {
+    -fx-text-fill: #A79F99;
+    -fx-font-size: 10px;
+    -fx-font-weight: 900;
+    -fx-letter-spacing: 0.5px;
+}
+
+.input-field {
+    -fx-background-color: #F8F5F2;
+    -fx-background-radius: 12;
+    -fx-padding: 12 16;
+    -fx-font-size: 14px;
+    -fx-text-fill: #3E312D;
+    -fx-prompt-text-fill: #C4BEB9;
+    -fx-border-width: 0;
+}
+
+.input-field:focused {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2D9D0;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+}
+
+.input-field-read {
+    -fx-background-color: #F1EBE5;
+    -fx-background-radius: 12;
+    -fx-padding: 12 16;
+    -fx-font-size: 14px;
+    -fx-text-fill: #867E78;
+    -fx-opacity: 0.8;
+}
+
+/* --- BUTTONS --- */
+.btn-primary-large {
+    -fx-background-color: #2F4F4F;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-weight: 800;
+    -fx-font-size: 14px;
+    -fx-background-radius: 14;
+    -fx-padding: 14 35;
+    -fx-cursor: hand;
+}
+.btn-primary-large:hover {
+    -fx-background-color: #3d6666;
+}
+
+.btn-ghost-small {
+    -fx-background-color: transparent;
+    -fx-text-fill: #A0836D;
+    -fx-font-weight: 800;
+    -fx-font-size: 12px;
+    -fx-cursor: hand;
+}
+.btn-ghost-small:hover {
+    -fx-underline: true;
+}
+
+/* --- SIDEBAR --- */
+.info-card-subtle {
+    -fx-background-color: #F1EBE5;
+    -fx-padding: 25;
+    -fx-background-radius: 20;
+    -fx-spacing: 12;
+}
+
+.card-sub-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #3E312D;
+}
+
+.status-pill-green {
+    -fx-background-color: #D1FAE5;
+    -fx-text-fill: #065F46;
+    -fx-padding: 4 10;
+    -fx-background-radius: 10;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-alignment: center-left;
+}
+
+.info-subtext {
+    -fx-text-fill: #867E78;
+    -fx-font-size: 11px;
+}
