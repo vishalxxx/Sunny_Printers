@@ -4,7 +4,7 @@
 .root {
     -fx-primary: #C87941;
     -fx-bg-beige: #F5F3E7;
-    -fx-sidebar-bg: #EBE7DE;
+    -fx-sidebar-bg: #F7EDE0;
     -fx-text-dark: #3E362E;
     -fx-text-muted: #8E857C;
     -fx-card-bg: #FFFFFF;
@@ -45,6 +45,16 @@
     -fx-text-fill: -fx-primary;
     -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 10, 0, 0, 4);
     -fx-background-radius: 25; /* Full pill shape */
+}
+
+.sidebar-label {
+    -fx-text-fill: #4A4B46;
+    -fx-font-weight: 700;
+}
+
+.sidebar-btn-active .sidebar-label,
+.sidebar-btn:hover .sidebar-label {
+    -fx-text-fill: -fx-primary;
 }
 
 /* Sidebar Icons */
@@ -179,7 +189,7 @@
     -fx-max-width: 6;
     -fx-min-height: 6;
     -fx-max-height: 6;
-    -fx-background-color: currentColor;
+    -fx-background-color: #8E857C; /* Explicit neutral color instead of currentColor */
 }
 
 .submenu-indicator {
@@ -398,7 +408,7 @@
     -fx-text-fill: #A7A69D;
     -fx-font-weight: 800;
     -fx-font-size: 10px;
-    -fx-letter-spacing: 1.5;
+    
 }
 
 .kpi-value {
@@ -487,7 +497,7 @@
     -fx-font-size: 8;
     -fx-font-weight: 900;
     -fx-text-fill: -fx-text-muted;
-    -fx-letter-spacing: 1.5;
+    
 }
 
 .legend-dot-beige { -fx-fill: #A66E4E; } /* Payments */
@@ -500,7 +510,7 @@
     -fx-font-size: 10;
     -fx-font-weight: 900;
     -fx-text-fill: #9A9A9A;
-    -fx-letter-spacing: 1.0;
+    
 }
 
 .record-payment-btn {

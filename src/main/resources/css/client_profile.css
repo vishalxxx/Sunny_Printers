@@ -45,7 +45,7 @@
     -fx-background-radius: 20;
     -fx-font-size: 11px;
     -fx-font-weight: 900;
-    -fx-letter-spacing: 0.5px;
+    
 }
 
 .status-pill-subtle {
@@ -122,7 +122,7 @@
     -fx-text-fill: #A0836D;
     -fx-font-size: 10px;
     -fx-font-weight: 900;
-    -fx-letter-spacing: 1px;
+    
 }
 
 .kpi-value-profile {
@@ -211,7 +211,7 @@
     -fx-font-size: 9px;
     -fx-font-weight: 800;
     -fx-text-fill: #D1CDC8;
-    -fx-letter-spacing: 0.5px;
+    
     -fx-padding: 6 0 0 0;
 }
 
@@ -258,7 +258,7 @@
     -fx-text-fill: #A09892;
     -fx-font-weight: 800;
     -fx-font-size: 11px;
-    -fx-letter-spacing: 0.5px;
+    
 }
 
 .history-row {
@@ -369,7 +369,7 @@
     -fx-text-fill: #A0836D;
     -fx-font-size: 9px;
     -fx-font-weight: 900;
-    -fx-letter-spacing: 0.5px;
+    
 }
 
 .detail-value-profile {

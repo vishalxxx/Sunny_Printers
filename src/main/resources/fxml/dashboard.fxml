@@ -41,7 +41,7 @@
                                         <graphic>
                                             <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="Infinity" styleClass="header-box">
                                                 <Region styleClass="sidebar-icon, icon-clients"/>
-                                                <Label text="Clients" styleClass="sidebar-label" style="-fx-text-fill: inherit; -fx-font-weight: inherit;"/>
+                                                <Label text="Clients" styleClass="sidebar-label"/>
                                                 <Region HBox.hgrow="ALWAYS" styleClass="sidebar-spacer"/>
                                                 <Region fx:id="clientsChevron" styleClass="chevron-icon"/>
                                             </HBox>
@@ -66,7 +66,7 @@
                                         <graphic>
                                             <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="Infinity" styleClass="header-box">
                                                 <Region styleClass="sidebar-icon, icon-jobs"/>
-                                                <Label text="Jobs" styleClass="sidebar-label" style="-fx-text-fill: inherit; -fx-font-weight: inherit;"/>
+                                                <Label text="Jobs" styleClass="sidebar-label"/>
                                                 <Region HBox.hgrow="ALWAYS" styleClass="sidebar-spacer"/>
                                                 <Region fx:id="jobsChevron" styleClass="chevron-icon"/>
                                             </HBox>
@@ -88,7 +88,7 @@
                                         <graphic>
                                             <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="Infinity" styleClass="header-box">
                                                 <Region styleClass="sidebar-icon, icon-invoices"/>
-                                                <Label text="Invoices" styleClass="sidebar-label" style="-fx-text-fill: inherit; -fx-font-weight: inherit;"/>
+                                                <Label text="Invoices" styleClass="sidebar-label"/>
                                                 <Region HBox.hgrow="ALWAYS" styleClass="sidebar-spacer"/>
                                                 <Region fx:id="billingChevron" styleClass="chevron-icon"/>
                                             </HBox>
@@ -113,7 +113,7 @@
                                         <graphic>
                                             <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="Infinity" styleClass="header-box">
                                                 <Region styleClass="sidebar-icon, icon-payments"/>
-                                                <Label text="Payments" styleClass="sidebar-label" style="-fx-text-fill: inherit; -fx-font-weight: inherit;"/>
+                                                <Label text="Payments" styleClass="sidebar-label"/>
                                                 <Region HBox.hgrow="ALWAYS" styleClass="sidebar-spacer"/>
                                                 <Region fx:id="paymentChevron" styleClass="chevron-icon"/>
                                             </HBox>
@@ -135,7 +135,7 @@
                                         <graphic>
                                             <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="Infinity" styleClass="header-box">
                                                 <Region styleClass="sidebar-icon, icon-ledger"/>
-                                                <Label text="Ledger" styleClass="sidebar-label" style="-fx-text-fill: inherit; -fx-font-weight: inherit;"/>
+                                                <Label text="Ledger" styleClass="sidebar-label"/>
                                                 <Region HBox.hgrow="ALWAYS" styleClass="sidebar-spacer"/>
                                                 <Region fx:id="ledgerChevron" styleClass="chevron-icon"/>
                                             </HBox>
@@ -154,7 +154,7 @@
                                         <graphic>
                                             <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="Infinity" styleClass="header-box">
                                                 <Region styleClass="sidebar-icon, icon-settings"/>
-                                                <Label text="Settings" styleClass="sidebar-label" style="-fx-text-fill: inherit; -fx-font-weight: inherit;"/>
+                                                <Label text="Settings" styleClass="sidebar-label"/>
                                                 <Region HBox.hgrow="ALWAYS" styleClass="sidebar-spacer"/>
                                                 <Region fx:id="settingsChevron" styleClass="chevron-icon"/>
                                             </HBox>

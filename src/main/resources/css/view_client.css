@@ -3,11 +3,13 @@
    ======================= */
 
 .view-clients-root {
-    -fx-background-color: #FAF6F0; /* Soft warm beige background matching image */
+    -fx-background-color: #FAF6F0;
+    /* Soft warm beige background matching image */
 }
 
 .page-heading {
-    -fx-text-fill: #3E312D; /* Dark warm brown */
+    -fx-text-fill: #3E312D;
+    /* Dark warm brown */
     -fx-font-size: 24px;
     -fx-font-family: 'Manrope';
     -fx-font-weight: 800;
@@ -85,10 +87,11 @@
 }
 
 /* Ensure the main button cell stays transparent and doesn't show the orange selection block */
-.sort-combo > .list-cell {
+.sort-combo>.list-cell {
     -fx-background-color: transparent !important;
 }
-.sort-combo > .list-cell:selected {
+
+.sort-combo>.list-cell:selected {
     -fx-background-color: transparent !important;
 }
 
@@ -99,7 +102,8 @@
     -fx-border-color: #CD7B4E;
     -fx-border-radius: 12;
     -fx-border-width: 1;
-    -fx-padding: 4; /* Spacing between border and cells */
+    -fx-padding: 4;
+    /* Spacing between border and cells */
     -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 10, 0, 0, 5);
 }
 
@@ -116,28 +120,98 @@
     -fx-border-color: #CD7B4E;
 }
 
-/* ===================== KPIs ===================== */
 .kpi-card {
-    -fx-padding: 8 20;
-    -fx-background-radius: 12;
+    -fx-background-color: #F7EDE0;
+    -fx-border-color: #E6E0D5;
+    -fx-border-width: 1.2;
+    -fx-padding: 22 28;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
     -fx-alignment: CENTER_LEFT;
-    -fx-spacing: 2;
-    -fx-border-color: #EBE5DF;
-    -fx-border-radius: 12;
+    -fx-spacing: 6;
+    -fx-cursor: hand;
 }
 
-.kpi-beige { -fx-background-color: #F4EAE0; }
-.kpi-green { -fx-background-color: #E8F0EA; }
-.kpi-beige-light { -fx-background-color: #F5EAE5; }
+.kpi-card:hover {
 
-.kpi-label { -fx-text-fill: #A0836D; -fx-font-size: 9px; -fx-font-weight: 800; -fx-letter-spacing: 1.2px; }
-.kpi-label-green { -fx-text-fill: #6C9373; -fx-font-size: 9px; -fx-font-weight: 800; -fx-letter-spacing: 1.2px; }
-.kpi-label-red { -fx-text-fill: #CD7B4E; -fx-font-size: 9px; -fx-font-weight: 800; -fx-letter-spacing: 1.2px; }
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.03), 15, 0, 0, 5);
+}
 
-.kpi-value-dark { -fx-text-fill: #433934; -fx-font-size: 22px; -fx-font-weight: 800; -fx-font-family: 'Manrope'; }
-.kpi-value-green { -fx-text-fill: #5D8063; -fx-font-size: 22px; -fx-font-weight: 800; -fx-font-family: 'Manrope'; }
-.kpi-value-red { -fx-text-fill: #CD7B4E; -fx-font-size: 22px; -fx-font-weight: 800; -fx-font-family: 'Manrope'; }
+.kpi-label {
+    -fx-text-fill: #8E7A6B;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-letter-spacing: 0.05em;
+}
 
+.kpi-value-dark {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 28px;
+    -fx-font-weight: 800;
+}
+
+.kpi-card-green {
+    -fx-background-color: #F0F7F2;
+    -fx-border-color: #DAE5DC;
+}
+
+.kpi-card-green:hover {
+    -fx-border-color: #4A7C59;
+}
+
+.kpi-value-green {
+    -fx-text-fill: #3E5B45;
+    -fx-font-size: 28px;
+    -fx-font-weight: 800;
+}
+
+.kpi-card-orange {
+    -fx-background-color: #FDF4ED;
+    -fx-border-color: #EFE0D4;
+}
+
+.kpi-card-orange:hover {
+    -fx-border-color: #C87941;
+}
+
+.kpi-value-orange {
+    -fx-text-fill: #B25D3B;
+    -fx-font-size: 28px;
+    -fx-font-weight: 800;
+}
+
+.kpi-label-green {
+    -fx-text-fill: #6C9373;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+}
+
+.kpi-label-red {
+    -fx-text-fill: #CD7B4E;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+}
+
+.kpi-value-dark {
+    -fx-text-fill: #433934;
+    -fx-font-size: 26px;
+    -fx-font-weight: 800;
+    -fx-font-family: 'Manrope';
+}
+
+.kpi-value-green {
+    -fx-text-fill: #5D8063;
+    -fx-font-size: 26px;
+    -fx-font-weight: 800;
+    -fx-font-family: 'Manrope';
+}
+
+.kpi-value-red {
+    -fx-text-fill: #CD7B4E;
+    -fx-font-size: 26px;
+    -fx-font-weight: 800;
+    -fx-font-family: 'Manrope';
+}
 
 /* ===================== LIST VIEW & CARDS ===================== */
 
@@ -158,7 +232,8 @@
 
 .client-list-view .list-cell {
     -fx-background-color: transparent;
-    -fx-padding: 8 0; /* spacing between cards */
+    -fx-padding: 8 0;
+    /* spacing between cards */
 }
 
 .client-list-view .list-cell:empty {
@@ -215,20 +290,35 @@
     -fx-font-size: 11px;
 }
 
-.status-preferred { -fx-background-color: #82A089; }
-.status-preferred .client-status-text { -fx-text-fill: white; }
+.status-preferred {
+    -fx-background-color: #82A089;
+}
 
-.status-active { -fx-background-color: #DC9D38; }
-.status-active .client-status-text { -fx-text-fill: white; }
+.status-preferred .client-status-text {
+    -fx-text-fill: white;
+}
 
-.status-inactive { -fx-background-color: #EBE5DF; }
-.status-inactive .client-status-text { -fx-text-fill: #857D77; }
+.status-active {
+    -fx-background-color: #DC9D38;
+}
+
+.status-active .client-status-text {
+    -fx-text-fill: white;
+}
+
+.status-inactive {
+    -fx-background-color: #EBE5DF;
+}
+
+.status-inactive .client-status-text {
+    -fx-text-fill: #857D77;
+}
 
 .client-stat-label {
     -fx-text-fill: #867E78;
     -fx-font-size: 9px;
     -fx-font-weight: 800;
-    -fx-letter-spacing: 1px;
+
 }
 
 .client-stat-value {
@@ -254,6 +344,7 @@
     -fx-padding: 8 16;
     -fx-cursor: hand;
 }
+
 .action-btn-ghost:hover {
     -fx-background-color: #E2D9D2;
 }

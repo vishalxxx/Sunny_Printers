@@ -39,7 +39,7 @@
     -fx-font-size: 14px;
     -fx-font-weight: 900;
     -fx-text-fill: #A0836D;
-    -fx-letter-spacing: 1px;
+    
 }
 
 /* --- CARDS --- */
@@ -62,7 +62,7 @@
     -fx-text-fill: #A79F99;
     -fx-font-size: 10px;
     -fx-font-weight: 900;
-    -fx-letter-spacing: 0.5px;
+    
 }
 
 .input-field {

@@ -6,57 +6,70 @@
 <?import javafx.scene.shape.*?>
 
 <VBox xmlns="http://javafx.com/javafx/23"
-	xmlns:fx="http://javafx.com/fxml/1"
-	fx:controller="controller.ViewClientsController" spacing="12"
-	stylesheets="@../css/view_client.css" styleClass="view-clients-root"
+    xmlns:fx="http://javafx.com/fxml/1"
+    fx:controller="controller.ViewClientsController" spacing="12"
+    stylesheets="@../css/view_client.css" styleClass="view-clients-root"
     alignment="TOP_CENTER">
-    <padding><Insets top="10" right="40" bottom="10" left="40"/></padding>
+    <padding>
+        <Insets top="10" right="40" bottom="10" left="40" />
+    </padding>
 
     <!-- HEADER & KPIs ROW -->
     <HBox spacing="40" alignment="CENTER_LEFT">
         <!-- Titles -->
         <VBox spacing="4" HBox.hgrow="ALWAYS">
             <Label text="Client Directory" styleClass="page-heading" />
-            <Label text="Manage your global client relationships, track lifetime value, and oversee outstanding receivables in an editorial layout." styleClass="page-subheading" wrapText="true" maxWidth="450"/>
-            
+            <Label
+                text="Manage your global client relationships, track lifetime value, and oversee outstanding receivables in an editorial layout."
+                styleClass="page-subheading" wrapText="true" maxWidth="450" />
+
             <HBox spacing="15" alignment="CENTER_LEFT" styleClass="search-bar-container">
-				<TextField fx:id="searchField"
-					promptText="Search accounts..."
-					styleClass="search-field" prefWidth="250" />
-                <ComboBox fx:id="insightFilterComboBox" promptText="Filter by Insight" prefWidth="170" styleClass="sort-combo" />
-                <ComboBox fx:id="sortComboBox" promptText="Sort By" prefWidth="150" styleClass="sort-combo" />
-			</HBox>
+                <TextField fx:id="searchField"
+                    promptText="Search accounts..."
+                    styleClass="search-field" prefWidth="250" />
+                <ComboBox fx:id="insightFilterComboBox" promptText="Filter by Insight"
+                    prefWidth="170" styleClass="sort-combo" />
+                <ComboBox fx:id="sortComboBox" promptText="Sort By" prefWidth="150"
+                    styleClass="sort-combo" />
+            </HBox>
         </VBox>
 
-        <!-- KPIs -->
-        <HBox spacing="15" style="-fx-padding: 20 0 0 0;">
-            <VBox styleClass="kpi-card kpi-beige" minWidth="150">
-                <Label text="TOTAL CLIENTS" styleClass="kpi-label"/>
-                <Label fx:id="lblTotalClients" text="1,284" styleClass="kpi-value-dark"/>
+        <!-- KPIs (Stitch Aesthetic) -->
+        <HBox spacing="18" alignment="TOP_RIGHT">
+            <VBox.margin>
+                <Insets top="15" />
+            </VBox.margin>
+            
+            <VBox styleClass="kpi-card" minWidth="170">
+                <Label text="TOTAL CLIENTS" styleClass="kpi-label" />
+                <Label fx:id="lblTotalClients" text="--" styleClass="kpi-value-dark" />
             </VBox>
-            <VBox styleClass="kpi-card kpi-green" minWidth="130">
-                <Label text="PREFERRED" styleClass="kpi-label-green"/>
-                <Label fx:id="lblPreferredClients" text="42" styleClass="kpi-value-green"/>
+
+            <VBox styleClass="kpi-card, kpi-card-green" minWidth="170">
+                <Label text="PREFERRED" styleClass="kpi-label" />
+                <Label fx:id="lblPreferredClients" text="--" styleClass="kpi-value-green" />
             </VBox>
-            <VBox styleClass="kpi-card kpi-beige-light" minWidth="160">
-                <Label text="TOTAL RECEIVABLES" styleClass="kpi-label-red"/>
-                <Label fx:id="lblTotalReceivables" text="\$248.3k" styleClass="kpi-value-red"/>
+
+            <VBox styleClass="kpi-card, kpi-card-orange" minWidth="190">
+                <Label text="TOTAL RECEIVABLES" styleClass="kpi-label" />
+                <Label fx:id="lblTotalReceivables" text="--" styleClass="kpi-value-orange" />
             </VBox>
         </HBox>
     </HBox>
 
-	<!-- LIST AREA -->
+    <!-- LIST AREA -->
     <ListView fx:id="clientListView" styleClass="client-list-view" VBox.vgrow="ALWAYS" />
 
     <!-- FOOTER -->
     <HBox alignment="CENTER_LEFT">
         <HBox spacing="4">
-            <Label text="Showing" styleClass="footer-text"/>
-            <Label fx:id="lblShowingCount" text="0 of 0" styleClass="footer-text"/>
-            <Label text="premium accounts." styleClass="footer-text"/>
-            <Label text="Download full PDF directory" styleClass="footer-link" style="-fx-cursor: hand;"/>
+            <Label text="Showing" styleClass="footer-text" />
+            <Label fx:id="lblShowingCount" text="0 of 0" styleClass="footer-text" />
+            <Label text="premium accounts." styleClass="footer-text" />
+            <Label text="Download full PDF directory" styleClass="footer-link"
+                style="-fx-cursor: hand;" />
         </HBox>
-        <Region HBox.hgrow="ALWAYS"/>
+        <Region HBox.hgrow="ALWAYS" />
         <HBox fx:id="paginationContainer" spacing="10" alignment="CENTER">
         </HBox>
     </HBox>
