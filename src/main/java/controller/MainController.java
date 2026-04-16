@@ -440,8 +440,10 @@ public class MainController implements Initializable {
 
 			loadDashboardData();
 			setPageTitle("");
-            // If we are clearing or returning to dashboard, we might want to reset nav except if it's a history pop
-            // But usually the dashboard is the base.
+            // Strip focus from any previously focused elements in the header
+            if (appRoot != null) {
+                appRoot.requestFocus();
+            }
 		}
 	}
 
@@ -1037,6 +1039,7 @@ public class MainController implements Initializable {
 				VBox restoredSidebar = findSidebarById(prevState.getActiveSidebarId());
 				showOnly(restoredSidebar);
 				lastValidTitle = prevState.getTitle();
+                event.consume();
                 
                 // RESTORE VISIBILITY ON BACK
                 boolean isDetailView = prevState.getFxmlPath() != null && 
@@ -1056,7 +1059,10 @@ public class MainController implements Initializable {
 					centerContentHost.getChildren().setAll(prevState.getView());
 				} else if (prevState.getFxmlPath() == null) {
                     // 🏠 Back to Dashboard
+                    collapseAllSubmenus(true);
+                    highlightActiveMenu(dashboardBtn);
                     openCenterDashboard();
+                    setPageTitle("Dashboard");
                 } else {
 					// 🐢 Fallback: Only reload FXML if the memory reference was somehow lost
 					System.out.println("DEBUG: FALLBACK - Re-parsing FXML from disk: " + prevState.getFxmlPath());

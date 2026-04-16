@@ -194,7 +194,11 @@
                     <!-- HEADER Aligned with Logo (Top Pdg 22px) -->
                     <HBox alignment="CENTER_LEFT" spacing="12" style="-fx-padding: 22 50 10 50;">
                         <!-- Breadcrumb / Page Location (Top Left) -->
-                        <Button fx:id="backNavBtn" onAction="#handleBack" styleClass="back-nav-btn" visible="false" managed="false" translateX="-35">
+                        <!-- Breadcrumb / Page Location (Top Left) -->
+                        <Button fx:id="backNavBtn" onAction="#handleBack" styleClass="back-nav-btn" visible="false" managed="false">
+                            <HBox.margin>
+                                <Insets left="-40" />
+                            </HBox.margin>
                             <graphic><Region styleClass="back-icon"/></graphic>
                         </Button>
 
