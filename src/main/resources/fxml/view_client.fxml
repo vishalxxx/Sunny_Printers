@@ -30,15 +30,15 @@
 
         <!-- KPIs -->
         <HBox spacing="15" style="-fx-padding: 20 0 0 0;">
-            <VBox styleClass="kpi-card" style="-fx-background-color: #F4EAE0;" minWidth="150">
+            <VBox styleClass="kpi-card kpi-beige" minWidth="150">
                 <Label text="TOTAL CLIENTS" styleClass="kpi-label"/>
                 <Label fx:id="lblTotalClients" text="1,284" styleClass="kpi-value-dark"/>
             </VBox>
-            <VBox styleClass="kpi-card" style="-fx-background-color: #E8F0EA;" minWidth="130">
+            <VBox styleClass="kpi-card kpi-green" minWidth="130">
                 <Label text="PREFERRED" styleClass="kpi-label-green"/>
                 <Label fx:id="lblPreferredClients" text="42" styleClass="kpi-value-green"/>
             </VBox>
-            <VBox styleClass="kpi-card" style="-fx-background-color: #F5EAE5;" minWidth="160">
+            <VBox styleClass="kpi-card kpi-beige-light" minWidth="160">
                 <Label text="TOTAL RECEIVABLES" styleClass="kpi-label-red"/>
                 <Label fx:id="lblTotalReceivables" text="\$248.3k" styleClass="kpi-value-red"/>
             </VBox>

@@ -85,9 +85,17 @@ public class MainController implements Initializable {
     @FXML private javafx.scene.layout.Region cashFlow_M5_total; @FXML private javafx.scene.layout.Region cashFlow_M5_actual;
     @FXML private javafx.scene.layout.Region cashFlow_M6_total; @FXML private javafx.scene.layout.Region cashFlow_M6_actual;
     
+    @FXML private Button btnChart1M, btnChart3M, btnChart6M;
+    @FXML private Label lblCashFlow_M1, lblCashFlow_M2, lblCashFlow_M3, lblCashFlow_M4, lblCashFlow_M5, lblCashFlow_M6;
+    
+    @FXML private javafx.scene.control.ComboBox<String> comboTimeRange;
+    private String selectedTimeRange = "All Time";
+
     @FXML private javafx.scene.shape.Arc donut_ring_green;
     @FXML private javafx.scene.shape.Arc donut_ring_orange;
     @FXML private Label lblHealthyPercent;
+    @FXML private Label lblDonutPaid, lblDonutDue, lblDonutEfficiency, lblDonutOverdue, lblDonutTotal, lblDonutInsight, lblCollectionPeriod;
+
 
 	@FXML private AreaChart<String, Number> revenueChart;
 	@FXML private PieChart jobDistributionChart;
@@ -229,7 +237,19 @@ public class MainController implements Initializable {
         }
 		setPageTitle("Dashboard");
 		openCenterDashboard();
+		
+        // Initialize Filter Dropdown
+        if (comboTimeRange != null) {
+            comboTimeRange.getItems().setAll("All Time", "Last 7 Days", "Last 30 Days", "Last 3 Months");
+            comboTimeRange.setValue("All Time");
+            comboTimeRange.setOnAction(e -> {
+                selectedTimeRange = comboTimeRange.getValue();
+                loadDashboardData();
+            });
+        }
+
 		loadDashboardData();
+
 		
 		if (mainSearchBox != null && mainSearchField != null) {
 		    mainSearchField.focusedProperty().addListener((obs, oldVal, focused) -> {
@@ -424,11 +444,31 @@ public class MainController implements Initializable {
     private int activeChartRange = 6; // months
 
     @FXML
-    private void handleChartRange1M() { activeChartRange = 1; loadChartData(); }
+    private void handleChartRange1M() { activeChartRange = 1; updateChartButtonsUI(); loadChartData(); }
     @FXML
-    private void handleChartRange3M() { activeChartRange = 3; loadChartData(); }
+    private void handleChartRange3M() { activeChartRange = 3; updateChartButtonsUI(); loadChartData(); }
     @FXML
-    private void handleChartRange6M() { activeChartRange = 6; loadChartData(); }
+    private void handleChartRange6M() { activeChartRange = 6; updateChartButtonsUI(); loadChartData(); }
+
+    private void updateChartButtonsUI() {
+        if (btnChart1M == null || btnChart3M == null || btnChart6M == null) return;
+        
+        String activeStyle = "-fx-background-color: white; -fx-background-radius: 100; -fx-font-size: 11; -fx-font-weight: 800; -fx-padding: 6 16; -fx-text-fill: #D47B5A; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 5, 0, 0, 2);";
+        String inactiveStyle = "-fx-background-color: transparent; -fx-font-size: 11; -fx-font-weight: 800; -fx-padding: 6 16; -fx-text-fill: #737B69; -fx-effect: none;";
+        
+        btnChart1M.setStyle(activeChartRange == 1 ? activeStyle : inactiveStyle);
+        btnChart3M.setStyle(activeChartRange == 3 ? activeStyle : inactiveStyle);
+        btnChart6M.setStyle(activeChartRange == 6 ? activeStyle : inactiveStyle);
+    }
+
+    private String getTimeFilterSQL() {
+        switch (selectedTimeRange) {
+            case "Last 7 Days":   return " AND date(invoice_date) >= date('now', '-7 days')";
+            case "Last 30 Days":  return " AND date(invoice_date) >= date('now', '-30 days')";
+            case "Last 3 Months": return " AND date(invoice_date) >= date('now', '-90 days')";
+            default: return ""; // All Time
+        }
+    }
 
 	private void loadDashboardData() {
 		loadSummaryData();
@@ -439,38 +479,96 @@ public class MainController implements Initializable {
 
 	private void loadSummaryData() {
 		try (Connection con = DBConnection.getConnection()) {
-			String sql = "SELECT SUM(amount), SUM(paid_amount), SUM(due_amount) FROM invoice_master WHERE is_void = 0";
+            String filter = getTimeFilterSQL();
+			double totalBilled = 0, totalPaid = 0, totalDue = 0;
+
+			if (lblCollectionPeriod != null) lblCollectionPeriod.setText("COLLECTED (" + selectedTimeRange.toUpperCase() + ")");
+
+			// 1. DYNAMIC TOTALS based on Range (Revenue, Collected, Outstanding)
+			String sql = "SELECT SUM(amount), SUM(paid_amount), SUM(due_amount) FROM invoice_master WHERE is_void = 0" + filter;
 			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
 				if (rs.next()) {
-					double total = rs.getDouble(1);
-					double paid = rs.getDouble(2);
-					double due = rs.getDouble(3);
-
-					if (lblTotalRevenue != null) lblTotalRevenue.setText(String.format("₹%,.0f", total));
-					if (lblCollected != null) lblCollected.setText(String.format("₹%,.0f", paid));
-					if (lblOutstanding != null) lblOutstanding.setText(String.format("₹%,.0f", due));
-					
-                    // Update Donut
-                    if (donut_ring_green != null && total > 0) {
-                        double healthPercent = (paid / total) * 100;
-                        if (lblHealthyPercent != null) lblHealthyPercent.setText(String.format("%.0f%%", healthPercent));
-                        
-                        double greenLength = -(healthPercent / 100) * 360;
-                        donut_ring_green.setLength(greenLength);
-                        
-                        double orangePercent = (due / total) * 100;
-                        donut_ring_orange.setLength((orangePercent / 100) * 360);
-                    }
-
-					String sqlOverdue = "SELECT SUM(due_amount) FROM invoice_master WHERE is_void = 0 AND due_amount > 0 AND date(invoice_date) < date('now', '-30 days')";
-					try (java.sql.Statement st2 = con.createStatement(); ResultSet rs2 = st2.executeQuery(sqlOverdue)) {
-						if (rs2.next()) {
-							double overdue = rs2.getDouble(1);
-							if (lblOverdue != null) lblOverdue.setText(String.format("₹%,.0f", overdue));
-						}
-					}
+					totalBilled = rs.getDouble(1);
+					totalPaid = rs.getDouble(2);
+					totalDue = rs.getDouble(3);
 				}
 			}
+
+            // Adjust for Credit and Debit Notes
+            double totalDN = 0, totalCN = 0;
+            String sqlAdj = "SELECT type, SUM(amount) FROM invoice_adjustments WHERE 1=1 " + 
+                            filter.replace("invoice_date", "date") + " GROUP BY type";
+            try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sqlAdj)) {
+                while (rs.next()) {
+                    String type = rs.getString(1);
+                    double amt = rs.getDouble(2);
+                    if ("Debit Note".equalsIgnoreCase(type)) totalDN = amt;
+                    else if ("Credit Note".equalsIgnoreCase(type)) totalCN = amt;
+                }
+            }
+            totalBilled = totalBilled + totalDN - totalCN;
+            // Note: totalDue also needs adjustment if CN/DN affect balance
+            totalDue = totalDue + totalDN - totalCN; 
+
+			if (lblTotalRevenue != null) {
+                lblTotalRevenue.setText(String.format("₹%,.0f", totalBilled));
+            }
+			if (lblCollected != null) lblCollected.setText(String.format("₹%,.0f", totalPaid));
+			if (lblOutstanding != null) lblOutstanding.setText(String.format("₹%,.0f", totalDue));
+			if (lblDonutTotal != null) lblDonutTotal.setText(String.format("₹%,.0f", totalBilled));
+            if (lblOverdue != null) lblOverdue.setText(String.format("₹%,.0f", totalDue - totalPaid)); // Default logic for "Overdue" kpi card often means dynamic outstanding
+
+            // 2. Collection Ratio / Health Score (Within Range)
+            double collectionRatio = totalBilled > 0 ? (totalPaid / totalBilled) : 0;
+            if (lblHealthyPercent != null) lblHealthyPercent.setText(String.format("%.0f%%", collectionRatio * 100));
+            
+            // 3. Overdue (Filtered by Range + 30 day aging)
+            double overdueAmt = 0;
+            String sqlOverdue = "SELECT SUM(due_amount) FROM invoice_master WHERE is_void = 0 AND due_amount > 0 AND date(invoice_date) < date('now', '-30 days')" + filter;
+            try (java.sql.Statement stO = con.createStatement(); ResultSet rsO = stO.executeQuery(sqlOverdue)) {
+                if (rsO.next()) overdueAmt = rsO.getDouble(1);
+            }
+            if (lblDonutOverdue != null) {
+                lblDonutOverdue.setText(String.format("₹%,.0f", overdueAmt));
+                lblDonutOverdue.setStyle("-fx-text-fill: #D27357; -fx-font-weight: 900;");
+            }
+            if (lblOverdue != null) {
+                lblOverdue.setText(String.format("₹%,.0f", overdueAmt));
+            }
+            if (lblDonutPaid != null) lblDonutPaid.setText(String.format("₹%,.0f", totalPaid));
+            if (lblDonutDue != null) lblDonutDue.setText(String.format("₹%,.0f", totalDue));
+
+            // 4. Efficiency Indicator (Tied to Selection)
+            if (lblDonutEfficiency != null) {
+                double effPct = collectionRatio * 100;
+                lblDonutEfficiency.setText(String.format("%.0f%%", effPct));
+                if (effPct < 50) lblDonutEfficiency.setStyle("-fx-text-fill: #D27357;");
+                else if (effPct < 80) lblDonutEfficiency.setStyle("-fx-text-fill: #D97706;");
+                else lblDonutEfficiency.setStyle("-fx-text-fill: #68765A;");
+            }
+
+            // 5. Insight Component
+            if (lblDonutInsight != null) {
+                if (totalDue > 0) {
+                    double insightPct = (overdueAmt / totalDue) * 100;
+                    lblDonutInsight.setText(String.format("⚠️ %.0f%% of range AR is overdue", insightPct));
+                } else if (totalBilled > 0) {
+                    lblDonutInsight.setText("✅ All range payments are clear");
+                } else {
+                    lblDonutInsight.setText("No data for selected period");
+                }
+            }
+
+            // 6. Donut Arc control
+            if (donut_ring_green != null) {
+                double greenLength = -(collectionRatio * 360);
+                donut_ring_green.setLength(greenLength);
+                double orangePercent = totalBilled > 0 ? (totalDue / totalBilled) : 0;
+                donut_ring_orange.setLength(orangePercent * 360);
+            }
+
+			if (lblOverdue != null) lblOverdue.setText(String.format("₹%,.0f", overdueAmt));
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -479,19 +577,26 @@ public class MainController implements Initializable {
 	private void loadChartData() {
         javafx.scene.layout.Region[] totalBars = {cashFlow_M1_total, cashFlow_M2_total, cashFlow_M3_total, cashFlow_M4_total, cashFlow_M5_total, cashFlow_M6_total};
         javafx.scene.layout.Region[] actualBars = {cashFlow_M1_actual, cashFlow_M2_actual, cashFlow_M3_actual, cashFlow_M4_actual, cashFlow_M5_actual, cashFlow_M6_actual};
+        Label[] mLabels = {lblCashFlow_M1, lblCashFlow_M2, lblCashFlow_M3, lblCashFlow_M4, lblCashFlow_M5, lblCashFlow_M6};
+        String[] monthNames = {"", "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
 
         // Reset
         for (javafx.scene.layout.Region r : totalBars) if(r!=null) r.setPrefHeight(0);
         for (javafx.scene.layout.Region r : actualBars) if(r!=null) r.setPrefHeight(0);
+        for (Label l : mLabels) if (l!=null) l.setText("");
 
 		try (Connection con = DBConnection.getConnection()) {
+            String globalFilter = getTimeFilterSQL();
 			String sql = "SELECT strftime('%m', invoice_date) as month, SUM(amount), SUM(paid_amount) " +
-                         "FROM invoice_master WHERE is_void = 0 AND date(invoice_date) > date('now', '-" + activeChartRange + " months') " +
+                         "FROM invoice_master WHERE is_void = 0 " + globalFilter +
+                         " AND date(invoice_date) >= date('now', 'start of month', '-" + (activeChartRange - 1) + " months') " +
                          "GROUP BY month ORDER BY month DESC LIMIT 6";
 			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
                 int i = 0;
                 double maxVal = 1000; // Baseline
 				while (rs.next() && i < 6) {
+                    int dbMonth = Integer.parseInt(rs.getString(1));
+                    String mStr = monthNames[dbMonth];
                     double total = rs.getDouble(2);
                     double actual = rs.getDouble(3);
                     if (total > maxVal) maxVal = total;
@@ -504,21 +609,51 @@ public class MainController implements Initializable {
                     Platform.runLater(() -> {
                         double tH = (finalTotal / finalMax) * 160 + 20;
                         double aH = (finalActual / finalMax) * 160 + 10;
-                        if (totalBars[index] != null) totalBars[index].setPrefHeight(tH);
-                        if (actualBars[index] != null) actualBars[index].setPrefHeight(aH);
+                        if (mLabels[index] != null) mLabels[index].setText(mStr);
+                        
+                        if (totalBars[index] != null) {
+                            totalBars[index].setPrefHeight(tH);
+                            javafx.scene.control.Tooltip ttTotal = new javafx.scene.control.Tooltip(String.format("TOTAL AMOUNT: ₹%,.0f", finalTotal));
+                            ttTotal.setShowDelay(javafx.util.Duration.millis(50));
+                            javafx.scene.control.Tooltip.install(totalBars[index], ttTotal);
+                        }
+                        if (actualBars[index] != null) {
+                            actualBars[index].setPrefHeight(aH);
+                            javafx.scene.control.Tooltip ttAct = new javafx.scene.control.Tooltip(String.format("NET COLLECTION: ₹%,.0f", finalActual));
+                            ttAct.setShowDelay(javafx.util.Duration.millis(50));
+                            javafx.scene.control.Tooltip.install(actualBars[index], ttAct);
+                        }
                     });
                     i++;
 				}
                 
-                // If no data, show some mock for "Taste Design" visuals
+                // If no data, show precise mock for "Taste Design" visuals
                 if (i == 0) {
-                    double[] mockT = {140, 110, 155, 125, 180, 145};
-                    double[] mockA = {105, 85, 120, 90, 145, 110};
-                    for(int j=0; j<6; j++) {
+                    double[] mockT = {120, 100, 150, 115, 180, 130};
+                    double[] mockA = {85, 70, 80, 90, 135, 85};
+                    int currMonth = java.time.LocalDate.now().getMonthValue();
+                    
+                    for (int j = 0; j < activeChartRange; j++) {
                         int index = j;
+                        int m = currMonth - j;
+                        if (m <= 0) m += 12;
+                        String mStr = monthNames[m];
+                        
                         Platform.runLater(() -> {
-                            if (totalBars[index] != null) totalBars[index].setPrefHeight(mockT[index]);
-                            if (actualBars[index] != null) actualBars[index].setPrefHeight(mockA[index]);
+                            if (mLabels[index] != null) mLabels[index].setText(mStr);
+                            
+                            if (totalBars[index] != null) {
+                                totalBars[index].setPrefHeight(mockT[index]);
+                                javafx.scene.control.Tooltip ttTotalMock = new javafx.scene.control.Tooltip(String.format("TOTAL AMOUNT: ₹%,.0f", mockT[index]*1450));
+                                ttTotalMock.setShowDelay(javafx.util.Duration.millis(50));
+                                javafx.scene.control.Tooltip.install(totalBars[index], ttTotalMock);
+                            }
+                            if (actualBars[index] != null) {
+                                actualBars[index].setPrefHeight(mockA[index]);
+                                javafx.scene.control.Tooltip ttActMock = new javafx.scene.control.Tooltip(String.format("NET COLLECTION: ₹%,.0f", mockA[index]*1450));
+                                ttActMock.setShowDelay(javafx.util.Duration.millis(50));
+                                javafx.scene.control.Tooltip.install(actualBars[index], ttActMock);
+                            }
                         });
                     }
                 }
@@ -529,7 +664,8 @@ public class MainController implements Initializable {
 	private void loadPieChartData() {
 		if (jobDistributionChart == null) return;
 		try (Connection con = DBConnection.getConnection()) {
-			String sql = "SELECT status, COUNT(*) FROM job WHERE status IS NOT NULL GROUP BY status";
+            String filter = getTimeFilterSQL();
+			String sql = "SELECT status, COUNT(*) FROM job WHERE 1=1 " + filter.replace("invoice_date", "order_date") + " AND status IS NOT NULL GROUP BY status";
 			ObservableList<PieChart.Data> pieData = FXCollections.observableArrayList();
             int total = 0;
 			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
@@ -555,8 +691,11 @@ public class MainController implements Initializable {
 
 		ObservableList<DashboardJobDTO> jobs = FXCollections.observableArrayList();
 		try (Connection con = DBConnection.getConnection()) {
+            String filter = getTimeFilterSQL();
 			String sql = "SELECT j.job_name, c.client_name, j.order_date, j.delivery_date, j.total_amount, j.status " +
-                         "FROM job j JOIN client_master c ON j.client_id = c.id ORDER BY j.id DESC LIMIT 5";
+                         "FROM job j JOIN client_master c ON j.client_id = c.id " +
+                         "WHERE 1=1 " + filter.replace("invoice_date", "j.order_date") +
+                         " ORDER BY j.id DESC LIMIT 5";
 			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
 				while (rs.next()) {
 					jobs.add(new DashboardJobDTO(
