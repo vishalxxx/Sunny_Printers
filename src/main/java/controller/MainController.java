@@ -237,6 +237,8 @@ public class MainController implements Initializable {
         }
 		setPageTitle("Dashboard");
 		openCenterDashboard();
+        // Set initial state so first push creates history
+        utils.NavigationManager.getInstance().push(null, "Dashboard", "Overview", null);
 		
         // Initialize Filter Dropdown
         if (comboTimeRange != null) {
@@ -438,6 +440,8 @@ public class MainController implements Initializable {
 
 			loadDashboardData();
 			setPageTitle("");
+            // If we are clearing or returning to dashboard, we might want to reset nav except if it's a history pop
+            // But usually the dashboard is the base.
 		}
 	}
 
@@ -1035,7 +1039,9 @@ public class MainController implements Initializable {
 				lastValidTitle = prevState.getTitle();
                 
                 // RESTORE VISIBILITY ON BACK
-                boolean isDetailView = prevState.getFxmlPath().contains("client_profile") || prevState.getFxmlPath().contains("edit_client");
+                boolean isDetailView = prevState.getFxmlPath() != null && 
+                                     (prevState.getFxmlPath().contains("client_profile") || 
+                                      prevState.getFxmlPath().contains("edit_client"));
                 if (pageTitle != null) {
                     pageTitle.setVisible(isDetailView);
                     pageTitle.setManaged(isDetailView);
@@ -1048,7 +1054,10 @@ public class MainController implements Initializable {
 					System.out.println("DEBUG: Restoring CACHED view from history: " + prevState.getFxmlPath());
 					this.currentController = prevState.getController(); // ⚡ RESTORE CONTROLLER
 					centerContentHost.getChildren().setAll(prevState.getView());
-				} else {
+				} else if (prevState.getFxmlPath() == null) {
+                    // 🏠 Back to Dashboard
+                    openCenterDashboard();
+                } else {
 					// 🐢 Fallback: Only reload FXML if the memory reference was somehow lost
 					System.out.println("DEBUG: FALLBACK - Re-parsing FXML from disk: " + prevState.getFxmlPath());
 					loadCenterScreen(prevState.getFxmlPath(), "Loading...", "Please wait", false);

@@ -24,7 +24,7 @@ public class NavigationManager {
     }
 
     public void push(String fxmlPath, String title, String subtitle, String activeSidebarId) {
-        if (currentState != null && currentState.getFxmlPath() != null) {
+        if (currentState != null) {
             history.push(currentState);
             canGoBack.set(true);
         }
