@@ -2,9 +2,15 @@
    CLIENT EDIT SELECTION - MATCHING VIEW CLIENTS AESTHETIC
    ======================= */
 
+.directory-master-scroll {
+    -fx-background-color: #FAF6F0;
+    -fx-background: #FAF6F0;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+
 .client-directory-root {
     -fx-background-color: #FAF6F0;
-    /* Soft warm beige background from view_client.css */
     -fx-padding: 30 40;
 }
 

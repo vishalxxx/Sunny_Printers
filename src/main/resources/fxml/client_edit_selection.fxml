@@ -5,12 +5,16 @@
 <?import javafx.geometry.*?>
 <?import javafx.scene.shape.*?>
 
-<VBox xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="controller.ClientEditSelectionController"
-      spacing="0" styleClass="client-directory-root"
-      stylesheets="@../css/client_edit_selection.css"
-      onMouseClicked="#handleRootClick"
-      focusTraversable="true">
+<ScrollPane fitToWidth="true" hbarPolicy="AS_NEEDED" vbarPolicy="NEVER"
+          stylesheets="@../css/client_edit_selection.css"
+          styleClass="directory-master-scroll"
+          xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1"
+          fx:controller="controller.ClientEditSelectionController">
+
+    <VBox spacing="0" styleClass="client-directory-root"
+          onMouseClicked="#handleRootClick"
+          focusTraversable="true"
+          minWidth="1100">
 
     <!-- BREADCRUMBS -->
     <HBox styleClass="breadcrumb-container" alignment="CENTER_LEFT">
@@ -77,4 +81,5 @@
         </HBox>
     </HBox>
 
-</VBox>
+    </VBox>
+</ScrollPane>
