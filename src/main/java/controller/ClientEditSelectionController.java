@@ -20,10 +20,14 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.Priority;
 import javafx.util.Duration;
 import model.Client;
 import repository.ClientRepository;
@@ -239,14 +243,27 @@ public class ClientEditSelectionController implements Initializable {
         }
     }
 
-    private HBox createClientRow(Client client) {
-        HBox row = new HBox();
-        row.getStyleClass().add("client-card");
-        VBox.setMargin(row, new Insets(0, 0, 10, 0));
+    private GridPane createClientRow(Client client) {
+        GridPane grid = new GridPane();
+        grid.getStyleClass().add("client-card");
+        grid.setMaxWidth(Double.MAX_VALUE);
+        VBox.setMargin(grid, new Insets(0, 0, 10, 0));
 
-        // Column 1: Client
-        HBox col1 = new HBox(15);
-        col1.setMinWidth(220); col1.setPrefWidth(220); col1.setAlignment(Pos.CENTER_LEFT);
+        // Define Column Constraints
+        ColumnConstraints col1 = new ColumnConstraints(250);
+        ColumnConstraints col2 = new ColumnConstraints(200);
+        ColumnConstraints col3 = new ColumnConstraints(120);
+        ColumnConstraints col4 = new ColumnConstraints(220);
+        ColumnConstraints col5 = new ColumnConstraints(120);
+        ColumnConstraints col6 = new ColumnConstraints(100);
+        ColumnConstraints col7 = new ColumnConstraints(150);
+        col7.setHgrow(Priority.ALWAYS);
+
+        grid.getColumnConstraints().addAll(col1, col2, col3, col4, col5, col6, col7);
+
+        // Column 0: Client Info
+        HBox clientBox = new HBox(15);
+        clientBox.setAlignment(Pos.CENTER_LEFT);
         
         StackPane iconContainer = new StackPane();
         iconContainer.getStyleClass().add("card-icon-container");
@@ -258,36 +275,32 @@ public class ClientEditSelectionController implements Initializable {
         Label bizLabel = new Label(client.getBusinessName()); bizLabel.getStyleClass().add("client-business-name");
         Label clLabel = new Label(client.getClientName()); clLabel.getStyleClass().add("client-sub-text");
         names.getChildren().addAll(bizLabel, clLabel);
-        
-        col1.getChildren().addAll(iconContainer, names);
+        clientBox.getChildren().addAll(iconContainer, names);
+        grid.add(clientBox, 0, 0);
 
-        // Column 2: Contact
-        HBox col2 = new HBox();
-        col2.setMinWidth(160); col2.setPrefWidth(160); col2.setAlignment(Pos.CENTER);
-        VBox contactBox = new VBox(2); contactBox.setAlignment(Pos.CENTER);
+        // Column 1: Primary Contact
+        VBox contactBox = new VBox(2); contactBox.setAlignment(Pos.CENTER_LEFT);
         Label nameLabel = new Label(client.getClientName()); nameLabel.getStyleClass().add("phone-text");
         Label roleLabel = new Label("Primary Contact"); roleLabel.getStyleClass().add("client-sub-text");
         contactBox.getChildren().addAll(nameLabel, roleLabel);
-        col2.getChildren().add(contactBox);
+        grid.add(contactBox, 1, 0);
 
-        // Column 3: Phone
-        HBox col3 = new HBox();
-        col3.setMinWidth(150); col3.setPrefWidth(150); col3.setAlignment(Pos.CENTER_LEFT);
-        VBox phoneBox = new VBox(2); phoneBox.setAlignment(Pos.CENTER_LEFT);
+        // Column 2: Phone
+        VBox phoneBox = new VBox(2); phoneBox.setAlignment(Pos.CENTER);
         Label p1 = new Label(client.getPhone()); p1.getStyleClass().add("phone-text");
         Label p2 = new Label(client.getAltPhone()); p2.getStyleClass().add("client-sub-text");
         phoneBox.getChildren().addAll(p1, p2);
-        col3.getChildren().add(phoneBox);
+        grid.add(phoneBox, 2, 0);
 
-        // Column 4: Email
-        HBox col4 = new HBox();
-        col4.setMinWidth(200); col4.setPrefWidth(200); col4.setAlignment(Pos.CENTER_LEFT);
+        // Column 3: Email
         Label emailLabel = new Label(client.getEmail()); emailLabel.getStyleClass().add("email-text");
-        col4.getChildren().add(emailLabel);
+        emailLabel.setAlignment(Pos.CENTER);
+        emailLabel.setMaxWidth(Double.MAX_VALUE);
+        grid.add(emailLabel, 3, 0);
 
-        // Column 5: Risk
-        HBox col5 = new HBox(8);
-        col5.setMinWidth(100); col5.setPrefWidth(100); col5.setAlignment(Pos.CENTER_LEFT);
+        // Column 4: Risk
+        HBox riskBox = new HBox(8);
+        riskBox.setAlignment(Pos.CENTER_LEFT);
         Region dot = new Region(); dot.getStyleClass().add("risk-dot");
         String riskLvl = "Low"; String riskClr = "#4A7C59";
         if (client.getId() % 3 == 0) { riskLvl = "High"; riskClr = "#B45309"; }
@@ -295,26 +308,28 @@ public class ClientEditSelectionController implements Initializable {
         dot.setStyle("-fx-background-color: " + riskClr + ";");
         Label riskLabel = new Label(riskLvl);
         riskLabel.setStyle("-fx-text-fill: " + riskClr + "; -fx-font-weight: 800; -fx-font-size: 14;");
-        col5.getChildren().addAll(dot, riskLabel);
+        riskLabel.setAlignment(Pos.CENTER_LEFT);
+        riskBox.getChildren().addAll(dot, riskLabel);
+        grid.add(riskBox, 4, 0);
 
-        // Column 6: Status
-        HBox col6 = new HBox();
-        col6.setMinWidth(100); col6.setPrefWidth(100); col6.setAlignment(Pos.CENTER);
+        // Column 5: Status
         Label statusLabel = new Label(client.getSegment());
+        statusLabel.setAlignment(Pos.CENTER_LEFT);
         if ("Inactive".equalsIgnoreCase(client.getSegment())) statusLabel.getStyleClass().add("status-pill-inactive");
         else statusLabel.getStyleClass().add("status-label");
-        col6.getChildren().add(statusLabel);
+        grid.add(statusLabel, 5, 0);
 
-        // Column 7: Actions
-        HBox col7 = new HBox();
-        col7.setMinWidth(150); col7.setPrefWidth(150); col7.setAlignment(Pos.CENTER);
+        // Column 6: Actions
+        HBox actionBox = new HBox();
+        actionBox.setAlignment(Pos.CENTER);
         Button editBtn = new Button("Edit Profile");
         editBtn.getStyleClass().add("btn-select-main");
+        editBtn.setMinWidth(110);
         editBtn.setOnAction(e -> MainController.getInstance().loadEditClient(client));
-        col7.getChildren().add(editBtn);
+        actionBox.getChildren().add(editBtn);
+        grid.add(actionBox, 6, 0);
 
-        row.getChildren().addAll(col1, col2, col3, col4, col5, col6, col7);
-        return row;
+        return grid;
     }
 
     @FXML

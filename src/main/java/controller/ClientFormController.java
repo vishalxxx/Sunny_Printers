@@ -8,12 +8,13 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Label;
+import javafx.scene.control.Button;
 import javafx.stage.Stage;
 import model.Client;
 import repository.ClientRepository;
 import utils.Toast;
 
-public class EditClientController implements Initializable {
+public class ClientFormController implements Initializable {
 
 	private Client selectedClient;
 
@@ -21,6 +22,10 @@ public class EditClientController implements Initializable {
 	private Label lblTitleName;
 	@FXML
 	private Label lblClientId;
+    @FXML
+    private Label breadcrumbCurrent;
+    @FXML
+    private Button btnSave;
 
 	@FXML
 	private TextField businessNameField;
@@ -52,12 +57,26 @@ public class EditClientController implements Initializable {
 	public void initialize(URL url, ResourceBundle resourceBundle) {
 	}
 
-	// This method is called from ViewClientsController
+	// This method is called from ViewClientsController or MainController
 	public void setClientData(Client client) {
 		this.selectedClient = client;
 
+        if (client == null) {
+            // "ADD MODE"
+            if (lblTitleName != null) lblTitleName.setText("Register New Client");
+            if (lblClientId != null) lblClientId.setText("#CL-NEW");
+            if (breadcrumbCurrent != null) breadcrumbCurrent.setText("ADD NEW CLIENT");
+            if (btnSave != null) btnSave.setText("Register Client");
+            
+            clearFields();
+            return;
+        }
+
+        // "EDIT MODE"
         if (lblTitleName != null) lblTitleName.setText(client.getBusinessName());
         if (lblClientId != null) lblClientId.setText("#CL-" + client.getId());
+        if (breadcrumbCurrent != null) breadcrumbCurrent.setText("EDIT CLIENT");
+        if (btnSave != null) btnSave.setText("Update Profile");
 
 		businessNameField.setText(client.getBusinessName());
 		clientNameField.setText(client.getClientName());
@@ -73,11 +92,27 @@ public class EditClientController implements Initializable {
 		notesField.setText(client.getNotes());
 	}
 
-	@FXML
-	private void handleUpdateClient() {
+    private void clearFields() {
+        businessNameField.clear();
+        clientNameField.clear();
+        nickNameField.clear();
+        phoneField.clear();
+        altPhoneField.clear();
+        emailField.clear();
+        gstField.clear();
+        panField.clear();
+        billingAddressField.clear();
+        shippingAddressField.clear();
+        notesField.clear();
+    }
 
-		if (selectedClient == null)
-			return;
+	@FXML
+	private void handleSaveClient() {
+        boolean isEdit = (selectedClient != null);
+        
+        if (!isEdit) {
+            selectedClient = new Client();
+        }
 
 		// update fields
 		selectedClient.businessNameProperty().set(businessNameField.getText());
@@ -92,20 +127,33 @@ public class EditClientController implements Initializable {
 		selectedClient.shippingAddressProperty().set(shippingAddressField.getText());
 		selectedClient.notesProperty().set(notesField.getText());
 
-		boolean updated = repo.update(selectedClient);
+        boolean success = false;
+        try {
+            if (isEdit) {
+                success = repo.update(selectedClient);
+            } else {
+                success = repo.save(selectedClient);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		if (updated) {
-			System.out.println("✔ Client updated successfully!");
+		if (success) {
+            // Send Welcome Email if it's a new registration
+            if (!isEdit) {
+                String emailAddress = emailField.getText().trim();
+                if (!emailAddress.isEmpty()) {
+                    utils.EmailUtil.sendWelcomeEmail(emailAddress, clientNameField.getText().trim());
+                }
+            }
 
-			// ⭐ Correct Toast usage
 			Stage stage = (Stage) businessNameField.getScene().getWindow();
-			Toast.show(stage, "Client updated successfully!");
+			Toast.show(stage, isEdit ? "Client updated successfully!" : "Client registered successfully!");
 
 			// Reload View Clients Table
 			MainController.getInstance().loadViewClients();
-
 		} else {
-			System.out.println("❌ Failed to update client");
+            Toast.show((Stage) businessNameField.getScene().getWindow(), "Failed to save client data.");
 		}
 	}
 

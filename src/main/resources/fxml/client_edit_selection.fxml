@@ -1,20 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.*?>
-<?import javafx.scene.shape.*?>
 
-<ScrollPane fitToWidth="true" hbarPolicy="AS_NEEDED" vbarPolicy="NEVER"
-          stylesheets="@../css/client_edit_selection.css"
-          styleClass="directory-master-scroll"
-          xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1"
-          fx:controller="controller.ClientEditSelectionController">
-
-    <VBox spacing="0" styleClass="client-directory-root"
-          onMouseClicked="#handleRootClick"
-          focusTraversable="true"
-          minWidth="1100">
+<VBox spacing="0" styleClass="client-directory-root"
+      onMouseClicked="#handleRootClick"
+      stylesheets="@../css/client_edit_selection.css"
+      focusTraversable="true"
+      xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="controller.ClientEditSelectionController"
+      minWidth="600">
 
     <!-- BREADCRUMBS -->
     <HBox styleClass="breadcrumb-container" alignment="CENTER_LEFT">
@@ -43,21 +38,36 @@
         <ComboBox fx:id="riskCombo" promptText="All Risk Level" styleClass="filter-combo" />
     </HBox>
 
-    <!-- LIST HEADER -->
-    <HBox styleClass="directory-header" alignment="CENTER_LEFT">
-        <HBox minWidth="220" prefWidth="220" alignment="CENTER_LEFT"><Label text="CLIENT" styleClass="header-label"/></HBox>
-        <HBox minWidth="160" prefWidth="160" alignment="CENTER"><Label text="PRIMARY CONTACT" styleClass="header-label"/></HBox>
-        <HBox minWidth="150" prefWidth="150" alignment="CENTER_LEFT"><Label text="PHONE" styleClass="header-label"/></HBox>
-        <HBox minWidth="200" prefWidth="200" alignment="CENTER_LEFT"><Label text="EMAIL" styleClass="header-label"/></HBox>
-        <HBox minWidth="100" prefWidth="100" alignment="CENTER_LEFT"><Label text="RISK LEVEL" styleClass="header-label"/></HBox>
-        <HBox minWidth="100" prefWidth="100" alignment="CENTER"><Label text="STATUS" styleClass="header-label"/></HBox>
-        <HBox minWidth="150" prefWidth="150" alignment="CENTER"><Label text="ACTIONS" styleClass="header-label"/></HBox>
-    </HBox>
+    <!-- SYNCHRONIZED SCROLL AREA -->
+    <ScrollPane hbarPolicy="AS_NEEDED" vbarPolicy="NEVER" fitToHeight="true" fitToWidth="false" VBox.vgrow="ALWAYS" styleClass="directory-master-hscroll">
+        <VBox minWidth="1160" spacing="0">
+            <padding><Insets top="15"/></padding>
+            <!-- LIST HEADER -->
+            <GridPane styleClass="directory-header">
+                <columnConstraints>
+                    <ColumnConstraints minWidth="250" prefWidth="250" />
+                    <ColumnConstraints minWidth="200" prefWidth="200" />
+                    <ColumnConstraints minWidth="120" prefWidth="120" />
+                    <ColumnConstraints minWidth="220" prefWidth="220" />
+                    <ColumnConstraints minWidth="120" prefWidth="120" />
+                    <ColumnConstraints minWidth="100" prefWidth="100" />
+                    <ColumnConstraints hgrow="ALWAYS" minWidth="150" prefWidth="150" />
+                </columnConstraints>
+                <Label text="CLIENT" styleClass="header-label" GridPane.columnIndex="0"/>
+                <Label text="PRIMARY CONTACT" styleClass="header-label" GridPane.columnIndex="1"/>
+                <Label text="PHONE" styleClass="header-label" GridPane.columnIndex="2" alignment="CENTER" maxWidth="Infinity"/>
+                <Label text="EMAIL" styleClass="header-label" GridPane.columnIndex="3" alignment="CENTER" maxWidth="Infinity"/>
+                <Label text="RISK LEVEL" styleClass="header-label" GridPane.columnIndex="4"/>
+                <Label text="STATUS" styleClass="header-label" GridPane.columnIndex="5"/>
+                <Label text="ACTIONS" styleClass="header-label" GridPane.columnIndex="6" alignment="CENTER" maxWidth="Infinity"/>
+            </GridPane>
 
-    <!-- CLIENT LIST -->
-    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS" styleClass="directory-scroll">
-        <VBox fx:id="clientListContainer" spacing="0">
-            <!-- Data will be populated by controller -->
+            <!-- CLIENT LIST (Vertical Only) -->
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS" styleClass="directory-scroll">
+                <VBox fx:id="clientListContainer" spacing="0">
+                    <!-- Data will be populated by controller -->
+                </VBox>
+            </ScrollPane>
         </VBox>
     </ScrollPane>
 
@@ -80,6 +90,4 @@
             </HBox>
         </HBox>
     </HBox>
-
-    </VBox>
-</ScrollPane>
+</VBox>

@@ -124,7 +124,7 @@ public class ClientRepository {
 	private void openEditClient(Client client) {
 		System.out.println("Edit client: " + client.getId());
 
-		// NEXT STEP: load edit_client.fxml and pass the client data
+		// NEXT STEP: load client_form.fxml and pass the client data
 	}
 
 	public boolean update(Client client) {

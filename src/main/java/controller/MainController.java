@@ -868,7 +868,7 @@ public class MainController implements Initializable {
         Interpolator premiumEasing = Interpolator.SPLINE(0.25, 0.1, 0.25, 1.0);
 
 		anim = new Timeline(
-				new KeyFrame(Duration.millis(300), 
+				new KeyFrame(Duration.millis(200), 
 						new KeyValue(sidebarStack.prefWidthProperty(), width, premiumEasing),
 						new KeyValue(sidebarStack.minWidthProperty(), width, premiumEasing),
 						new KeyValue(sidebarStack.maxWidthProperty(), width, premiumEasing)));
@@ -889,7 +889,7 @@ public class MainController implements Initializable {
             submenu.setTranslateY(-10);
 
             Timeline expand = new Timeline(
-                new KeyFrame(Duration.millis(350), 
+                new KeyFrame(Duration.millis(250), 
                     new KeyValue(submenu.maxHeightProperty(), 350, Interpolator.EASE_OUT),
                     new KeyValue(submenu.opacityProperty(), 1, Interpolator.EASE_OUT),
                     new KeyValue(submenu.translateYProperty(), 0, Interpolator.EASE_OUT)
@@ -897,7 +897,7 @@ public class MainController implements Initializable {
             );
             
             if (chevron != null) {
-                expand.getKeyFrames().add(new KeyFrame(Duration.millis(350), 
+                expand.getKeyFrames().add(new KeyFrame(Duration.millis(250), 
                     new KeyValue(chevron.rotateProperty(), 180, Interpolator.EASE_OUT)));
             }
             
@@ -1044,8 +1044,8 @@ public class MainController implements Initializable {
                 
                 // RESTORE VISIBILITY ON BACK
                 boolean isDetailView = prevState.getFxmlPath() != null && 
-                                     (prevState.getFxmlPath().contains("client_profile") || 
-                                      prevState.getFxmlPath().contains("edit_client"));
+                                      (prevState.getFxmlPath().contains("client_profile") || 
+                                       prevState.getFxmlPath().contains("client_form"));
                 if (pageTitle != null) {
                     pageTitle.setVisible(isDetailView);
                     pageTitle.setManaged(isDetailView);
@@ -1090,9 +1090,24 @@ public class MainController implements Initializable {
 	private void loadAddClient() {
 		highlightActiveMenu(clientsBtn);
 		highlightSubmenu(addClientSubBtn);
-		loadCenterScreen("/fxml/add_client.fxml",
-				"Loading Dashboard...",
-				"Please wait");
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/client_form.fxml"));
+            Parent view = loader.load();
+            ClientFormController controller = loader.getController();
+            controller.setClientData(null); // Mode: ADD
+            
+            centerContentHost.getChildren().setAll(view);
+            if (pageTitle != null) {
+                pageTitle.setVisible(true);
+                pageTitle.setManaged(true);
+                setPageTitle("Register New Client");
+            }
+            
+            utils.NavigationManager.getInstance().push("/fxml/client_form.fxml", "Add Client", "New Registration", clientsSubmenu.getId());
+            utils.NavigationManager.getInstance().updateCurrentState(view, controller);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 	}
 
 	@FXML
@@ -1170,9 +1185,9 @@ public class MainController implements Initializable {
     public void loadEditClient(model.Client client) {
         if (client == null) return;
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/edit_client.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/client_form.fxml"));
             Parent view = loader.load();
-            EditClientController controller = loader.getController();
+            ClientFormController controller = loader.getController();
             controller.setClientData(client);
             
             centerContentHost.getChildren().setAll(view);
@@ -1182,7 +1197,7 @@ public class MainController implements Initializable {
                 setPageTitle("Edit Client / " + client.getBusinessName());
             }
             
-            utils.NavigationManager.getInstance().push("/fxml/edit_client.fxml", "Edit Client", client.getBusinessName(), clientsSubmenu.getId());
+            utils.NavigationManager.getInstance().push("/fxml/client_form.fxml", "Edit Client", client.getBusinessName(), clientsSubmenu.getId());
             utils.NavigationManager.getInstance().updateCurrentState(view, controller);
         } catch (Exception e) {
             e.printStackTrace();

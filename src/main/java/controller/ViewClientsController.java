@@ -547,10 +547,10 @@ public class ViewClientsController implements Initializable {
 
 	private void openEditClient(Client client) {
 		try {
-			FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/edit_client.fxml"));
+			FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/client_form.fxml"));
 			Parent view = loader.load();
 
-			EditClientController controller = loader.getController();
+			ClientFormController controller = loader.getController();
 			controller.setClientData(client);
 
 			// Open inside main window

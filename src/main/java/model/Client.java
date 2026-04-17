@@ -28,6 +28,8 @@ public class Client {
     private String insight = "";
 
 	// ---------- CONSTRUCTOR ----------
+    public Client() {}
+
 	public Client(String businessName, String clientName, String nickName, String phone, String altPhone, String email,
 			String gst, String pan, String billingAddress, String shippingAddress, String notes) {
 

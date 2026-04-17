@@ -5,8 +5,29 @@
 .directory-master-scroll {
     -fx-background-color: #FAF6F0;
     -fx-background: #FAF6F0;
+    -fx-border-color: transparent;
     -fx-border-width: 0;
     -fx-padding: 0;
+}
+
+.directory-master-hscroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.directory-master-hscroll .scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.directory-master-hscroll .scroll-bar:horizontal {
+    -fx-pref-height: 12;
+}
+
+.directory-master-hscroll .scroll-bar:horizontal .thumb {
+    -fx-background-color: rgba(62, 49, 45, 0.1);
+    -fx-background-radius: 6px;
 }
 
 .client-directory-root {
@@ -151,15 +172,29 @@
 .directory-scroll {
     -fx-background-color: transparent;
     -fx-background: transparent;
+    -fx-border-color: transparent;
 }
 
 .directory-scroll .scroll-bar {
     -fx-background-color: transparent;
 }
 
+.directory-scroll .scroll-bar:vertical {
+    -fx-pref-width: 12;
+}
+
 .directory-scroll .scroll-bar .thumb {
     -fx-background-color: rgba(62, 49, 45, 0.1);
-    -fx-background-radius: 5px;
+    -fx-background-radius: 6px;
+}
+
+.directory-scroll .scroll-bar .track {
+    -fx-background-color: transparent;
+}
+
+.directory-scroll .scroll-bar .increment-button, .directory-scroll .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
 }
 
 .client-card {

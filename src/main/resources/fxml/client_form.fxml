@@ -5,16 +5,16 @@
 <?import javafx.scene.shape.*?>
 <?import javafx.geometry.Insets?>
 
-<ScrollPane fitToWidth="true" stylesheets="@../css/edit_client.css" styleClass="center-area"
+<ScrollPane fitToWidth="true" stylesheets="@../css/client_form.css" styleClass="center-area"
     xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1"
-    fx:controller="controller.EditClientController">
+    fx:controller="controller.ClientFormController">
     <VBox spacing="30" styleClass="content-container">
 
         <!-- BREADCRUMBS -->
         <HBox styleClass="breadcrumb-container">
             <Label text="CLIENTS" styleClass="breadcrumb-label" />
             <Label text="›" styleClass="breadcrumb-separator" />
-            <Label text="EDIT CLIENT" styleClass="breadcrumb-label, breadcrumb-current" />
+            <Label fx:id="breadcrumbCurrent" text="EDIT CLIENT" styleClass="breadcrumb-label, breadcrumb-current" />
         </HBox>
 
         <!-- HEADER -->
@@ -149,7 +149,7 @@
         <!-- FOOTER -->
         <HBox styleClass="footer-btn-container">
             <Button text="Cancel" styleClass="btn-cancel" onAction="#handleCancel" />
-            <Button text="Save Client" styleClass="btn-save" onAction="#handleUpdateClient">
+            <Button fx:id="btnSave" text="Save Client" styleClass="btn-save" onAction="#handleSaveClient">
                 <graphic>
                     <Region styleClass="btn-icon, icon-check" />
                 </graphic>
