@@ -148,7 +148,7 @@
 
         <!-- FOOTER -->
         <HBox styleClass="footer-btn-container">
-            <Button text="Cancel" styleClass="btn-cancel" onAction="#handleUpdateClient" />
+            <Button text="Cancel" styleClass="btn-cancel" onAction="#handleCancel" />
             <Button text="Save Client" styleClass="btn-save" onAction="#handleUpdateClient">
                 <graphic>
                     <Region styleClass="btn-icon, icon-check" />

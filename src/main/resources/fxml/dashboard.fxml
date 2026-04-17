@@ -51,6 +51,9 @@
                                         <Button fx:id="viewClientsSubBtn" onAction="#loadViewClients" styleClass="submenu-btn" text="View Clients">
                                             <graphic><Region styleClass="sidebar-icon, icon-dot"/></graphic>
                                         </Button>
+                                        <Button fx:id="editClientSubBtn" onAction="#loadEditClientSidebar" styleClass="submenu-btn" text="Edit Client">
+                                            <graphic><Region styleClass="sidebar-icon, icon-dot"/></graphic>
+                                        </Button>
                                         <Button fx:id="addClientSubBtn" onAction="#loadAddClient" styleClass="submenu-btn" text="Add Client">
                                             <graphic><Region styleClass="sidebar-icon, icon-add" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
                                         </Button>

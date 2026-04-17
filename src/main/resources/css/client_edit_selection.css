@@ -1,0 +1,328 @@
+/* =======================
+   CLIENT EDIT SELECTION - MATCHING VIEW CLIENTS AESTHETIC
+   ======================= */
+
+.client-directory-root {
+    -fx-background-color: #FAF6F0;
+    /* Soft warm beige background from view_client.css */
+    -fx-padding: 30 40;
+}
+
+/* --- BREADCRUMBS --- */
+.breadcrumb-container {
+    -fx-spacing: 8;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.breadcrumb-label {
+    -fx-text-fill: #A0836D;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-letter-spacing: 0.1em;
+}
+
+.breadcrumb-separator {
+    -fx-text-fill: #C87941;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+}
+
+.breadcrumb-current {
+    -fx-text-fill: #C87941;
+}
+
+/* --- SEARCH & FILTERS --- */
+.directory-search-field {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 20;
+    -fx-background-radius: 20;
+    -fx-padding: 8 15 8 45;
+    /* Left padding for search icon in fxml */
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter';
+    -fx-font-size: 13px;
+    -fx-pref-width: 280;
+}
+
+.directory-search-field:focused {
+    -fx-border-color: #CD7B4E;
+}
+
+.filter-combo {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 20;
+    -fx-background-radius: 20;
+    -fx-padding: 2 5;
+    -fx-cursor: hand;
+    -fx-min-height: 42;
+}
+
+.filter-combo .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #3E312D;
+}
+
+.filter-combo .cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #3E312D;
+}
+
+/* ===================== COMBO BOX DROPDOWN ===================== */
+.combo-box .list-view {
+    -fx-background-color: #FAF6F0;
+    -fx-background-radius: 12;
+    -fx-border-color: #CD7B4E;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 4;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 10, 0, 0, 5);
+}
+
+.combo-box .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #3E312D;
+    -fx-padding: 8 15;
+    -fx-font-family: 'Inter';
+    -fx-font-size: 13px;
+    -fx-background-radius: 8;
+}
+
+.combo-box .list-view .list-cell:hover {
+    -fx-background-color: #F4EAE0;
+    -fx-text-fill: #3E312D;
+}
+
+.combo-box .list-view .list-cell:selected {
+    -fx-background-color: #CD7B4E;
+    -fx-text-fill: white;
+}
+
+/* Ensure the main button cell stays transparent */
+.filter-combo>.list-cell {
+    -fx-background-color: transparent !important;
+    -fx-text-fill: #3E312D !important;
+    -fx-padding: 0 10 0 5 !important;
+}
+
+.combo-box .arrow {
+    -fx-background-color: #CD7B4E;
+}
+
+.combo-box .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 10 0 0;
+}
+
+.btn-filter-icon {
+    -fx-background-color: transparent;
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 12;
+    -fx-min-width: 42;
+    -fx-min-height: 42;
+    -fx-cursor: hand;
+}
+
+/* --- TABLE HEADER --- */
+.directory-header {
+    -fx-background-color: transparent;
+    -fx-padding: 15 25;
+    -fx-spacing: 0;
+}
+
+.header-label {
+    -fx-text-fill: #867E78;
+    -fx-font-size: 9px;
+    -fx-font-weight: 800;
+    -fx-letter-spacing: 0.1em;
+}
+
+/* --- CLIENT CARDS --- */
+.directory-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.directory-scroll .scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.directory-scroll .scroll-bar .thumb {
+    -fx-background-color: rgba(62, 49, 45, 0.1);
+    -fx-background-radius: 5px;
+}
+
+.client-card {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 20;
+    -fx-border-color: #F0EBE5;
+    -fx-border-radius: 20;
+    -fx-padding: 15 25;
+    -fx-alignment: CENTER_LEFT;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.03), 15, 0, 0, 4);
+}
+
+/* Removed zoom/hover effects as per request */
+.client-card:hover {
+    -fx-background-color: #FCFAEF;
+}
+
+.card-icon-container {
+    -fx-background-color: #FAF0E6;
+    -fx-background-radius: 12;
+    -fx-min-width: 50;
+    -fx-max-width: 50;
+    -fx-min-height: 50;
+    -fx-max-height: 50;
+    -fx-alignment: CENTER;
+}
+
+.client-business-name {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 16px;
+    -fx-font-weight: 800;
+    -fx-font-family: 'Manrope';
+}
+
+.client-sub-text {
+    -fx-text-fill: #867E78;
+    -fx-font-size: 12px;
+    -fx-font-family: 'Inter';
+}
+
+.phone-text {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+    -fx-font-family: 'Inter';
+}
+
+.email-text {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 12px;
+    -fx-font-family: 'Inter';
+}
+
+/* --- RISK & STATUS --- */
+.risk-dot {
+    -fx-min-width: 8;
+    -fx-max-width: 8;
+    -fx-min-height: 8;
+    -fx-max-height: 8;
+    -fx-background-radius: 50;
+}
+
+.status-label {
+    -fx-font-weight: 700;
+    -fx-font-size: 11px;
+    -fx-text-fill: #3E312D;
+}
+
+.status-pill-inactive {
+    -fx-background-color: #EBE5DF;
+    -fx-text-fill: #857D77;
+    -fx-padding: 4 12;
+    -fx-background-radius: 15;
+    -fx-font-weight: 700;
+    -fx-font-size: 11px;
+}
+
+/* --- PAGE HEADING --- */
+.page-heading {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 24px;
+    -fx-font-family: 'Manrope';
+    -fx-font-weight: 800;
+}
+
+/* --- ACTION BUTTONS --- */
+.btn-select-main {
+    -fx-background-color: #C16738;
+    -fx-text-fill: white;
+    -fx-font-weight: 800;
+    -fx-font-size: 12px;
+    -fx-background-radius: 10;
+    -fx-padding: 8 16;
+    -fx-cursor: hand;
+}
+
+.btn-select-dot {
+    -fx-background-color: #E2D9D2;
+    -fx-text-fill: #433934;
+    -fx-font-weight: 800;
+    -fx-font-size: 12px;
+    -fx-background-radius: 10;
+    -fx-padding: 8 16;
+    -fx-cursor: hand;
+}
+
+.btn-select-dot:hover {
+    -fx-background-color: #E2D9D2;
+}
+
+/* ===================== PAGINATION ===================== */
+.pagination-container {
+    -fx-spacing: 10;
+    -fx-alignment: CENTER;
+    -fx-padding: 20 0 0 0;
+}
+
+.footer-text {
+    -fx-text-fill: #867E78;
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+}
+
+.footer-link {
+    -fx-text-fill: #CD7B4E;
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+    -fx-underline: true;
+}
+
+.page-btn {
+    -fx-background-color: #F1EBE5;
+    -fx-text-fill: #433934;
+    -fx-font-weight: 700;
+    -fx-background-radius: 50;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-max-width: 32;
+    -fx-max-height: 32;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.page-btn-active {
+    -fx-background-color: #C16738;
+    -fx-text-fill: white;
+}
+
+.goto-label {
+    -fx-text-fill: #867E78;
+    -fx-font-size: 11px;
+    -fx-font-family: 'Inter';
+}
+
+.goto-field {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 15;
+    -fx-background-radius: 15;
+    -fx-padding: 5 10;
+    -fx-max-width: 60;
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 11px;
+    -fx-alignment: CENTER;
+    -fx-font-family: 'Inter';
+    -fx-font-weight: 700;
+}
+
+.goto-field:focused {
+    -fx-border-color: #CD7B4E;
+}

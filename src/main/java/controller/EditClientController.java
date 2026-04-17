@@ -109,4 +109,10 @@ public class EditClientController implements Initializable {
 		}
 	}
 
+	@FXML
+	private void handleCancel() {
+		// Just navigate back to selection without showing any toast
+		MainController.getInstance().loadEditClientSidebar();
+	}
+
 }

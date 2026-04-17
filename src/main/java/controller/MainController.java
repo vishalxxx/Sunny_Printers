@@ -192,6 +192,7 @@ public class MainController implements Initializable {
 
     // Submenu Buttons
     @FXML private Button viewClientsSubBtn;
+    @FXML private Button editClientSubBtn;
     @FXML private Button addClientSubBtn;
     @FXML private Button addJobSubBtn;
     @FXML private Button genInvoiceSubBtn;
@@ -1117,6 +1118,15 @@ public class MainController implements Initializable {
 		highlightSubmenu(viewClientsSubBtn);
 		loadCenterScreen("/fxml/view_client.fxml",
 				"Loading Client Directory...",
+				"Please wait");
+	}
+
+	@FXML
+	public void loadEditClientSidebar() {
+		highlightActiveMenu(clientsBtn);
+		highlightSubmenu(editClientSubBtn);
+		loadCenterScreen("/fxml/client_edit_selection.fxml",
+				"Loading Client Selection...",
 				"Please wait");
 	}
 
