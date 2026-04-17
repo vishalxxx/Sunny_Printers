@@ -14,6 +14,29 @@
     -fx-background-color: #FAF6F0;
 }
 
+/* --- BREADCRUMBS --- */
+.breadcrumb-container {
+    -fx-spacing: 8;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.breadcrumb-label {
+    -fx-text-fill: #A0836D;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-letter-spacing: 0.1em;
+}
+
+.breadcrumb-separator {
+    -fx-text-fill: #C87941;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+}
+
+.breadcrumb-current {
+    -fx-text-fill: #C87941;
+}
+
 /* --- HEADER --- */
 .client-avatar-large {
     -fx-background-color: #FFFFFF;

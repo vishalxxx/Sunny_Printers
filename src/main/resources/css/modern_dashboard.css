@@ -377,7 +377,7 @@
     -fx-background-color: white;
     -fx-background-radius: 50;
     -fx-padding: 10 24;
-    -fx-effect: dropshadow(three-pass-box, rgba(160,140,120,0.15), 15, 0, 0, 2);
+    -fx-effect: none;
     -fx-border-color: #EFECD9;
     -fx-border-radius: 50;
     -fx-border-width: 1.5;
@@ -522,14 +522,21 @@
     -fx-border-color: #EBE7DE;
     -fx-border-radius: 15;
     -fx-cursor: hand;
-    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 8, 0, 0, 2);
+    -fx-effect: none;
 }
 
 .record-payment-btn:hover {
     -fx-background-color: #FAF9F6;
-    -fx-effect: dropshadow(three-pass-box, rgba(198, 90, 30, 0.15), 15, 0, 0, 5);
+    -fx-border-color: #D6D1C9;
+    -fx-effect: none;
     -fx-scale-x: 1.02;
     -fx-scale-y: 1.02;
+}
+
+.record-payment-btn:pressed {
+    -fx-scale-x: 0.98;
+    -fx-scale-y: 0.98;
+    -fx-background-color: #F1F0EA;
 }
 
 .activity-icon-container {
@@ -602,26 +609,35 @@
 /* Taste Design: Modern ComboBox */
 .modern-combo {
     -fx-background-color: white;
-    -fx-background-radius: 12;
+    -fx-background-radius: 50; /* Pill shape */
+    -fx-background-insets: 0; /* Nuke default JavaFX layers */
     -fx-border-color: #E8E4D9;
-    -fx-border-radius: 12;
+    -fx-border-radius: 50;
     -fx-border-width: 1.5;
-    -fx-padding: 0 5;
-    -fx-font-weight: 700;
-    -fx-font-size: 12px;
-    -fx-text-fill: -fx-text-dark;
+    -fx-padding: 0 10;
+    -fx-font-weight: 800;
+    -fx-font-size: 11px;
+    -fx-text-fill: #5D6D7E;
     -fx-cursor: hand;
-    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 8, 0, 0, 2);
+    -fx-effect: none;
 }
 
 .modern-combo:focused, .modern-combo:showing {
     -fx-background-color: white;
     -fx-border-color: -fx-primary;
+    -fx-effect: none;
 }
 
 .modern-combo:hover {
-    -fx-border-color: -fx-primary;
-    -fx-effect: dropshadow(three-pass-box, rgba(200, 121, 65, 0.1), 10, 0, 0, 4);
+    -fx-border-color: #D6D1C9;
+    -fx-background-color: #FAF9F6;
+    -fx-effect: none;
+}
+
+.modern-combo:pressed {
+    -fx-scale-x: 0.98;
+    -fx-scale-y: 0.98;
+    -fx-background-color: #F1F0EA;
 }
 
 .modern-combo .label {

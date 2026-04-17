@@ -14,6 +14,16 @@
         <Insets top="10" right="40" bottom="10" left="40" />
     </padding>
 
+    <!-- BREADCRUMBS -->
+    <HBox styleClass="breadcrumb-container" alignment="CENTER_LEFT">
+        <VBox.margin>
+            <Insets bottom="5"/>
+        </VBox.margin>
+        <Label text="CLIENTS" styleClass="breadcrumb-label" />
+        <Label text="›" styleClass="breadcrumb-separator" />
+        <Label text="DIRECTORY" styleClass="breadcrumb-label, breadcrumb-current" />
+    </HBox>
+
     <!-- HEADER & KPIs ROW -->
     <HBox spacing="40" alignment="CENTER_LEFT">
         <!-- Titles -->

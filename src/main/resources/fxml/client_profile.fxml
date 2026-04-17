@@ -11,6 +11,13 @@
             <Insets top="20" right="30" bottom="20" left="30"/>
         </padding>
 
+        <!-- BREADCRUMBS -->
+        <HBox styleClass="breadcrumb-container" alignment="CENTER_LEFT">
+            <Label text="CLIENTS" styleClass="breadcrumb-label" />
+            <Label text="›" styleClass="breadcrumb-separator" />
+            <Label text="CLIENT PROFILE" styleClass="breadcrumb-label, breadcrumb-current" />
+        </HBox>
+
         <!-- HEADER SECTION -->
         <HBox alignment="CENTER_LEFT" spacing="20">
             <StackPane styleClass="client-avatar-large">

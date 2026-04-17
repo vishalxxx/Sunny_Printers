@@ -2,105 +2,158 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.geometry.*?>
+<?import javafx.scene.shape.*?>
+<?import javafx.geometry.Insets?>
 
-<ScrollPane xmlns="http://javafx.com/javafx"
-	xmlns:fx="http://javafx.com/fxml"
-	fx:controller="controller.EditClientController" fitToWidth="true"
-	stylesheets="@../css/edit_client.css" styleClass="center-area">
+<ScrollPane fitToWidth="true" stylesheets="@../css/edit_client.css" styleClass="center-area"
+    xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1"
+    fx:controller="controller.EditClientController">
+    <VBox spacing="30" styleClass="content-container">
 
-	<content>
-		<VBox spacing="25" fillWidth="true">
+        <!-- BREADCRUMBS -->
+        <HBox styleClass="breadcrumb-container">
+            <Label text="CLIENTS" styleClass="breadcrumb-label" />
+            <Label text="›" styleClass="breadcrumb-separator" />
+            <Label text="EDIT CLIENT" styleClass="breadcrumb-label, breadcrumb-current" />
+        </HBox>
 
-			<!-- TITLE -->
-			<Label text="Edit Client Details" styleClass="dashboard-title" />
+        <!-- HEADER -->
+        <HBox styleClass="header-row">
+            <Label fx:id="lblTitleName" text="Business Name" styleClass="profile-title"
+                HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+            <VBox alignment="TOP_RIGHT">
+                <Label text="CLIENT ID" styleClass="client-id-label" />
+                <Label fx:id="lblClientId" text="#CL-0000" styleClass="client-id-value" />
+            </VBox>
+        </HBox>
 
-			<!-- FORM -->
-			<GridPane hgap="18" vgap="18" styleClass="form-grid">
+        <VBox spacing="25" fillWidth="true">
+            <!-- BASIC INFO -->
+            <VBox styleClass="form-card">
+                <HBox styleClass="card-header">
+                    <Region styleClass="card-icon, icon-basic" />
+                    <Label text="Basic Information" styleClass="card-title" />
+                </HBox>
 
-				<columnConstraints>
-					<ColumnConstraints percentWidth="30" />
-					<ColumnConstraints percentWidth="70" />
-				</columnConstraints>
+                <VBox spacing="18">
+                    <VBox>
+                        <Label text="BUSINESS NAME" styleClass="field-label" />
+                        <TextField fx:id="businessNameField" styleClass="form-input"
+                            promptText="Enter business name" />
+                    </VBox>
+                    <HBox spacing="15">
+                        <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
+                            <Label text="CLIENT NAME" styleClass="field-label" />
+                            <TextField fx:id="clientNameField" styleClass="form-input"
+                                promptText="Full name" />
+                        </VBox>
+                        <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
+                            <Label text="NICK NAME" styleClass="field-label" />
+                            <TextField fx:id="nickNameField" styleClass="form-input"
+                                promptText="Optional" />
+                        </VBox>
+                    </HBox>
+                </VBox>
+            </VBox>
 
-				<!-- Business Name -->
-				<Label text="Business Name:" GridPane.rowIndex="0"
-					styleClass="form-label" />
-				<TextField fx:id="businessNameField" GridPane.rowIndex="0"
-					GridPane.columnIndex="1" styleClass="form-input" />
+            <!-- CONTACT DETAILS -->
+            <VBox styleClass="form-card">
+                <HBox styleClass="card-header">
+                    <Region styleClass="card-icon, icon-contact" />
+                    <Label text="Contact Details" styleClass="card-title" />
+                </HBox>
 
-				<!-- Client Name -->
-				<Label text="Client Name:" GridPane.rowIndex="1"
-					styleClass="form-label" />
-				<TextField fx:id="clientNameField" GridPane.rowIndex="1"
-					GridPane.columnIndex="1" styleClass="form-input" />
+                <VBox spacing="18">
+                    <HBox spacing="15">
+                        <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
+                            <Label text="PHONE NUMBER" styleClass="field-label" />
+                            <TextField fx:id="phoneField" styleClass="form-input"
+                                promptText="+91 0000 0000" />
+                        </VBox>
+                        <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
+                            <Label text="ALT. PHONE" styleClass="field-label" />
+                            <TextField fx:id="altPhoneField" styleClass="form-input"
+                                promptText="Optional" />
+                        </VBox>
+                    </HBox>
+                    <VBox styleClass="input-container-inset">
+                        <Label text="EMAIL ADDRESS" styleClass="field-label" />
+                        <TextField fx:id="emailField" styleClass="form-input"
+                            promptText="email@business.com" />
+                    </VBox>
+                </VBox>
+            </VBox>
 
-				<!-- Nickname -->
-				<Label text="Nick Name:" GridPane.rowIndex="2"
-					styleClass="form-label" />
-				<TextField fx:id="nickNameField" GridPane.rowIndex="2"
-					GridPane.columnIndex="1" styleClass="form-input" />
+            <!-- BUSINESS & TAX INFO -->
+            <VBox styleClass="form-card">
+                <HBox styleClass="card-header">
+                    <Region styleClass="card-icon, icon-tax" />
+                    <Label text="Business &amp; Tax Info" styleClass="card-title" />
+                </HBox>
 
-				<!-- Phone -->
-				<Label text="Phone Number:" GridPane.rowIndex="3"
-					styleClass="form-label" />
-				<TextField fx:id="phoneField" GridPane.rowIndex="3"
-					GridPane.columnIndex="1" styleClass="form-input" />
+                <HBox spacing="20">
+                    <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
+                        <Label text="GST NUMBER" styleClass="field-label" />
+                        <TextField fx:id="gstField" styleClass="form-input"
+                            promptText="22AAAAA0000A1Z5" />
+                    </VBox>
+                    <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
+                        <Label text="PAN NUMBER" styleClass="field-label" />
+                        <TextField fx:id="panField" styleClass="form-input" promptText="ABCDE1234F" />
+                    </VBox>
+                </HBox>
+            </VBox>
 
-				<!-- Alt Phone -->
-				<Label text="Alt Phone:" GridPane.rowIndex="4"
-					styleClass="form-label" />
-				<TextField fx:id="altPhoneField" GridPane.rowIndex="4"
-					GridPane.columnIndex="1" styleClass="form-input" />
+            <!-- ADDRESS DETAILS -->
+            <VBox styleClass="form-card">
+                <HBox styleClass="card-header" alignment="CENTER_LEFT">
+                    <Region styleClass="card-icon, icon-address" />
+                    <Label text="Address Details" styleClass="card-title" />
+                    <Region HBox.hgrow="ALWAYS" />
+                    <Label text="Same as Billing Address" styleClass="switch-label" />
+                    <ToggleButton fx:id="syncAddressToggle" styleClass="ios-toggle">
+                        <graphic><Region styleClass="toggle-thumb" /></graphic>
+                        <HBox.margin><Insets right="15" /></HBox.margin>
+                    </ToggleButton>
+                </HBox>
 
-				<!-- Email -->
-				<Label text="Email:" GridPane.rowIndex="5"
-					styleClass="form-label" />
-				<TextField fx:id="emailField" GridPane.rowIndex="5"
-					GridPane.columnIndex="1" styleClass="form-input" />
+                <HBox spacing="30">
+                    <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
+                        <Label text="BILLING ADDRESS" styleClass="field-label" />
+                        <TextArea fx:id="billingAddressField" styleClass="form-textarea"
+                            prefHeight="100" promptText="Enter full billing address" wrapText="true" />
+                    </VBox>
+                    <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
+                        <Label text="SHIPPING ADDRESS" styleClass="field-label" />
+                        <TextArea fx:id="shippingAddressField" styleClass="form-textarea"
+                            prefHeight="100" promptText="Enter full shipping address"
+                            wrapText="true" />
+                    </VBox>
+                </HBox>
+            </VBox>
 
-				<!-- GST -->
-				<Label text="GST Number:" GridPane.rowIndex="6"
-					styleClass="form-label" />
-				<TextField fx:id="gstField" GridPane.rowIndex="6"
-					GridPane.columnIndex="1" styleClass="form-input" />
+            <!-- NOTES -->
+            <VBox styleClass="form-card">
+                <HBox styleClass="card-header">
+                    <Region styleClass="card-icon, icon-notes" />
+                    <Label text="Internal Notes" styleClass="card-title" />
+                </HBox>
+                <VBox styleClass="input-container-inset">
+                    <Label text="CONFIDENTIAL NOTES" styleClass="field-label" />
+                    <TextArea fx:id="notesField" styleClass="form-textarea" prefHeight="100"
+                        promptText="Any specific reminders for this client..." wrapText="true" />
+                </VBox>
+            </VBox>
+        </VBox>
 
-				<!-- PAN -->
-				<Label text="PAN Number:" GridPane.rowIndex="7"
-					styleClass="form-label" />
-				<TextField fx:id="panField" GridPane.rowIndex="7"
-					GridPane.columnIndex="1" styleClass="form-input" />
-
-				<!-- Billing Address -->
-				<Label text="Billing Address:" GridPane.rowIndex="8"
-					styleClass="form-label" />
-				<TextArea fx:id="billingAddressField" GridPane.rowIndex="8"
-					GridPane.columnIndex="1" prefRowCount="3"
-					styleClass="form-textarea" />
-
-				<!-- Shipping Address -->
-				<Label text="Shipping Address:" GridPane.rowIndex="9"
-					styleClass="form-label" />
-				<TextArea fx:id="shippingAddressField"
-					GridPane.rowIndex="9" GridPane.columnIndex="1" prefRowCount="3"
-					styleClass="form-textarea" />
-
-				<!-- Notes -->
-				<Label text="Notes:" GridPane.rowIndex="10"
-					styleClass="form-label" />
-				<TextArea fx:id="notesField" GridPane.rowIndex="10"
-					GridPane.columnIndex="1" prefRowCount="2"
-					styleClass="form-textarea" />
-
-			</GridPane>
-
-			<!-- Update Button -->
-			<HBox alignment="CENTER">
-				<Button text="Update Client" styleClass="primary-button"
-					onAction="#handleUpdateClient" />
-			</HBox>
-
-		</VBox>
-	</content>
-
+        <!-- FOOTER -->
+        <HBox styleClass="footer-btn-container">
+            <Button text="Cancel" styleClass="btn-cancel" onAction="#handleUpdateClient" />
+            <Button text="Save Client" styleClass="btn-save" onAction="#handleUpdateClient">
+                <graphic>
+                    <Region styleClass="btn-icon, icon-check" />
+                </graphic>
+            </Button>
+        </HBox>
+    </VBox>
 </ScrollPane>

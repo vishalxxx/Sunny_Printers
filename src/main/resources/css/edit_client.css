@@ -1,93 +1,219 @@
 /* ===========================================================
-   EDIT CLIENT SCREEN THEME
-   Matches Add Client + Dashboard style
+   STITCH DESIGN SYSTEM - EDIT CLIENT
+   Editorial, Warm Beige, Sophisticated Typography
    =========================================================== */
 
-.scroll-pane {
-    -fx-background-color: transparent;
-}
-
-.scroll-pane > .viewport {
-    -fx-background-color: transparent;
-}
-
 .center-area {
-    -fx-padding: 2em;
-    -fx-spacing: 1.5em;
-    -fx-background-color: transparent;
+    -fx-background-color: #FAF6F0;
 }
 
-/* ======================= TITLE ========================== */
-
-.dashboard-title {
-	-fx-text-fill: #ffffff;
-	    -fx-font-size: 1.6em;
-	    -fx-font-weight: bold;
+.center-area > .viewport {
+    -fx-background-color: #FAF6F0;
 }
 
-/* ======================= FORM GRID ====================== */
-
-.form-grid {
-    -fx-padding: 1.5em;
-    -fx-hgap: 20;
-    -fx-vgap: 20;
-    -fx-background-color: #181818;
-    -fx-background-radius: 12px;
-    -fx-border-color: #303030;
-    -fx-border-radius: 12px;
-    -fx-border-width: 1px;
+.content-container {
+    -fx-padding: 30 40;
+    -fx-background-color: #FAF6F0;
 }
 
-/* ======================= LABELS ========================= */
-
-.form-label {
-    -fx-text-fill: #dcdcdc;
-    -fx-font-size: 1.05em;
-    -fx-font-weight: bold;
+/* --- BREADCRUMBS --- */
+.breadcrumb-container {
+    -fx-spacing: 8;
+    -fx-alignment: CENTER_LEFT;
 }
 
-/* ======================= INPUT FIELDS =================== */
+.breadcrumb-label {
+    -fx-text-fill: #9F9085;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-letter-spacing: 0.1em;
+}
+
+.breadcrumb-separator {
+    -fx-text-fill: #C87941;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+}
+
+.breadcrumb-current {
+    -fx-text-fill: #C87941;
+}
+
+/* --- HEADER --- */
+.header-row {
+    -fx-alignment: CENTER_LEFT;
+}
+
+.profile-title {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 28px;
+    -fx-font-weight: 800;
+    -fx-font-family: 'Manrope';
+}
+
+.client-id-label {
+    -fx-text-fill: #9F9085;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+}
+
+.client-id-value {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 16px;
+    -fx-font-weight: 800;
+    -fx-font-family: 'Manrope';
+}
+
+/* --- CARDS --- */
+.form-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 20;
+    -fx-padding: 35;
+    -fx-spacing: 28;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.02), 25, 0, 0, 10);
+}
+
+.card-header {
+    -fx-spacing: 12;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.card-icon {
+    -fx-background-color: #C87941;
+    -fx-min-width: 20;
+    -fx-min-height: 20;
+    -fx-max-width: 20;
+    -fx-max-height: 20;
+}
+
+.card-title {
+    -fx-text-fill: #00302E; /* Dark Teal for headers */
+    -fx-font-size: 20px;
+    -fx-font-weight: 800;
+}
+
+/* --- INPUTS (Refined for "Taste") --- */
+.input-group {
+    -fx-spacing: 8;
+}
+
+.field-label {
+    -fx-text-fill: #9F9085;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-letter-spacing: 0.05em;
+}
 
 .form-input, .form-textarea {
-    -fx-background-color: #282828;
-    -fx-text-fill: #f5f5f5;
-    -fx-prompt-text-fill: #999;
-    -fx-background-radius: 8px;
-    -fx-border-color: #3a3a3a;
-    -fx-border-radius: 8px;
-    -fx-border-width: 1;
-    -fx-padding: 8px;
+    -fx-background-color: #F8F9FA; /* Default grey background */
+    -fx-background-radius: 8;
+    -fx-border-color: transparent; /* No border by default */
+    -fx-border-width: 2;
+    -fx-border-radius: 8;
+    -fx-padding: 10 14;
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-prompt-text-fill: #9F9085;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.form-textarea {
+    -fx-background-color: #F8F9FA;
+    -fx-background-insets: 0;
+    -fx-background-radius: 8;
+    -fx-border-color: transparent;
+    -fx-border-radius: 8;
+    -fx-border-width: 2;
+    -fx-padding: 0; /* Padding will be on .content */
+}
+
+.form-textarea .content {
+    -fx-background-color: #F8F9FA;
+    -fx-background-radius: 8;
+    -fx-background-insets: 0;
+    -fx-padding: 12 16;
 }
 
 .form-input:focused, .form-textarea:focused {
-    -fx-border-color: #5fa8ff;
-    -fx-background-color: #2f2f2f;
+    -fx-background-color: white;
+    -fx-border-color: #C87941;
 }
 
-/* ======================= UPDATE BUTTON ================= */
+.form-textarea:focused .content {
+    -fx-background-color: white;
+}
 
-.primary-button {
-    -fx-background-color: linear-gradient(to bottom, #4a90e2, #357ab7);
-    -fx-background-radius: 10px;
-    -fx-padding: 14px 34px;
-    -fx-text-fill: white;
-    -fx-font-size: 1.2em;
-    -fx-font-weight: bold;
-    -fx-effect: dropshadow(gaussian, #00000055, 10, 0.4, 0, 2);
+/* --- TOGGLE SWITCH (Stitch Style) --- */
+.switch-label {
+    -fx-text-fill: #5D6D7E; /* Slate grey from image */
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.ios-toggle {
+    -fx-background-color: #D1CEC6; /* Off state */
+    -fx-background-radius: 30;
+    -fx-min-width: 44;
+    -fx-max-width: 44;
+    -fx-min-height: 22;
+    -fx-max-height: 22;
+    -fx-cursor: hand;
+    -fx-padding: 0;
+}
+
+.ios-toggle:selected {
+    -fx-background-color: #C34B19; /* On state */
+}
+
+.ios-toggle .toggle-thumb {
+    -fx-background-color: white;
+    -fx-background-radius: 20;
+    -fx-min-width: 14;
+    -fx-max-width: 14;
+    -fx-min-height: 14;
+    -fx-max-height: 14;
+    -fx-translate-x: -11; /* Left position */
+}
+
+.ios-toggle:selected .toggle-thumb {
+    -fx-translate-x: 11; /* Right position */
+}
+
+/* --- FOOTER --- */
+.footer-btn-container {
+    -fx-padding: 30 0 0 0;
+    -fx-spacing: 20;
+    -fx-alignment: CENTER_RIGHT;
+}
+
+.btn-cancel {
+    -fx-background-color: transparent;
+    -fx-text-fill: #9F9085;
+    -fx-font-weight: 800;
+    -fx-font-size: 14px;
+    -fx-padding: 10 20;
     -fx-cursor: hand;
 }
 
-.primary-button:hover {
-    -fx-background-color: linear-gradient(to bottom, #5ba4ff, #3d86c9);
+.btn-save {
+    -fx-background-color: #C87941;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-weight: 800;
+    -fx-font-size: 14px;
+    -fx-background-radius: 12;
+    -fx-padding: 12 28;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(three-pass-box, rgba(200, 121, 65, 0.3), 15, 0, 0, 6);
 }
 
-.primary-button:pressed {
-    -fx-background-color: linear-gradient(to bottom, #3369aa, #27558a);
-}
+.btn-save:hover { -fx-background-color: #D48B5A; }
 
-/* ======================= TEXTAREA ======================= */
-
-.form-textarea {
-    -fx-control-inner-background: #282828;
-    -fx-padding: 10px;
-}
+/* --- ICONS --- */
+.icon-basic { -fx-shape: "M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"; }
+.icon-contact { -fx-shape: "M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"; }
+.icon-tax { -fx-shape: "M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"; }
+.icon-address { -fx-shape: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"; }
+.icon-notes { -fx-shape: "M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"; }
+.icon-check { -fx-shape: "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"; }

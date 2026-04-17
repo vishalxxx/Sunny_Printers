@@ -7,6 +7,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Label;
 import javafx.stage.Stage;
 import model.Client;
 import repository.ClientRepository;
@@ -15,6 +16,11 @@ import utils.Toast;
 public class EditClientController implements Initializable {
 
 	private Client selectedClient;
+
+	@FXML
+	private Label lblTitleName;
+	@FXML
+	private Label lblClientId;
 
 	@FXML
 	private TextField businessNameField;
@@ -49,6 +55,9 @@ public class EditClientController implements Initializable {
 	// This method is called from ViewClientsController
 	public void setClientData(Client client) {
 		this.selectedClient = client;
+
+        if (lblTitleName != null) lblTitleName.setText(client.getBusinessName());
+        if (lblClientId != null) lblClientId.setText("#CL-" + client.getId());
 
 		businessNameField.setText(client.getBusinessName());
 		clientNameField.setText(client.getClientName());
