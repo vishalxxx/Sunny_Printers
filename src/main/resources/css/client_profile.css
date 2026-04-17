@@ -323,6 +323,44 @@
     -fx-font-size: 18px;
     -fx-font-weight: 900;
     -fx-cursor: hand;
+    -fx-padding: 0 10;
+}
+
+.action-dots:hover {
+    -fx-text-fill: #C87941;
+}
+
+/* Context Menu Styling - Matching App Dropdowns */
+.context-menu {
+    -fx-background-color: #FAF6F0;
+    -fx-background-radius: 12;
+    -fx-border-color: #CD7B4E;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 5;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.15), 15, 0, 0, 6);
+}
+
+.context-menu .menu-item {
+    -fx-background-color: transparent;
+    -fx-padding: 8 15;
+    -fx-background-radius: 8;
+}
+
+.context-menu .menu-item .label {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+
+.context-menu .menu-item:focused, 
+.context-menu .menu-item:hover {
+    -fx-background-color: #F4EAE0;
+}
+
+.context-menu .menu-item:focused .label,
+.context-menu .menu-item:hover .label {
+    -fx-text-fill: #CD7B4E;
 }
 
 /* Status Pills for History */

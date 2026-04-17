@@ -8,6 +8,8 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.geometry.Pos;
+import javafx.geometry.Side;
+import javafx.scene.Cursor;
 import javafx.application.Platform;
 import model.Client;
 import model.Invoice;
@@ -321,6 +323,22 @@ public class ClientProfileController implements Initializable {
         actionDots.getStyleClass().add("action-dots");
         actionDots.setPrefWidth(60);
         actionDots.setAlignment(Pos.CENTER);
+        actionDots.setCursor(Cursor.HAND);
+
+        // Action Menu
+        ContextMenu contextMenu = new ContextMenu();
+        MenuItem viewItem = new MenuItem("View Details");
+        MenuItem downloadItem = new MenuItem("Download Receipt");
+        contextMenu.getItems().addAll(viewItem, downloadItem);
+
+        viewItem.setOnAction(e -> {
+            System.out.println("Viewing details for invoice: " + inv.getInvoiceNo());
+            // Future: MainController.getInstance().loadInvoiceDetails(inv.getInvoiceNo());
+        });
+
+        actionDots.setOnMouseClicked(e -> {
+            contextMenu.show(actionDots, Side.BOTTOM, 0, 0);
+        });
 
         row.getChildren().addAll(idLabel, dateLabel, amountLabel, pillContainer, actionDots);
         return row;
