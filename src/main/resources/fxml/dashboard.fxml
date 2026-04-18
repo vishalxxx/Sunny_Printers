@@ -49,16 +49,13 @@
                                     </Button>
                                     <VBox fx:id="clientsSubmenu" visible="false" managed="false" spacing="5" styleClass="submenu-container">
                                         <Button fx:id="viewClientsSubBtn" onAction="#loadViewClients" styleClass="submenu-btn" text="View Clients">
-                                            <graphic><Region styleClass="sidebar-icon, icon-dot"/></graphic>
+                                            <graphic><Region styleClass="sidebar-icon, icon-search" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
                                         </Button>
                                         <Button fx:id="editClientSubBtn" onAction="#loadEditClientSidebar" styleClass="submenu-btn" text="Edit Client">
-                                            <graphic><Region styleClass="sidebar-icon, icon-dot"/></graphic>
+                                            <graphic><Region styleClass="sidebar-icon, icon-brush" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
                                         </Button>
                                         <Button fx:id="addClientSubBtn" onAction="#loadAddClient" styleClass="submenu-btn" text="Add Client">
                                             <graphic><Region styleClass="sidebar-icon, icon-add" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
-                                        </Button>
-                                        <Button onAction="#loadClientLedger" styleClass="submenu-btn" text="Client Reports">
-                                            <graphic><Region styleClass="sidebar-icon, icon-ledger" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
                                         </Button>
                                     </VBox>
                                 </VBox>

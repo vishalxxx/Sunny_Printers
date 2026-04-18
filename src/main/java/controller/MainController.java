@@ -906,7 +906,11 @@ public class MainController implements Initializable {
             }
             
             if (onFinished != null) {
-                expand.setOnFinished(e -> onFinished.run());
+                // ✅ Only run the default child screen loader if this parent isn't already the active section.
+                // This prevents clicking a parent after a collapse/expand cycle from resetting the child view.
+                if (activeParent != parentBtn) {
+                    expand.setOnFinished(e -> onFinished.run());
+                }
             }
             
             expand.play();
