@@ -30,10 +30,12 @@
     -fx-text-fill: #4A4B46; /* Dark olive-grey text for unselected state */
     -fx-font-weight: 700;
     -fx-font-size: 13px;
-    -fx-padding: 10 16 10 12; 
+    -fx-padding: 8 16 8 12; 
     -fx-background-radius: 20;
     -fx-alignment: CENTER_LEFT;
     -fx-graphic-text-gap: 10;
+    -fx-min-height: 40;
+    -fx-max-height: 40;
 }
 
 .sidebar-btn:hover {
@@ -122,7 +124,7 @@
     -fx-text-fill: #6B7280; /* Muted gray for inactive items */
     -fx-font-size: 11px;
     -fx-font-weight: 600;
-    -fx-padding: 8 12 8 36; 
+    -fx-padding: 6 12 6 36; 
     -fx-alignment: CENTER_LEFT;
     -fx-graphic-text-gap: 15;
     -fx-min-width: 200; /* Ensure the hover pill has presence */
@@ -204,14 +206,14 @@
 
 /* Header Elements */
 .header-icon-btn {
-    -fx-padding: 8;
+    -fx-padding: 6;
     -fx-background-color: transparent;
     -fx-alignment: CENTER;
     -fx-cursor: hand;
-    -fx-min-width: 40; /* Force circularity during hover */
-    -fx-max-width: 40;
-    -fx-min-height: 40;
-    -fx-max-height: 40;
+    -fx-min-width: 34; /* Force circularity during hover */
+    -fx-max-width: 34;
+    -fx-min-height: 34;
+    -fx-max-height: 34;
 }
 
 .header-icon-btn:hover {
@@ -239,7 +241,7 @@
 .sidebar-collapsed .sidebar-btn,
 .sidebar-collapsed .sidebar-btn-active {
     -fx-alignment: CENTER_LEFT;
-    -fx-padding: 0 0 0 12; /* Locked offset for 30px center with 16px icon */
+    -fx-padding: 8 0 8 12; /* Match expanded vertical padding */
     -fx-min-width: 40;
     -fx-max-width: 40;
     -fx-min-height: 40;
@@ -309,7 +311,7 @@
     -fx-text-fill: white;
     -fx-font-weight: 800;
     -fx-background-radius: 25;
-    -fx-padding: 10 16 10 12; 
+    -fx-padding: 8 16 8 12; 
     -fx-alignment: CENTER_LEFT;
     -fx-graphic-text-gap: 10;
 }
@@ -322,7 +324,7 @@
 .search-field {
     -fx-background-color: white;
     -fx-background-radius: 50;
-    -fx-padding: 12 25; /* recalibrated for absolute alignment with logo */
+    -fx-padding: 8 20; /* recalibrated for absolute alignment with logo */
     -fx-prompt-text-fill: #A0A0A0;
     -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 10, 0, 0, 2);
 }
@@ -330,19 +332,19 @@
 /* Pipeline */
 .pipeline-container {
     -fx-background-color: linear-gradient(to right, #F4F1E0, #E9DFCA);
-    -fx-background-radius: 35;
-    -fx-padding: 20 40;
+    -fx-background-radius: 32;
+    -fx-padding: 24 40;
     -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 15, 0, 0, 5);
 }
 
 .pipeline-icon-circle {
     -fx-background-color: white;
-    -fx-background-radius: 30; 
-    -fx-effect: dropshadow(three-pass-box, rgba(160, 140, 120, 0.4), 25, 0, 0, 12);
-    -fx-min-width: 82;
-    -fx-max-width: 82;
-    -fx-min-height: 82;
-    -fx-max-height: 82;
+    -fx-background-radius: 32; 
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.08), 15, 0, 0, 8);
+    -fx-min-width: 84;
+    -fx-max-width: 84;
+    -fx-min-height: 84;
+    -fx-max-height: 84;
     -fx-alignment: CENTER;
 }
 
@@ -362,7 +364,7 @@
 
 .pipeline-label {
     -fx-font-weight: 800;
-    -fx-font-size: 15px;
+    -fx-font-size: 16px;
     -fx-text-fill: -fx-text-dark;
 }
 
@@ -376,7 +378,7 @@
 .action-pill-white {
     -fx-background-color: white;
     -fx-background-radius: 50;
-    -fx-padding: 10 24;
+    -fx-padding: 6 18;
     -fx-effect: none;
     -fx-border-color: #EFECD9;
     -fx-border-radius: 50;
@@ -388,7 +390,7 @@
 .action-pill-orange {
     -fx-background-color: #DB7F61;
     -fx-background-radius: 50;
-    -fx-padding: 10 24;
+    -fx-padding: 6 18;
     -fx-text-fill: white;
     -fx-font-weight: 800;
     -fx-effect: dropshadow(three-pass-box, rgba(219,127,97,0.35), 15, 0, 0, 4);
@@ -396,11 +398,11 @@
 
 .dashboard-kpi-card {
     -fx-background-color: white;
-    -fx-background-radius: 25;
+    -fx-background-radius: 32;
     -fx-border-color: #EFE9DB;
-    -fx-border-radius: 25;
+    -fx-border-radius: 32;
     -fx-border-width: 1.5;
-    -fx-padding: 24 30;
+    -fx-padding: 28 24;
     -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.01), 10, 0, 0, 4);
 }
 

@@ -20,7 +20,7 @@
     </HBox>
 
     <Label text="Edit Client" styleClass="page-heading">
-        <VBox.margin><Insets bottom="20"/></VBox.margin>
+        <VBox.margin><Insets bottom="12"/></VBox.margin>
     </Label>
 
     <!-- SEARCH & FILTERS -->
@@ -41,7 +41,7 @@
     <!-- SYNCHRONIZED SCROLL AREA -->
     <ScrollPane hbarPolicy="AS_NEEDED" vbarPolicy="NEVER" fitToHeight="true" fitToWidth="false" VBox.vgrow="ALWAYS" styleClass="directory-master-hscroll">
         <VBox minWidth="1160" spacing="0">
-            <padding><Insets top="15"/></padding>
+            <padding><Insets top="8"/></padding>
             <!-- LIST HEADER -->
             <GridPane styleClass="directory-header">
                 <columnConstraints>

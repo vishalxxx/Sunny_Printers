@@ -1,96 +1,118 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.control.cell.*?>
 <?import javafx.geometry.*?>
+<?import javafx.scene.text.*?>
 
-<VBox xmlns="http://javafx.com/javafx"
-	xmlns:fx="http://javafx.com/fxml"
-	fx:controller="controller.ViewJobsController" spacing="20"
-	stylesheets="@../css/view_job.css" >
+<VBox xmlns="http://javafx.com/javafx/23"
+    xmlns:fx="http://javafx.com/fxml/1"
+    fx:controller="controller.ViewJobsController"
+    fx:id="mainVBox"
+    styleClass="view-jobs-root"
+    stylesheets="@../css/view_job.css"
+    spacing="0">
 
-	<!-- PAGE TITLE -->
-	<Label text="Job Management" styleClass="page-heading" />
+    <padding><Insets top="16" left="24" right="24" bottom="16" /></padding>
 
-	<!-- SEARCH BAR (Full Width) -->
-	<HBox spacing="12" alignment="CENTER_LEFT" styleClass="search-bar">
-		<TextField fx:id="searchField"
-			promptText="Search by Job Name, Job Title..."
-			styleClass="search-field" HBox.hgrow="ALWAYS" />
-		<Button text="Search" styleClass="search-button" onAction="#onSearchClicked"/>
-	</HBox>
+    <!-- 1. PAGE HEADER -->
+    <VBox spacing="4" styleClass="page-header-container">
+        <Label text="Job Management" styleClass="page-title" />
+        <Label text="Track and manage all your printing jobs" styleClass="page-subtitle" />
+    </VBox>
 
-	<!-- FILTER BAR -->
-	<HBox spacing="12" alignment="CENTER_LEFT">
-		<ComboBox fx:id="clientComboBox"
-				  promptText="Select Client..."
-				  styleClass="combo-box-base"
-				  prefWidth="240"/>
-		<ComboBox fx:id="statusFilterComboBox"
-				  promptText="Status: All"
-				  styleClass="combo-box-base"
-				  prefWidth="160"/>
-		<DatePicker fx:id="fromDatePicker"
-					promptText="From Date"
-					styleClass="date-picker"
-					prefWidth="160"/>
-		<DatePicker fx:id="toDatePicker"
-					promptText="To Date"
-					styleClass="date-picker"
-					prefWidth="160"/>
-		<Button text="Clear Filters"
-				onAction="#onClearFilters"
-				styleClass="search-button"/>
-	</HBox>
+    <!-- 2. TOOLBAR: SEARCH & FILTERS -->
+    <VBox styleClass="toolbar-section" spacing="12">
+        <HBox fx:id="searchContainer" styleClass="search-container">
+             <Region styleClass="search-icon" />
+             <TextField fx:id="searchField" promptText="Search by Job Name, Job Title, Client..." styleClass="search-field" HBox.hgrow="ALWAYS"/>
+        </HBox>
 
-	<!-- ACTION BUTTONS (Moved Below Filters) -->
-	<HBox spacing="10" alignment="CENTER_LEFT" styleClass="action-bar">
-		<Button fx:id="btnView" text="View" onAction="#handleViewAction" disable="true" />
-		<Button fx:id="btnEdit" text="Edit" onAction="#handleEditAction" disable="true" />
-		<Button fx:id="btnStart" text="Start Processing" onAction="#handleStartAction" disable="true" />
-		<Button fx:id="btnComplete" text="Mark Completed" onAction="#handleCompleteAction" disable="true" />
-		<Button fx:id="btnInvoice" text="Invoice" onAction="#handleInvoiceAction" disable="true" />
-		<Button fx:id="btnCancel" text="Cancel Job" onAction="#handleCancelAction" disable="true" />
-	</HBox>
+        <HBox spacing="12" alignment="CENTER_LEFT">
+            <ComboBox fx:id="clientComboBox" promptText="Select Client" styleClass="view-combo" prefWidth="240" />
+            <ComboBox fx:id="statusFilterComboBox" promptText="All Status" styleClass="view-combo" prefWidth="180" />
+            <DatePicker fx:id="fromDatePicker" promptText="From Date" styleClass="view-datepicker" prefWidth="160"/>
+            <DatePicker fx:id="toDatePicker" promptText="To Date" styleClass="view-datepicker" prefWidth="160"/>
+            <Button styleClass="view-clear-btn" onAction="#clearFilters" >
+                <graphic>
+                    <HBox spacing="8" alignment="CENTER">
+                        <Region styleClass="filter-icon" />
+                        <Label text="Clear Filters" style="-fx-text-fill: #3E312D;" />
+                    </HBox>
+                </graphic>
+            </Button>
+        </HBox>
+    </VBox>
 
-<Label fx:id="resultLabel"
-       text="Showing 0 jobs"
-       styleClass="page-heading" />
+    <!-- 3. INTEGRATED BULK ACTION BAR (Anchored) -->
+    <VBox fx:id="bulkActionBarContainer" visible="false" managed="false" styleClass="bulk-bar-container">
+        <HBox fx:id="bulkActionBar" styleClass="bulk-bar-integrated" alignment="CENTER_LEFT" spacing="16">
+            <VBox spacing="2">
+                <Label fx:id="selectionCountLabel" text="0 jobs selected" styleClass="bulk-count-label" />
+                <Label text="Bulk actions will be applied only to jobs where the action is valid." styleClass="bulk-subtext" />
+            </VBox>
+            
+            <Region styleClass="bulk-divider" />
+            
+            <ComboBox fx:id="bulkCommandCombo" promptText="Bulk Actions" styleClass="bulk-combo" prefWidth="160" />
+            
+            <Region HBox.hgrow="ALWAYS" />
+            
+            <HBox spacing="8" alignment="CENTER_RIGHT">
+                <Button fx:id="bulkStartBtn" text="Start Processing (0)" styleClass="bulk-btn, bulk-btn-blue" onAction="#handleStartAction" minWidth="-Infinity">
+                    <graphic><Region styleClass="bulk-icon-blue" /></graphic>
+                </Button>
+                <Button fx:id="bulkCompleteBtn" text="Mark Completed (0)" styleClass="bulk-btn, bulk-btn-green" onAction="#handleCompleteAction" minWidth="-Infinity">
+                    <graphic><Region styleClass="bulk-icon-green" /></graphic>
+                </Button>
+                <Button fx:id="bulkInvoiceBtn" text="Generate Invoice (0)" styleClass="bulk-btn, bulk-btn-purple" onAction="#handleInvoiceAction" minWidth="-Infinity">
+                    <graphic><Region styleClass="bulk-icon-purple" /></graphic>
+                </Button>
+                <Button fx:id="bulkCancelBtn" text="Cancel Job (0)" styleClass="bulk-btn, bulk-btn-red" onAction="#handleCancelAction" minWidth="-Infinity">
+                    <graphic><Region styleClass="bulk-icon-red" /></graphic>
+                </Button>
+            </HBox>
+        </HBox>
+    </VBox>
 
+    <!-- 4. PREMIUM TABLE GRID -->
+    <StackPane VBox.vgrow="ALWAYS" style="-fx-background-color: white; -fx-background-radius: 16; -fx-border-color: #EEECE8; -fx-border-radius: 16;">
+        <TableView fx:id="jobsTable" styleClass="jobs-table-premium" VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="selectCol" text="" minWidth="44" prefWidth="44" resizable="false" />
+                <TableColumn fx:id="jobDetailsCol" text="Job Details" minWidth="240" prefWidth="280" />
+                <TableColumn fx:id="dateCol" text="Job Date" minWidth="120" prefWidth="130" />
+                <TableColumn fx:id="amountCol" text="Amount" minWidth="160" prefWidth="180" />
+                <TableColumn fx:id="statusProgressCol" text="Status &amp; Progress" minWidth="260" prefWidth="280" />
+                <TableColumn fx:id="actionsCol" text="Actions" minWidth="280" prefWidth="300" />
+            </columns>
+            <placeholder>
+                <VBox alignment="CENTER" spacing="10">
+                    <Label text="No jobs found matching your filters." style="-fx-text-fill: #8B7E74; -fx-font-size: 16px;" />
+                </VBox>
+            </placeholder>
+        </TableView>
+    </StackPane>
 
-	<!-- TABLE CARD -->
-	<VBox styleClass="table-card">
+    <!-- 5. FOOTER & PAGINATION -->
+    <HBox styleClass="footer-section" alignment="CENTER_LEFT" spacing="12">
+        <padding><Insets top="8" left="32" right="32" bottom="8"/></padding>
+        <Label fx:id="paginationInfoLabel" text="Showing 0 to 0 of 0 jobs" styleClass="pagination-info" />
+        
+        <Region HBox.hgrow="ALWAYS" />
+        
+        <HBox spacing="16" alignment="CENTER_RIGHT" styleClass="pagination-cluster">
+            <!-- Go to Page Feature -->
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                 <Label text="Go to:" styleClass="page-subtitle" style="-fx-font-size: 11px; -fx-padding: 0 0 2 0;"/>
+                 <TextField fx:id="goToPageField" prefWidth="55" promptText="Page" onAction="#handleGoToPage" styleClass="pagination-go-field" />
+            </HBox>
 
-		<TableView fx:id="jobsTable" styleClass="history-table">
-
-    <columns>
-        <TableColumn fx:id="idCol" text="ID" prefWidth="70" />
-
-        <TableColumn fx:id="jobNoCol" text="Job No" prefWidth="140" />
-
-        <TableColumn fx:id="clientIdCol" text="Client ID" prefWidth="110" />
-        <TableColumn fx:id="clientNameCol" text="Client Name" prefWidth="240" />
-
-
-        <TableColumn fx:id="titleCol" text="Job Title" prefWidth="240" />
-
-        <TableColumn fx:id="dateCol" text="Job Date" prefWidth="120" />
-        <TableColumn fx:id="jobTotalCol" text="Job Total" prefWidth="120" />
-
-        <TableColumn fx:id="statusCol" text="Status" prefWidth="120" />
-        <TableColumn fx:id="invoiceNoCol" text="Invoice No" prefWidth="140" />
-
-        <TableColumn fx:id="remarksCol" text="Remarks" prefWidth="220" />
-
-        <TableColumn fx:id="createdAtCol" text="Created At" prefWidth="170" />
-
-        <TableColumn fx:id="updatedAtCol" text="Updated At" prefWidth="170" />
-    </columns>
-
-</TableView>
-
-
-
-	</VBox>
-
+            <!-- Page Buttons Container -->
+            <HBox fx:id="paginationButtonContainer" spacing="6" alignment="CENTER_RIGHT">
+                <!-- Navigation and Page numbers will be injected by Controller -->
+            </HBox>
+        </HBox>
+    </HBox>
 </VBox>

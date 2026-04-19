@@ -6,9 +6,9 @@
 <?import javafx.geometry.Insets?>
 
 <ScrollPane fitToWidth="true" stylesheets="@../css/client_profile.css" styleClass="profile-root" xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.ClientProfileController">
-    <VBox spacing="25" styleClass="content-container">
+    <VBox spacing="15" styleClass="content-container">
         <padding>
-            <Insets top="20" right="30" bottom="20" left="30"/>
+            <Insets top="12" right="24" bottom="12" left="24"/>
         </padding>
 
         <!-- BREADCRUMBS -->
@@ -56,7 +56,7 @@
         </HBox>
 
         <!-- KPI GRID -->
-        <GridPane hgap="15" vgap="15">
+        <GridPane hgap="12" vgap="12">
             <columnConstraints>
                 <ColumnConstraints percentWidth="25"/>
                 <ColumnConstraints percentWidth="25"/>
@@ -99,9 +99,9 @@
         </GridPane>
 
         <!-- MAIN CONTENT + SIDEBAR -->
-        <HBox spacing="30">
+        <HBox spacing="20">
             <!-- LEFT CONTENT -->
-            <VBox spacing="30" HBox.hgrow="ALWAYS">
+            <VBox spacing="20" HBox.hgrow="ALWAYS">
                 <!-- ACTIVE PIPELINE -->
                 <VBox spacing="15">
                     <HBox alignment="CENTER_LEFT">
@@ -143,7 +143,7 @@
             </VBox>
 
             <!-- RIGHT SIDEBAR -->
-            <VBox spacing="30" prefWidth="320" minWidth="320">
+            <VBox spacing="20" prefWidth="320" minWidth="320">
                 <!-- BUSINESS DETAILS -->
                 <VBox styleClass="sidebar-card-profile">
                     <Label text="Business Details" styleClass="card-title-profile"/>

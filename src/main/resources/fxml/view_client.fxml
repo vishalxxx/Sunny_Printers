@@ -11,7 +11,7 @@
     stylesheets="@../css/view_client.css" styleClass="view-clients-root"
     alignment="TOP_CENTER">
     <padding>
-        <Insets top="10" right="40" bottom="10" left="40" />
+        <Insets top="8" right="24" bottom="8" left="24" />
     </padding>
 
     <!-- BREADCRUMBS -->
@@ -25,7 +25,7 @@
     </HBox>
 
     <!-- HEADER & KPIs ROW -->
-    <HBox spacing="40" alignment="CENTER_LEFT">
+    <HBox spacing="20" alignment="CENTER_LEFT">
         <!-- Titles -->
         <VBox spacing="4" HBox.hgrow="ALWAYS">
             <Label text="Client Directory" styleClass="page-heading" />
@@ -33,7 +33,7 @@
                 text="Manage your global client relationships, track lifetime value, and oversee outstanding receivables in an editorial layout."
                 styleClass="page-subheading" wrapText="true" maxWidth="450" />
 
-            <HBox spacing="15" alignment="CENTER_LEFT" styleClass="search-bar-container">
+            <HBox spacing="10" alignment="CENTER_LEFT" styleClass="search-bar-container">
                 <TextField fx:id="searchField"
                     promptText="Search accounts..."
                     styleClass="search-field" prefWidth="250" />
@@ -45,22 +45,22 @@
         </VBox>
 
         <!-- KPIs (Stitch Aesthetic) -->
-        <HBox spacing="18" alignment="TOP_RIGHT">
+        <HBox spacing="12" alignment="TOP_RIGHT">
             <VBox.margin>
                 <Insets top="15" />
             </VBox.margin>
             
-            <VBox styleClass="kpi-card" minWidth="170">
+            <VBox styleClass="kpi-card" minWidth="140">
                 <Label text="TOTAL CLIENTS" styleClass="kpi-label" />
                 <Label fx:id="lblTotalClients" text="--" styleClass="kpi-value-dark" />
             </VBox>
 
-            <VBox styleClass="kpi-card, kpi-card-green" minWidth="170">
+            <VBox styleClass="kpi-card, kpi-card-green" minWidth="140">
                 <Label text="PREFERRED" styleClass="kpi-label" />
                 <Label fx:id="lblPreferredClients" text="--" styleClass="kpi-value-green" />
             </VBox>
 
-            <VBox styleClass="kpi-card, kpi-card-orange" minWidth="190">
+            <VBox styleClass="kpi-card, kpi-card-orange" minWidth="160">
                 <Label text="TOTAL RECEIVABLES" styleClass="kpi-label" />
                 <Label fx:id="lblTotalReceivables" text="--" styleClass="kpi-value-orange" />
             </VBox>

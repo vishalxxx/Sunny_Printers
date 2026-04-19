@@ -366,28 +366,28 @@ public class ViewClientsController implements Initializable {
 
     // --- Custom Cell Factory for Card Aesthetic ---
     class ClientCardCell extends ListCell<Client> {
-        private final HBox root = new HBox(20);
+        private final HBox root = new HBox(15);
         private final Region icon = new Region();
         private final StackPane iconBox = new StackPane(icon);
         
         private final Label lblBusiness = new Label();
         private final Label lblPrimary = new Label();
-        private final VBox nameBox = new VBox(4, lblBusiness, lblPrimary);
+        private final VBox nameBox = new VBox(2, lblBusiness, lblPrimary);
         
         private final Label lblStatus = new Label();
         private final StackPane statusBox = new StackPane(lblStatus);
         
         private final Label lblLtvVal = new Label();
-        private final VBox ltvBox = new VBox(4, new Label("LTV"), lblLtvVal);
+        private final VBox ltvBox = new VBox(2, new Label("LTV"), lblLtvVal);
         
         private final Label lblBalanceVal = new Label();
-        private final VBox balanceBox = new VBox(4, new Label("BALANCE"), lblBalanceVal);
+        private final VBox balanceBox = new VBox(2, new Label("BALANCE"), lblBalanceVal);
         
         private final Label lblInsight = new Label();
-        private final VBox insightBox = new VBox(4, new Label("INSIGHTS"), lblInsight);
+        private final VBox insightBox = new VBox(2, new Label("INSIGHTS"), lblInsight);
         
         private final HBox activityBox = new HBox(3);
-        private final VBox activityContainer = new VBox(4, new Label("ACTIVITY"), activityBox);
+        private final VBox activityContainer = new VBox(2, new Label("ACTIVITY"), activityBox);
         
         private final Button btnProfile = new Button("View Profile");
         
@@ -399,7 +399,7 @@ public class ViewClientsController implements Initializable {
             // Stylistic Setup
             root.getStyleClass().add("client-card-cell");
             root.setAlignment(Pos.CENTER_LEFT);
-            root.setPadding(new Insets(12, 25, 12, 25));
+            root.setPadding(new Insets(14, 20, 14, 20));
 
             iconBox.getStyleClass().add("client-icon-box");
             icon.getStyleClass().add("client-icon");

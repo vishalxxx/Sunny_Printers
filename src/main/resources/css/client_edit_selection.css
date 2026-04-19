@@ -32,7 +32,7 @@
 
 .client-directory-root {
     -fx-background-color: #FAF6F0;
-    -fx-padding: 30 40;
+    -fx-padding: 8 24;
 }
 
 /* --- BREADCRUMBS --- */
@@ -83,9 +83,9 @@
     -fx-border-width: 1.5;
     -fx-border-radius: 20;
     -fx-background-radius: 20;
-    -fx-padding: 2 5;
+    -fx-padding: 8 15;
     -fx-cursor: hand;
-    -fx-min-height: 42;
+    -fx-font-size: 13px;
 }
 
 .filter-combo .list-cell {
@@ -157,7 +157,7 @@
 /* --- TABLE HEADER --- */
 .directory-header {
     -fx-background-color: transparent;
-    -fx-padding: 15 25;
+    -fx-padding: 10 25;
     -fx-spacing: 0;
 }
 
@@ -199,10 +199,10 @@
 
 .client-card {
     -fx-background-color: #ffffff;
-    -fx-background-radius: 20;
+    -fx-background-radius: 12;
     -fx-border-color: #F0EBE5;
-    -fx-border-radius: 20;
-    -fx-padding: 15 25;
+    -fx-border-radius: 12;
+    -fx-padding: 14 20;
     -fx-alignment: CENTER_LEFT;
     -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.03), 15, 0, 0, 4);
 }
@@ -214,24 +214,24 @@
 
 .card-icon-container {
     -fx-background-color: #FAF0E6;
-    -fx-background-radius: 12;
-    -fx-min-width: 50;
-    -fx-max-width: 50;
-    -fx-min-height: 50;
-    -fx-max-height: 50;
+    -fx-background-radius: 10;
+    -fx-min-width: 40;
+    -fx-max-width: 40;
+    -fx-min-height: 40;
+    -fx-max-height: 40;
     -fx-alignment: CENTER;
 }
 
 .client-business-name {
     -fx-text-fill: #3E312D;
-    -fx-font-size: 16px;
+    -fx-font-size: 14px;
     -fx-font-weight: 800;
     -fx-font-family: 'Manrope';
 }
 
 .client-sub-text {
     -fx-text-fill: #867E78;
-    -fx-font-size: 12px;
+    -fx-font-size: 11px;
     -fx-font-family: 'Inter';
 }
 

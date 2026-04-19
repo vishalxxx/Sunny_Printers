@@ -8,7 +8,7 @@
 <ScrollPane fitToWidth="true" stylesheets="@../css/client_form.css" styleClass="center-area"
     xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1"
     fx:controller="controller.ClientFormController">
-    <VBox spacing="30" styleClass="content-container">
+    <VBox spacing="15" styleClass="content-container">
 
         <!-- BREADCRUMBS -->
         <HBox styleClass="breadcrumb-container">
@@ -27,7 +27,7 @@
             </VBox>
         </HBox>
 
-        <VBox spacing="25" fillWidth="true">
+        <VBox spacing="15" fillWidth="true">
             <!-- BASIC INFO -->
             <VBox styleClass="form-card">
                 <HBox styleClass="card-header">
@@ -35,7 +35,7 @@
                     <Label text="Basic Information" styleClass="card-title" />
                 </HBox>
 
-                <VBox spacing="18">
+                <VBox spacing="12">
                     <VBox>
                         <Label text="BUSINESS NAME" styleClass="field-label" />
                         <TextField fx:id="businessNameField" styleClass="form-input"
@@ -63,7 +63,7 @@
                     <Label text="Contact Details" styleClass="card-title" />
                 </HBox>
 
-                <VBox spacing="18">
+                <VBox spacing="12">
                     <HBox spacing="15">
                         <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
                             <Label text="PHONE NUMBER" styleClass="field-label" />
@@ -121,12 +121,12 @@
                     <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
                         <Label text="BILLING ADDRESS" styleClass="field-label" />
                         <TextArea fx:id="billingAddressField" styleClass="form-textarea"
-                            prefHeight="100" promptText="Enter full billing address" wrapText="true" />
+                            prefHeight="60" promptText="Enter full billing address" wrapText="true" />
                     </VBox>
                     <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
                         <Label text="SHIPPING ADDRESS" styleClass="field-label" />
                         <TextArea fx:id="shippingAddressField" styleClass="form-textarea"
-                            prefHeight="100" promptText="Enter full shipping address"
+                            prefHeight="60" promptText="Enter full shipping address"
                             wrapText="true" />
                     </VBox>
                 </HBox>
@@ -140,7 +140,7 @@
                 </HBox>
                 <VBox styleClass="input-container-inset">
                     <Label text="CONFIDENTIAL NOTES" styleClass="field-label" />
-                    <TextArea fx:id="notesField" styleClass="form-textarea" prefHeight="100"
+                    <TextArea fx:id="notesField" styleClass="form-textarea" prefHeight="60"
                         promptText="Any specific reminders for this client..." wrapText="true" />
                 </VBox>
             </VBox>

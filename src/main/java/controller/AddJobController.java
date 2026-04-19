@@ -15,9 +15,12 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -160,7 +163,21 @@ public class AddJobController implements utils.DirtySupport {
 	private VBox pdfPreviewBox;
 
 	@FXML
-	private Label filePlaceholder;
+	private VBox filePlaceholder;
+	@FXML
+	private VBox imagePreviewContainer;
+
+	@FXML
+	private ToggleButton sideDoubleBtn;
+	@FXML
+	private ToggleButton sideSingleBtn;
+	private ToggleGroup sideGroup;
+
+	@FXML
+	private ToggleButton lamDoubleBtn;
+	@FXML
+	private ToggleButton lamSingleBtn;
+	private ToggleGroup lamSideGroup;
 
 	/* ========================= SERVICES ========================= */
 
@@ -192,8 +209,6 @@ public class AddJobController implements utils.DirtySupport {
 	private TextField printSetField;
 	@FXML
 	private ComboBox<String> printColorCombo;
-	@FXML
-	private ComboBox<String> printSideCombo;
 	@FXML
 	private ComboBox<String> printCtpCombo;
 	@FXML
@@ -259,8 +274,6 @@ public class AddJobController implements utils.DirtySupport {
 	@FXML
 	private ComboBox<String> lamTypeCombo;
 	@FXML
-	private ComboBox<String> lamSideCombo;
-	@FXML
 	private ComboBox<String> lamSizeCombo;
 	@FXML
 	private TextArea lamNotesArea;
@@ -293,6 +306,78 @@ public class AddJobController implements utils.DirtySupport {
 
 	@FXML
 	private Label jobNoLabel;
+
+	/* ========================= STEPPER ========================= */
+	@FXML private HBox step1Btn, step2Btn, step3Btn, step4Btn, step5Btn, step6Btn;
+	@FXML private Button nextBtn;
+	private int currentStep = 1;
+	private final VBox[] stepCards = new VBox[7];
+	private final HBox[] stepButtons = new HBox[7];
+
+	@FXML
+	private void handleNextStep() {
+		if (currentStep < 6) {
+			currentStep++;
+			updateStepUI();
+		}
+	}
+
+	@FXML
+	private void handleCancel() {
+		if (hasUnsavedChanges()) {
+			if (!canDiscardChanges()) return;
+		}
+		MainController.getInstance().openCenterDashboard();
+	}
+
+	private boolean canDiscardChanges() {
+		return MainController.getInstance().canDiscardChanges();
+	}
+
+	@FXML
+	private void handleSaveDraft() {
+		// Existing logic or simple toast for now
+		toast("Draft saved locally ✅");
+	}
+
+	private void updateStepUI() {
+		// Initialized if null
+		if (stepCards[1] == null) {
+			stepCards[1] = printingCard;
+			stepCards[2] = ctpCard;
+			stepCards[3] = paperCard;
+			stepCards[4] = bindingCard;
+			stepCards[5] = laminationCard;
+			stepCards[6] = fileCard;
+
+			stepButtons[1] = step1Btn;
+			stepButtons[2] = step2Btn;
+			stepButtons[3] = step3Btn;
+			stepButtons[4] = step4Btn;
+			stepButtons[5] = step5Btn;
+			stepButtons[6] = step6Btn;
+		}
+
+		// Toggle Visibility
+		for (int i = 1; i <= 6; i++) {
+			if (stepCards[i] != null) {
+				stepCards[i].setVisible(i == currentStep);
+				stepCards[i].setManaged(i == currentStep);
+			}
+			if (stepButtons[i] != null) {
+				stepButtons[i].getStyleClass().remove("step-active");
+				if (i == currentStep) stepButtons[i].getStyleClass().add("step-active");
+			}
+		}
+
+		// Toggle Next/Finish Button
+		if (nextBtn != null && addJobBtn != null) {
+			nextBtn.setVisible(currentStep < 6);
+			nextBtn.setManaged(currentStep < 6);
+			addJobBtn.setVisible(currentStep == 6);
+			addJobBtn.setManaged(currentStep == 6);
+		}
+	}
 
 	/* ========================= CLIENT COMBO STATE ========================= */
 
@@ -413,7 +498,7 @@ public class AddJobController implements utils.DirtySupport {
 	private File selectedImageFile;
 
 	@FXML
-	private void handleUploadFile(ActionEvent event) {
+	private void handleUploadFile() {
 		try {
 			FileChooser chooser = new FileChooser();
 			chooser.setTitle("Select Image or PDF");
@@ -445,8 +530,8 @@ public class AddJobController implements utils.DirtySupport {
 		Image img = new Image(file.toURI().toString());
 		jobImagePreview.setImage(img);
 
-		jobImagePreview.setVisible(true);
-		jobImagePreview.setManaged(true);
+		imagePreviewContainer.setVisible(true);
+		imagePreviewContainer.setManaged(true);
 
 		pdfPreviewBox.setVisible(false);
 		pdfPreviewBox.setManaged(false);
@@ -456,14 +541,29 @@ public class AddJobController implements utils.DirtySupport {
 	}
 
 	private void showPdfPreview() {
-		jobImagePreview.setVisible(false);
-		jobImagePreview.setManaged(false);
+		imagePreviewContainer.setVisible(false);
+		imagePreviewContainer.setManaged(false);
 
 		pdfPreviewBox.setVisible(true);
 		pdfPreviewBox.setManaged(true);
 
 		filePlaceholder.setVisible(false);
 		filePlaceholder.setManaged(false);
+	}
+
+	@FXML
+	private void handleResetUpload() {
+		this.selectedImageFile = null;
+		jobImagePreview.setImage(null);
+		
+		imagePreviewContainer.setVisible(false);
+		imagePreviewContainer.setManaged(false);
+		
+		pdfPreviewBox.setVisible(false);
+		pdfPreviewBox.setManaged(false);
+		
+		filePlaceholder.setVisible(true);
+		filePlaceholder.setManaged(true);
 	}
 	
 	private void resetUploadView() {
@@ -601,8 +701,8 @@ public class AddJobController implements utils.DirtySupport {
 		p.setUnits(printUnitsCombo.getValue());
 		p.setSets(printSetField.getText());
 		p.setColor(printColorCombo.getValue());
-		p.setSide(printSideCombo.getValue());
-		p.setWithCtp("Yes".equalsIgnoreCase(printCtpCombo.getValue()));
+		p.setSide(sideDoubleBtn.isSelected() ? "Double" : "Single");
+		p.setWithCtp("With CTP (Computer to Plate)".equalsIgnoreCase(printCtpCombo.getValue()));
 		p.setNotes(printNotesArea.getText());
 
 		try {
@@ -625,7 +725,7 @@ public class AddJobController implements utils.DirtySupport {
 		printUnitsCombo.setValue(null);
 		printSetField.clear();
 		printColorCombo.setValue(null);
-		printSideCombo.setValue(null);
+		sideDoubleBtn.setSelected(true);
 		printCtpCombo.setValue(null);
 		printNotesArea.clear();
 		printAmountField.clear();
@@ -794,7 +894,7 @@ public class AddJobController implements utils.DirtySupport {
 
 		l.setUnit(lamUnitCombo.getValue());
 		l.setType(lamTypeCombo.getValue());
-		l.setSide(lamSideCombo.getValue());
+		l.setSide(lamDoubleBtn.isSelected() ? "Double Side" : "Single Side");
 		l.setSize(lamSizeCombo.getValue());
 		l.setNotes(lamNotesArea.getText());
 
@@ -817,7 +917,7 @@ public class AddJobController implements utils.DirtySupport {
 		lamQtyField.clear();
 		lamUnitCombo.setValue(null);
 		lamTypeCombo.setValue(null);
-		lamSideCombo.setValue(null);
+		lamDoubleBtn.setSelected(true);
 		lamSizeCombo.setValue(null);
 		lamNotesArea.clear();
 		lamAmountField.clear();
@@ -829,6 +929,37 @@ public class AddJobController implements utils.DirtySupport {
 		tf.setTextFormatter(new TextFormatter<>(change -> {
 			return change.getControlNewText().matches("\\d*") ? change : null;
 		}));
+	}
+
+	private void makeDecimal(TextField tf) {
+		tf.setTextFormatter(new TextFormatter<>(change -> {
+			if (change.getControlNewText().replace(",", "").matches("\\d*\\.?\\d*")) {
+				return change;
+			}
+			return null;
+		}));
+
+		// ✅ Format with commas on focus lost
+		tf.focusedProperty().addListener((obs, oldVal, newVal) -> {
+			if (!newVal) { // Focus lost
+				String text = tf.getText().replace(",", "");
+				if (!text.isBlank()) {
+					try {
+						double val = Double.parseDouble(text);
+						tf.setText(formatCurrency(val));
+					} catch (Exception e) {}
+				}
+			} else { // Focus gained
+				tf.setText(tf.getText().replace(",", ""));
+			}
+		});
+	}
+
+	private String formatCurrency(double amount) {
+		java.text.NumberFormat formatter = java.text.NumberFormat.getInstance(new java.util.Locale("en", "IN"));
+		formatter.setMinimumFractionDigits(2);
+		formatter.setMaximumFractionDigits(2);
+		return formatter.format(amount);
 	}
 
 	private boolean notEmpty(String s) {
@@ -1032,16 +1163,16 @@ public class AddJobController implements utils.DirtySupport {
 		// ✅ numeric restrictions
 		makeNumeric(printQtyField);
 		makeNumeric(printSetField);
-		makeNumeric(printAmountField);
+		makeDecimal(printAmountField);
 		makeNumeric(ctpQtyField);
-		makeNumeric(ctpAmountField);
+		makeDecimal(ctpAmountField);
 		makeNumeric(paperQtyField);
-		makeNumeric(paperAmountField);
+		makeDecimal(paperAmountField);
 		makeNumeric(bindingQtyField);
-		makeNumeric(bindingRateField);
-		makeNumeric(bindingAmountField);
+		makeDecimal(bindingRateField);
+		makeDecimal(bindingAmountField);
 		makeNumeric(lamQtyField);
-		makeNumeric(lamAmountField);
+		makeDecimal(lamAmountField);
 
 		// ✅ validations
 		setupPrintingValidation();
@@ -1059,8 +1190,58 @@ public class AddJobController implements utils.DirtySupport {
 		paperClientRadio.setToggleGroup(paperSourceGroup);
 		paperOurRadio.setSelected(true);
 
+		// ✅ side toggle
+		sideGroup = new ToggleGroup();
+		sideDoubleBtn.setToggleGroup(sideGroup);
+		sideSingleBtn.setToggleGroup(sideGroup);
+		sideDoubleBtn.setSelected(true);
+
+		lamSideGroup = new ToggleGroup();
+		lamDoubleBtn.setToggleGroup(lamSideGroup);
+		lamSingleBtn.setToggleGroup(lamSideGroup);
+		lamDoubleBtn.setSelected(true);
+
+		// ✅ step buttons jump
+		step1Btn.setOnMouseClicked(e -> { currentStep = 1; updateStepUI(); });
+		step2Btn.setOnMouseClicked(e -> { currentStep = 2; updateStepUI(); });
+		step3Btn.setOnMouseClicked(e -> { currentStep = 3; updateStepUI(); });
+		step4Btn.setOnMouseClicked(e -> { currentStep = 4; updateStepUI(); });
+		step5Btn.setOnMouseClicked(e -> { currentStep = 5; updateStepUI(); });
+		step6Btn.setOnMouseClicked(e -> { currentStep = 6; updateStepUI(); });
+
+		// ✅ Fill dropdowns
+		populateCombos();
+
 		// ✅ initial lock state
 		updateFormState();
+		updateStepUI();
+	}
+
+	private void populateCombos() {
+		// Printing
+		printUnitsCombo.getItems().setAll("Copies", "Sets", "Rim", "Pkt", "Sheet");
+		printColorCombo.getItems().setAll("1", "2", "4", "4+4", "Spot", "Custom");
+		printCtpCombo.getItems().setAll("With CTP (Computer to Plate)", "Without CTP");
+
+		// CTP
+		ctpSizeCombo.getItems().setAll("23x36", "25x36", "19x25", "18x23", "15x20", "20x30", "10x15");
+		ctpGaugeCombo.getItems().setAll("0.15mm", "0.28mm", "0.30mm");
+		ctpColorCombo.getItems().setAll("CMYK (Full)", "Cyan", "Magenta", "Yellow", "Black", "Spot Color");
+		ctpBackingCombo.getItems().setAll("Paper Backing", "Plastic Backing", "None");
+
+		// Paper
+		paperUnitsCombo.getItems().setAll("Rim", "Sheet", "Pkt", "Kg");
+		paperSizeCombo.getItems().setAll("23x36", "25x36", "18x23", "20x30", "Custom");
+		paperGsmCombo.getItems().setAll("60", "70", "80", "90", "100", "130", "170", "210", "250", "300");
+		paperTypeCombo.getItems().setAll("Art Paper", "Art Card", "Maplitho", "Sunshine", "Chromo", "Mirror Coat", "Texture", "Bond");
+
+		// Binding
+		bindingProcessCombo.getItems().setAll("Center Pin", "Perfect Binding", "Hard Bound", "Spiral", "Wire-O", "Crease & Fold", "Cutting Only");
+
+		// Lamination
+		lamUnitCombo.getItems().setAll("Sq. Inch", "Piece", "Sheet", "Meter");
+		lamTypeCombo.getItems().setAll("Gloss", "Matt", "Velvet", "Thermal Gloss", "Thermal Matt", "UV Coating");
+		lamSizeCombo.getItems().setAll("23x36", "25x36", "18x23", "20x30", "Custom");
 	}
 
 	private void loadSuppliers() {

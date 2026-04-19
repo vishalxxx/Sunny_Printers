@@ -255,7 +255,7 @@
 
 .client-list-view .list-cell {
     -fx-background-color: transparent;
-    -fx-padding: 8 0;
+    -fx-padding: 4 0;
     /* spacing between cards */
 }
 
@@ -275,11 +275,11 @@
 
 .client-icon-box {
     -fx-background-color: #FAF0E6;
-    -fx-background-radius: 12;
-    -fx-min-width: 50;
-    -fx-min-height: 50;
-    -fx-max-width: 50;
-    -fx-max-height: 50;
+    -fx-background-radius: 10;
+    -fx-min-width: 40;
+    -fx-min-height: 40;
+    -fx-max-width: 40;
+    -fx-max-height: 40;
 }
 
 .client-icon {
@@ -294,13 +294,13 @@
 
 .client-name {
     -fx-text-fill: #3E312D;
-    -fx-font-size: 16px;
+    -fx-font-size: 14px;
     -fx-font-weight: 800;
 }
 
 .client-primary {
     -fx-text-fill: #867E78;
-    -fx-font-size: 12px;
+    -fx-font-size: 11px;
 }
 
 .client-status-box {
@@ -346,7 +346,7 @@
 
 .client-stat-value {
     -fx-text-fill: #3E312D;
-    -fx-font-size: 15px;
+    -fx-font-size: 13px;
     -fx-font-weight: 800;
 }
 
@@ -362,9 +362,9 @@
     -fx-background-color: #EBE5DF;
     -fx-text-fill: #433934;
     -fx-font-weight: 800;
-    -fx-font-size: 12px;
+    -fx-font-size: 11px;
     -fx-background-radius: 8;
-    -fx-padding: 8 16;
+    -fx-padding: 6 12;
     -fx-cursor: hand;
 }
 

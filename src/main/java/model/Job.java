@@ -66,4 +66,10 @@ public class Job {
     private String invoiceStatus;
     public String getInvoiceStatus() { return invoiceStatus; }
     public void setInvoiceStatus(String invoiceStatus) { this.invoiceStatus = invoiceStatus; }
+
+    // --- REactive Selection Layer (Taste Design Support) ---
+    private final javafx.beans.property.BooleanProperty selected = new javafx.beans.property.SimpleBooleanProperty(false);
+    public javafx.beans.property.BooleanProperty selectedProperty() { return selected; }
+    public boolean isSelected() { return selected.get(); }
+    public void setSelected(boolean val) { this.selected.set(val); }
 }

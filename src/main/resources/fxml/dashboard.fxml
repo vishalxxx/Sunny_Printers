@@ -17,11 +17,11 @@
             <StackPane fx:id="sidebarStack" minWidth="60" prefWidth="220" styleClass="sidebar-container">
                 <ScrollPane fx:id="sidebarScroll" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="NEVER" style="-fx-background-color: transparent; -fx-background: transparent; -fx-padding: 0; -fx-border-width: 0;">
                     <StackPane fx:id="contentRoot" alignment="TOP_LEFT">
-                        <VBox fx:id="mainSidebar" spacing="20" style="-fx-padding: 30 0 30 0; -fx-alignment: TOP_LEFT;">
+                        <VBox fx:id="mainSidebar" spacing="12" style="-fx-padding: 15 0 15 0; -fx-alignment: TOP_LEFT;">
                             <!-- Logo Section -->
                             <HBox spacing="15" alignment="CENTER_LEFT" styleClass="sidebar-logo-container">
-                                <StackPane style="-fx-background-color: #C87941; -fx-background-radius: 100; -fx-padding: 10; -fx-min-width: 42; -fx-min-height: 42; -fx-max-width: 42; -fx-max-height: 42;">
-                                     <Region styleClass="sidebar-icon, icon-jobs" style="-fx-background-color: white; -fx-min-width: 22; -fx-min-height: 22; -fx-max-width: 22; -fx-max-height: 22;"/>
+                                <StackPane style="-fx-background-color: #C87941; -fx-background-radius: 100; -fx-padding: 8; -fx-min-width: 36; -fx-min-height: 36; -fx-max-width: 36; -fx-max-height: 36;">
+                                     <Region styleClass="sidebar-icon, icon-jobs" style="-fx-background-color: white; -fx-min-width: 18; -fx-min-height: 18; -fx-max-width: 18; -fx-max-height: 18;"/>
                                 </StackPane>
                                 <VBox spacing="-2" styleClass="logo-text-box">
                                     <Label text="Sunny Printers" style="-fx-font-size: 17; -fx-font-weight: 800; -fx-text-fill: -fx-text-dark;"/>
@@ -30,9 +30,14 @@
                             </HBox>
 
                             <!-- Navigation -->
-                            <VBox spacing="10" VBox.vgrow="ALWAYS" styleClass="sidebar-nav-container">
-                                <Button fx:id="dashboardBtn" onAction="#openDashboard" styleClass="sidebar-btn, sidebar-btn-active" text="Dashboard" maxWidth="Infinity">
-                                    <graphic><Region styleClass="sidebar-icon, icon-dashboard"/></graphic>
+                            <VBox spacing="6" VBox.vgrow="ALWAYS" styleClass="sidebar-nav-container">
+                                <Button fx:id="dashboardBtn" onAction="#openDashboard" styleClass="sidebar-btn, sidebar-btn-active" maxWidth="Infinity">
+                                    <graphic>
+                                        <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="Infinity" styleClass="header-box">
+                                            <Region styleClass="sidebar-icon, icon-dashboard"/>
+                                            <Label text="Dashboard" styleClass="sidebar-label"/>
+                                        </HBox>
+                                    </graphic>
                                 </Button>
 
                                 <!-- CLIENTS SECTION -->
@@ -175,8 +180,13 @@
 
                                 <Region VBox.vgrow="ALWAYS"/>
                                 <VBox style="-fx-padding: 30 0 0 0;">
-                                    <Button onAction="#loadAddJob" styleClass="new-job-btn" text="New Print Job" maxWidth="Infinity">
-                                        <graphic><Region styleClass="sidebar-icon, icon-add"/></graphic>
+                                    <Button onAction="#loadAddJob" styleClass="new-job-btn" maxWidth="Infinity">
+                                        <graphic>
+                                            <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="Infinity" styleClass="header-box">
+                                                <Region styleClass="sidebar-icon, icon-add" style="-fx-background-color: white;"/>
+                                                <Label text="New Print Job" styleClass="sidebar-label" style="-fx-text-fill: white;"/>
+                                            </HBox>
+                                        </graphic>
                                     </Button>
                                 </VBox>
                             </VBox>
@@ -192,7 +202,7 @@
         <center>
             <VBox fx:id="centerRoot" spacing="0">
                     <!-- HEADER Aligned with Logo (Top Pdg 22px) -->
-                    <HBox alignment="CENTER_LEFT" spacing="12" style="-fx-padding: 22 50 10 50;">
+                    <HBox alignment="CENTER_LEFT" spacing="12" style="-fx-padding: 16 32 8 32;">
                         <!-- Breadcrumb / Page Location (Top Left) -->
                         <!-- Breadcrumb / Page Location (Top Left) -->
                         <Button fx:id="backNavBtn" onAction="#handleBack" styleClass="back-nav-btn" visible="false" managed="false">
@@ -229,8 +239,8 @@
                                     <Label text="PRODUCTION MANAGER" style="-fx-font-size: 8; -fx-font-weight: 900; -fx-text-fill: -fx-text-muted; -fx-letter-spacing: 0.5;"/>
                                 </VBox>
                                 <StackPane styleClass="profile-avatar">
-                                    <Circle radius="22" fill="#EBE7DE"/>
-                                    <Label text="AM" style="-fx-font-weight: 800; -fx-text-fill: #8E857C; -fx-font-size: 14;"/>
+                                    <Circle radius="18" fill="#EBE7DE"/>
+                                    <Label text="AM" style="-fx-font-weight: 800; -fx-text-fill: #8E857C; -fx-font-size: 12;"/>
                                 </StackPane>
                             </HBox>
                         </HBox>
@@ -240,7 +250,7 @@
                     <StackPane fx:id="centerContentHost" VBox.vgrow="ALWAYS">
                         <ScrollPane fx:id="dashboardView" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="NEVER" style="-fx-background-color: transparent; -fx-background: transparent;">
                             <!-- CONTENT with Horizontal scaling and Tightened Top Buffer -->
-                            <VBox spacing="20" style="-fx-padding: 12 50 40 50;">
+                            <VBox spacing="15" style="-fx-padding: 10 32 30 32;">
                             
                             <!-- DASHBOARD HEADER -->
                             <HBox alignment="CENTER_LEFT" spacing="15">
@@ -259,9 +269,9 @@
                                 </HBox>
 
                             <!-- NEW KPI CARDS ROW -->
-                            <HBox spacing="25" alignment="CENTER">
+                            <HBox spacing="16" alignment="CENTER">
                                 <!-- CARD 1 -->
-                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="15">
+                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10">
                                     <Label text="TOTAL REVENUE" styleClass="kpi-title"/>
                                     <HBox alignment="BASELINE_LEFT" spacing="8">
                                         <Label fx:id="lblTotalRevenue" text="₹0" styleClass="kpi-value"/>
@@ -273,7 +283,7 @@
                                 </VBox>
                                 
                                 <!-- CARD 2 -->
-                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="15">
+                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10">
                                     <Label text="OUTSTANDING AMOUNT" styleClass="kpi-title"/>
                                     <HBox alignment="BASELINE_LEFT" spacing="8">
                                         <Label fx:id="lblOutstanding" text="₹0" styleClass="kpi-value"/>
@@ -285,7 +295,7 @@
                                 </VBox>
 
                                 <!-- CARD 3 -->
-                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="15">
+                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10">
                                     <Label text="COLLECTED THIS MONTH" styleClass="kpi-title"/>
                                     <HBox alignment="BASELINE_LEFT" spacing="8">
                                         <Label fx:id="lblCollected" text="₹0" styleClass="kpi-value"/>
@@ -297,7 +307,7 @@
                                 </VBox>
 
                                 <!-- CARD 4 -->
-                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="15">
+                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10">
                                     <Label text="OVERDUE AMOUNT" styleClass="kpi-title"/>
                                     <HBox alignment="BASELINE_LEFT" spacing="8">
                                         <Label fx:id="lblOverdue" text="₹0" styleClass="kpi-value" style="-fx-text-fill: #D27357;"/>
@@ -310,7 +320,7 @@
                             </HBox>
                             
                             <!-- PRODUCTION PIPELINE CARD -->
-                            <VBox styleClass="pipeline-container" spacing="15">
+                            <VBox styleClass="pipeline-container" spacing="10">
                                 <HBox alignment="CENTER_LEFT">
                                     <VBox spacing="5">
                                         <Label text="Production Pipeline" style="-fx-font-size: 18; -fx-font-weight: 800; -fx-text-fill: #27343A;"/>
@@ -318,16 +328,16 @@
                                     </VBox>
                                     <Region HBox.hgrow="ALWAYS"/>
                                     <HBox spacing="15" alignment="CENTER">
-                                        <Label text="42 Active Jobs" style="-fx-background-color: #E2DFCE; -fx-border-color: #D3CEBA; -fx-border-radius: 20; -fx-background-radius: 20; -fx-padding: 8 18; -fx-font-weight: 800; -fx-font-size: 12; -fx-text-fill: #727B75;"/>
-                                        <Button text="Add Job" style="-fx-background-color: #C06B44; -fx-text-fill: white; -fx-padding: 8 20; -fx-font-size: 12; -fx-font-weight: 800; -fx-background-radius: 20; -fx-effect: dropshadow(three-pass-box, rgba(160, 140, 120, 0.4), 15, 0, 0, 5); -fx-cursor: hand;">
-                                            <graphic><Region styleClass="sidebar-icon" style="-fx-shape: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z'; -fx-background-color: white; -fx-min-width: 14; -fx-min-height: 14;"/></graphic>
+                                        <Label text="42 Active Jobs" style="-fx-background-color: #E2DFCE; -fx-border-color: #D3CEBA; -fx-border-radius: 20; -fx-background-radius: 20; -fx-padding: 6 14; -fx-font-weight: 800; -fx-font-size: 11; -fx-text-fill: #727B75;"/>
+                                        <Button text="Add Job" style="-fx-background-color: #C06B44; -fx-text-fill: white; -fx-padding: 6 16; -fx-font-size: 11; -fx-font-weight: 800; -fx-background-radius: 20; -fx-effect: dropshadow(three-pass-box, rgba(160, 140, 120, 0.4), 10, 0, 0, 4); -fx-cursor: hand;">
+                                            <graphic><Region styleClass="sidebar-icon" style="-fx-shape: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z'; -fx-background-color: white; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
                                         </Button>
                                     </HBox>
                                 </HBox>
                                 <HBox alignment="CENTER" spacing="0">
                                     <VBox alignment="CENTER" spacing="15" minWidth="120" prefWidth="180" HBox.hgrow="ALWAYS">
                                         <StackPane styleClass="pipeline-icon-circle">
-                                            <Region styleClass="icon-brush" style="-fx-background-color: #B25D3B; -fx-min-width: 40; -fx-min-height: 40; -fx-max-width: 40; -fx-max-height: 40;"/>
+                                            <Region styleClass="icon-brush" style="-fx-background-color: #B25D3B; -fx-min-width: 42; -fx-min-height: 42; -fx-max-width: 42; -fx-max-height: 42;"/>
                                         </StackPane>
                                         <VBox alignment="CENTER" spacing="2">
                                             <Label text="Pre Press" styleClass="pipeline-label"/>
@@ -342,7 +352,7 @@
                                     
                                     <VBox alignment="CENTER" spacing="15" minWidth="120" prefWidth="180" HBox.hgrow="ALWAYS">
                                         <StackPane styleClass="pipeline-icon-circle">
-                                            <Region styleClass="icon-printer" style="-fx-background-color: #B25D3B; -fx-min-width: 40; -fx-min-height: 40; -fx-max-width: 40; -fx-max-height: 40;"/>
+                                            <Region styleClass="icon-printer" style="-fx-background-color: #B25D3B; -fx-min-width: 42; -fx-min-height: 42; -fx-max-width: 42; -fx-max-height: 42;"/>
                                         </StackPane>
                                         <VBox alignment="CENTER" spacing="2">
                                             <Label text="Printing" styleClass="pipeline-label"/>
@@ -388,9 +398,9 @@
                             </VBox>
 
                             <!-- TWO-COLUMN DASHBOARD GRID -->
-                            <HBox spacing="30" fillHeight="false">
+                            <HBox spacing="20" fillHeight="false">
                                 <!-- LEFT COLUMN: High-Density Analytics (Primary Anchors) -->
-                                <VBox spacing="30" HBox.hgrow="ALWAYS">
+                                <VBox spacing="20" HBox.hgrow="ALWAYS">
                                     <!-- CASH FLOW ANALYSIS -->
                                     <VBox styleClass="dashboard-kpi-card" spacing="25" style="-fx-background-color: #FDFCF6; -fx-background-radius: 40; -fx-border-color: transparent; -fx-padding: 30 35; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.01), 10, 0, 0, 4);">
                                         <HBox alignment="CENTER_LEFT">

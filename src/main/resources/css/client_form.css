@@ -12,7 +12,7 @@
 }
 
 .content-container {
-    -fx-padding: 30 40;
+    -fx-padding: 12 24;
     -fx-background-color: #FAF6F0;
 }
 
@@ -46,7 +46,7 @@
 
 .profile-title {
     -fx-text-fill: #3E312D;
-    -fx-font-size: 28px;
+    -fx-font-size: 20px;
     -fx-font-weight: 800;
     -fx-font-family: 'Manrope';
 }
@@ -67,10 +67,10 @@
 /* --- CARDS --- */
 .form-card {
     -fx-background-color: #FFFFFF;
-    -fx-background-radius: 20;
-    -fx-padding: 35;
-    -fx-spacing: 28;
-    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.02), 25, 0, 0, 10);
+    -fx-background-radius: 12;
+    -fx-padding: 20;
+    -fx-spacing: 16;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.02), 15, 0, 0, 4);
 }
 
 .card-header {
@@ -88,7 +88,7 @@
 
 .card-title {
     -fx-text-fill: #00302E; /* Dark Teal for headers */
-    -fx-font-size: 20px;
+    -fx-font-size: 16px;
     -fx-font-weight: 800;
 }
 
@@ -110,9 +110,9 @@
     -fx-border-color: transparent; /* No border by default */
     -fx-border-width: 2;
     -fx-border-radius: 8;
-    -fx-padding: 10 14;
+    -fx-padding: 6 12;
     -fx-text-fill: #3E312D;
-    -fx-font-size: 14px;
+    -fx-font-size: 13px;
     -fx-font-weight: 500;
     -fx-prompt-text-fill: #9F9085;
     -fx-focus-color: transparent;
@@ -133,7 +133,7 @@
     -fx-background-color: #F8F9FA;
     -fx-background-radius: 8;
     -fx-background-insets: 0;
-    -fx-padding: 12 16;
+    -fx-padding: 8 12;
 }
 
 .form-input:focused, .form-textarea:focused {
@@ -183,8 +183,8 @@
 
 /* --- FOOTER --- */
 .footer-btn-container {
-    -fx-padding: 30 0 0 0;
-    -fx-spacing: 20;
+    -fx-padding: 20 0 0 0;
+    -fx-spacing: 15;
     -fx-alignment: CENTER_RIGHT;
 }
 
@@ -201,11 +201,11 @@
     -fx-background-color: #C87941;
     -fx-text-fill: #FFFFFF;
     -fx-font-weight: 800;
-    -fx-font-size: 14px;
-    -fx-background-radius: 12;
-    -fx-padding: 12 28;
+    -fx-font-size: 13px;
+    -fx-background-radius: 10;
+    -fx-padding: 10 24;
     -fx-cursor: hand;
-    -fx-effect: dropshadow(three-pass-box, rgba(200, 121, 65, 0.3), 15, 0, 0, 6);
+    -fx-effect: dropshadow(three-pass-box, rgba(200, 121, 65, 0.3), 10, 0, 0, 4);
 }
 
 .btn-save:hover { -fx-background-color: #D48B5A; }

@@ -58,7 +58,8 @@ public class MainController implements Initializable {
 
 	private final double COLLAPSED_WIDTH = 74;
 	private final double EXPANDED_WIDTH = 240;
-	@FXML private Button backNavBtn;
+	@FXML
+	private Button backNavBtn;
 	@FXML
 	private StackPane appRoot;
 	@FXML
@@ -67,46 +68,87 @@ public class MainController implements Initializable {
 	@FXML
 	private StackPane sidebarStack;
 	private Timeline anim;
-    
-    @FXML private Label lblDashboardGreeting;
+
+	@FXML
+	private Label lblDashboardGreeting;
 
 	// ✅ DASHBOARD FIELDS
-	@FXML private ScrollPane dashboardView;
-	@FXML private Label lblTotalRevenue;
-	@FXML private Label lblOutstanding;
-	@FXML private Label lblCollected;
-	@FXML private Label lblOverdue;
-	
-    // Analysis Bars
-    @FXML private javafx.scene.layout.Region cashFlow_M1_total; @FXML private javafx.scene.layout.Region cashFlow_M1_actual;
-    @FXML private javafx.scene.layout.Region cashFlow_M2_total; @FXML private javafx.scene.layout.Region cashFlow_M2_actual;
-    @FXML private javafx.scene.layout.Region cashFlow_M3_total; @FXML private javafx.scene.layout.Region cashFlow_M3_actual;
-    @FXML private javafx.scene.layout.Region cashFlow_M4_total; @FXML private javafx.scene.layout.Region cashFlow_M4_actual;
-    @FXML private javafx.scene.layout.Region cashFlow_M5_total; @FXML private javafx.scene.layout.Region cashFlow_M5_actual;
-    @FXML private javafx.scene.layout.Region cashFlow_M6_total; @FXML private javafx.scene.layout.Region cashFlow_M6_actual;
-    
-    @FXML private Button btnChart1M, btnChart3M, btnChart6M;
-    @FXML private Label lblCashFlow_M1, lblCashFlow_M2, lblCashFlow_M3, lblCashFlow_M4, lblCashFlow_M5, lblCashFlow_M6;
-    
-    @FXML private javafx.scene.control.ComboBox<String> comboTimeRange;
-    private String selectedTimeRange = "All Time";
+	@FXML
+	private ScrollPane dashboardView;
+	@FXML
+	private Label lblTotalRevenue;
+	@FXML
+	private Label lblOutstanding;
+	@FXML
+	private Label lblCollected;
+	@FXML
+	private Label lblOverdue;
 
-    @FXML private javafx.scene.shape.Arc donut_ring_green;
-    @FXML private javafx.scene.shape.Arc donut_ring_orange;
-    @FXML private Label lblHealthyPercent;
-    @FXML private Label lblDonutPaid, lblDonutDue, lblDonutEfficiency, lblDonutOverdue, lblDonutTotal, lblDonutInsight, lblCollectionPeriod;
+	// Analysis Bars
+	@FXML
+	private javafx.scene.layout.Region cashFlow_M1_total;
+	@FXML
+	private javafx.scene.layout.Region cashFlow_M1_actual;
+	@FXML
+	private javafx.scene.layout.Region cashFlow_M2_total;
+	@FXML
+	private javafx.scene.layout.Region cashFlow_M2_actual;
+	@FXML
+	private javafx.scene.layout.Region cashFlow_M3_total;
+	@FXML
+	private javafx.scene.layout.Region cashFlow_M3_actual;
+	@FXML
+	private javafx.scene.layout.Region cashFlow_M4_total;
+	@FXML
+	private javafx.scene.layout.Region cashFlow_M4_actual;
+	@FXML
+	private javafx.scene.layout.Region cashFlow_M5_total;
+	@FXML
+	private javafx.scene.layout.Region cashFlow_M5_actual;
+	@FXML
+	private javafx.scene.layout.Region cashFlow_M6_total;
+	@FXML
+	private javafx.scene.layout.Region cashFlow_M6_actual;
 
+	@FXML
+	private Button btnChart1M, btnChart3M, btnChart6M;
+	@FXML
+	private Label lblCashFlow_M1, lblCashFlow_M2, lblCashFlow_M3, lblCashFlow_M4, lblCashFlow_M5, lblCashFlow_M6;
 
-	@FXML private AreaChart<String, Number> revenueChart;
-	@FXML private PieChart jobDistributionChart;
-	@FXML private Label lblActiveJobsCount;
-	@FXML private TableView<DashboardJobDTO> recentJobsTable;
-	@FXML private TableColumn<DashboardJobDTO, String> colOrderClient;
-	@FXML private TableColumn<DashboardJobDTO, String> colProjectDetails;
-	@FXML private TableColumn<DashboardJobDTO, String> colReceived;
-	@FXML private TableColumn<DashboardJobDTO, String> colDueDate;
-	@FXML private TableColumn<DashboardJobDTO, String> colValuation;
-	@FXML private TableColumn<DashboardJobDTO, String> colWorkflow;
+	@FXML
+	private javafx.scene.control.ComboBox<String> comboTimeRange;
+	private String selectedTimeRange = "All Time";
+
+	@FXML
+	private javafx.scene.shape.Arc donut_ring_green;
+	@FXML
+	private javafx.scene.shape.Arc donut_ring_orange;
+	@FXML
+	private Label lblHealthyPercent;
+	@FXML
+	private Label lblDonutPaid, lblDonutDue, lblDonutEfficiency, lblDonutOverdue, lblDonutTotal, lblDonutInsight,
+			lblCollectionPeriod;
+
+	@FXML
+	private AreaChart<String, Number> revenueChart;
+	@FXML
+	private PieChart jobDistributionChart;
+	@FXML
+	private Label lblActiveJobsCount;
+	@FXML
+	private TableView<DashboardJobDTO> recentJobsTable;
+	@FXML
+	private TableColumn<DashboardJobDTO, String> colOrderClient;
+	@FXML
+	private TableColumn<DashboardJobDTO, String> colProjectDetails;
+	@FXML
+	private TableColumn<DashboardJobDTO, String> colReceived;
+	@FXML
+	private TableColumn<DashboardJobDTO, String> colDueDate;
+	@FXML
+	private TableColumn<DashboardJobDTO, String> colValuation;
+	@FXML
+	private TableColumn<DashboardJobDTO, String> colWorkflow;
 
 	Job currentJob = new Job();
 	private int currentLoadTaskId = 0;
@@ -156,7 +198,7 @@ public class MainController implements Initializable {
 	@FXML
 	private ProgressBar loaderBar;
 
-    private Button activeParent;
+	private Button activeParent;
 
 	public void showGlobalLoader(String title, String subtitle) {
 		loaderTitle.setText(title);
@@ -174,39 +216,66 @@ public class MainController implements Initializable {
 	// Sidebar containers
 	@FXML
 	private VBox mainSidebar;
-	@FXML private VBox jobsSubmenu;
-	@FXML private VBox clientsSubmenu;
-	@FXML private VBox billingSubmenu;
-	@FXML private VBox paymentSubmenu;
-	@FXML private VBox ledgerSubmenu;
-	@FXML private VBox settingsSubmenu;
+	@FXML
+	private VBox jobsSubmenu;
+	@FXML
+	private VBox clientsSubmenu;
+	@FXML
+	private VBox billingSubmenu;
+	@FXML
+	private VBox paymentSubmenu;
+	@FXML
+	private VBox ledgerSubmenu;
+	@FXML
+	private VBox settingsSubmenu;
 
-    // Accordion Headers (Buttons)
-    @FXML private Button jobsBtn;
-    @FXML private Button clientsBtn;
-    @FXML private Button billingBtn;
-    @FXML private Button paymentBtn;
-    @FXML private Button ledgerBtn;
-    @FXML private Button settingsBtn;
-    @FXML private Button dashboardBtn;
+	// Accordion Headers (Buttons)
+	@FXML
+	private Button jobsBtn;
+	@FXML
+	private Button clientsBtn;
+	@FXML
+	private Button billingBtn;
+	@FXML
+	private Button paymentBtn;
+	@FXML
+	private Button ledgerBtn;
+	@FXML
+	private Button settingsBtn;
+	@FXML
+	private Button dashboardBtn;
 
-    // Submenu Buttons
-    @FXML private Button viewClientsSubBtn;
-    @FXML private Button editClientSubBtn;
-    @FXML private Button addClientSubBtn;
-    @FXML private Button addJobSubBtn;
-    @FXML private Button genInvoiceSubBtn;
-    @FXML private Button recPaymentSubBtn;
-    @FXML private Button clientLedgerSubBtn;
-    @FXML private Button genSettingsSubBtn;
+	// Submenu Buttons
+	@FXML
+	private Button viewClientsSubBtn;
+	@FXML
+	private Button editClientSubBtn;
+	@FXML
+	private Button addClientSubBtn;
+	@FXML
+	private Button addJobSubBtn;
+	@FXML
+	private Button genInvoiceSubBtn;
+	@FXML
+	private Button recPaymentSubBtn;
+	@FXML
+	private Button clientLedgerSubBtn;
+	@FXML
+	private Button genSettingsSubBtn;
 
-    // Chevrons
-    @FXML private Region jobsChevron;
-    @FXML private Region clientsChevron;
-    @FXML private Region billingChevron;
-    @FXML private Region paymentChevron;
-    @FXML private Region ledgerChevron;
-    @FXML private Region settingsChevron;
+	// Chevrons
+	@FXML
+	private Region jobsChevron;
+	@FXML
+	private Region clientsChevron;
+	@FXML
+	private Region billingChevron;
+	@FXML
+	private Region paymentChevron;
+	@FXML
+	private Region ledgerChevron;
+	@FXML
+	private Region settingsChevron;
 
 	// ScrollPanes
 	@FXML
@@ -227,48 +296,51 @@ public class MainController implements Initializable {
 	}
 
 	// Top Search
-	@FXML private HBox mainSearchBox;
-	@FXML private TextField mainSearchField;
+	@FXML
+	private HBox mainSearchBox;
+	@FXML
+	private TextField mainSearchField;
 
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
-        if (backNavBtn != null) {
-            backNavBtn.visibleProperty().bind(utils.NavigationManager.getInstance().canGoBackProperty());
-            backNavBtn.managedProperty().bind(backNavBtn.visibleProperty());
-        }
+		if (backNavBtn != null) {
+			backNavBtn.visibleProperty().bind(utils.NavigationManager.getInstance().canGoBackProperty());
+			backNavBtn.managedProperty().bind(backNavBtn.visibleProperty());
+		}
 		setPageTitle("Dashboard");
 		openCenterDashboard();
-        // Set initial state so first push creates history
-        utils.NavigationManager.getInstance().push(null, "Dashboard", "Overview", null);
-		
-        // Initialize Filter Dropdown
-        if (comboTimeRange != null) {
-            comboTimeRange.getItems().setAll("All Time", "Last 7 Days", "Last 30 Days", "Last 3 Months");
-            comboTimeRange.setValue("All Time");
-            comboTimeRange.setOnAction(e -> {
-                selectedTimeRange = comboTimeRange.getValue();
-                loadDashboardData();
-            });
-        }
+		// Set initial state so first push creates history
+		utils.NavigationManager.getInstance().push(null, "Dashboard", "Overview", null);
+
+		// Initialize Filter Dropdown
+		if (comboTimeRange != null) {
+			comboTimeRange.getItems().setAll("All Time", "Last 7 Days", "Last 30 Days", "Last 3 Months");
+			comboTimeRange.setValue("All Time");
+			comboTimeRange.setOnAction(e -> {
+				selectedTimeRange = comboTimeRange.getValue();
+				loadDashboardData();
+			});
+		}
 
 		loadDashboardData();
 
-		
 		if (mainSearchBox != null && mainSearchField != null) {
-		    mainSearchField.focusedProperty().addListener((obs, oldVal, focused) -> {
-		        javafx.animation.Timeline timeline = new javafx.animation.Timeline();
-		        javafx.animation.KeyValue kv;
-		        if (focused) {
-		            kv = new javafx.animation.KeyValue(mainSearchBox.prefWidthProperty(), 460, javafx.animation.Interpolator.EASE_OUT);
-		        } else {
-		            kv = new javafx.animation.KeyValue(mainSearchBox.prefWidthProperty(), 380, javafx.animation.Interpolator.EASE_OUT);
-		        }
-		        javafx.animation.KeyFrame kf = new javafx.animation.KeyFrame(javafx.util.Duration.millis(200), kv);
-		        timeline.getKeyFrames().add(kf);
-		        timeline.play();
-		    });
+			mainSearchField.focusedProperty().addListener((obs, oldVal, focused) -> {
+				javafx.animation.Timeline timeline = new javafx.animation.Timeline();
+				javafx.animation.KeyValue kv;
+				if (focused) {
+					kv = new javafx.animation.KeyValue(mainSearchBox.prefWidthProperty(), 460,
+							javafx.animation.Interpolator.EASE_OUT);
+				} else {
+					kv = new javafx.animation.KeyValue(mainSearchBox.prefWidthProperty(), 380,
+							javafx.animation.Interpolator.EASE_OUT);
+				}
+				javafx.animation.KeyFrame kf = new javafx.animation.KeyFrame(javafx.util.Duration.millis(200), kv);
+				timeline.getKeyFrames().add(kf);
+				timeline.play();
+			});
 		}
-		
+
 		if (sidebarStack != null) {
 			Rectangle clip = new Rectangle();
 			clip.widthProperty().bind(sidebarStack.widthProperty());
@@ -287,12 +359,12 @@ public class MainController implements Initializable {
 			// ✅ Mouse exit collapse
 			sidebarStack.setOnMouseExited(e -> collapseSidebar());
 
-            // Force layout update during animation to ensure center content shifts smoothly
-            sidebarStack.widthProperty().addListener((obs, oldV, newV) -> {
-                if (root != null) {
-                    root.requestLayout();
-                }
-            });
+			// Force layout update during animation to ensure center content shifts smoothly
+			sidebarStack.widthProperty().addListener((obs, oldV, newV) -> {
+				if (root != null) {
+					root.requestLayout();
+				}
+			});
 		}
 
 		// Show only the main sidebar initially
@@ -339,7 +411,7 @@ public class MainController implements Initializable {
 			// Only set MIN HEIGHT (never prefHeight!)
 			// This avoids binding conflicts inside ScrollPane.
 			// fallback for centerScroll if only dashboardView is provided
-            ScrollPane scroll = (centerScroll != null) ? centerScroll : dashboardView;
+			ScrollPane scroll = (centerScroll != null) ? centerScroll : dashboardView;
 
 			if (scroll != null && centerRoot != null) {
 
@@ -369,23 +441,25 @@ public class MainController implements Initializable {
 					innerStack.minWidthProperty().bind(sidebarStack.widthProperty());
 					innerStack.maxWidthProperty().bind(sidebarStack.widthProperty());
 				}
-				
+
 				// Forcefully eliminate all phantom focus-scroll shifting in the sidebar
 				sidebarScroll.hvalueProperty().addListener((obs, oldV, newV) -> {
-				    if (newV != null && newV.doubleValue() != 0) {
-				        sidebarScroll.setHvalue(0);
-				    }
+					if (newV != null && newV.doubleValue() != 0) {
+						sidebarScroll.setHvalue(0);
+					}
 				});
 				sidebarScroll.setHvalue(0);
 			}
 
 			if (userNameLabel != null && utils.SessionManager.getInstance().isLoggedIn()) {
 				String user = utils.SessionManager.getInstance().getCurrentUser().getUsername();
-                userNameLabel.setText(user);
-                if (lblDashboardGreeting != null) lblDashboardGreeting.setText("Welcome, " + user);
+				userNameLabel.setText(user);
+				if (lblDashboardGreeting != null)
+					lblDashboardGreeting.setText("Welcome, " + user);
 			} else if (userNameLabel != null) {
 				userNameLabel.setText("Guest");
-                if (lblDashboardGreeting != null) lblDashboardGreeting.setText("Welcome");
+				if (lblDashboardGreeting != null)
+					lblDashboardGreeting.setText("Welcome");
 			}
 		});
 	}
@@ -421,61 +495,81 @@ public class MainController implements Initializable {
 		if (dashboardView != null) {
 			dashboardView.setVisible(true);
 			dashboardView.setManaged(true);
-			
-            // Show search bar only on dashboard
-            if (mainSearchBox != null) {
-                mainSearchBox.setVisible(true);
-                mainSearchBox.setManaged(true);
-            }
 
-            // Hide breadcrumb on dashboard
-            if (pageTitle != null) {
-                pageTitle.setVisible(false);
-                pageTitle.setManaged(false);
-            }
+			// Show search bar only on dashboard
+			if (mainSearchBox != null) {
+				mainSearchBox.setVisible(true);
+				mainSearchBox.setManaged(true);
+			}
 
-            // Only update if we are not already showing the dashboard or to ensure it's in the hierarchy
-            if (centerContentHost != null && !centerContentHost.getChildren().contains(dashboardView)) {
-                centerContentHost.getChildren().setAll(dashboardView);
-            }
+			// Hide breadcrumb on dashboard
+			if (pageTitle != null) {
+				pageTitle.setVisible(false);
+				pageTitle.setManaged(false);
+			}
+
+			// Only update if we are not already showing the dashboard or to ensure it's in
+			// the hierarchy
+			if (centerContentHost != null && !centerContentHost.getChildren().contains(dashboardView)) {
+				centerContentHost.getChildren().setAll(dashboardView);
+			}
 
 			loadDashboardData();
 			setPageTitle("");
-            // Strip focus from any previously focused elements in the header
-            if (appRoot != null) {
-                appRoot.requestFocus();
-            }
+			// Strip focus from any previously focused elements in the header
+			if (appRoot != null) {
+				appRoot.requestFocus();
+			}
 		}
 	}
 
-    private int activeChartRange = 6; // months
+	private int activeChartRange = 6; // months
 
-    @FXML
-    private void handleChartRange1M() { activeChartRange = 1; updateChartButtonsUI(); loadChartData(); }
-    @FXML
-    private void handleChartRange3M() { activeChartRange = 3; updateChartButtonsUI(); loadChartData(); }
-    @FXML
-    private void handleChartRange6M() { activeChartRange = 6; updateChartButtonsUI(); loadChartData(); }
+	@FXML
+	private void handleChartRange1M() {
+		activeChartRange = 1;
+		updateChartButtonsUI();
+		loadChartData();
+	}
 
-    private void updateChartButtonsUI() {
-        if (btnChart1M == null || btnChart3M == null || btnChart6M == null) return;
-        
-        String activeStyle = "-fx-background-color: white; -fx-background-radius: 100; -fx-font-size: 11; -fx-font-weight: 800; -fx-padding: 6 16; -fx-text-fill: #D47B5A; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 5, 0, 0, 2);";
-        String inactiveStyle = "-fx-background-color: transparent; -fx-font-size: 11; -fx-font-weight: 800; -fx-padding: 6 16; -fx-text-fill: #737B69; -fx-effect: none;";
-        
-        btnChart1M.setStyle(activeChartRange == 1 ? activeStyle : inactiveStyle);
-        btnChart3M.setStyle(activeChartRange == 3 ? activeStyle : inactiveStyle);
-        btnChart6M.setStyle(activeChartRange == 6 ? activeStyle : inactiveStyle);
-    }
+	@FXML
+	private void handleChartRange3M() {
+		activeChartRange = 3;
+		updateChartButtonsUI();
+		loadChartData();
+	}
 
-    private String getTimeFilterSQL() {
-        switch (selectedTimeRange) {
-            case "Last 7 Days":   return " AND date(invoice_date) >= date('now', '-7 days')";
-            case "Last 30 Days":  return " AND date(invoice_date) >= date('now', '-30 days')";
-            case "Last 3 Months": return " AND date(invoice_date) >= date('now', '-90 days')";
-            default: return ""; // All Time
-        }
-    }
+	@FXML
+	private void handleChartRange6M() {
+		activeChartRange = 6;
+		updateChartButtonsUI();
+		loadChartData();
+	}
+
+	private void updateChartButtonsUI() {
+		if (btnChart1M == null || btnChart3M == null || btnChart6M == null)
+			return;
+
+		String activeStyle = "-fx-background-color: white; -fx-background-radius: 100; -fx-font-size: 11; -fx-font-weight: 800; -fx-padding: 6 16; -fx-text-fill: #D47B5A; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 5, 0, 0, 2);";
+		String inactiveStyle = "-fx-background-color: transparent; -fx-font-size: 11; -fx-font-weight: 800; -fx-padding: 6 16; -fx-text-fill: #737B69; -fx-effect: none;";
+
+		btnChart1M.setStyle(activeChartRange == 1 ? activeStyle : inactiveStyle);
+		btnChart3M.setStyle(activeChartRange == 3 ? activeStyle : inactiveStyle);
+		btnChart6M.setStyle(activeChartRange == 6 ? activeStyle : inactiveStyle);
+	}
+
+	private String getTimeFilterSQL() {
+		switch (selectedTimeRange) {
+			case "Last 7 Days":
+				return " AND date(invoice_date) >= date('now', '-7 days')";
+			case "Last 30 Days":
+				return " AND date(invoice_date) >= date('now', '-30 days')";
+			case "Last 3 Months":
+				return " AND date(invoice_date) >= date('now', '-90 days')";
+			default:
+				return ""; // All Time
+		}
+	}
 
 	private void loadDashboardData() {
 		loadSummaryData();
@@ -486,13 +580,15 @@ public class MainController implements Initializable {
 
 	private void loadSummaryData() {
 		try (Connection con = DBConnection.getConnection()) {
-            String filter = getTimeFilterSQL();
+			String filter = getTimeFilterSQL();
 			double totalBilled = 0, totalPaid = 0, totalDue = 0;
 
-			if (lblCollectionPeriod != null) lblCollectionPeriod.setText("COLLECTED (" + selectedTimeRange.toUpperCase() + ")");
+			if (lblCollectionPeriod != null)
+				lblCollectionPeriod.setText("COLLECTED (" + selectedTimeRange.toUpperCase() + ")");
 
 			// 1. DYNAMIC TOTALS based on Range (Revenue, Collected, Outstanding)
-			String sql = "SELECT SUM(amount), SUM(paid_amount), SUM(due_amount) FROM invoice_master WHERE is_void = 0" + filter;
+			String sql = "SELECT SUM(amount), SUM(paid_amount), SUM(due_amount) FROM invoice_master WHERE is_void = 0"
+					+ filter;
 			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
 				if (rs.next()) {
 					totalBilled = rs.getDouble(1);
@@ -501,80 +597,97 @@ public class MainController implements Initializable {
 				}
 			}
 
-            // Adjust for Credit and Debit Notes
-            double totalDN = 0, totalCN = 0;
-            String sqlAdj = "SELECT type, SUM(amount) FROM invoice_adjustments WHERE 1=1 " + 
-                            filter.replace("invoice_date", "date") + " GROUP BY type";
-            try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sqlAdj)) {
-                while (rs.next()) {
-                    String type = rs.getString(1);
-                    double amt = rs.getDouble(2);
-                    if ("Debit Note".equalsIgnoreCase(type)) totalDN = amt;
-                    else if ("Credit Note".equalsIgnoreCase(type)) totalCN = amt;
-                }
-            }
-            totalBilled = totalBilled + totalDN - totalCN;
-            // Note: totalDue also needs adjustment if CN/DN affect balance
-            totalDue = totalDue + totalDN - totalCN; 
+			// Adjust for Credit and Debit Notes
+			double totalDN = 0, totalCN = 0;
+			String sqlAdj = "SELECT type, SUM(amount) FROM invoice_adjustments WHERE 1=1 " +
+					filter.replace("invoice_date", "date") + " GROUP BY type";
+			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sqlAdj)) {
+				while (rs.next()) {
+					String type = rs.getString(1);
+					double amt = rs.getDouble(2);
+					if ("Debit Note".equalsIgnoreCase(type))
+						totalDN = amt;
+					else if ("Credit Note".equalsIgnoreCase(type))
+						totalCN = amt;
+				}
+			}
+			totalBilled = totalBilled + totalDN - totalCN;
+			// Note: totalDue also needs adjustment if CN/DN affect balance
+			totalDue = totalDue + totalDN - totalCN;
 
 			if (lblTotalRevenue != null) {
-                lblTotalRevenue.setText(String.format("₹%,.0f", totalBilled));
-            }
-			if (lblCollected != null) lblCollected.setText(String.format("₹%,.0f", totalPaid));
-			if (lblOutstanding != null) lblOutstanding.setText(String.format("₹%,.0f", totalDue));
-			if (lblDonutTotal != null) lblDonutTotal.setText(String.format("₹%,.0f", totalBilled));
-            if (lblOverdue != null) lblOverdue.setText(String.format("₹%,.0f", totalDue - totalPaid)); // Default logic for "Overdue" kpi card often means dynamic outstanding
+				lblTotalRevenue.setText(String.format("₹%,.0f", totalBilled));
+			}
+			if (lblCollected != null)
+				lblCollected.setText(String.format("₹%,.0f", totalPaid));
+			if (lblOutstanding != null)
+				lblOutstanding.setText(String.format("₹%,.0f", totalDue));
+			if (lblDonutTotal != null)
+				lblDonutTotal.setText(String.format("₹%,.0f", totalBilled));
+			if (lblOverdue != null)
+				lblOverdue.setText(String.format("₹%,.0f", totalDue - totalPaid)); // Default logic for "Overdue" kpi
+																					// card often means dynamic
+																					// outstanding
 
-            // 2. Collection Ratio / Health Score (Within Range)
-            double collectionRatio = totalBilled > 0 ? (totalPaid / totalBilled) : 0;
-            if (lblHealthyPercent != null) lblHealthyPercent.setText(String.format("%.0f%%", collectionRatio * 100));
-            
-            // 3. Overdue (Filtered by Range + 30 day aging)
-            double overdueAmt = 0;
-            String sqlOverdue = "SELECT SUM(due_amount) FROM invoice_master WHERE is_void = 0 AND due_amount > 0 AND date(invoice_date) < date('now', '-30 days')" + filter;
-            try (java.sql.Statement stO = con.createStatement(); ResultSet rsO = stO.executeQuery(sqlOverdue)) {
-                if (rsO.next()) overdueAmt = rsO.getDouble(1);
-            }
-            if (lblDonutOverdue != null) {
-                lblDonutOverdue.setText(String.format("₹%,.0f", overdueAmt));
-                lblDonutOverdue.setStyle("-fx-text-fill: #D27357; -fx-font-weight: 900;");
-            }
-            if (lblOverdue != null) {
-                lblOverdue.setText(String.format("₹%,.0f", overdueAmt));
-            }
-            if (lblDonutPaid != null) lblDonutPaid.setText(String.format("₹%,.0f", totalPaid));
-            if (lblDonutDue != null) lblDonutDue.setText(String.format("₹%,.0f", totalDue));
+			// 2. Collection Ratio / Health Score (Within Range)
+			double collectionRatio = totalBilled > 0 ? (totalPaid / totalBilled) : 0;
+			if (lblHealthyPercent != null)
+				lblHealthyPercent.setText(String.format("%.0f%%", collectionRatio * 100));
 
-            // 4. Efficiency Indicator (Tied to Selection)
-            if (lblDonutEfficiency != null) {
-                double effPct = collectionRatio * 100;
-                lblDonutEfficiency.setText(String.format("%.0f%%", effPct));
-                if (effPct < 50) lblDonutEfficiency.setStyle("-fx-text-fill: #D27357;");
-                else if (effPct < 80) lblDonutEfficiency.setStyle("-fx-text-fill: #D97706;");
-                else lblDonutEfficiency.setStyle("-fx-text-fill: #68765A;");
-            }
+			// 3. Overdue (Filtered by Range + 30 day aging)
+			double overdueAmt = 0;
+			String sqlOverdue = "SELECT SUM(due_amount) FROM invoice_master WHERE is_void = 0 AND due_amount > 0 AND date(invoice_date) < date('now', '-30 days')"
+					+ filter;
+			try (java.sql.Statement stO = con.createStatement(); ResultSet rsO = stO.executeQuery(sqlOverdue)) {
+				if (rsO.next())
+					overdueAmt = rsO.getDouble(1);
+			}
+			if (lblDonutOverdue != null) {
+				lblDonutOverdue.setText(String.format("₹%,.0f", overdueAmt));
+				lblDonutOverdue.setStyle("-fx-text-fill: #D27357; -fx-font-weight: 900;");
+			}
+			if (lblOverdue != null) {
+				lblOverdue.setText(String.format("₹%,.0f", overdueAmt));
+			}
+			if (lblDonutPaid != null)
+				lblDonutPaid.setText(String.format("₹%,.0f", totalPaid));
+			if (lblDonutDue != null)
+				lblDonutDue.setText(String.format("₹%,.0f", totalDue));
 
-            // 5. Insight Component
-            if (lblDonutInsight != null) {
-                if (totalDue > 0) {
-                    double insightPct = (overdueAmt / totalDue) * 100;
-                    lblDonutInsight.setText(String.format("⚠️ %.0f%% of range AR is overdue", insightPct));
-                } else if (totalBilled > 0) {
-                    lblDonutInsight.setText("✅ All range payments are clear");
-                } else {
-                    lblDonutInsight.setText("No data for selected period");
-                }
-            }
+			// 4. Efficiency Indicator (Tied to Selection)
+			if (lblDonutEfficiency != null) {
+				double effPct = collectionRatio * 100;
+				lblDonutEfficiency.setText(String.format("%.0f%%", effPct));
+				if (effPct < 50)
+					lblDonutEfficiency.setStyle("-fx-text-fill: #D27357;");
+				else if (effPct < 80)
+					lblDonutEfficiency.setStyle("-fx-text-fill: #D97706;");
+				else
+					lblDonutEfficiency.setStyle("-fx-text-fill: #68765A;");
+			}
 
-            // 6. Donut Arc control
-            if (donut_ring_green != null) {
-                double greenLength = -(collectionRatio * 360);
-                donut_ring_green.setLength(greenLength);
-                double orangePercent = totalBilled > 0 ? (totalDue / totalBilled) : 0;
-                donut_ring_orange.setLength(orangePercent * 360);
-            }
+			// 5. Insight Component
+			if (lblDonutInsight != null) {
+				if (totalDue > 0) {
+					double insightPct = (overdueAmt / totalDue) * 100;
+					lblDonutInsight.setText(String.format("⚠️ %.0f%% of range AR is overdue", insightPct));
+				} else if (totalBilled > 0) {
+					lblDonutInsight.setText("✅ All range payments are clear");
+				} else {
+					lblDonutInsight.setText("No data for selected period");
+				}
+			}
 
-			if (lblOverdue != null) lblOverdue.setText(String.format("₹%,.0f", overdueAmt));
+			// 6. Donut Arc control
+			if (donut_ring_green != null) {
+				double greenLength = -(collectionRatio * 360);
+				donut_ring_green.setLength(greenLength);
+				double orangePercent = totalBilled > 0 ? (totalDue / totalBilled) : 0;
+				donut_ring_orange.setLength(orangePercent * 360);
+			}
+
+			if (lblOverdue != null)
+				lblOverdue.setText(String.format("₹%,.0f", overdueAmt));
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -582,140 +695,174 @@ public class MainController implements Initializable {
 	}
 
 	private void loadChartData() {
-        javafx.scene.layout.Region[] totalBars = {cashFlow_M1_total, cashFlow_M2_total, cashFlow_M3_total, cashFlow_M4_total, cashFlow_M5_total, cashFlow_M6_total};
-        javafx.scene.layout.Region[] actualBars = {cashFlow_M1_actual, cashFlow_M2_actual, cashFlow_M3_actual, cashFlow_M4_actual, cashFlow_M5_actual, cashFlow_M6_actual};
-        Label[] mLabels = {lblCashFlow_M1, lblCashFlow_M2, lblCashFlow_M3, lblCashFlow_M4, lblCashFlow_M5, lblCashFlow_M6};
-        String[] monthNames = {"", "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
+		javafx.scene.layout.Region[] totalBars = { cashFlow_M1_total, cashFlow_M2_total, cashFlow_M3_total,
+				cashFlow_M4_total, cashFlow_M5_total, cashFlow_M6_total };
+		javafx.scene.layout.Region[] actualBars = { cashFlow_M1_actual, cashFlow_M2_actual, cashFlow_M3_actual,
+				cashFlow_M4_actual, cashFlow_M5_actual, cashFlow_M6_actual };
+		Label[] mLabels = { lblCashFlow_M1, lblCashFlow_M2, lblCashFlow_M3, lblCashFlow_M4, lblCashFlow_M5,
+				lblCashFlow_M6 };
+		String[] monthNames = { "", "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV",
+				"DEC" };
 
-        // Reset
-        for (javafx.scene.layout.Region r : totalBars) if(r!=null) r.setPrefHeight(0);
-        for (javafx.scene.layout.Region r : actualBars) if(r!=null) r.setPrefHeight(0);
-        for (Label l : mLabels) if (l!=null) l.setText("");
+		// Reset
+		for (javafx.scene.layout.Region r : totalBars)
+			if (r != null)
+				r.setPrefHeight(0);
+		for (javafx.scene.layout.Region r : actualBars)
+			if (r != null)
+				r.setPrefHeight(0);
+		for (Label l : mLabels)
+			if (l != null)
+				l.setText("");
 
 		try (Connection con = DBConnection.getConnection()) {
-            String globalFilter = getTimeFilterSQL();
+			String globalFilter = getTimeFilterSQL();
 			String sql = "SELECT strftime('%m', invoice_date) as month, SUM(amount), SUM(paid_amount) " +
-                         "FROM invoice_master WHERE is_void = 0 " + globalFilter +
-                         " AND date(invoice_date) >= date('now', 'start of month', '-" + (activeChartRange - 1) + " months') " +
-                         "GROUP BY month ORDER BY month DESC LIMIT 6";
+					"FROM invoice_master WHERE is_void = 0 " + globalFilter +
+					" AND date(invoice_date) >= date('now', 'start of month', '-" + (activeChartRange - 1)
+					+ " months') " +
+					"GROUP BY month ORDER BY month DESC LIMIT 6";
 			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                int i = 0;
-                double maxVal = 1000; // Baseline
+				int i = 0;
+				double maxVal = 1000; // Baseline
 				while (rs.next() && i < 6) {
-                    int dbMonth = Integer.parseInt(rs.getString(1));
-                    String mStr = monthNames[dbMonth];
-                    double total = rs.getDouble(2);
-                    double actual = rs.getDouble(3);
-                    if (total > maxVal) maxVal = total;
-                    
-                    double finalTotal = total;
-                    double finalActual = actual;
-                    int index = i;
-                    double finalMax = maxVal;
-                    
-                    Platform.runLater(() -> {
-                        double tH = (finalTotal / finalMax) * 160 + 20;
-                        double aH = (finalActual / finalMax) * 160 + 10;
-                        if (mLabels[index] != null) mLabels[index].setText(mStr);
-                        
-                        if (totalBars[index] != null) {
-                            totalBars[index].setPrefHeight(tH);
-                            javafx.scene.control.Tooltip ttTotal = new javafx.scene.control.Tooltip(String.format("TOTAL AMOUNT: ₹%,.0f", finalTotal));
-                            ttTotal.setShowDelay(javafx.util.Duration.millis(50));
-                            javafx.scene.control.Tooltip.install(totalBars[index], ttTotal);
-                        }
-                        if (actualBars[index] != null) {
-                            actualBars[index].setPrefHeight(aH);
-                            javafx.scene.control.Tooltip ttAct = new javafx.scene.control.Tooltip(String.format("NET COLLECTION: ₹%,.0f", finalActual));
-                            ttAct.setShowDelay(javafx.util.Duration.millis(50));
-                            javafx.scene.control.Tooltip.install(actualBars[index], ttAct);
-                        }
-                    });
-                    i++;
+					int dbMonth = Integer.parseInt(rs.getString(1));
+					String mStr = monthNames[dbMonth];
+					double total = rs.getDouble(2);
+					double actual = rs.getDouble(3);
+					if (total > maxVal)
+						maxVal = total;
+
+					double finalTotal = total;
+					double finalActual = actual;
+					int index = i;
+					double finalMax = maxVal;
+
+					Platform.runLater(() -> {
+						double tH = (finalTotal / finalMax) * 160 + 20;
+						double aH = (finalActual / finalMax) * 160 + 10;
+						if (mLabels[index] != null)
+							mLabels[index].setText(mStr);
+
+						if (totalBars[index] != null) {
+							totalBars[index].setPrefHeight(tH);
+							javafx.scene.control.Tooltip ttTotal = new javafx.scene.control.Tooltip(
+									String.format("TOTAL AMOUNT: ₹%,.0f", finalTotal));
+							ttTotal.setShowDelay(javafx.util.Duration.millis(50));
+							javafx.scene.control.Tooltip.install(totalBars[index], ttTotal);
+						}
+						if (actualBars[index] != null) {
+							actualBars[index].setPrefHeight(aH);
+							javafx.scene.control.Tooltip ttAct = new javafx.scene.control.Tooltip(
+									String.format("NET COLLECTION: ₹%,.0f", finalActual));
+							ttAct.setShowDelay(javafx.util.Duration.millis(50));
+							javafx.scene.control.Tooltip.install(actualBars[index], ttAct);
+						}
+					});
+					i++;
 				}
-                
-                // If no data, show precise mock for "Taste Design" visuals
-                if (i == 0) {
-                    double[] mockT = {120, 100, 150, 115, 180, 130};
-                    double[] mockA = {85, 70, 80, 90, 135, 85};
-                    int currMonth = java.time.LocalDate.now().getMonthValue();
-                    
-                    for (int j = 0; j < activeChartRange; j++) {
-                        int index = j;
-                        int m = currMonth - j;
-                        if (m <= 0) m += 12;
-                        String mStr = monthNames[m];
-                        
-                        Platform.runLater(() -> {
-                            if (mLabels[index] != null) mLabels[index].setText(mStr);
-                            
-                            if (totalBars[index] != null) {
-                                totalBars[index].setPrefHeight(mockT[index]);
-                                javafx.scene.control.Tooltip ttTotalMock = new javafx.scene.control.Tooltip(String.format("TOTAL AMOUNT: ₹%,.0f", mockT[index]*1450));
-                                ttTotalMock.setShowDelay(javafx.util.Duration.millis(50));
-                                javafx.scene.control.Tooltip.install(totalBars[index], ttTotalMock);
-                            }
-                            if (actualBars[index] != null) {
-                                actualBars[index].setPrefHeight(mockA[index]);
-                                javafx.scene.control.Tooltip ttActMock = new javafx.scene.control.Tooltip(String.format("NET COLLECTION: ₹%,.0f", mockA[index]*1450));
-                                ttActMock.setShowDelay(javafx.util.Duration.millis(50));
-                                javafx.scene.control.Tooltip.install(actualBars[index], ttActMock);
-                            }
-                        });
-                    }
-                }
+
+				// If no data, show precise mock for "Taste Design" visuals
+				if (i == 0) {
+					double[] mockT = { 120, 100, 150, 115, 180, 130 };
+					double[] mockA = { 85, 70, 80, 90, 135, 85 };
+					int currMonth = java.time.LocalDate.now().getMonthValue();
+
+					for (int j = 0; j < activeChartRange; j++) {
+						int index = j;
+						int m = currMonth - j;
+						if (m <= 0)
+							m += 12;
+						String mStr = monthNames[m];
+
+						Platform.runLater(() -> {
+							if (mLabels[index] != null)
+								mLabels[index].setText(mStr);
+
+							if (totalBars[index] != null) {
+								totalBars[index].setPrefHeight(mockT[index]);
+								javafx.scene.control.Tooltip ttTotalMock = new javafx.scene.control.Tooltip(
+										String.format("TOTAL AMOUNT: ₹%,.0f", mockT[index] * 1450));
+								ttTotalMock.setShowDelay(javafx.util.Duration.millis(50));
+								javafx.scene.control.Tooltip.install(totalBars[index], ttTotalMock);
+							}
+							if (actualBars[index] != null) {
+								actualBars[index].setPrefHeight(mockA[index]);
+								javafx.scene.control.Tooltip ttActMock = new javafx.scene.control.Tooltip(
+										String.format("NET COLLECTION: ₹%,.0f", mockA[index] * 1450));
+								ttActMock.setShowDelay(javafx.util.Duration.millis(50));
+								javafx.scene.control.Tooltip.install(actualBars[index], ttActMock);
+							}
+						});
+					}
+				}
 			}
-		} catch (Exception e) { e.printStackTrace(); }
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void loadPieChartData() {
-		if (jobDistributionChart == null) return;
+		if (jobDistributionChart == null)
+			return;
 		try (Connection con = DBConnection.getConnection()) {
-            String filter = getTimeFilterSQL();
-			String sql = "SELECT status, COUNT(*) FROM job WHERE 1=1 " + filter.replace("invoice_date", "order_date") + " AND status IS NOT NULL GROUP BY status";
+			String filter = getTimeFilterSQL();
+			String sql = "SELECT status, COUNT(*) FROM job WHERE 1=1 " + filter.replace("invoice_date", "order_date")
+					+ " AND status IS NOT NULL GROUP BY status";
 			ObservableList<PieChart.Data> pieData = FXCollections.observableArrayList();
-            int total = 0;
+			int total = 0;
 			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
 				while (rs.next()) {
-                    int count = rs.getInt(2);
+					int count = rs.getInt(2);
 					pieData.add(new PieChart.Data(rs.getString(1), count));
-                    total += count;
+					total += count;
 				}
 			}
 			jobDistributionChart.setData(pieData);
-            if(lblActiveJobsCount != null) lblActiveJobsCount.setText(String.valueOf(total));
-		} catch (Exception e) { e.printStackTrace(); }
+			if (lblActiveJobsCount != null)
+				lblActiveJobsCount.setText(String.valueOf(total));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void loadTableData() {
-		if (recentJobsTable == null) return;
-		if (colOrderClient != null) colOrderClient.setCellValueFactory(new PropertyValueFactory<>("orderClient"));
-		if (colProjectDetails != null) colProjectDetails.setCellValueFactory(new PropertyValueFactory<>("projectDetails"));
-		if (colReceived != null) colReceived.setCellValueFactory(new PropertyValueFactory<>("receivedDate"));
-		if (colDueDate != null) colDueDate.setCellValueFactory(new PropertyValueFactory<>("dueDate"));
-		if (colValuation != null) colValuation.setCellValueFactory(new PropertyValueFactory<>("valuation"));
-		if (colWorkflow != null) colWorkflow.setCellValueFactory(new PropertyValueFactory<>("workflow"));
+		if (recentJobsTable == null)
+			return;
+		if (colOrderClient != null)
+			colOrderClient.setCellValueFactory(new PropertyValueFactory<>("orderClient"));
+		if (colProjectDetails != null)
+			colProjectDetails.setCellValueFactory(new PropertyValueFactory<>("projectDetails"));
+		if (colReceived != null)
+			colReceived.setCellValueFactory(new PropertyValueFactory<>("receivedDate"));
+		if (colDueDate != null)
+			colDueDate.setCellValueFactory(new PropertyValueFactory<>("dueDate"));
+		if (colValuation != null)
+			colValuation.setCellValueFactory(new PropertyValueFactory<>("valuation"));
+		if (colWorkflow != null)
+			colWorkflow.setCellValueFactory(new PropertyValueFactory<>("workflow"));
 
 		ObservableList<DashboardJobDTO> jobs = FXCollections.observableArrayList();
 		try (Connection con = DBConnection.getConnection()) {
-            String filter = getTimeFilterSQL();
+			String filter = getTimeFilterSQL();
 			String sql = "SELECT j.job_name, c.client_name, j.order_date, j.delivery_date, j.total_amount, j.status " +
-                         "FROM job j JOIN client_master c ON j.client_id = c.id " +
-                         "WHERE 1=1 " + filter.replace("invoice_date", "j.order_date") +
-                         " ORDER BY j.id DESC LIMIT 5";
+					"FROM job j JOIN client_master c ON j.client_id = c.id " +
+					"WHERE 1=1 " + filter.replace("invoice_date", "j.order_date") +
+					" ORDER BY j.id DESC LIMIT 5";
 			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
 				while (rs.next()) {
 					jobs.add(new DashboardJobDTO(
-						"#" + rs.getString(1) + " / " + rs.getString(2),
-						rs.getString(1),
-						rs.getString(3),
-						rs.getString(4),
-						String.format("₹%,.0f", rs.getDouble(5)),
-						rs.getString(6)
-					));
+							"#" + rs.getString(1) + " / " + rs.getString(2),
+							rs.getString(1),
+							rs.getString(3),
+							rs.getString(4),
+							String.format("₹%,.0f", rs.getDouble(5)),
+							rs.getString(6)));
 				}
 			}
-		} catch (Exception e) { e.printStackTrace(); }
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		recentJobsTable.setItems(jobs);
 	}
 
@@ -729,7 +876,8 @@ public class MainController implements Initializable {
 
 	public boolean canDiscardChanges() {
 		if (currentController instanceof utils.DirtySupport ds && ds.hasUnsavedChanges()) {
-			javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION);
+			javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+					javafx.scene.control.Alert.AlertType.CONFIRMATION);
 			alert.setTitle("Unsaved Changes");
 			alert.setHeaderText("You have unsaved changes.");
 			alert.setContentText("Do you want to leave this page and discard your changes?");
@@ -765,19 +913,19 @@ public class MainController implements Initializable {
 
 		// Hide search bar on non-dashboard screens
 		if (mainSearchBox != null) {
-		    mainSearchBox.setVisible(false);
-		    mainSearchBox.setManaged(false);
+			mainSearchBox.setVisible(false);
+			mainSearchBox.setManaged(false);
 		}
 
 		// Hide breadcrumb by default for all list/list-like screens
 		if (pageTitle != null) {
-		    pageTitle.setVisible(false);
-		    pageTitle.setManaged(false);
+			pageTitle.setVisible(false);
+			pageTitle.setManaged(false);
 		}
 
 		if (pageTitle != null) {
-            lastValidTitle = pageTitle.getText();
-        }
+			lastValidTitle = pageTitle.getText();
+		}
 		System.out
 				.println("DEBUG: loadCenterScreen finished pushing/setting. lastValidTitle is now: " + lastValidTitle);
 
@@ -805,7 +953,8 @@ public class MainController implements Initializable {
 						return;
 					}
 
-					// 🔒 Store the fully compiled Parent view and its controller into the NavigationManager history
+					// 🔒 Store the fully compiled Parent view and its controller into the
+					// NavigationManager history
 					// map!
 					utils.NavigationManager.getInstance().updateCurrentState(view, controller);
 
@@ -854,7 +1003,7 @@ public class MainController implements Initializable {
 	private void collapseSidebar() {
 		collapseAllSubmenus(false); // Instant hide on sidebar collapse to avoid ghosting
 		applyCollapsedStyleToAll(true);
-        sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
+		sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
 		sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
 
 		animateSidebarWidth(COLLAPSED_WIDTH);
@@ -864,118 +1013,124 @@ public class MainController implements Initializable {
 		if (anim != null)
 			anim.stop();
 
-        // Premium Spline Interpolator for a luxurious feel
-        Interpolator premiumEasing = Interpolator.SPLINE(0.25, 0.1, 0.25, 1.0);
+		// Premium Spline Interpolator for a luxurious feel
+		Interpolator premiumEasing = Interpolator.SPLINE(0.25, 0.1, 0.25, 1.0);
 
 		anim = new Timeline(
-				new KeyFrame(Duration.millis(200), 
+				new KeyFrame(Duration.millis(200),
 						new KeyValue(sidebarStack.prefWidthProperty(), width, premiumEasing),
 						new KeyValue(sidebarStack.minWidthProperty(), width, premiumEasing),
 						new KeyValue(sidebarStack.maxWidthProperty(), width, premiumEasing)));
 		anim.play();
 	}
 
-    private void toggleSubmenu(VBox submenu, Region chevron, Button parentBtn, Runnable onFinished) {
-        boolean wasVisible = submenu.isVisible() && submenu.getOpacity() > 0;
-        collapseAllSubmenus(false);
+	private void toggleSubmenu(VBox submenu, Region chevron, Button parentBtn, Runnable onFinished) {
+		boolean wasVisible = submenu.isVisible() && submenu.getOpacity() > 0;
+		collapseAllSubmenus(false);
 
-        if (!wasVisible) {
-            submenu.setVisible(true);
-            submenu.setManaged(true);
-            
-            // Initial state for animation
-            submenu.setMaxHeight(0);
-            submenu.setOpacity(0);
-            submenu.setTranslateY(-10);
+		if (!wasVisible) {
+			submenu.setVisible(true);
+			submenu.setManaged(true);
 
-            Timeline expand = new Timeline(
-                new KeyFrame(Duration.millis(250), 
-                    new KeyValue(submenu.maxHeightProperty(), 350, Interpolator.EASE_OUT),
-                    new KeyValue(submenu.opacityProperty(), 1, Interpolator.EASE_OUT),
-                    new KeyValue(submenu.translateYProperty(), 0, Interpolator.EASE_OUT)
-                )
-            );
-            
-            if (chevron != null) {
-                expand.getKeyFrames().add(new KeyFrame(Duration.millis(250), 
-                    new KeyValue(chevron.rotateProperty(), 180, Interpolator.EASE_OUT)));
-            }
-            
-            if (parentBtn != null) {
-                parentBtn.getStyleClass().add("sidebar-btn-expanded");
-            }
-            
-            if (onFinished != null) {
-                // ✅ Only run the default child screen loader if this parent isn't already the active section.
-                // This prevents clicking a parent after a collapse/expand cycle from resetting the child view.
-                if (activeParent != parentBtn) {
-                    expand.setOnFinished(e -> onFinished.run());
-                }
-            }
-            
-            expand.play();
-        }
-    }
+			// Initial state for animation
+			submenu.setMaxHeight(0);
+			submenu.setOpacity(0);
+			submenu.setTranslateY(-10);
 
-    public void collapseAllSubmenus(boolean animate) {
-        VBox[] submenus = {jobsSubmenu, clientsSubmenu, billingSubmenu, paymentSubmenu, ledgerSubmenu, settingsSubmenu};
-        Region[] chevrons = {jobsChevron, clientsChevron, billingChevron, paymentChevron, ledgerChevron, settingsChevron};
-        Button[] btns = {jobsBtn, clientsBtn, billingBtn, paymentBtn, ledgerBtn, settingsBtn};
+			Timeline expand = new Timeline(
+					new KeyFrame(Duration.millis(250),
+							new KeyValue(submenu.maxHeightProperty(), 350, Interpolator.EASE_OUT),
+							new KeyValue(submenu.opacityProperty(), 1, Interpolator.EASE_OUT),
+							new KeyValue(submenu.translateYProperty(), 0, Interpolator.EASE_OUT)));
 
-        for (int i = 0; i < submenus.length; i++) {
-            VBox sub = submenus[i];
-            Region chv = chevrons[i];
-            Button b = btns[i];
+			if (chevron != null) {
+				expand.getKeyFrames().add(new KeyFrame(Duration.millis(250),
+						new KeyValue(chevron.rotateProperty(), 180, Interpolator.EASE_OUT)));
+			}
 
-            if (sub != null && sub.isVisible()) {
-                if (b != null) b.getStyleClass().remove("sidebar-btn-expanded");
-                
-                sub.setVisible(false);
-                sub.setManaged(false);
-                sub.setOpacity(0);
-                sub.setMaxHeight(0);
-                sub.setTranslateY(0);
-                if (chv != null) chv.setRotate(0);
-            }
-        }
-    }
+			if (parentBtn != null) {
+				parentBtn.getStyleClass().add("sidebar-btn-expanded");
+			}
 
-    private void resetSelectionStyles() {
-        Button[] buttons = {jobsBtn, clientsBtn, billingBtn, paymentBtn, ledgerBtn, settingsBtn, dashboardBtn};
-        for (Button b : buttons) {
-            if (b != null) b.getStyleClass().remove("sidebar-btn-active");
-        }
-    }
+			if (onFinished != null) {
+				// ✅ Only run the default child screen loader if this parent isn't already the
+				// active section.
+				// This prevents clicking a parent after a collapse/expand cycle from resetting
+				// the child view.
+				if (activeParent != parentBtn) {
+					expand.setOnFinished(e -> onFinished.run());
+				}
+			}
 
-    private void highlightActiveMenu(Button parent) {
-        resetSelectionStyles();
-        resetSubmenuStyles();
-        if (parent != null) {
-            parent.getStyleClass().add("sidebar-btn-active");
-            activeParent = parent;
-        }
-    }
+			expand.play();
+		}
+	}
 
-    private void highlightSubmenu(Button subBtn) {
-        resetSubmenuStyles();
-        if (subBtn != null) {
-            subBtn.getStyleClass().add("submenu-btn-active");
-        }
-    }
+	public void collapseAllSubmenus(boolean animate) {
+		VBox[] submenus = { jobsSubmenu, clientsSubmenu, billingSubmenu, paymentSubmenu, ledgerSubmenu,
+				settingsSubmenu };
+		Region[] chevrons = { jobsChevron, clientsChevron, billingChevron, paymentChevron, ledgerChevron,
+				settingsChevron };
+		Button[] btns = { jobsBtn, clientsBtn, billingBtn, paymentBtn, ledgerBtn, settingsBtn };
 
-    private void resetSubmenuStyles() {
-        if (mainSidebar != null) {
-            mainSidebar.lookupAll(".submenu-btn").forEach(node -> {
-                if (node instanceof Button b) {
-                    b.getStyleClass().remove("submenu-btn-active");
-                }
-            });
-        }
-    }
+		for (int i = 0; i < submenus.length; i++) {
+			VBox sub = submenus[i];
+			Region chv = chevrons[i];
+			Button b = btns[i];
+
+			if (sub != null && sub.isVisible()) {
+				if (b != null)
+					b.getStyleClass().remove("sidebar-btn-expanded");
+
+				sub.setVisible(false);
+				sub.setManaged(false);
+				sub.setOpacity(0);
+				sub.setMaxHeight(0);
+				sub.setTranslateY(0);
+				if (chv != null)
+					chv.setRotate(0);
+			}
+		}
+	}
+
+	private void resetSelectionStyles() {
+		Button[] buttons = { jobsBtn, clientsBtn, billingBtn, paymentBtn, ledgerBtn, settingsBtn, dashboardBtn };
+		for (Button b : buttons) {
+			if (b != null)
+				b.getStyleClass().remove("sidebar-btn-active");
+		}
+	}
+
+	private void highlightActiveMenu(Button parent) {
+		resetSelectionStyles();
+		resetSubmenuStyles();
+		if (parent != null) {
+			parent.getStyleClass().add("sidebar-btn-active");
+			activeParent = parent;
+		}
+	}
+
+	private void highlightSubmenu(Button subBtn) {
+		resetSubmenuStyles();
+		if (subBtn != null) {
+			subBtn.getStyleClass().add("submenu-btn-active");
+		}
+	}
+
+	private void resetSubmenuStyles() {
+		if (mainSidebar != null) {
+			mainSidebar.lookupAll(".submenu-btn").forEach(node -> {
+				if (node instanceof Button b) {
+					b.getStyleClass().remove("submenu-btn-active");
+				}
+			});
+		}
+	}
 
 	private void showOnly(VBox target) {
-		if (target == null) return;
-        // mainSidebar is always visible in the accordion model
+		if (target == null)
+			return;
+		// mainSidebar is always visible in the accordion model
 	}
 
 	private void setPageTitle(String title) {
@@ -1001,21 +1156,31 @@ public class MainController implements Initializable {
 	// Sidebar / Page switching
 	// ---------------------------
 
-	@FXML public void showJobsSubmenu() { 
-		toggleSubmenu(jobsSubmenu, jobsChevron, jobsBtn, this::loadAddJob); 
+	@FXML
+	public void showJobsSubmenu() {
+		toggleSubmenu(jobsSubmenu, jobsChevron, jobsBtn, this::loadAddJob);
 	}
-	@FXML public void showClientsSubmenu() { 
-		toggleSubmenu(clientsSubmenu, clientsChevron, clientsBtn, this::loadViewClients); 
+
+	@FXML
+	public void showClientsSubmenu() {
+		toggleSubmenu(clientsSubmenu, clientsChevron, clientsBtn, this::loadViewClients);
 	}
-	@FXML public void showBillingSubmenu() { 
-		toggleSubmenu(billingSubmenu, billingChevron, billingBtn, this::loadInvoiceGenration); 
+
+	@FXML
+	public void showBillingSubmenu() {
+		toggleSubmenu(billingSubmenu, billingChevron, billingBtn, this::loadInvoiceGenration);
 	}
-	@FXML public void showPaymentSubmenu() { 
-		toggleSubmenu(paymentSubmenu, paymentChevron, paymentBtn, this::loadRecordPayment); 
+
+	@FXML
+	public void showPaymentSubmenu() {
+		toggleSubmenu(paymentSubmenu, paymentChevron, paymentBtn, this::loadRecordPayment);
 	}
-	@FXML public void showLedgerSubmenu() { 
-		toggleSubmenu(ledgerSubmenu, ledgerChevron, ledgerBtn, this::loadClientLedger); 
+
+	@FXML
+	public void showLedgerSubmenu() {
+		toggleSubmenu(ledgerSubmenu, ledgerChevron, ledgerBtn, this::loadClientLedger);
 	}
+
 	@FXML
 	public void showSettingSubmenu() {
 		toggleSubmenu(settingsSubmenu, settingsChevron, settingsBtn, this::loadGeneralSettings);
@@ -1044,17 +1209,17 @@ public class MainController implements Initializable {
 				VBox restoredSidebar = findSidebarById(prevState.getActiveSidebarId());
 				showOnly(restoredSidebar);
 				lastValidTitle = prevState.getTitle();
-                event.consume();
-                
-                // RESTORE VISIBILITY ON BACK
-                boolean isDetailView = prevState.getFxmlPath() != null && 
-                                      (prevState.getFxmlPath().contains("client_profile") || 
-                                       prevState.getFxmlPath().contains("client_form"));
-                if (pageTitle != null) {
-                    pageTitle.setVisible(isDetailView);
-                    pageTitle.setManaged(isDetailView);
-                    setPageTitle(prevState.getTitle());
-                }
+				event.consume();
+
+				// RESTORE VISIBILITY ON BACK
+				boolean isDetailView = prevState.getFxmlPath() != null &&
+						(prevState.getFxmlPath().contains("client_profile") ||
+								prevState.getFxmlPath().contains("client_form"));
+				if (pageTitle != null) {
+					pageTitle.setVisible(isDetailView);
+					pageTitle.setManaged(isDetailView);
+					setPageTitle(prevState.getTitle());
+				}
 
 				// ⚡ If the history stack preserved the actual screen memory, restore it
 				// instantly:
@@ -1063,12 +1228,12 @@ public class MainController implements Initializable {
 					this.currentController = prevState.getController(); // ⚡ RESTORE CONTROLLER
 					centerContentHost.getChildren().setAll(prevState.getView());
 				} else if (prevState.getFxmlPath() == null) {
-                    // 🏠 Back to Dashboard
-                    collapseAllSubmenus(true);
-                    highlightActiveMenu(dashboardBtn);
-                    openCenterDashboard();
-                    setPageTitle("Dashboard");
-                } else {
+					// 🏠 Back to Dashboard
+					collapseAllSubmenus(true);
+					highlightActiveMenu(dashboardBtn);
+					openCenterDashboard();
+					setPageTitle("Dashboard");
+				} else {
 					// 🐢 Fallback: Only reload FXML if the memory reference was somehow lost
 					System.out.println("DEBUG: FALLBACK - Re-parsing FXML from disk: " + prevState.getFxmlPath());
 					loadCenterScreen(prevState.getFxmlPath(), "Loading...", "Please wait", false);
@@ -1094,33 +1259,32 @@ public class MainController implements Initializable {
 	private void loadAddClient() {
 		highlightActiveMenu(clientsBtn);
 		highlightSubmenu(addClientSubBtn);
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/client_form.fxml"));
-            Parent view = loader.load();
-            ClientFormController controller = loader.getController();
-            controller.setClientData(null); // Mode: ADD
-            
-            centerContentHost.getChildren().setAll(view);
-            if (pageTitle != null) {
-                pageTitle.setVisible(true);
-                pageTitle.setManaged(true);
-                setPageTitle("Register New Client");
-            }
-            
-            utils.NavigationManager.getInstance().push("/fxml/client_form.fxml", "Add Client", "New Registration", clientsSubmenu.getId());
-            utils.NavigationManager.getInstance().updateCurrentState(view, controller);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+		try {
+			FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/client_form.fxml"));
+			Parent view = loader.load();
+			ClientFormController controller = loader.getController();
+			controller.setClientData(null); // Mode: ADD
+
+			centerContentHost.getChildren().setAll(view);
+			if (pageTitle != null) {
+				pageTitle.setVisible(true);
+				pageTitle.setManaged(true);
+				setPageTitle("Register New Client");
+			}
+
+			utils.NavigationManager.getInstance().push("/fxml/client_form.fxml", "Add Client", "New Registration",
+					clientsSubmenu.getId());
+			utils.NavigationManager.getInstance().updateCurrentState(view, controller);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	@FXML
-	private void loadAddJob() {
+	public void loadAddJob() {
 		highlightActiveMenu(jobsBtn);
 		highlightSubmenu(addJobSubBtn);
-		loadCenterScreen("/fxml/ht.fxml",
-				"Loading Dashboard...",
-				"Please wait");
+		loadCenterScreen("/fxml/add_job.fxml", "Creating New Job...", "Setting up workspace");
 	}
 
 	@FXML
@@ -1149,64 +1313,70 @@ public class MainController implements Initializable {
 				"Please wait");
 	}
 
-    public void loadClientProfile(model.Client client) {
-        if (client == null) return;
-        if (pageTitle != null) {
-            pageTitle.setVisible(true);
-            pageTitle.setManaged(true);
-            setPageTitle("Client Profile / " + client.getBusinessName());
-        }
-        
-        if (centerLoaderIncludeController != null) {
-            centerLoaderIncludeController.show("Loading Profile...", "Fetching detailed insights for " + client.getBusinessName());
-        }
-        
-        new Thread(() -> {
-            try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/client_profile.fxml"));
-                Parent view = loader.load();
-                ClientProfileController controller = loader.getController();
-                controller.setClient(client);
-                
-                Platform.runLater(() -> {
-                    centerContentHost.getChildren().setAll(view);
-                    if (centerLoaderIncludeController != null) {
-                        centerLoaderIncludeController.hide();
-                    }
-                    // Push to history manually for deep navigation
-                    utils.NavigationManager.getInstance().push("/fxml/client_profile.fxml", "Client Profile", client.getBusinessName(), clientsSubmenu.getId());
-                    utils.NavigationManager.getInstance().updateCurrentState(view, controller);
-                });
-            } catch (Exception e) {
-                e.printStackTrace();
-                Platform.runLater(() -> {
-                    if (centerLoaderIncludeController != null) centerLoaderIncludeController.hide();
-                });
-            }
-        }).start();
-    }
+	public void loadClientProfile(model.Client client) {
+		if (client == null)
+			return;
+		if (pageTitle != null) {
+			pageTitle.setVisible(true);
+			pageTitle.setManaged(true);
+			setPageTitle("Client Profile / " + client.getBusinessName());
+		}
 
-    public void loadEditClient(model.Client client) {
-        if (client == null) return;
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/client_form.fxml"));
-            Parent view = loader.load();
-            ClientFormController controller = loader.getController();
-            controller.setClientData(client);
-            
-            centerContentHost.getChildren().setAll(view);
-            if (pageTitle != null) {
-                pageTitle.setVisible(true);
-                pageTitle.setManaged(true);
-                setPageTitle("Edit Client / " + client.getBusinessName());
-            }
-            
-            utils.NavigationManager.getInstance().push("/fxml/client_form.fxml", "Edit Client", client.getBusinessName(), clientsSubmenu.getId());
-            utils.NavigationManager.getInstance().updateCurrentState(view, controller);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+		if (centerLoaderIncludeController != null) {
+			centerLoaderIncludeController.show("Loading Profile...",
+					"Fetching detailed insights for " + client.getBusinessName());
+		}
+
+		new Thread(() -> {
+			try {
+				FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/client_profile.fxml"));
+				Parent view = loader.load();
+				ClientProfileController controller = loader.getController();
+				controller.setClient(client);
+
+				Platform.runLater(() -> {
+					centerContentHost.getChildren().setAll(view);
+					if (centerLoaderIncludeController != null) {
+						centerLoaderIncludeController.hide();
+					}
+					// Push to history manually for deep navigation
+					utils.NavigationManager.getInstance().push("/fxml/client_profile.fxml", "Client Profile",
+							client.getBusinessName(), clientsSubmenu.getId());
+					utils.NavigationManager.getInstance().updateCurrentState(view, controller);
+				});
+			} catch (Exception e) {
+				e.printStackTrace();
+				Platform.runLater(() -> {
+					if (centerLoaderIncludeController != null)
+						centerLoaderIncludeController.hide();
+				});
+			}
+		}).start();
+	}
+
+	public void loadEditClient(model.Client client) {
+		if (client == null)
+			return;
+		try {
+			FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/client_form.fxml"));
+			Parent view = loader.load();
+			ClientFormController controller = loader.getController();
+			controller.setClientData(client);
+
+			centerContentHost.getChildren().setAll(view);
+			if (pageTitle != null) {
+				pageTitle.setVisible(true);
+				pageTitle.setManaged(true);
+				setPageTitle("Edit Client / " + client.getBusinessName());
+			}
+
+			utils.NavigationManager.getInstance().push("/fxml/client_form.fxml", "Edit Client",
+					client.getBusinessName(), clientsSubmenu.getId());
+			utils.NavigationManager.getInstance().updateCurrentState(view, controller);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 	public void setCenterView(Parent view) {
 		centerContentHost.getChildren().setAll(view);
@@ -1337,7 +1507,6 @@ public class MainController implements Initializable {
 			}
 		}).start();
 	}
-
 
 	// User Profile Logic
 	@FXML
