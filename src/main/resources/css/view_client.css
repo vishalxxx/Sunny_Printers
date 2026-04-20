@@ -74,7 +74,64 @@
     -fx-background-color: transparent;
     -fx-text-fill: #3E312D;
 }
+/* ===================== DROPDOWNS (VIEW CLIENTS) ===================== */
+.sort-combo {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 20;
+    -fx-background-radius: 20;
+    -fx-padding: 2 10;
+    -fx-cursor: hand;
+}
 
+.sort-combo .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #3E312D;
+}
+
+.sort-combo .cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #3E312D;
+}
+
+/* ===================== COMBO BOX DROPDOWN ===================== */
+.combo-box .list-view {
+    -fx-background-color: #FAF6F0;
+    -fx-background-radius: 12;
+    -fx-border-color: #CD7B4E;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 4;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 10, 0, 0, 5);
+}
+
+.combo-box .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #3E312D;
+    -fx-padding: 8 15;
+    -fx-font-size: 13px;
+    -fx-background-radius: 8;
+}
+
+.combo-box .list-view .list-cell:hover {
+    -fx-background-color: #F4EAE0;
+    -fx-text-fill: #3E312D;
+}
+
+.combo-box .list-view .list-cell:selected {
+    -fx-background-color: #CD7B4E;
+    -fx-text-fill: white;
+}
+
+/* Ensure the main button cell stays transparent and doesn't show the orange selection block */
+.sort-combo>.list-cell {
+    -fx-background-color: transparent !important;
+}
+
+.sort-combo>.list-cell:selected {
+    -fx-background-color: transparent !important;
+}
 .sort-combo .cell {
     -fx-background-color: transparent;
     -fx-text-fill: #3E312D;
