@@ -31,7 +31,7 @@
     <HBox spacing="20" alignment="CENTER_LEFT">
         <!-- Titles -->
         <VBox spacing="4" HBox.hgrow="ALWAYS">
-            <Label text="Client Directory" styleClass="page-heading" />
+            <Label text="Client Table" styleClass="page-heading" />
             <Label
                 text="Manage your global client relationships, track lifetime value, and oversee outstanding receivables in an editorial layout."
                 styleClass="page-subheading" wrapText="true" maxWidth="450" />

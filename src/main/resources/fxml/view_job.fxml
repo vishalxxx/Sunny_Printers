@@ -11,29 +11,45 @@
     fx:controller="controller.ViewJobsController"
     fx:id="mainVBox"
     styleClass="view-jobs-root"
-    stylesheets="@../css/view_job.css"
-    spacing="0">
+    stylesheets="@../css/theme.css, @../css/add_job.css, @../css/view_job.css"
+    spacing="0"
+    focusTraversable="true">
 
-    <padding><Insets top="16" left="24" right="24" bottom="16" /></padding>
+    <padding><Insets top="8" left="24" right="24" bottom="16" /></padding>
+
+    <!-- 0. BREADCRUMBS -->
+    <HBox styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8">
+        <padding>
+            <Insets bottom="10"/>
+        </padding>
+        <Button fx:id="breadcrumbBackBtn" onAction="#handleBack" styleClass="breadcrumb-back-btn" focusTraversable="false">
+            <graphic><Region styleClass="back-icon"/></graphic>
+        </Button>
+        <Label text="JOBS" styleClass="breadcrumb-label" />
+        <Label text="›" styleClass="breadcrumb-separator" />
+        <Label text="MANAGEMENT" styleClass="breadcrumb-label, breadcrumb-current" />
+    </HBox>
 
     <!-- 1. PAGE HEADER -->
     <VBox spacing="4" styleClass="page-header-container">
-        <Label text="Job Management" styleClass="page-title" />
-        <Label text="Track and manage all your printing jobs" styleClass="page-subtitle" />
+        <Label text="Job Management" styleClass="page-heading" />
+        <Label text="Track and manage all your printing jobs" styleClass="page-subheading" />
     </VBox>
 
     <!-- 2. TOOLBAR: SEARCH & FILTERS -->
-    <VBox styleClass="toolbar-section" spacing="12">
-        <HBox fx:id="searchContainer" styleClass="search-container">
+    <VBox styleClass="header-bar" spacing="16">
+        <padding><Insets top="20" right="20" bottom="20" left="20" /></padding>
+        
+        <HBox fx:id="searchContainer" styleClass="compact-field" alignment="CENTER_LEFT" spacing="8" maxWidth="Infinity">
              <Region styleClass="search-icon" />
-             <TextField fx:id="searchField" promptText="Search by Job Name, Job Title, Client..." styleClass="search-field" HBox.hgrow="ALWAYS"/>
+             <TextField fx:id="searchField" promptText="Search by Job Name, Job Title, Client..." styleClass="text-field" HBox.hgrow="ALWAYS" style="-fx-background-color: transparent;"/>
         </HBox>
-
+        
         <HBox spacing="12" alignment="CENTER_LEFT">
-            <ComboBox fx:id="clientComboBox" promptText="Select Client" styleClass="view-combo" prefWidth="240" />
-            <ComboBox fx:id="statusFilterComboBox" promptText="All Status" styleClass="view-combo" prefWidth="180" />
-            <DatePicker fx:id="fromDatePicker" promptText="From Date" styleClass="view-datepicker" prefWidth="160"/>
-            <DatePicker fx:id="toDatePicker" promptText="To Date" styleClass="view-datepicker" prefWidth="160"/>
+            <ComboBox fx:id="clientComboBox" promptText="Select Client" styleClass="compact-combo" prefWidth="240" />
+            <ComboBox fx:id="statusFilterComboBox" promptText="All Status" styleClass="compact-combo" prefWidth="180" />
+            <DatePicker fx:id="fromDatePicker" promptText="From Date" styleClass="compact-datepicker" prefWidth="160"/>
+            <DatePicker fx:id="toDatePicker" promptText="To Date" styleClass="compact-datepicker" prefWidth="160"/>
             <Button styleClass="view-clear-btn" onAction="#clearFilters" >
                 <graphic>
                     <HBox spacing="8" alignment="CENTER">
@@ -44,6 +60,8 @@
             </Button>
         </HBox>
     </VBox>
+    
+    <Region prefHeight="16" /> <!-- Spacer -->
 
     <!-- 3. INTEGRATED BULK ACTION BAR (Anchored) -->
     <VBox fx:id="bulkActionBarContainer" visible="false" managed="false" styleClass="bulk-bar-container">

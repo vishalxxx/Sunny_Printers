@@ -416,13 +416,11 @@ public class MainController implements Initializable {
 			// 3. Absolute Layout Width Lock for Sidebars
 			// ---------------------------------------------------
 			if (sidebarScroll != null && sidebarStack != null) {
-				if (sidebarScroll.getContent() instanceof StackPane innerStack) {
-					// sidebarStack has 8px left/right padding = 16px total.
-					// Locking the innerStack prefWidth to exact layout dimensions,
-					// stripping JavaFX's scrollbar viewport subtraction logic entirely.
-					innerStack.prefWidthProperty().bind(sidebarStack.widthProperty());
-					innerStack.minWidthProperty().bind(sidebarStack.widthProperty());
-					innerStack.maxWidthProperty().bind(sidebarStack.widthProperty());
+				javafx.scene.Node content = sidebarScroll.getContent();
+				if (content instanceof javafx.scene.layout.Region inner) {
+					inner.prefWidthProperty().bind(sidebarStack.widthProperty());
+					inner.minWidthProperty().bind(sidebarStack.widthProperty());
+					inner.maxWidthProperty().bind(sidebarStack.widthProperty());
 				}
 
 				// Forcefully eliminate all phantom focus-scroll shifting in the sidebar
@@ -862,10 +860,20 @@ public class MainController implements Initializable {
 			javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
 					javafx.scene.control.Alert.AlertType.CONFIRMATION);
 			alert.setTitle("Unsaved Changes");
-			alert.setHeaderText("You have unsaved changes.");
-			alert.setContentText("Do you want to leave this page and discard your changes?");
+			alert.setHeaderText("Discard unsaved changes?");
+			alert.setContentText("You have unsaved changes on this page. If you leave now, all progress will be lost. Do you wish to proceed?");
 			alert.getButtonTypes().setAll(javafx.scene.control.ButtonType.YES, javafx.scene.control.ButtonType.NO);
-
+			
+			// Apply Premium Theme
+			javafx.scene.control.DialogPane pane = alert.getDialogPane();
+			pane.getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+			pane.getStyleClass().add("atelier-alert");
+			
+			// Custom Warning Icon
+			javafx.scene.layout.Region icon = new javafx.scene.layout.Region();
+			icon.getStyleClass().add("alert-icon-warning");
+			alert.setGraphic(icon);
+			
 			java.util.Optional<javafx.scene.control.ButtonType> result = alert.showAndWait();
 			return result.isPresent() && result.get() == javafx.scene.control.ButtonType.YES;
 		}

@@ -13,10 +13,7 @@
            styleClass="screen-loader-overlay"
            visible="false"
            managed="false"
-           pickOnBounds="true"
-           mouseTransparent="false"
-           prefWidth="Infinity"
-           prefHeight="Infinity"
+           alignment="CENTER"
            maxWidth="Infinity"
            maxHeight="Infinity">
 
@@ -24,7 +21,8 @@
     <VBox fx:id="loaderCard"
           alignment="CENTER"
           spacing="10"
-          styleClass="screen-loader-card">
+          styleClass="screen-loader-card"
+          StackPane.alignment="CENTER">
 
         <ProgressIndicator fx:id="spinner"
                            prefWidth="46"

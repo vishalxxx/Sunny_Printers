@@ -10,7 +10,7 @@
             xmlns:fx="http://javafx.com/fxml/1"
             fitToWidth="true"
             styleClass="main-scroll-pane"
-            stylesheets="@../css/add_job.css"
+            stylesheets="@../css/theme.css, @../css/add_job.css"
             fx:controller="controller.AddJobController">
 
     <VBox spacing="0" alignment="TOP_CENTER" styleClass="add-job-root">

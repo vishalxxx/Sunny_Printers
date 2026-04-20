@@ -366,7 +366,7 @@ public class ViewClientsController implements Initializable {
         double receivables = filteredList.stream().filter(c -> c.getBalance() > 0).mapToDouble(Client::getBalance).sum();
         
         lblPreferredClients.setText(String.valueOf(preferred));
-        lblTotalReceivables.setText(String.format("$%,.1fk", receivables / 1000.0));
+        lblTotalReceivables.setText(String.format("₹%,.1fk", receivables / 1000.0));
     }
 
     // --- Custom Cell Factory for Card Aesthetic ---

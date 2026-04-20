@@ -29,3 +29,189 @@
 .breadcrumb-back-btn:hover {
   -fx-background-color: #FBF9F2;
 }
+
+/* DATE PICKER POPUP STYLING */
+.date-picker-popup {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #CD7B4E;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 15, 0, 0, 5);
+}
+
+.date-picker-popup > .month-year-pane {
+    -fx-background-color: transparent;
+    -fx-padding: 10 10 4 10;
+}
+
+.date-picker-popup > .month-year-pane > .label {
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Manrope';
+    -fx-font-weight: 800;
+    -fx-font-size: 14px;
+}
+
+.date-picker-popup .calendar {
+    -fx-background-color: transparent;
+}
+
+.date-picker-popup .calendar-grid {
+    -fx-background-color: transparent;
+    -fx-padding: 0 10 10 10;
+}
+
+.date-picker-popup .spinner .button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8;
+    -fx-padding: 4 8;
+    -fx-cursor: hand;
+}
+
+.date-picker-popup .spinner .button:hover {
+    -fx-background-color: #EADFD4;
+}
+
+.date-picker-popup .spinner .left-arrow,
+.date-picker-popup .spinner .right-arrow {
+    -fx-background-color: #A0836D;
+}
+
+.date-picker-popup .day-name-cell {
+    -fx-font-family: 'Inter';
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #8E7A6B;
+    -fx-background-color: transparent;
+    -fx-padding: 8 4;
+}
+
+.date-picker-popup .day-cell {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8;
+    -fx-border-color: transparent;
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+    -fx-padding: 6;
+}
+
+.date-picker-popup .day-cell:hover {
+    -fx-background-color: #EADFD4;
+}
+
+.date-picker-popup .day-cell:selected {
+    -fx-background-color: #CD7B4E;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-weight: 800;
+}
+
+.date-picker-popup .day-cell:today {
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-background-color: transparent;
+}
+
+.date-picker-popup .day-cell:disabled {
+    -fx-opacity: 0;
+    -fx-pref-height: 0;
+    -fx-max-height: 0;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+    -fx-text-fill: transparent;
+    -fx-background-color: transparent;
+}
+
+/* DATE PICKER BUTTON STYLING */
+.date-picker > .arrow-button {
+    -fx-padding: 0 18;
+    -fx-cursor: hand;
+}
+
+.date-picker > .arrow-button > .arrow {
+    -fx-shape: "M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zM7 14h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2z";
+    -fx-background-color: #CD7B4E;
+    -fx-min-width: 14;
+    -fx-max-width: 14;
+    -fx-min-height: 14;
+    -fx-max-height: 14;
+    -fx-scale-x: 1.5;
+    -fx-scale-y: 1.5;
+}
+
+/* ===================== PREMIUM ATELIER DIALOG ===================== */
+.atelier-alert {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 0;
+    -fx-background-radius: 0;
+    -fx-padding: 32;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.12), 40, 0, 0, 15);
+    -fx-min-width: 480;
+    -fx-pref-width: 500;
+}
+
+.atelier-alert > .header-panel {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 12 0;
+}
+
+.atelier-alert .header-panel .label {
+    -fx-font-family: 'Manrope';
+    -fx-font-size: 20px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #3E312D;
+    -fx-wrap-text: true;
+}
+
+.atelier-alert > .content.label {
+    -fx-font-family: 'Inter';
+    -fx-font-size: 14px;
+    -fx-text-fill: #6B5E58;
+    -fx-padding: 0 0 24 0;
+    -fx-line-spacing: 0.5em;
+    -fx-wrap-text: true;
+}
+
+.atelier-alert .button-bar {
+    -fx-background-color: transparent;
+    -fx-padding: 8 0 0 0;
+}
+
+.atelier-alert .button-bar .button {
+    -fx-background-color: #F5EFE7;
+    -fx-border-color: transparent;
+    -fx-border-radius: 0;
+    -fx-background-radius: 0;
+    -fx-text-fill: #8E7B71;
+    -fx-font-family: 'Inter';
+    -fx-font-weight: 700;
+    -fx-font-size: 13px;
+    -fx-padding: 10 24;
+    -fx-cursor: hand;
+}
+
+.atelier-alert .button-bar .button:hover {
+    -fx-background-color: #EADFD4;
+    -fx-text-fill: #3E312D;
+}
+
+.atelier-alert .button-bar .button:default {
+    -fx-background-color: #CD7B4E;
+    -fx-text-fill: white;
+}
+
+.atelier-alert .button-bar .button:default:hover {
+    -fx-background-color: #B06938;
+}
+
+/* Custom Icon styling */
+.alert-icon-warning {
+    -fx-shape: "M12 2L1 21h22L12 2zm0 3.45L20.53 19H3.47L12 5.45zM11 16h2v2h-2v-2zm0-6h2v4h-2v-4z";
+    -fx-background-color: #CD7B4E;
+    -fx-min-width: 48;
+    -fx-min-height: 48;
+    -fx-max-width: 48;
+    -fx-max-height: 48;
+}

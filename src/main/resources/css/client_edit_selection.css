@@ -233,6 +233,7 @@
     -fx-text-fill: #867E78;
     -fx-font-size: 11px;
     -fx-font-family: 'Inter';
+    -fx-font-style: normal;
 }
 
 .phone-text {

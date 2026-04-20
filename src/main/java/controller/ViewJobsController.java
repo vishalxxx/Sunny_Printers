@@ -108,8 +108,15 @@ public class ViewJobsController {
     private FilteredList<Job> filteredData;
     private SortedList<Job> sortedData;
 
+    @FXML private VBox mainVBox;
+
     @FXML
     private void initialize() {
+        if (mainVBox != null) {
+            mainVBox.setOnMouseClicked(event -> {
+                mainVBox.requestFocus();
+            });
+        }
         setupClientComboBox();
         setupTableColumns();
 
@@ -1182,5 +1189,9 @@ public class ViewJobsController {
     private void toast(String message) {
 		Stage stage = (Stage) ((Node) clientComboBox).getScene().getWindow();
 		Toast.show(stage, message);
+	}
+	@FXML
+	private void handleBack(javafx.event.Event e) {
+		MainController.getInstance().handleBack(e);
 	}
 }

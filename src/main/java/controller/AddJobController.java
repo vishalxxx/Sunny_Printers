@@ -103,7 +103,6 @@ public class AddJobController implements utils.DirtySupport {
 
 				if (date.isAfter(java.time.LocalDate.now())) {
 					setDisable(true);
-					setStyle("-fx-opacity: 0.35;");
 				}
 			}
 		});
