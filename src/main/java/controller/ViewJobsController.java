@@ -2,13 +2,15 @@ package controller;
 
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.List;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.Scene;
@@ -34,21 +36,15 @@ import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.geometry.Pos;
 import javafx.geometry.Insets;
-import javafx.collections.ListChangeListener;
-import javafx.stage.Stage;
 import model.Client;
 import model.Job;
-import model.InvoiceMaster;
 import service.ClientService;
 import service.JobService;
-import service.InvoiceMasterService;
 import utils.Toast;
-import javafx.scene.shape.SVGPath;
 import javafx.scene.paint.Color;
 import javafx.scene.control.cell.CheckBoxTableCell;
 
@@ -62,6 +58,12 @@ public class ViewJobsController {
 
     // ✅ clientId -> clientName map (for fast lookup)
     private final Map<Integer, String> clientNameMap = new HashMap<>();
+
+    private final ExecutorService dataLoadExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "view-jobs-data-loader");
+        t.setDaemon(true);
+        return t;
+    });
 
     // ===================== TOP SEARCH =====================
     @FXML private HBox searchContainer;
@@ -132,11 +134,14 @@ public class ViewJobsController {
         fromDatePicker.valueProperty().addListener((obs, oldV, newV) -> applyFilters());
         toDatePicker.valueProperty().addListener((obs, oldV, newV) -> applyFilters());
 
-        // ✅ Background Loading
-        new Thread(() -> {
-            loadClients();
-            javafx.application.Platform.runLater(this::loadAllJobs);
-        }).start();
+        // ✅ Background Loading (DB work off FX thread; UI updates on FX thread)
+        CompletableFuture
+                .supplyAsync(clientService::getAllClients, dataLoadExecutor)
+                .thenAccept(clients -> Platform.runLater(() -> setClients(clients)));
+
+        CompletableFuture
+                .supplyAsync(jobService::getAllJobs, dataLoadExecutor)
+                .thenAccept(jobs -> Platform.runLater(() -> setJobs(jobs)));
 
         // ✅ Multi-select support
         jobsTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
@@ -357,13 +362,19 @@ public class ViewJobsController {
     private void loadClients() {
 
         List<Client> clients = clientService.getAllClients();
+        Platform.runLater(() -> setClients(clients));
+    }
+
+    private void setClients(List<Client> clients) {
+        if (clients == null) return;
         clientComboBox.getItems().setAll(clients);
 
-        // ✅ Fill map: clientId -> name
         clientNameMap.clear();
         for (Client c : clients) {
-            clientNameMap.put(c.getId(), c.getBusinessName());
+            if (c != null) clientNameMap.put(c.getId(), c.getBusinessName());
         }
+        // Refresh visible rows that display client names.
+        if (jobsTable != null) jobsTable.refresh();
     }
 
     // =========================================================
@@ -861,8 +872,13 @@ public class ViewJobsController {
     // ✅ LOAD DATA
     // =========================================================
     public void loadAllJobs() {
-        List<Job> jobs = jobService.getAllJobs();
-        masterJobs.setAll(jobs);
+        CompletableFuture
+                .supplyAsync(jobService::getAllJobs, dataLoadExecutor)
+                .thenAccept(jobs -> Platform.runLater(() -> setJobs(jobs)));
+    }
+
+    private void setJobs(List<Job> jobs) {
+        masterJobs.setAll(jobs != null ? jobs : List.of());
         applyFilters();
     }
 

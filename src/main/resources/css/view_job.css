@@ -3,33 +3,54 @@
    THEME: CLEAN ATELIER (TARGET OVERHAUL)
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap');
+/* IMPORTANT:
+   Avoid remote font downloads at runtime (can stall screen load on slow/no network).
+   If you want Manrope/Inter, bundle .ttf/.otf in resources and load via Font.loadFont(). */
 
 .view-jobs-root {
-    -fx-background-color: #FAF6F0; 
-    -fx-font-family: 'Inter';
+    /* Target screenshot: lighter cream canvas */
+    -fx-background-color: #FBF7F3; 
+    -fx-font-family: "Segoe UI", "Inter", system;
 }
 
 /* --- 1. HERO HEADER --- */
 .page-header-container { -fx-padding: 0 0 8 0; -fx-alignment: CENTER_LEFT; }
-.page-title { -fx-font-family: 'Manrope'; -fx-font-size: 24px; -fx-font-weight: 800; -fx-text-fill: #1A1311; }
+.page-title { -fx-font-family: "Segoe UI Semibold", "Manrope", "Segoe UI", system; -fx-font-size: 24px; -fx-font-weight: 800; -fx-text-fill: #1A1311; }
 .page-subtitle { -fx-font-family: 'Inter'; -fx-font-size: 13px; -fx-text-fill: #7A726D; -fx-font-weight: 400; }
 
 /* --- 2. TOOLBAR: SEARCH & FILTERS --- */
 .toolbar-section { -fx-padding: 0 0 16 0; -fx-alignment: CENTER_LEFT; }
 .search-container {
-    -fx-background-color: #FAF6F0; -fx-background-radius: 12; -fx-border-color: #CD7B4E; -fx-border-width: 1.5; -fx-border-radius: 12;
-    -fx-padding: 0 12; -fx-min-height: 38; -fx-maxWidth: 1000; -fx-alignment: CENTER_LEFT;
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-border-color: #E9E2DB;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-padding: 0 12;
+    -fx-min-height: 38;
+    -fx-maxWidth: 1000;
+    -fx-alignment: CENTER_LEFT;
+}
+.search-container.search-container-active {
+    -fx-border-color: #D8A07B;
+    -fx-border-width: 1.2;
 }
 .search-icon {
     -fx-shape: "M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79L20 20.49 21.49 19 15.5 14zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z";
-    -fx-background-color: #CD7B4E; -fx-min-width: 16; -fx-max-width: 16; -fx-min-height: 16; -fx-max-height: 16;
+    -fx-background-color: #B97952;
+    -fx-min-width: 16; -fx-max-width: 16; -fx-min-height: 16; -fx-max-height: 16;
 }
-.search-field { -fx-background-color: transparent; -fx-prompt-text-fill: #A0836D; -fx-font-size: 13px; -fx-text-fill: #3E312D; }
+.search-field { -fx-background-color: transparent; -fx-prompt-text-fill: #A59A92; -fx-font-size: 13px; -fx-text-fill: #2B2320; }
 
 .view-combo, .view-datepicker {
-    -fx-background-color: #FAF6F0 !important; -fx-background-radius: 12 !important; -fx-border-color: #CD7B4E !important; -fx-border-width: 1.5 !important;
-    -fx-border-radius: 12 !important; -fx-min-height: 38 !important; -fx-padding: 0 12 !important; -fx-text-fill: #3E312D !important;
+    -fx-background-color: white !important;
+    -fx-background-radius: 12 !important;
+    -fx-border-color: #E9E2DB !important;
+    -fx-border-width: 1 !important;
+    -fx-border-radius: 12 !important;
+    -fx-min-height: 38 !important;
+    -fx-padding: 0 12 !important;
+    -fx-text-fill: #2B2320 !important;
     -fx-font-weight: 700 !important; -fx-font-size: 13px !important;
 }
 
@@ -45,11 +66,11 @@
     -fx-padding: 0;
 }
 .view-combo .arrow {
-    -fx-background-color: #CD7B4E;
+    -fx-background-color: #B97952;
     -fx-shape: "M7 10l5 5 5-5z"; 
 }
 .view-datepicker .arrow-button .arrow {
-    -fx-background-color: #CD7B4E;
+    -fx-background-color: #B97952;
     -fx-shape: "M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zM7 14h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2z";
     -fx-scale-x: 0.9; -fx-scale-y: 0.9;
 }
@@ -57,15 +78,23 @@
 
 /* Clear Filter Pill */
 .view-clear-btn {
-    -fx-background-color: #FFFBF8; -fx-border-color: #CD7B4E; -fx-border-radius: 20; -fx-background-radius: 20;
-    -fx-padding: 0 16; -fx-text-fill: #3E312D; -fx-font-weight: 800; -fx-font-size: 12px; -fx-min-height: 38; -fx-cursor: hand;
+    -fx-background-color: white;
+    -fx-border-color: #E9E2DB;
+    -fx-border-radius: 20;
+    -fx-background-radius: 20;
+    -fx-padding: 0 16;
+    -fx-text-fill: #2B2320;
+    -fx-font-weight: 800;
+    -fx-font-size: 12px;
+    -fx-min-height: 38;
+    -fx-cursor: hand;
 }
-.view-clear-btn:hover { -fx-background-color: #FAF0E6; }
+.view-clear-btn:hover { -fx-background-color: #FBF4EE; }
 
 /* ===================== DATE PICKER POPUP STYLING ===================== */
 .date-picker-popup {
-    -fx-background-color: #FAF6F0;
-    -fx-border-color: #CD7B4E;
+    -fx-background-color: white;
+    -fx-border-color: #E9E2DB;
     -fx-border-radius: 12;
     -fx-background-radius: 12;
     -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.15), 15, 0, 0, 5);
@@ -76,13 +105,33 @@
 }
 
 .date-picker-popup .calendar-header {
-    -fx-background-color: #FAF6F0;
+    -fx-background-color: white;
     -fx-background-radius: 12 12 0 0;
 }
 
 .date-picker-popup .month-year-pane {
     -fx-text-fill: #3E312D;
     -fx-font-weight: 800;
+}
+
+/* Month navigation buttons */
+.date-picker-popup .spinner .button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 10;
+    -fx-padding: 6 10;
+}
+.date-picker-popup .spinner .button:hover {
+    -fx-background-color: #F4EAE0;
+}
+.date-picker-popup .spinner .left-arrow,
+.date-picker-popup .spinner .right-arrow {
+    -fx-background-color: #B97952;
+}
+
+.date-picker-popup .day-cell:today {
+    -fx-border-color: #D8A07B;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
 }
 
 .date-picker-popup .day-name-cell,
@@ -95,8 +144,31 @@
 }
 
 .date-picker-popup .day-cell:selected {
-    -fx-background-color: #CD7B4E;
+    -fx-background-color: #B97952;
     -fx-text-fill: white;
+}
+
+/* Popup scrollbars */
+.date-picker-popup .scroll-bar:vertical,
+.date-picker-popup .scroll-bar:horizontal {
+    -fx-background-color: transparent;
+    -fx-padding: 2;
+}
+.date-picker-popup .scroll-bar .track {
+    -fx-background-color: #F3F1EF;
+    -fx-background-radius: 999;
+}
+.date-picker-popup .scroll-bar .thumb {
+    -fx-background-color: #D8D2CC;
+    -fx-background-radius: 999;
+}
+.date-picker-popup .scroll-bar .increment-button,
+.date-picker-popup .scroll-bar .decrement-button,
+.date-picker-popup .scroll-bar .increment-arrow,
+.date-picker-popup .scroll-bar .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-shape: "";
 }
 
 /* ===================== COMBO BOX DROPDOWN (POPUP) ===================== */
@@ -110,11 +182,34 @@
     -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.15), 10, 0, 0, 5);
 }
 
+/* Dropdown scrollbar */
+.combo-box .list-view .scroll-bar:vertical,
+.combo-box .list-view .scroll-bar:horizontal {
+    -fx-background-color: transparent;
+    -fx-padding: 2;
+}
+.combo-box .list-view .scroll-bar .track {
+    -fx-background-color: #F3F1EF;
+    -fx-background-radius: 999;
+}
+.combo-box .list-view .scroll-bar .thumb {
+    -fx-background-color: #D8D2CC;
+    -fx-background-radius: 999;
+}
+.combo-box .list-view .scroll-bar .increment-button,
+.combo-box .list-view .scroll-bar .decrement-button,
+.combo-box .list-view .scroll-bar .increment-arrow,
+.combo-box .list-view .scroll-bar .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-shape: "";
+}
+
 .combo-box .list-cell {
     -fx-background-color: transparent;
     -fx-text-fill: #3E312D;
     -fx-padding: 8 15;
-    -fx-font-family: 'Inter';
+    -fx-font-family: "Segoe UI", "Inter", system;
     -fx-font-size: 13px;
     -fx-background-radius: 8;
 }
@@ -143,17 +238,56 @@
 }
 
 .jobs-table-premium .column-header-background { -fx-background-color: #FAF6F0; -fx-border-color: #EEECE8; -fx-border-width: 0 0 1 0; }
-.jobs-table-premium .column-header { -fx-background-color: transparent; -fx-padding: 12 0; -fx-border-color: transparent; }
+.jobs-table-premium .column-header-background {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #F1ECE6;
+    -fx-border-width: 0 0 1 0;
+}
+.jobs-table-premium .column-header { -fx-background-color: transparent; -fx-padding: 14 0; -fx-border-color: transparent; }
 .jobs-table-premium .column-header .label { -fx-font-weight: 800; -fx-text-fill: #1A1311; -fx-font-size: 12px; }
 
 .jobs-table-premium .table-row-cell {
     -fx-background-color: white;
-    -fx-border-color: #F3F1EF;
+    -fx-border-color: #F1ECE6;
     -fx-border-width: 0 0 1 0;
 }
 .jobs-table-premium .table-row-cell:selected { -fx-background-color: #FFF9F3; }
 
 .jobs-table-premium .table-cell { -fx-padding: 12 16; -fx-alignment: CENTER_LEFT; -fx-border-color: transparent; }
+
+/* --- Scrollbars (TableView + VirtualFlow) --- */
+.jobs-table-premium .scroll-bar:vertical,
+.jobs-table-premium .scroll-bar:horizontal {
+    -fx-background-color: transparent;
+    -fx-padding: 2;
+}
+.jobs-table-premium .scroll-bar:vertical .track,
+.jobs-table-premium .scroll-bar:horizontal .track {
+    -fx-background-color: #F3F1EF;
+    -fx-background-radius: 999;
+    -fx-border-color: transparent;
+}
+.jobs-table-premium .scroll-bar:vertical .thumb,
+.jobs-table-premium .scroll-bar:horizontal .thumb {
+    -fx-background-color: #D8D2CC;
+    -fx-background-insets: 0;
+    -fx-background-radius: 999;
+}
+.jobs-table-premium .scroll-bar:vertical .thumb:hover,
+.jobs-table-premium .scroll-bar:horizontal .thumb:hover {
+    -fx-background-color: #C9C1BA;
+}
+.jobs-table-premium .scroll-bar .increment-button,
+.jobs-table-premium .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+.jobs-table-premium .scroll-bar .increment-arrow,
+.jobs-table-premium .scroll-bar .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-shape: "";
+}
 
 /* THEMATIC ORANGE CHECKBOX */
 .jobs-table-premium .check-box { -fx-cursor: hand; }
@@ -186,21 +320,55 @@
 
 /* ACTION SUITE: BULK (TOP DECK) */
 .bulk-bar-integrated {
-    -fx-background-color: #FAF6F0; -fx-padding: 16 24; -fx-background-radius: 12 12 0 0;
-    -fx-border-color: #EEECE8; -fx-border-width: 0 0 1 0;
+    -fx-background-color: white;
+    -fx-padding: 14 18;
+    -fx-background-radius: 12 12 0 0;
+    -fx-border-color: #F1ECE6;
+    -fx-border-width: 0 0 1 0;
 }
 .bulk-count-label { -fx-font-size: 16px; -fx-font-weight: 900; -fx-text-fill: #1A1311; }
 .bulk-subtext { -fx-font-size: 12px; -fx-text-fill: #8B7E74; -fx-font-weight: 600; }
 
 .bulk-btn {
-    -fx-background-color: white; -fx-border-color: #E2DDD8; -fx-border-radius: 8; -fx-background-radius: 8;
-    -fx-padding: 8 20; -fx-font-weight: 800; -fx-font-size: 13px; -fx-cursor: hand;
+    -fx-background-color: white;
+    -fx-border-color: #E9E2DB;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 8 16;
+    -fx-font-weight: 800;
+    -fx-font-size: 12px;
+    -fx-cursor: hand;
 }
-.bulk-btn-blue    { -fx-background-color: #E6F7FF; -fx-text-fill: #1890FF; -fx-border-color: transparent; }
-.bulk-btn-green   { -fx-background-color: #F6FFED; -fx-text-fill: #52C41A; -fx-border-color: transparent; }
-.bulk-btn-purple  { -fx-background-color: #F9F0FF; -fx-text-fill: #722ED1; -fx-border-color: transparent; }
-.bulk-btn-red     { -fx-background-color: #FFF1F0; -fx-text-fill: #F5222D; -fx-border-color: transparent; }
-.bulk-btn-white   { -fx-background-color: white;   -fx-text-fill: #1A1311; -fx-border-color: #E2DDD8; }
+.bulk-btn-blue    { -fx-background-color: #EAF3FF; -fx-text-fill: #2F6FEB; -fx-border-color: transparent; }
+.bulk-btn-green   { -fx-background-color: #EAF7EF; -fx-text-fill: #2F9E5A; -fx-border-color: transparent; }
+.bulk-btn-purple  { -fx-background-color: #F1EAFF; -fx-text-fill: #6D39D5; -fx-border-color: transparent; }
+.bulk-btn-red     { -fx-background-color: #FDECEC; -fx-text-fill: #D64545; -fx-border-color: transparent; }
+.bulk-btn-white   { -fx-background-color: white;   -fx-text-fill: #1A1311; -fx-border-color: #E9E2DB; }
+
+/* Bulk dropdown should look like a clean pill (no grey box) */
+.bulk-combo {
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-border-color: #E9E2DB;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-min-height: 34;
+    -fx-font-weight: 700;
+    -fx-font-size: 12px;
+    -fx-text-fill: #2B2320;
+    -fx-padding: 0 10;
+}
+.bulk-combo .arrow-button { -fx-background-color: transparent; -fx-border-color: transparent; -fx-padding: 0 6 0 0; }
+.bulk-combo .arrow { -fx-background-color: #B97952; -fx-shape: "M7 10l5 5 5-5z"; }
+
+/* Divider in bulk bar */
+.bulk-divider {
+    -fx-min-width: 1;
+    -fx-pref-width: 1;
+    -fx-max-width: 1;
+    -fx-background-color: #F1ECE6;
+    -fx-opacity: 1;
+}
 
 .status-badge {
     -fx-background-radius: 60; -fx-padding: 6 14; -fx-font-size: 10px; -fx-font-weight: 800;
@@ -227,14 +395,14 @@
 .row-btn-gray:hover   { -fx-background-color: #F5F5F5; -fx-border-color: #8B7E74; }
 
 /* --- 4. ATELIER PAGINATION --- */
-.footer-section { -fx-padding: 16 0; -fx-background-color: #FAF6F0; }
+.footer-section { -fx-padding: 14 0; -fx-background-color: transparent; }
 .pagination-info { -fx-font-size: 13px; -fx-text-fill: #8B7E74; -fx-font-weight: 600; }
 
 .page-btn, .page-nav-btn {
-    -fx-background-color: white; -fx-border-color: #E2DDD8; -fx-border-radius: 8; -fx-background-radius: 8;
+    -fx-background-color: white; -fx-border-color: #E9E2DB; -fx-border-radius: 8; -fx-background-radius: 8;
     -fx-min-width: 34; -fx-min-height: 34; -fx-text-fill: #5B4F47; -fx-font-weight: 700; -fx-font-size: 13px; -fx-cursor: hand;
 }
-.page-btn-active { -fx-background-color: #CD7B4E; -fx-border-color: #CD7B4E; -fx-text-fill: white; }
+.page-btn-active { -fx-background-color: #B97952; -fx-border-color: #B97952; -fx-text-fill: white; }
 .page-btn:hover { -fx-background-color: #FAF0E6; }
 
 .pagination-go-field {

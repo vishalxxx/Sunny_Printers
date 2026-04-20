@@ -5,6 +5,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import javafx.scene.text.Font;
 
 public class Main extends Application {
 
@@ -20,6 +21,8 @@ public class Main extends Application {
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
+		// Load bundled fonts once (works offline)
+		loadBundledFonts();
 
 		// BYPASS LOGIN FOR DEV
 		model.User admin = new model.User();
@@ -36,6 +39,8 @@ public class Main extends Application {
 		// Parent root = loginLoader.load(); // Login root is AnchorPane
 
 		Scene scene = new Scene(root);
+		// Global theme (uniform fonts + controls across screens)
+		scene.getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
 
 		primaryStage.setScene(scene);
 		primaryStage.setTitle("Sunny Printers");
@@ -50,6 +55,16 @@ public class Main extends Application {
 		});
 
 		primaryStage.show();
+	}
+
+	private static void loadBundledFonts() {
+		try {
+			Font.loadFont(Main.class.getResourceAsStream("/fonts/Inter-Variable.ttf"), 13);
+			Font.loadFont(Main.class.getResourceAsStream("/fonts/Inter-Italic-Variable.ttf"), 13);
+			Font.loadFont(Main.class.getResourceAsStream("/fonts/Manrope-Variable.ttf"), 13);
+		} catch (Exception ignored) {
+			// If fonts fail to load, JavaFX will fall back to system fonts.
+		}
 	}
 
 }

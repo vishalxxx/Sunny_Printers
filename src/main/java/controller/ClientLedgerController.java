@@ -317,6 +317,7 @@ public class ClientLedgerController implements Initializable {
         content.getChildren().addAll(title, new javafx.scene.control.Separator(), grid);
         dialog.getDialogPane().setContent(content);
         dialog.getDialogPane().getButtonTypes().add(javafx.scene.control.ButtonType.CLOSE);
+        dialog.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
         dialog.getDialogPane().getStylesheets().add(getClass().getResource("/css/record_payment.css").toExternalForm());
         dialog.getDialogPane().getStyleClass().add("record-payment-root");
         dialog.showAndWait();

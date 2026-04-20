@@ -72,6 +72,7 @@
                 <Button fx:id="bulkCancelBtn" text="Cancel Job (0)" styleClass="bulk-btn, bulk-btn-red" onAction="#handleCancelAction" minWidth="-Infinity">
                     <graphic><Region styleClass="bulk-icon-red" /></graphic>
                 </Button>
+                <Button text="Cancel" styleClass="bulk-btn, bulk-btn-white" onAction="#handleCloseBulk" minWidth="-Infinity" />
             </HBox>
         </HBox>
     </VBox>

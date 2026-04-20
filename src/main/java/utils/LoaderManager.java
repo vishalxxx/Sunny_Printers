@@ -29,6 +29,7 @@ public class LoaderManager {
             overlay.setManaged(false);
 
             // load css
+            overlay.getStylesheets().add(LoaderManager.class.getResource("/css/theme.css").toExternalForm());
             overlay.getStylesheets().add(LoaderManager.class.getResource("/css/global_loader.css").toExternalForm());
 
             rootStackPane.getChildren().add(overlay);

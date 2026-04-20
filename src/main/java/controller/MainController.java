@@ -939,6 +939,11 @@ public class MainController implements Initializable {
 				FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
 				Parent view = loader.load();
 				Object controller = loader.getController();
+				// ✅ Ensure global theme is always applied (before per-screen CSS)
+				String themeUrl = getClass().getResource("/css/theme.css").toExternalForm();
+				if (!view.getStylesheets().contains(themeUrl)) {
+					view.getStylesheets().add(0, themeUrl);
+				}
 				// 🔑 Controller will be stored once loaded
 				this.currentController = controller;
 
@@ -1519,7 +1524,9 @@ public class MainController implements Initializable {
 			FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
 			Parent loginRoot = loader.load();
 			Stage stage = (Stage) root.getScene().getWindow();
-			stage.setScene(new Scene(loginRoot));
+			Scene scene = new Scene(loginRoot);
+			scene.getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+			stage.setScene(scene);
 			stage.centerOnScreen();
 		} catch (IOException e) {
 			e.printStackTrace();

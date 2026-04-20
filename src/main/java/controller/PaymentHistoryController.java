@@ -50,7 +50,7 @@ public class PaymentHistoryController implements Initializable {
     private ObservableList<PaymentRow> masterPaymentList = FXCollections.observableArrayList();
     private FilteredList<PaymentRow> filteredList;
 
-    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(Locale.of("en", "IN"));
+    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("en", "IN"));
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -252,6 +252,7 @@ public class PaymentHistoryController implements Initializable {
         
         // Add stylesheet explicitly to dialog
         try {
+            dialog.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
             dialog.getDialogPane().getStylesheets().add(getClass().getResource("/css/record_payment.css").toExternalForm());
         } catch (Exception e) {}
         

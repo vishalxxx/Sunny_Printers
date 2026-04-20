@@ -58,6 +58,7 @@ public class PopupUtil {
 		Scene scene = new Scene(root, 450, 350);
 
 		// APPLY CSS
+		scene.getStylesheets().add(PopupUtil.class.getResource("/css/theme.css").toExternalForm());
 		scene.getStylesheets().add(PopupUtil.class.getResource("/css/popup.css").toExternalForm());
 
 		dialog.setScene(scene);

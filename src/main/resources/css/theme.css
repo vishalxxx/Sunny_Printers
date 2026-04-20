@@ -1,0 +1,188 @@
+/* ============================================================
+   SUNNY PRINTERS — GLOBAL THEME (UNIVERSAL UI/UX)
+   Applies consistent typography + form control styling across app.
+   Keep this file loaded BEFORE screen-specific CSS files.
+   ============================================================ */
+
+.root {
+    /* Typography */
+    -fx-font-family: "Inter", "Segoe UI", system;
+    -fx-font-size: 13px;
+    -fx-text-fill: #2B2320;
+
+    /* Focus system */
+    -fx-focus-color: #D8A07B;
+    -fx-faint-focus-color: rgba(216, 160, 123, 0.18);
+
+    /* Default colors */
+    -sp-bg: #FBF7F3;
+    -sp-surface: #FFFFFF;
+    -sp-border: #E9E2DB;
+    -sp-border-soft: #F1ECE6;
+    -sp-text: #2B2320;
+    -sp-muted: #8E827A;
+    -sp-accent: #B97952;
+}
+
+.label {
+    -fx-text-fill: -sp-text;
+}
+
+/* Headings (use Manrope if available) */
+.page-title,
+.dialog-pane .header-panel .label,
+.titled-pane > .title > .text,
+.tab-pane .tab-label {
+    -fx-font-family: "Manrope", "Inter", "Segoe UI", system;
+}
+
+/* ===================== UNIVERSAL INPUTS ===================== */
+.text-field, .text-area, .password-field {
+    -fx-background-color: -sp-surface;
+    -fx-background-radius: 12;
+    -fx-border-color: -sp-border;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 8 12;
+    -fx-text-fill: -sp-text;
+    -fx-prompt-text-fill: #A59A92;
+}
+.text-area {
+    -fx-padding: 10 12;
+}
+.text-field:focused, .text-area:focused, .password-field:focused {
+    -fx-border-color: -fx-focus-color;
+    -fx-border-width: 1.2;
+}
+
+/* ComboBox + DatePicker share ComboBoxBase skin */
+.combo-box-base, .date-picker {
+    -fx-background-color: -sp-surface;
+    -fx-background-radius: 12;
+    -fx-border-color: -sp-border;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 0 10;
+    -fx-min-height: 38;
+    -fx-font-weight: 600;
+    -fx-text-fill: -sp-text;
+}
+.combo-box-base:focused, .date-picker:focused {
+    -fx-border-color: -fx-focus-color;
+    -fx-border-width: 1.2;
+}
+
+.combo-box-base .arrow-button, .date-picker .arrow-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0 6 0 0;
+}
+.combo-box-base .arrow, .date-picker .arrow {
+    -fx-background-color: -sp-accent;
+    -fx-shape: "M7 10l5 5 5-5z";
+}
+.date-picker .arrow-button .arrow {
+    -fx-background-color: -sp-accent;
+}
+.combo-box-base .text-field, .date-picker .text-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+    -fx-prompt-text-fill: #A59A92;
+}
+
+/* ===================== POPUPS (DROPDOWNS + CALENDAR) ===================== */
+.combo-box-popup .list-view {
+    -fx-background-color: -sp-surface;
+    -fx-background-radius: 12;
+    -fx-border-color: -sp-border;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 4;
+    -fx-effect: dropshadow(three-pass-box, rgba(20, 16, 14, 0.10), 10, 0, 0, 4);
+}
+.combo-box-popup .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -sp-text;
+    -fx-padding: 8 14;
+    -fx-background-radius: 8;
+}
+.combo-box-popup .list-cell:hover {
+    -fx-background-color: #FBF4EE;
+}
+.combo-box-popup .list-cell:selected {
+    -fx-background-color: -sp-accent;
+    -fx-text-fill: white;
+}
+
+.date-picker-popup {
+    -fx-background-color: -sp-surface;
+    -fx-border-color: -sp-border;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(three-pass-box, rgba(20, 16, 14, 0.10), 14, 0, 0, 6);
+}
+.date-picker-popup .calendar-header {
+    -fx-background-color: -sp-surface;
+    -fx-background-radius: 12 12 0 0;
+}
+.date-picker-popup .month-year-pane {
+    -fx-text-fill: -sp-text;
+    -fx-font-weight: 800;
+}
+.date-picker-popup .spinner .button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 10;
+    -fx-padding: 6 10;
+}
+.date-picker-popup .spinner .button:hover {
+    -fx-background-color: #FBF4EE;
+}
+.date-picker-popup .spinner .left-arrow,
+.date-picker-popup .spinner .right-arrow {
+    -fx-background-color: -sp-accent;
+}
+.date-picker-popup .day-name-cell,
+.date-picker-popup .day-cell {
+    -fx-text-fill: -sp-text;
+}
+.date-picker-popup .day-cell:hover {
+    -fx-background-color: #FBF4EE;
+}
+.date-picker-popup .day-cell:today {
+    -fx-border-color: -fx-focus-color;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+}
+.date-picker-popup .day-cell:selected {
+    -fx-background-color: -sp-accent;
+    -fx-text-fill: white;
+}
+
+/* ===================== SCROLLBARS (GLOBAL) ===================== */
+.scroll-bar:vertical, .scroll-bar:horizontal {
+    -fx-background-color: transparent;
+    -fx-padding: 2;
+}
+.scroll-bar .track {
+    -fx-background-color: -sp-border-soft;
+    -fx-background-radius: 999;
+    -fx-border-color: transparent;
+}
+.scroll-bar .thumb {
+    -fx-background-color: #D8D2CC;
+    -fx-background-radius: 999;
+    -fx-background-insets: 0;
+}
+.scroll-bar .thumb:hover {
+    -fx-background-color: #C9C1BA;
+}
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button,
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-shape: "";
+}
+

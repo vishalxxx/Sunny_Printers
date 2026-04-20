@@ -440,6 +440,7 @@ public class ViewInvoiceJobsController {
         
         DialogPane dialogPane = dialog.getDialogPane();
         try {
+            dialogPane.getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
             dialogPane.getStylesheets().add(getClass().getResource("/css/invoice_genration.css").toExternalForm());
         } catch(Exception e) {}
         dialogPane.setStyle("-fx-background-color: #1e1e1e; -fx-border-color: #444444; -fx-border-width: 1px;");
