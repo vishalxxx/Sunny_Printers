@@ -18,7 +18,6 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
@@ -27,16 +26,17 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.layout.Priority;
 import javafx.util.Duration;
 import model.Client;
 import repository.ClientRepository;
+import utils.NavigationManager;
 
 public class ClientEditSelectionController implements Initializable {
 
     @FXML private TextField searchField;
     @FXML private ComboBox<String> statusCombo;
     @FXML private ComboBox<String> riskCombo;
+    @FXML private Button breadcrumbBackBtn;
     @FXML private VBox clientListContainer;
     @FXML private Label lblShowingCount;
     @FXML private HBox paginationContainer;
@@ -56,11 +56,20 @@ public class ClientEditSelectionController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
+        if (breadcrumbBackBtn != null) {
+            breadcrumbBackBtn.visibleProperty().bind(NavigationManager.getInstance().canGoBackProperty());
+            breadcrumbBackBtn.managedProperty().bind(breadcrumbBackBtn.visibleProperty());
+        }
         setupComboBoxes();
         loadInitialData();
         setupFiltering();
         setupPageInput();
         setupSearchAnimation();
+    }
+
+    @FXML
+    private void handleBack(javafx.event.Event e) {
+        MainController.getInstance().handleBack(e);
     }
 
     private void setupComboBoxes() {

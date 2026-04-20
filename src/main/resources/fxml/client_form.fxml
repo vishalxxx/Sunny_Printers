@@ -11,7 +11,10 @@
     <VBox spacing="15" styleClass="content-container">
 
         <!-- BREADCRUMBS -->
-        <HBox styleClass="breadcrumb-container">
+        <HBox styleClass="breadcrumb-container" spacing="8" alignment="CENTER_LEFT">
+            <Button fx:id="breadcrumbBackBtn" onAction="#handleBack" styleClass="breadcrumb-back-btn" focusTraversable="false">
+                <graphic><Region styleClass="back-icon"/></graphic>
+            </Button>
             <Label text="CLIENTS" styleClass="breadcrumb-label" />
             <Label text="›" styleClass="breadcrumb-separator" />
             <Label fx:id="breadcrumbCurrent" text="EDIT CLIENT" styleClass="breadcrumb-label, breadcrumb-current" />
@@ -19,7 +22,7 @@
 
         <!-- HEADER -->
         <HBox styleClass="header-row">
-            <Label fx:id="lblTitleName" text="Business Name" styleClass="profile-title"
+            <Label fx:id="lblTitleName" text="Business Name" styleClass="page-heading"
                 HBox.hgrow="ALWAYS" maxWidth="Infinity" />
             <VBox alignment="TOP_RIGHT">
                 <Label text="CLIENT ID" styleClass="client-id-label" />

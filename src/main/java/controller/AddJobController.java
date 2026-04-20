@@ -3,7 +3,6 @@ package controller; // adjust if needed
 import java.io.File;
 
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -20,7 +19,6 @@ import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -37,7 +35,7 @@ import service.ClientService;
 import service.JobItemService;
 import service.JobService;
 import service.SupplierService;
-import utils.Toast;
+import utils.NavigationManager;
 
 import java.util.List;
 
@@ -138,6 +136,9 @@ public class AddJobController implements utils.DirtySupport {
 
 	@FXML
 	private Button addJobBtn;
+
+	@FXML
+	private Button breadcrumbBackBtn;
 
 	@FXML
 	private TextField jobName;
@@ -604,7 +605,6 @@ public class AddJobController implements utils.DirtySupport {
 
 		String title = jobName.getText().trim();
 		JobService js = new JobService();
-		JobItemService jis = new JobItemService();
 
 		java.sql.Connection con = null;
 		try {
@@ -1060,6 +1060,10 @@ public class AddJobController implements utils.DirtySupport {
 
 	@FXML
 	public void initialize() {
+		if (breadcrumbBackBtn != null) {
+			breadcrumbBackBtn.visibleProperty().bind(NavigationManager.getInstance().canGoBackProperty());
+			breadcrumbBackBtn.managedProperty().bind(breadcrumbBackBtn.visibleProperty());
+		}
 		setupJobDatePicker(jobDate);
 
 		filteredClients.setPredicate(c -> true);
@@ -1215,6 +1219,11 @@ public class AddJobController implements utils.DirtySupport {
 		// ✅ initial lock state
 		updateFormState();
 		updateStepUI();
+	}
+
+	@FXML
+	private void handleBack(javafx.event.Event e) {
+		MainController.getInstance().handleBack(e);
 	}
 
 	private void populateCombos() {

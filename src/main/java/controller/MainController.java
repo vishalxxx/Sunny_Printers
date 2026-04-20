@@ -26,28 +26,17 @@ import javafx.scene.layout.HBox;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.Region;
 import javafx.scene.control.Button;
-import javafx.event.Event;
 import javafx.stage.Stage;
 import javafx.scene.Scene;
 import java.io.IOException;
 import model.Job;
-import service.JobService;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
-import javafx.animation.Interpolator;
 import javafx.util.Duration;
 import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.List;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.chart.AreaChart;
 import javafx.scene.chart.PieChart;
-import javafx.scene.chart.XYChart;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -58,8 +47,6 @@ public class MainController implements Initializable {
 
 	private final double COLLAPSED_WIDTH = 74;
 	private final double EXPANDED_WIDTH = 240;
-	@FXML
-	private Button backNavBtn;
 	@FXML
 	private StackPane appRoot;
 	@FXML
@@ -303,10 +290,6 @@ public class MainController implements Initializable {
 
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
-		if (backNavBtn != null) {
-			backNavBtn.visibleProperty().bind(utils.NavigationManager.getInstance().canGoBackProperty());
-			backNavBtn.managedProperty().bind(backNavBtn.visibleProperty());
-		}
 		setPageTitle("Dashboard");
 		openCenterDashboard();
 		// Set initial state so first push creates history
@@ -1270,6 +1253,12 @@ public class MainController implements Initializable {
 			ClientFormController controller = loader.getController();
 			controller.setClientData(null); // Mode: ADD
 
+			// ✅ Ensure global theme is always applied (before per-screen CSS)
+			String themeUrl = getClass().getResource("/css/theme.css").toExternalForm();
+			if (!view.getStylesheets().contains(themeUrl)) {
+				view.getStylesheets().add(0, themeUrl);
+			}
+
 			centerContentHost.getChildren().setAll(view);
 			if (pageTitle != null) {
 				pageTitle.setVisible(true);
@@ -1339,6 +1328,12 @@ public class MainController implements Initializable {
 				ClientProfileController controller = loader.getController();
 				controller.setClient(client);
 
+				// ✅ Ensure global theme is always applied (before per-screen CSS)
+				String themeUrl = getClass().getResource("/css/theme.css").toExternalForm();
+				if (!view.getStylesheets().contains(themeUrl)) {
+					view.getStylesheets().add(0, themeUrl);
+				}
+
 				Platform.runLater(() -> {
 					centerContentHost.getChildren().setAll(view);
 					if (centerLoaderIncludeController != null) {
@@ -1367,6 +1362,12 @@ public class MainController implements Initializable {
 			Parent view = loader.load();
 			ClientFormController controller = loader.getController();
 			controller.setClientData(client);
+
+			// ✅ Ensure global theme is always applied (before per-screen CSS)
+			String themeUrl = getClass().getResource("/css/theme.css").toExternalForm();
+			if (!view.getStylesheets().contains(themeUrl)) {
+				view.getStylesheets().add(0, themeUrl);
+			}
 
 			centerContentHost.getChildren().setAll(view);
 			if (pageTitle != null) {

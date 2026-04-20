@@ -8,10 +8,8 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
-import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -23,18 +21,16 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
 import javafx.geometry.Insets;
 import model.Client;
 import repository.ClientRepository;
-import utils.DeleteConfirmationDialog;
-import utils.Toast;
-import utils.UndoDeleteManager;
+import utils.NavigationManager;
 
 public class ViewClientsController implements Initializable {
 
     @FXML private TextField searchField;
     @FXML private ListView<Client> clientListView;
+    @FXML private Button breadcrumbBackBtn;
     @FXML private Label lblTotalClients;
     @FXML private Label lblPreferredClients;
     @FXML private Label lblTotalReceivables;
@@ -53,6 +49,10 @@ public class ViewClientsController implements Initializable {
 
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
+        if (breadcrumbBackBtn != null) {
+            breadcrumbBackBtn.visibleProperty().bind(NavigationManager.getInstance().canGoBackProperty());
+            breadcrumbBackBtn.managedProperty().bind(breadcrumbBackBtn.visibleProperty());
+        }
 
 		// Load DB data
 		masterList.setAll(repo.findAllSortedById());
@@ -89,6 +89,11 @@ public class ViewClientsController implements Initializable {
         updatePagination();
         updateMetrics();
 	}
+
+    @FXML
+    private void handleBack(javafx.event.Event e) {
+        MainController.getInstance().handleBack(e);
+    }
 
     // --- Simple Normal Cell for Dropdown List ---
     class NormalListCell extends ListCell<String> {
@@ -545,19 +550,5 @@ public class ViewClientsController implements Initializable {
         }
     }
 
-	private void openEditClient(Client client) {
-		try {
-			FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/client_form.fxml"));
-			Parent view = loader.load();
-
-			ClientFormController controller = loader.getController();
-			controller.setClientData(client);
-
-			// Open inside main window
-			MainController.getInstance().setCenterContent(view);
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+	// (legacy) openEditClient removed — navigation happens via MainController now.
 }

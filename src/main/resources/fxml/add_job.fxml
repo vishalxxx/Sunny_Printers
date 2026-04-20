@@ -19,10 +19,13 @@
         </padding>
 
         <!-- 0. BREADCRUMBS -->
-        <HBox styleClass="breadcrumb-container" alignment="CENTER_LEFT">
+        <HBox styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8">
             <padding>
                 <Insets bottom="10"/>
             </padding>
+            <Button fx:id="breadcrumbBackBtn" onAction="#handleBack" styleClass="breadcrumb-back-btn" focusTraversable="false">
+                <graphic><Region styleClass="back-icon"/></graphic>
+            </Button>
             <Label text="JOBS" styleClass="breadcrumb-label" />
             <Label text="›" styleClass="breadcrumb-separator" />
             <Label text="PRODUCTION" styleClass="breadcrumb-label" />

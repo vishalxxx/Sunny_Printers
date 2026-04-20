@@ -4,9 +4,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.Cursor;
@@ -15,6 +12,7 @@ import model.Client;
 import model.Invoice;
 import model.Job;
 import utils.DBConnection;
+import utils.NavigationManager;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -41,6 +39,7 @@ public class ClientProfileController implements Initializable {
     
     @FXML private VBox cardBalance;
 
+    @FXML private Button breadcrumbBackBtn;
     @FXML private Button btnEditProfile;
 
     @FXML private VBox pipelineContainer;
@@ -54,6 +53,10 @@ public class ClientProfileController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        if (breadcrumbBackBtn != null) {
+            breadcrumbBackBtn.visibleProperty().bind(NavigationManager.getInstance().canGoBackProperty());
+            breadcrumbBackBtn.managedProperty().bind(breadcrumbBackBtn.visibleProperty());
+        }
         if (btnEditProfile != null) {
             btnEditProfile.setOnAction(e -> {
                 if (currentClient != null) {
@@ -61,6 +64,11 @@ public class ClientProfileController implements Initializable {
                 }
             });
         }
+    }
+
+    @FXML
+    private void handleBack(javafx.event.Event e) {
+        MainController.getInstance().handleBack(e);
     }
 
 

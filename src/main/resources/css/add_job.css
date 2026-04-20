@@ -77,6 +77,16 @@
     -fx-text-fill: #3E312D;
     -fx-font-size: 13px;
     -fx-font-weight: 500;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.04), 12, 0, 0, 3);
+}
+
+.compact-field:focused,
+.compact-combo:focused,
+.compact-datepicker:focused {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.4;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.16), 14, 0, 0, 5);
 }
 
 /* Remove default white boxes for editable fields */
@@ -123,8 +133,15 @@
     -fx-text-fill: #3E312D;
 }
 
+.compact-combo .list-cell:selected {
+    -fx-background-color: #CD7B4E;
+    -fx-text-fill: #FFFFFF;
+    -fx-background-radius: 8;
+}
+
 .compact-combo .list-cell:hover {
     -fx-background-color: #FAF0E6;
+    -fx-background-radius: 8;
 }
 
 /* CALENDAR ICON INSIDE DATEPICKER */
@@ -149,6 +166,11 @@
     -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 15, 0, 0, 5);
 }
 
+.date-picker-popup > .month-year-pane {
+    -fx-background-color: #FAF6F0;
+    -fx-background-radius: 12 12 0 0;
+}
+
 .date-picker-popup .calendar {
     -fx-background-color: transparent;
 }
@@ -158,14 +180,43 @@
     -fx-background-radius: 12 12 0 0;
 }
 
+.date-picker-popup .spinner .button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 10;
+    -fx-padding: 6 10;
+    -fx-cursor: hand;
+}
+
+.date-picker-popup .spinner .button:hover {
+    -fx-background-color: #FAF0E6;
+}
+
+.date-picker-popup .spinner .left-arrow,
+.date-picker-popup .spinner .right-arrow {
+    -fx-background-color: #A0836D;
+}
+
 .date-picker-popup .month-year-pane {
     -fx-text-fill: #3E312D;
     -fx-font-weight: 800;
 }
 
+.date-picker-popup .day-name-cell {
+    -fx-font-weight: 700;
+    -fx-background-color: #FAF6F0;
+}
+
 .date-picker-popup .day-name-cell,
 .date-picker-popup .day-cell {
     -fx-text-fill: #3E312D;
+}
+
+.date-picker-popup .day-cell {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 8;
+    -fx-border-color: rgba(226, 214, 200, 0.7);
+    -fx-border-width: 0.5;
+    -fx-border-radius: 8;
 }
 
 .date-picker-popup .day-cell:hover {
@@ -174,6 +225,20 @@
 
 .date-picker-popup .day-cell:selected {
     -fx-background-color: #CD7B4E;
+    -fx-text-fill: #FFFFFF;
+    -fx-border-color: transparent;
+}
+
+.date-picker-popup .day-cell:today {
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.2;
+}
+
+.date-picker-popup .day-cell:disabled {
+    -fx-opacity: 0.35;
+    -fx-text-fill: #9CA3AF;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
 }
 
 .compact-job-no {
@@ -187,6 +252,10 @@
     -fx-font-weight: 800;
     -fx-font-size: 12px;
     -fx-alignment: CENTER_LEFT;
+    -fx-border-color: #E2D6C8;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.03), 12, 0, 0, 3);
 }
 
 /* --- STEPPER --- */

@@ -12,6 +12,7 @@ import javafx.scene.control.Button;
 import javafx.stage.Stage;
 import model.Client;
 import repository.ClientRepository;
+import utils.NavigationManager;
 import utils.Toast;
 
 public class ClientFormController implements Initializable {
@@ -24,6 +25,8 @@ public class ClientFormController implements Initializable {
 	private Label lblClientId;
     @FXML
     private Label breadcrumbCurrent;
+    @FXML
+    private Button breadcrumbBackBtn;
     @FXML
     private Button btnSave;
 
@@ -55,7 +58,16 @@ public class ClientFormController implements Initializable {
 
 	@Override
 	public void initialize(URL url, ResourceBundle resourceBundle) {
+        if (breadcrumbBackBtn != null) {
+            breadcrumbBackBtn.visibleProperty().bind(NavigationManager.getInstance().canGoBackProperty());
+            breadcrumbBackBtn.managedProperty().bind(breadcrumbBackBtn.visibleProperty());
+        }
 	}
+
+    @FXML
+    private void handleBack(javafx.event.Event e) {
+        MainController.getInstance().handleBack(e);
+    }
 
 	// This method is called from ViewClientsController or MainController
 	public void setClientData(Client client) {

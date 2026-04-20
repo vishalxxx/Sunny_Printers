@@ -44,6 +44,13 @@
     -fx-alignment: CENTER_LEFT;
 }
 
+.page-heading {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 24px;
+    -fx-font-weight: 800;
+    -fx-font-family: 'Manrope';
+}
+
 .profile-title {
     -fx-text-fill: #3E312D;
     -fx-font-size: 20px;

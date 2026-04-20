@@ -15,10 +15,13 @@
     </padding>
 
     <!-- BREADCRUMBS -->
-    <HBox styleClass="breadcrumb-container" alignment="CENTER_LEFT">
+    <HBox styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8">
         <VBox.margin>
             <Insets bottom="5"/>
         </VBox.margin>
+        <Button fx:id="breadcrumbBackBtn" onAction="#handleBack" styleClass="breadcrumb-back-btn" focusTraversable="false">
+            <graphic><Region styleClass="back-icon"/></graphic>
+        </Button>
         <Label text="CLIENTS" styleClass="breadcrumb-label" />
         <Label text="›" styleClass="breadcrumb-separator" />
         <Label text="DIRECTORY" styleClass="breadcrumb-label, breadcrumb-current" />

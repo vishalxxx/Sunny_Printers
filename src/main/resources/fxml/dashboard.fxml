@@ -203,15 +203,6 @@
             <VBox fx:id="centerRoot" spacing="0">
                     <!-- HEADER Aligned with Logo (Top Pdg 22px) -->
                     <HBox alignment="CENTER_LEFT" spacing="12" style="-fx-padding: 16 32 8 32;">
-                        <!-- Breadcrumb / Page Location (Top Left) -->
-                        <!-- Breadcrumb / Page Location (Top Left) -->
-                        <Button fx:id="backNavBtn" onAction="#handleBack" styleClass="back-nav-btn" visible="false" managed="false">
-                            <HBox.margin>
-                                <Insets left="-40" />
-                            </HBox.margin>
-                            <graphic><Region styleClass="back-icon"/></graphic>
-                        </Button>
-
                         <HBox fx:id="mainSearchBox" alignment="CENTER" spacing="12" styleClass="search-field" minWidth="200" prefWidth="380">
                              <Region styleClass="sidebar-icon, icon-search" style="-fx-background-color: -fx-text-muted; -fx-min-width: 16; -fx-min-height: 16;"/>
                              <TextField fx:id="mainSearchField" promptText="Search orders..." style="-fx-background-color: transparent; -fx-padding: 0; -fx-font-size: 14;" HBox.hgrow="ALWAYS"/>
