@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.shape.Circle?>
+
+<ScrollPane xmlns="http://javafx.com/javafx/23" 
+            xmlns:fx="http://javafx.com/fxml/1"
+            fitToWidth="true" 
+            styleClass="main-scroll-pane, taste-root"
+            stylesheets="@../css/theme.css, @../css/generate_invoice.css"
+            fx:controller="controller.GenerateInvoiceController">
+
+    <VBox spacing="24" styleClass="root-container">
+        <padding>
+            <Insets top="20" right="30" bottom="30" left="30" />
+        </padding>
+
+        <!-- 1. BREADCRUMBS -->
+        <HBox styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8">
+            <Label text="Invoices" styleClass="breadcrumb-label" />
+            <Label text="›" styleClass="breadcrumb-separator" />
+            <Label text="Generate Invoice" styleClass="breadcrumb-label, breadcrumb-current" />
+        </HBox>
+
+        <!-- 2. TABS SECTION -->
+        <HBox spacing="32" styleClass="tab-header">
+            <VBox styleClass="tab-item, tab-active">
+                <Label text="Selected Jobs" styleClass="tab-label"/>
+                <Region styleClass="tab-indicator"/>
+            </VBox>
+            <VBox styleClass="tab-item">
+                <Label text="Date Range" styleClass="tab-label"/>
+                <Region styleClass="tab-indicator"/>
+            </VBox>
+            <VBox styleClass="tab-item">
+                <Label text="Monthly" styleClass="tab-label"/>
+                <Region styleClass="tab-indicator"/>
+            </VBox>
+        </HBox>
+
+        <!-- 3. MAIN LAYOUT -->
+        <HBox spacing="24" VBox.vgrow="ALWAYS">
+            <!-- LEFT PANEL: JOB SELECTION -->
+            <VBox spacing="16" HBox.hgrow="ALWAYS" styleClass="content-card">
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <Label text="Select Jobs" styleClass="card-title"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <HBox styleClass="search-box">
+                            <Region styleClass="icon-search"/>
+                            <TextField fx:id="jobSearchField" promptText="Search jobs..." styleClass="search-field"/>
+                        </HBox>
+                        <Button text="Status" styleClass="filter-btn">
+                            <graphic><Region styleClass="icon-status"/></graphic>
+                        </Button>
+                        <Button text="Date" styleClass="filter-btn">
+                            <graphic><Region styleClass="icon-date"/></graphic>
+                        </Button>
+                    </HBox>
+                </HBox>
+
+                <TableView fx:id="jobsTable" VBox.vgrow="ALWAYS" styleClass="atelier-table">
+                    <columns>
+                        <TableColumn fx:id="selectCol" prefWidth="40" resizable="false" sortable="false">
+                            <graphic><CheckBox fx:id="selectAllCheckbox"/></graphic>
+                        </TableColumn>
+                        <TableColumn fx:id="jobNameCol" text="JOB NAME" prefWidth="250"/>
+                        <TableColumn fx:id="dateCol" text="COMPLETION DATE" prefWidth="150"/>
+                        <TableColumn fx:id="qtyCol" text="QUANTITY" prefWidth="100"/>
+                        <TableColumn fx:id="rateCol" text="UNIT AMOUNT" prefWidth="120"/>
+                        <TableColumn fx:id="totalCol" text="TOTAL" prefWidth="120"/>
+                    </columns>
+                    <columnResizePolicy>
+                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                    </columnResizePolicy>
+                </TableView>
+            </VBox>
+
+            <!-- RIGHT PANEL: INFO & SUMMARY -->
+            <VBox spacing="20" minWidth="340" maxWidth="340">
+                <!-- CLIENT & INVOICE INFO -->
+                <VBox spacing="16" styleClass="info-card">
+                    <Label text="Client &amp; Invoice Info" styleClass="card-title-sm"/>
+                    
+                    <VBox spacing="6">
+                        <Label text="CLIENT NAME" styleClass="field-label-xs"/>
+                        <StackPane alignment="CENTER_RIGHT">
+                            <TextField fx:id="clientSearchField" promptText="Search client..." styleClass="card-input" maxWidth="Infinity"/>
+                            <Region styleClass="icon-search-sm" mouseTransparent="true">
+                                <StackPane.margin>
+                                    <Insets right="12"/>
+                                </StackPane.margin>
+                            </Region>
+                        </StackPane>
+                    </VBox>
+
+                    <HBox spacing="12">
+                        <VBox spacing="6" HBox.hgrow="ALWAYS">
+                            <Label text="INVOICE NO." styleClass="field-label-xs"/>
+                            <TextField fx:id="invoiceNoField" text="INV-2023-892" styleClass="card-input, invoice-no-input"/>
+                        </VBox>
+                        <VBox spacing="6" HBox.hgrow="ALWAYS">
+                            <Label text="TERMS" styleClass="field-label-xs"/>
+                            <ComboBox fx:id="termsCombo" promptText="Net 30" styleClass="modern-combo" maxWidth="Infinity"/>
+                        </VBox>
+                    </HBox>
+
+                    <HBox spacing="12">
+                        <VBox spacing="6" HBox.hgrow="ALWAYS">
+                            <Label text="INVOICE DATE" styleClass="field-label-xs"/>
+                            <DatePicker fx:id="invoiceDatePicker" promptText="mm/dd/yyyy" styleClass="card-datepicker" maxWidth="Infinity"/>
+                        </VBox>
+                        <VBox spacing="6" HBox.hgrow="ALWAYS">
+                            <Label text="DUE DATE" styleClass="field-label-xs"/>
+                            <DatePicker fx:id="dueDatePicker" promptText="mm/dd/yyyy" styleClass="card-datepicker" maxWidth="Infinity"/>
+                        </VBox>
+                    </HBox>
+
+                    <VBox spacing="6">
+                        <Label text="NOTES" styleClass="field-label-xs"/>
+                        <TextArea fx:id="notesArea" promptText="Add specific delivery instructions..." styleClass="card-textarea" prefHeight="80" wrapText="true"/>
+                    </VBox>
+                </VBox>
+
+                <!-- INVOICE SUMMARY -->
+                <VBox spacing="20" styleClass="summary-card">
+                    <HBox alignment="CENTER_LEFT" spacing="12">
+                        <Region styleClass="icon-summary-card"/>
+                        <Label text="Invoice Summary" styleClass="card-title-sm"/>
+                    </HBox>
+                    
+                    <VBox spacing="16">
+                        <HBox alignment="CENTER_LEFT">
+                            <Label text="Selected Items" styleClass="summary-label"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="itemCountLabel" text="3 jobs" styleClass="summary-value-green"/>
+                        </HBox>
+                        
+                        <Separator styleClass="summary-separator"/>
+                        
+                        <VBox spacing="8">
+                            <Label text="TOTAL PAYABLE" styleClass="total-label"/>
+                            <Label fx:id="totalAmountLabel" text="₹ 7,810.00" styleClass="total-value-hero"/>
+                        </VBox>
+                    </VBox>
+                    
+                    <VBox spacing="12">
+                        <Button text="Preview Invoice" onAction="#handlePreview" styleClass="btn-outline" maxWidth="Infinity"/>
+                        <Button text="Generate Invoice" onAction="#handleGenerate" styleClass="btn-primary" maxWidth="Infinity"/>
+                    </VBox>
+                </VBox>
+            </VBox>
+        </HBox>
+    </VBox>
+</ScrollPane>

@@ -148,7 +148,7 @@ public class MainController implements Initializable {
 	public void loadInvoiceWithJob(int clientId, int jobId) {
 		this.pendingInvoicingClientId = clientId;
 		this.pendingInvoicingJobId = jobId;
-		loadInvoiceGenration();
+		loadInvoiceGeneration();
 	}
 	// Center content container
 
@@ -1164,7 +1164,7 @@ public class MainController implements Initializable {
 
 	@FXML
 	public void showBillingSubmenu() {
-		toggleSubmenu(billingSubmenu, billingChevron, billingBtn, this::loadInvoiceGenration);
+		toggleSubmenu(billingSubmenu, billingChevron, billingBtn, this::loadInvoiceGeneration);
 	}
 
 	@FXML
@@ -1397,12 +1397,12 @@ public class MainController implements Initializable {
 	}
 
 	@FXML
-	private void loadInvoiceGenration() {
+	public void loadInvoiceGeneration() {
 		highlightActiveMenu(billingBtn);
 		highlightSubmenu(genInvoiceSubBtn);
-		loadCenterScreen("/fxml/invoice.fxml",
-				"Loading Dashboard...",
-				"Please wait");
+		loadCenterScreen("/fxml/generate_invoice.fxml",
+				"Preparing Invoice...",
+				"Loading jobs and billing data");
 	}
 
 	@FXML

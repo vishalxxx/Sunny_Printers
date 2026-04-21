@@ -82,17 +82,24 @@
 
 .compact-field:focused,
 .compact-combo:focused,
-.compact-datepicker:focused {
-    -fx-background-color: #FFFFFF;
-    -fx-border-color: #CD7B4E;
-    -fx-border-width: 1.4;
-    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.16), 14, 0, 0, 5);
+.compact-combo:focused-within,
+.compact-datepicker:focused,
+.compact-datepicker:focused-within,
+.card-field:focused,
+.card-combo:focused,
+.card-combo:focused-within,
+.card-textarea:focused {
+    -fx-background-color: #FFFFFF !important;
+    -fx-border-color: #CD7B4E !important;
+    -fx-border-width: 1.4 !important;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.16), 14, 0, 0, 5) !important;
 }
 
 /* Remove default white boxes for editable fields */
 .compact-combo .text-field,
-.compact-datepicker .text-field {
-    -fx-background-color: transparent;
+.compact-datepicker .text-field,
+.card-combo .text-field {
+    -fx-background-color: transparent !important;
     -fx-padding: 0;
     -fx-text-fill: #3E312D;
 }
