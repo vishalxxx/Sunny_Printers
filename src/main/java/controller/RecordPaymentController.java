@@ -162,7 +162,8 @@ public class RecordPaymentController implements Initializable {
         
         refreshFooterTotals();
         
-        clientCombo.setOnAction(e -> onClientSelected());
+        setupClientCombo();
+        clientCombo.valueProperty().addListener((obs, oldV, newV) -> onClientSelected());
         setupPaymentTypeCombo();
 
         if (pendingPrefillInvoice != null) {
@@ -225,6 +226,32 @@ public class RecordPaymentController implements Initializable {
             new Alert(Alert.AlertType.ERROR, "Error loading client details: " + e.getMessage(), ButtonType.OK)
                     .showAndWait();
         }
+    }
+
+    private void setupClientCombo() {
+        clientCombo.setEditable(false);
+        clientCombo.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(Client item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText("Select Client");
+                } else {
+                    setText(item.getBusinessName());
+                }
+            }
+        });
+        clientCombo.setCellFactory(cb -> new ListCell<>() {
+            @Override
+            protected void updateItem(Client item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getBusinessName() + " (" + item.getClientName() + ")");
+                }
+            }
+        });
     }
 
     private void loadClients() {

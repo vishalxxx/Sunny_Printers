@@ -17,10 +17,15 @@
         </padding>
 
         <!-- 1. BREADCRUMBS -->
-        <HBox styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8">
-            <Label text="Invoices" styleClass="breadcrumb-label" />
-            <Label text="›" styleClass="breadcrumb-separator" />
-            <Label text="Generate Invoice" styleClass="breadcrumb-label, breadcrumb-current" />
+        <HBox styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="12">
+            <Button fx:id="breadcrumbBackBtn" onAction="#handleBack" styleClass="breadcrumb-back-btn">
+                <graphic><Region styleClass="back-icon"/></graphic>
+            </Button>
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Label text="Invoices" styleClass="breadcrumb-label" />
+                <Label text="›" styleClass="breadcrumb-separator" />
+                <Label text="Generate Invoice" styleClass="breadcrumb-label, breadcrumb-current" />
+            </HBox>
         </HBox>
 
         <!-- 2. TABS SECTION -->
@@ -47,16 +52,7 @@
                     <Label text="Select Jobs" styleClass="card-title"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <HBox spacing="10" alignment="CENTER_LEFT">
-                        <HBox styleClass="search-box">
-                            <Region styleClass="icon-search"/>
-                            <TextField fx:id="jobSearchField" promptText="Search jobs..." styleClass="search-field"/>
-                        </HBox>
-                        <Button text="Status" styleClass="filter-btn">
-                            <graphic><Region styleClass="icon-status"/></graphic>
-                        </Button>
-                        <Button text="Date" styleClass="filter-btn">
-                            <graphic><Region styleClass="icon-date"/></graphic>
-                        </Button>
+                        <TextField fx:id="jobSearchField" promptText="Search jobs..." styleClass="compact-field" prefWidth="250"/>
                     </HBox>
                 </HBox>
 
@@ -78,38 +74,35 @@
             </VBox>
 
             <!-- RIGHT PANEL: INFO & SUMMARY -->
-            <VBox spacing="20" minWidth="340" maxWidth="340">
+            <VBox spacing="20" minWidth="380" maxWidth="380">
                 <!-- CLIENT & INVOICE INFO -->
                 <VBox spacing="16" styleClass="info-card">
                     <Label text="Client &amp; Invoice Info" styleClass="card-title-sm"/>
                     
                     <VBox spacing="6">
                         <Label text="CLIENT NAME" styleClass="field-label-xs"/>
-                        <HBox styleClass="search-box" spacing="10" alignment="CENTER_LEFT">
-                            <Region styleClass="icon-search"/>
-                            <ComboBox fx:id="clientComboBox" promptText="Search client..." styleClass="search-combo" maxWidth="Infinity" editable="true" />
-                        </HBox>
+                        <ComboBox fx:id="clientComboBox" promptText="Select client name." styleClass="client-combo" maxWidth="Infinity" editable="false" />
                     </VBox>
 
                     <HBox spacing="12">
                         <VBox spacing="6" HBox.hgrow="ALWAYS">
                             <Label text="INVOICE NO." styleClass="field-label-xs"/>
-                            <TextField fx:id="invoiceNoField" text="INV-2023-892" styleClass="card-input, invoice-no-input"/>
+                            <TextField fx:id="invoiceNoField" text="INV-2023-892" styleClass="compact-field, invoice-no-input"/>
                         </VBox>
                         <VBox spacing="6" HBox.hgrow="ALWAYS">
                             <Label text="TERMS" styleClass="field-label-xs"/>
-                            <ComboBox fx:id="termsCombo" promptText="Net 30" styleClass="modern-combo" maxWidth="Infinity"/>
+                            <ComboBox fx:id="termsCombo" promptText="Net 30" styleClass="compact-combo" maxWidth="Infinity"/>
                         </VBox>
                     </HBox>
 
                     <HBox spacing="12">
                         <VBox spacing="6" HBox.hgrow="ALWAYS">
                             <Label text="INVOICE DATE" styleClass="field-label-xs"/>
-                            <DatePicker fx:id="invoiceDatePicker" promptText="mm/dd/yyyy" styleClass="card-datepicker" maxWidth="Infinity"/>
+                            <DatePicker fx:id="invoiceDatePicker" promptText="mm/dd/yyyy" styleClass="compact-datepicker" maxWidth="Infinity"/>
                         </VBox>
                         <VBox spacing="6" HBox.hgrow="ALWAYS">
                             <Label text="DUE DATE" styleClass="field-label-xs"/>
-                            <DatePicker fx:id="dueDatePicker" promptText="mm/dd/yyyy" styleClass="card-datepicker" maxWidth="Infinity"/>
+                            <DatePicker fx:id="dueDatePicker" promptText="mm/dd/yyyy" styleClass="compact-datepicker" maxWidth="Infinity"/>
                         </VBox>
                     </HBox>
 
@@ -130,7 +123,7 @@
                         <HBox alignment="CENTER_LEFT">
                             <Label text="Selected Items" styleClass="summary-label"/>
                             <Region HBox.hgrow="ALWAYS"/>
-                            <Label fx:id="itemCountLabel" text="3 jobs" styleClass="summary-value-green"/>
+                            <Label fx:id="itemCountLabel" text="0 jobs" styleClass="summary-value-accent"/>
                         </HBox>
                         
                         <Separator styleClass="summary-separator"/>
@@ -141,10 +134,10 @@
                         </VBox>
                     </VBox>
                     
-                    <VBox spacing="12">
-                        <Button text="Preview Invoice" onAction="#handlePreview" styleClass="btn-outline" maxWidth="Infinity"/>
-                        <Button text="Generate Invoice" onAction="#handleGenerate" styleClass="btn-primary" maxWidth="Infinity"/>
-                    </VBox>
+                    <HBox spacing="12">
+                        <Button text="Preview Invoice" onAction="#handlePreview" styleClass="draft-btn-premium" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                        <Button text="Generate Invoice" onAction="#handleGenerate" styleClass="next-step-btn-premium" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                    </HBox>
                 </VBox>
             </VBox>
         </HBox>

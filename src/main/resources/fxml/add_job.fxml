@@ -46,8 +46,8 @@
                 
                 <!-- Column 1: Client Search (40%) -->
                 <VBox spacing="6" GridPane.columnIndex="0">
-                    <Label text="CLIENT SEARCH" styleClass="compact-field-label"/>
-                    <ComboBox fx:id="clientCombo" promptText="Search client name." styleClass="compact-combo" maxWidth="Infinity"/>
+                    <Label text="SELECT CLIENT" styleClass="compact-field-label"/>
+                    <ComboBox fx:id="clientCombo" promptText="Select Client" styleClass="client-combo" maxWidth="Infinity" editable="false"/>
                 </VBox>
                 
                 <!-- Column 2: Job Title (25%) -->

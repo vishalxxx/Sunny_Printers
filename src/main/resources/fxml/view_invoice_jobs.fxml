@@ -13,9 +13,10 @@
 
 	<HBox fx:id="searchModeBox" spacing="12" alignment="CENTER_LEFT" styleClass="search-bar">
         <ComboBox fx:id="clientComboBox"
-                  promptText="Select Client..."
-                  styleClass="combo-box-base"
-                  prefWidth="300"/>
+                  promptText="Select Client"
+                  styleClass="client-combo"
+                  prefWidth="300"
+                  editable="false"/>
 
         <ComboBox fx:id="invoiceComboBox"
                   promptText="Select Invoice..."

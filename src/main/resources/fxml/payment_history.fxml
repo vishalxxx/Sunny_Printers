@@ -44,7 +44,7 @@
                             <!-- CLIENT full width -->
                             <VBox spacing="6">
                                 <Label text="SELECT CLIENT" styleClass="field-label"/>
-                                <ComboBox fx:id="clientCombo" promptText="Select client..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                                <ComboBox fx:id="clientCombo" promptText="Select Client" prefWidth="0" maxWidth="Infinity" styleClass="client-combo" editable="false"/>
                                 <Label text="SELECT INVOICE" styleClass="field-label"/>
                                 <ComboBox fx:id="invoiceCombo" promptText="Select invoice..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
                             </VBox>

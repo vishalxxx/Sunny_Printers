@@ -115,27 +115,38 @@ public class PaymentHistoryController implements Initializable {
         });
     }
 
+    private void setupClientCombo() {
+        clientCombo.setEditable(false);
+        clientCombo.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(Client item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText("Select Client");
+                } else {
+                    setText(item.getBusinessName());
+                }
+            }
+        });
+        clientCombo.setCellFactory(cb -> new ListCell<>() {
+            @Override
+            protected void updateItem(Client item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getBusinessName() + " (" + item.getClientName() + ")");
+                }
+            }
+        });
+    }
+
     private void loadClients() {
         try {
             ClientRepository clientRepo = new ClientRepository();
             ObservableList<Client> clients = FXCollections.observableArrayList(clientRepo.findAllSortedById());
+            setupClientCombo();
             clientCombo.setItems(clients);
-            
-            // Set how the client object is displayed in the combobox
-            clientCombo.setConverter(new javafx.util.StringConverter<Client>() {
-                @Override
-                public String toString(Client client) {
-                    if (client == null) return null;
-                    String bn = client.getBusinessName();
-                    return (bn != null && !bn.trim().isEmpty()) ? bn : client.getClientName();
-                }
-
-                @Override
-                public Client fromString(String string) {
-                    return null; // not needed
-                }
-            });
-
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("Failed to load clients: " + e.getMessage());

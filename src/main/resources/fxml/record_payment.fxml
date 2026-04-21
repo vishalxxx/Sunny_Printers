@@ -52,7 +52,7 @@
                         <HBox spacing="20" alignment="BOTTOM_LEFT">
                             <VBox spacing="6" HBox.hgrow="ALWAYS">
                                 <Label text="SELECT CLIENT" styleClass="field-label"/>
-                                <ComboBox fx:id="clientCombo" promptText="Select client..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                                <ComboBox fx:id="clientCombo" promptText="Select Client" prefWidth="0" maxWidth="Infinity" styleClass="client-combo" editable="false"/>
                             </VBox>
                             <VBox spacing="6" alignment="BOTTOM_RIGHT" minWidth="200">
                                 <Label text="TOTAL OUTSTANDING" styleClass="field-label"/>

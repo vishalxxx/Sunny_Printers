@@ -1,12 +1,11 @@
 /* ============================================================
-   SUNNY PRINTERS - GENERATE INVOICE (STITCH "PRECISION ARTISAN" SYSTEM)
-   Aesthetic: High-End Editorial, No-Line Rule, Tonal Depth.
-   Primary Color: Emerald Green (#10B981)
+   SUNNY PRINTERS - GENERATE INVOICE (STITCH DESIGN + THEME.CSS)
+   Aligning with shared global tokens from theme.css.
    ============================================================ */
 
 .main-scroll-pane {
-    -fx-background-color: #F8F9FF; /* Stitch Surface Base */
-    -fx-background: #F8F9FF;
+    -fx-background-color: #FAF6F0; /* Shared Global Base */
+    -fx-background: #FAF6F0;
     -fx-border-width: 0;
 }
 
@@ -20,26 +19,26 @@
 }
 
 .breadcrumb-label {
-    -fx-text-fill: #64748B; /* Stitch Secondary Variant */
+    -fx-text-fill: #8E7A6B;
     -fx-font-size: 13px;
     -fx-font-weight: 600;
 }
 
 .breadcrumb-separator {
-    -fx-text-fill: #CBD5E1;
+    -fx-text-fill: #D6D1C9;
 }
 
 .breadcrumb-current {
-    -fx-text-fill: #1E293B;
+    -fx-text-fill: #3E312D;
     -fx-font-weight: 700;
 }
 
-/* --- SEGMENTED TABS (Editorial Style) --- */
+/* --- TABS (Editorial Style) --- */
 .tab-header {
     -fx-padding: 0 0 0 4;
     -fx-spacing: 32;
-    -fx-border-color: #E2E8F0;
-    -fx-border-width: 0 0 1 0;
+    -fx-border-color: #E6E0D5;
+    -fx-border-width: 0 0 1.5 0;
 }
 
 .tab-item {
@@ -48,13 +47,13 @@
 }
 
 .tab-label {
-    -fx-text-fill: #64748B;
+    -fx-text-fill: #A0836D;
     -fx-font-size: 14px;
     -fx-font-weight: 700;
 }
 
 .tab-active .tab-label {
-    -fx-text-fill: #10B981;
+    -fx-text-fill: #CD7B4E; 
 }
 
 .tab-indicator {
@@ -66,59 +65,53 @@
 }
 
 .tab-active .tab-indicator {
-    -fx-background-color: #10B981;
+    -fx-background-color: #CD7B4E;
 }
 
-/* --- CARDS (No-Line Rule / Paper Philosophy) --- */
-.content-card, .info-card, .summary-card {
-    -fx-background-color: #FFFFFF; /* Surface Container Lowest */
+/* --- CARDS --- */
+.content-card, .info-card {
+    -fx-background-color: #FFFFFF;
     -fx-background-radius: 12;
     -fx-padding: 28;
-    /* Ambient Shadow per Stitch Design Strategy */
-    -fx-effect: dropshadow(three-pass-box, rgba(11, 28, 48, 0.04), 40, 0, 0, 8);
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.05), 25, 0, 0, 10);
+}
+
+.summary-card {
+    -fx-background-color: #F5EFE7;
+    -fx-background-radius: 12;
+    -fx-padding: 20;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.05), 25, 0, 0, 10);
 }
 
 .card-title {
-    -fx-text-fill: #0F172A;
+    -fx-text-fill: #3E312D;
     -fx-font-size: 21px;
     -fx-font-weight: 800;
 }
 
 .card-title-sm {
-    -fx-text-fill: #0F172A;
+    -fx-text-fill: #3E312D;
     -fx-font-size: 17px;
     -fx-font-weight: 700;
 }
 
-/* --- SEARCH & FILTERS (Subtle Surface Nesting) --- */
-.search-box {
-    -fx-background-color: #F1F5F9; /* Surface Container Low */
-    -fx-background-radius: 8;
-    -fx-padding: 0 12;
-    -fx-alignment: CENTER_LEFT;
-}
-
-.search-field {
-    -fx-background-color: transparent;
-    -fx-text-fill: #1E293B;
-    -fx-font-size: 13px;
-    -fx-padding: 10 4;
-}
+/* Search box & field are inherited from theme.css */
 
 .filter-btn {
     -fx-background-color: #FFFFFF;
-    -fx-border-color: #E2E8F0;
+    -fx-border-color: #E6E0D5;
     -fx-border-width: 1.2;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
-    -fx-text-fill: #334155;
+    -fx-text-fill: #5D6D7E;
     -fx-font-size: 13px;
     -fx-font-weight: 700;
     -fx-padding: 10 18;
     -fx-graphic-text-gap: 8;
+    -fx-cursor: hand;
 }
 
-/* --- TABLE (Precision Utility Style) --- */
+/* --- TABLE --- */
 .atelier-table {
     -fx-background-color: transparent;
     -fx-border-width: 0;
@@ -126,7 +119,7 @@
 
 .atelier-table .column-header-background {
     -fx-background-color: transparent;
-    -fx-border-color: #F1F5F9;
+    -fx-border-color: #F0EBE5;
     -fx-border-width: 0 0 1.5 0;
 }
 
@@ -136,7 +129,7 @@
 }
 
 .atelier-table .column-header .label {
-    -fx-text-fill: #64748B;
+    -fx-text-fill: #A0836D;
     -fx-font-size: 11px;
     -fx-font-weight: 800;
     -fx-letter-spacing: 0.04em;
@@ -144,143 +137,82 @@
 
 .atelier-table .table-row-cell {
     -fx-background-color: transparent;
-    -fx-border-color: #F8FAFC;
+    -fx-border-color: #FBF9F7;
     -fx-border-width: 0 0 1 0;
 }
 
 .atelier-table .table-row-cell:selected {
-    -fx-background-color: rgba(16, 185, 129, 0.03);
+    -fx-background-color: rgba(205, 123, 78, 0.05);
 }
 
 .atelier-table .table-cell {
     -fx-padding: 20 0;
-    -fx-text-fill: #1E293B;
+    -fx-text-fill: #3E312D;
     -fx-font-size: 14px;
 }
 
 .job-name-main { 
     -fx-font-weight: 700; 
-    -fx-text-fill: #0F172A;
+    -fx-text-fill: #3E312D;
 }
 .job-name-sub { 
-    -fx-text-fill: #64748B; 
+    -fx-text-fill: #8E7A6B; 
     -fx-font-size: 12px; 
 }
 
-/* --- CHECKBOX (Emerald Stitch) --- */
+/* --- CHECKBOX --- */
 .atelier-table .check-box .box {
     -fx-background-color: #FFFFFF;
-    -fx-border-color: #CBD5E1;
+    -fx-border-color: #D6D1C9;
     -fx-border-radius: 4;
     -fx-background-radius: 4;
 }
 
 .atelier-table .check-box:selected .box {
-    -fx-background-color: #10B981;
-    -fx-border-color: #10B981;
+    -fx-background-color: #CD7B4E;
+    -fx-border-color: #CD7B4E;
 }
 
-/* --- INPUTS (Stitch Design Specs) --- */
+/* --- INPUTS (Inheriting background from theme.css where possible) --- */
 .field-label-xs {
-    -fx-text-fill: #64748B;
+    -fx-text-fill: #8E7A6B;
     -fx-font-size: 11px;
     -fx-font-weight: 700;
     -fx-letter-spacing: 0.02em;
     -fx-padding: 0 0 6 0;
 }
 
-.input-with-icon {
-    -fx-alignment: CENTER_RIGHT;
-}
-
-.card-input, .modern-combo, .card-datepicker, .card-textarea {
-    -fx-background-color: #F1F5F9; /* Surface Container Low */
-    -fx-background-radius: 8;
-    -fx-border-color: #E2E8F0;
-    -fx-border-width: 1.2;
-    -fx-border-radius: 8;
-    -fx-padding: 11 14;
-    -fx-text-fill: #0F172A;
-    -fx-font-size: 14px;
-}
-
-.card-input:focused, .modern-combo:focused {
-    -fx-background-color: #FFFFFF;
-    -fx-border-color: #10B981;
-}
-
-.icon-search-sm {
-    -fx-shape: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z";
-    -fx-background-color: #94A3B8;
-    -fx-min-width: 14; -fx-min-height: 14;
-}
-
 .invoice-no-input {
-    -fx-background-color: #F0FDF4;
-    -fx-border-color: #BBF7D0;
-    -fx-text-fill: #15803D;
+    -fx-background-color: #FDF2E9;
+    -fx-border-color: #EADFD4;
+    -fx-text-fill: #BD7645;
     -fx-font-weight: 800;
 }
 
+
 /* --- SUMMARY --- */
 .summary-card {
-    -fx-background-color: #F8FAFC;
+    -fx-background-color: #F5EFE7;
 }
 
-.summary-value-green {
-    -fx-text-fill: #10B981;
+.summary-value-accent {
+    -fx-text-fill: #CD7B4E;
     -fx-font-weight: 700;
 }
 
 .total-value-hero {
-    -fx-text-fill: #0F172A;
+    -fx-text-fill: #3E312D;
     -fx-font-size: 34px;
     -fx-font-weight: 800;
 }
 
-/* --- BUTTONS (Stitch Signature) --- */
-.btn-primary {
-    /* Signature Gradient per Design Strategy */
-    -fx-background-color: linear-gradient(to bottom right, #10B981, #059669);
-    -fx-text-fill: white;
-    -fx-font-weight: 800;
-    -fx-font-size: 15px;
-    -fx-padding: 16;
-    -fx-background-radius: 12;
-    -fx-cursor: hand;
-    -fx-effect: dropshadow(three-pass-box, rgba(16, 185, 129, 0.2), 20, 0, 0, 6);
-}
+/* --- BUTTONS --- */
 
-.btn-primary:hover {
-    -fx-background-color: linear-gradient(to bottom right, #059669, #047857);
-}
-
-.btn-outline {
-    -fx-background-color: #FFFFFF;
-    -fx-border-color: #E2E8F0;
-    -fx-border-width: 1.5;
-    -fx-border-radius: 12;
-    -fx-background-radius: 12;
-    -fx-text-fill: #1E293B;
-    -fx-font-weight: 700;
-    -fx-padding: 14;
-    -fx-cursor: hand;
-}
-
-.btn-outline:hover {
-    -fx-background-color: #F8FAFC;
-}
 
 /* --- ICONS --- */
-.icon-search {
-    -fx-shape: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z";
-    -fx-background-color: #64748B;
-    -fx-min-width: 18; -fx-min-height: 18;
-}
-
 .icon-summary-card {
     -fx-shape: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z";
-    -fx-background-color: #10B981;
+    -fx-background-color: #CD7B4E;
     -fx-min-width: 22; -fx-min-height: 22;
     -fx-opacity: 0.2;
 }

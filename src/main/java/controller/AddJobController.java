@@ -705,8 +705,10 @@ public class AddJobController implements utils.DirtySupport {
 		p.setNotes(printNotesArea.getText());
 
 		try {
-			if (printAmountField.getText() != null && !printAmountField.getText().isBlank())
-				p.setAmount(Double.parseDouble(printAmountField.getText()));
+			if (printAmountField.getText() != null && !printAmountField.getText().isBlank()) {
+				String amountStr = printAmountField.getText().replace(",", "");
+				p.setAmount(Double.parseDouble(amountStr));
+			}
 		} catch (Exception e) {
 			toast("Printing Amount must be number ❌");
 			return;
@@ -756,8 +758,10 @@ public class AddJobController implements utils.DirtySupport {
 		}
 
 		try {
-			if (ctpAmountField.getText() != null && !ctpAmountField.getText().isBlank())
-				c.setAmount(Double.parseDouble(ctpAmountField.getText()));
+			if (ctpAmountField.getText() != null && !ctpAmountField.getText().isBlank()) {
+				String amountStr = ctpAmountField.getText().replace(",", "");
+				c.setAmount(Double.parseDouble(amountStr));
+			}
 		} catch (Exception e) {
 			toast("CTP Amount must be number ❌");
 			return;
@@ -806,8 +810,10 @@ public class AddJobController implements utils.DirtySupport {
 		p.setSource(source);
 
 		try {
-			if (paperAmountField.getText() != null && !paperAmountField.getText().isBlank())
-				p.setAmount(Double.parseDouble(paperAmountField.getText()));
+			if (paperAmountField.getText() != null && !paperAmountField.getText().isBlank()) {
+				String amountStr = paperAmountField.getText().replace(",", "");
+				p.setAmount(Double.parseDouble(amountStr));
+			}
 		} catch (Exception e) {
 			toast("Paper Amount must be number ❌");
 			return;
@@ -846,8 +852,10 @@ public class AddJobController implements utils.DirtySupport {
 		}
 
 		try {
-			if (bindingRateField.getText() != null && !bindingRateField.getText().isBlank())
-				b.setRate(Double.parseDouble(bindingRateField.getText()));
+			if (bindingRateField.getText() != null && !bindingRateField.getText().isBlank()) {
+				String rateStr = bindingRateField.getText().replace(",", "");
+				b.setRate(Double.parseDouble(rateStr));
+			}
 		} catch (Exception e) {
 			toast("Binding Rate must be number ❌");
 			return;
@@ -856,8 +864,10 @@ public class AddJobController implements utils.DirtySupport {
 		b.setNotes(bindingNotesArea.getText());
 
 		try {
-			if (bindingAmountField.getText() != null && !bindingAmountField.getText().isBlank())
-				b.setAmount(Double.parseDouble(bindingAmountField.getText()));
+			if (bindingAmountField.getText() != null && !bindingAmountField.getText().isBlank()) {
+				String amountStr = bindingAmountField.getText().replace(",", "");
+				b.setAmount(Double.parseDouble(amountStr));
+			}
 		} catch (Exception e) {
 			toast("Binding Amount must be number ❌");
 			return;
@@ -898,8 +908,10 @@ public class AddJobController implements utils.DirtySupport {
 		l.setNotes(lamNotesArea.getText());
 
 		try {
-			if (lamAmountField.getText() != null && !lamAmountField.getText().isBlank())
-				l.setAmount(Double.parseDouble(lamAmountField.getText()));
+			if (lamAmountField.getText() != null && !lamAmountField.getText().isBlank()) {
+				String amountStr = lamAmountField.getText().replace(",", "");
+				l.setAmount(Double.parseDouble(amountStr));
+			}
 		} catch (Exception e) {
 			toast("Lamination Amount must be number ❌");
 			return;
@@ -1082,15 +1094,18 @@ public class AddJobController implements utils.DirtySupport {
 			}
 		}).start();
 		clientCombo.setItems(filteredClients);
-		clientCombo.setEditable(true);
+		clientCombo.setEditable(false);
 
 		// ✅ UI setup
 		clientCombo.setCellFactory(lv -> new ListCell<>() {
 			@Override
 			protected void updateItem(Client c, boolean empty) {
 				super.updateItem(c, empty);
-				setText(empty || c == null ? null
-						: c.getBusinessName() + " | " + c.getClientName() + " | " + c.getGst() + " | " + c.getPhone());
+				if (empty || c == null) {
+					setText(null);
+				} else {
+					setText(c.getBusinessName() + " (" + c.getClientName() + ")");
+				}
 			}
 		});
 
@@ -1098,8 +1113,11 @@ public class AddJobController implements utils.DirtySupport {
 			@Override
 			protected void updateItem(Client c, boolean empty) {
 				super.updateItem(c, empty);
-				setText(empty || c == null ? null
-						: c.getBusinessName() + " | " + c.getClientName() + " | " + c.getGst() + " | " + c.getPhone());
+				if (empty || c == null) {
+					setText("Select Client");
+				} else {
+					setText(c.getBusinessName());
+				}
 			}
 		});
 

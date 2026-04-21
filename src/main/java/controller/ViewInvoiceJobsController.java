@@ -514,18 +514,27 @@ public class ViewInvoiceJobsController {
     }
 
     private void setupClientComboBox() {
+        clientComboBox.setEditable(false);
         clientComboBox.setButtonCell(new ListCell<>() {
             @Override
             protected void updateItem(Client item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(empty || item == null ? "Select Client..." : item.getBusinessName() + " (" + item.getClientName() + ")");
+                if (empty || item == null) {
+                    setText("Select Client");
+                } else {
+                    setText(item.getBusinessName());
+                }
             }
         });
         clientComboBox.setCellFactory(cb -> new ListCell<>() {
             @Override
             protected void updateItem(Client item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.getBusinessName() + " (" + item.getClientName() + ")");
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getBusinessName() + " (" + item.getClientName() + ")");
+                }
             }
         });
     }

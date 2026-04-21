@@ -340,15 +340,16 @@ public class ViewJobsController {
     // ✅ CLIENT COMBO
     // =========================================================
     private void setupClientComboBox() {
+        clientComboBox.setEditable(false);
 
         clientComboBox.setButtonCell(new ListCell<>() {
             @Override
             protected void updateItem(Client item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
-                    setText("Select Client...");
+                    setText("Select Client");
                 } else {
-                    setText(item.getBusinessName() + " (" + item.getClientName() + ")");
+                    setText(item.getBusinessName());
                 }
             }
         });

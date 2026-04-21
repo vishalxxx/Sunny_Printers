@@ -41,28 +41,35 @@ public class GenerateInvoiceController {
     public void initialize() {
         setupTable();
         setupFields();
-        loadDummyData();
         setupClientCombo();
+        setupJobSearch();
     }
 
     private final ClientService clientService = new ClientService();
+    private final service.JobService jobService = new service.JobService();
     private final ObservableList<Client> masterClients = FXCollections.observableArrayList();
+    private final ObservableList<JobItem> masterJobs = FXCollections.observableArrayList();
     private FilteredList<Client> filteredClients;
+    private FilteredList<JobItem> filteredJobs;
 
     private void setupClientCombo() {
         if (clientComboBox == null) return;
 
         filteredClients = new FilteredList<>(masterClients, c -> true);
         clientComboBox.setItems(filteredClients);
-        clientComboBox.setEditable(true);
+        clientComboBox.setEditable(false);
 
-        clientComboBox.setConverter(new StringConverter<>() {
-            @Override public String toString(Client c) {
-                return c == null ? "" : c.getBusinessName();
+        // Selection listener to load jobs
+        clientComboBox.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
+            if (newV != null) {
+                loadJobsForClient(newV);
+            } else {
+                masterJobs.clear();
+                updateSummary();
             }
-            @Override public Client fromString(String s) { return clientComboBox.getValue(); }
         });
 
+        // Premium Cell Factory
         clientComboBox.setCellFactory(lv -> new ListCell<>() {
             @Override protected void updateItem(Client c, boolean empty) {
                 super.updateItem(c, empty);
@@ -70,32 +77,18 @@ public class GenerateInvoiceController {
                 else setText(c.getBusinessName() + " (" + c.getClientName() + ")");
             }
         });
+
+        // Button Cell (Visible when closed)
         clientComboBox.setButtonCell(new ListCell<>() {
             @Override protected void updateItem(Client c, boolean empty) {
                 super.updateItem(c, empty);
                 if (empty || c == null) setText(null);
-                else setText(c.getBusinessName() + " (" + c.getClientName() + ")");
+                else setText(c.getBusinessName());
             }
         });
 
-        // Load clients
-        try {
-            masterClients.setAll(clientService.getAllClients());
-        } catch (Exception e) {
-            // keep empty if DB not ready
-        }
-
-        // Live filter as user types
-        clientComboBox.getEditor().textProperty().addListener((obs, oldV, newV) -> {
-            String q = newV == null ? "" : newV.toLowerCase().trim();
-            filteredClients.setPredicate(c ->
-                q.isEmpty()
-                    || (c.getBusinessName() != null && c.getBusinessName().toLowerCase().contains(q))
-                    || (c.getClientName() != null && c.getClientName().toLowerCase().contains(q))
-                    || (c.getPhone() != null && c.getPhone().contains(q))
-            );
-            if (!clientComboBox.isShowing()) clientComboBox.show();
-        });
+        // Load data
+        try { masterClients.setAll(clientService.getAllClients()); } catch (Exception e) {}
     }
 
     private void setupTable() {
@@ -123,6 +116,9 @@ public class GenerateInvoiceController {
         });
 
         jobNameCol.setCellValueFactory(data -> data.getValue().nameProperty());
+        
+        filteredJobs = new FilteredList<>(masterJobs, j -> true);
+        jobsTable.setItems(filteredJobs);
         jobNameCol.setCellFactory(column -> new TableCell<>() {
             private final Label title = new Label();
             private final Label subtitle = new Label();
@@ -190,17 +186,54 @@ public class GenerateInvoiceController {
         dueDatePicker.setValue(LocalDate.now().plusDays(30));
     }
 
-    private void loadDummyData() {
-        ObservableList<JobItem> items = FXCollections.observableArrayList(
-            new JobItem("Quarterly Product Catalog - 64pg", "Offset Print • Matte Finish", "Oct 12, 2023", "500 units", "₹ 12.50", "₹ 6,250.00"),
-            new JobItem("Executive Business Cards - Premium", "Spot UV • 400gsm Cotton", "Oct 14, 2023", "200 units", "₹ 4.30", "₹ 860.00"),
-            new JobItem("Promotional Flyers - A5", "Digital Print • Glossy", "Oct 15, 2023", "700 units", "₹ 1.00", "₹ 700.00"),
-            new JobItem("Banner Vinyl Print - 6x4ft", "Outdoor Quality", "Oct 16, 2023", "1 unit", "₹ 1,200.00", "₹ 1,200.00")
-        );
-        items.get(0).setSelected(true);
-        items.get(1).setSelected(true);
-        items.get(2).setSelected(true);
-        jobsTable.setItems(items);
+    private void setupJobSearch() {
+        jobSearchField.textProperty().addListener((obs, oldV, newV) -> {
+            String q = newV == null ? "" : newV.toLowerCase().trim();
+            filteredJobs.setPredicate(j -> {
+                if (q.isEmpty()) return true;
+                return j.nameProperty().get().toLowerCase().contains(q)
+                    || j.getSubtitle().toLowerCase().contains(q);
+            });
+        });
+    }
+
+    private void loadJobsForClient(Client client) {
+        if (client == null) return;
+        
+        masterJobs.clear();
+        try {
+            System.out.println("DEBUG: Loading jobs for client ID: " + client.getId());
+            List<model.Job> jobs = jobService.getCompletedJobsByClient(client.getId());
+            System.out.println("DEBUG: Found " + jobs.size() + " jobs.");
+            
+            utils.NavigationManager.getInstance().showToast("Found " + jobs.size() + " jobs for this client.");
+            
+            if (jobs.isEmpty()) {
+                // Diagnostic: check if ANY jobs exist for this client
+                List<model.Job> allJobs = jobService.getFullJobsByClientId(client.getId());
+                System.out.println("DEBUG: Diagnostic - Total jobs (any status) for this client: " + allJobs.size());
+                for (model.Job aj : allJobs) {
+                    System.out.println("DEBUG: Job " + aj.getJobNo() + " has status: " + aj.getStatus());
+                }
+            }
+            
+            for (model.Job j : jobs) {
+                String dateStr = j.getJobDate() != null ? j.getJobDate().toString() : "-";
+                String totalStr = j.getJobTotal() != null ? String.format("₹ %,.2f", j.getJobTotal()) : "₹ 0.00";
+                
+                masterJobs.add(new JobItem(
+                    j.getJobTitle(),
+                    j.getJobNo(), 
+                    dateStr,
+                    "1", // Default Qty to 1 as placeholder
+                    totalStr, // Use total as rate for now
+                    totalStr
+                ));
+            }
+        } catch (Exception e) {
+            System.err.println("DEBUG: Failed to load jobs: " + e.getMessage());
+            e.printStackTrace();
+        }
         updateSummary();
     }
 

@@ -46,7 +46,7 @@
         </HBox>
         
         <HBox spacing="12" alignment="CENTER_LEFT">
-            <ComboBox fx:id="clientComboBox" promptText="Select Client" styleClass="compact-combo" prefWidth="240" />
+            <ComboBox fx:id="clientComboBox" promptText="Select Client" styleClass="client-combo" prefWidth="320" editable="false" />
             <ComboBox fx:id="statusFilterComboBox" promptText="All Status" styleClass="compact-combo" prefWidth="180" />
             <DatePicker fx:id="fromDatePicker" promptText="From Date" styleClass="compact-datepicker" prefWidth="160"/>
             <DatePicker fx:id="toDatePicker" promptText="To Date" styleClass="compact-datepicker" prefWidth="160"/>
@@ -77,7 +77,7 @@
             
             <Region HBox.hgrow="ALWAYS" />
             
-            <HBox spacing="8" alignment="CENTER_RIGHT">
+            <HBox spacing="8" alignment="CENTER_RIGHT" style="-fx-padding: 0 10 0 10;">
                 <Button fx:id="bulkStartBtn" text="Start Processing (0)" styleClass="bulk-btn, bulk-btn-blue" onAction="#handleStartAction" minWidth="-Infinity">
                     <graphic><Region styleClass="bulk-icon-blue" /></graphic>
                 </Button>

@@ -63,99 +63,12 @@
     -fx-letter-spacing: 0.05em;
 }
 
-.compact-field,
-.compact-combo,
-.compact-datepicker {
-    -fx-background-color: #FAF6F0;
-    -fx-background-radius: 10;
-    -fx-border-color: #EADFD4;
-    -fx-border-width: 1;
-    -fx-border-radius: 10;
-    -fx-min-height: 36;
-    -fx-max-height: 36;
-    -fx-padding: 0 10;
-    -fx-text-fill: #3E312D;
-    -fx-font-size: 13px;
-    -fx-font-weight: 500;
-    -fx-effect: none;
-}
-
-.compact-field:focused,
-.compact-combo:focused,
-.compact-combo:focused-within,
-.compact-datepicker:focused,
-.compact-datepicker:focused-within,
-.card-field:focused,
-.card-combo:focused,
-.card-combo:focused-within,
-.card-textarea:focused {
-    -fx-background-color: #FFFFFF !important;
-    -fx-border-color: #CD7B4E !important;
-    -fx-border-width: 1.4 !important;
-    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.16), 14, 0, 0, 5) !important;
-}
-
-/* Remove default white boxes for editable fields */
-.compact-combo .text-field,
-.compact-datepicker .text-field,
-.card-combo .text-field {
-    -fx-background-color: transparent !important;
-    -fx-padding: 0;
-    -fx-text-fill: #3E312D;
-}
-
-/* SEARCH ICON INSIDE COMBO */
-.compact-combo {
-    -fx-padding: 0 0 0 30;
-    /* Space for icon */
-    -fx-background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAC8SURBVHgB7ZJBDsIgEEXfS6/AnXoFST2C98CaeAIn9AreQz2CW70CN366YAnRhI0mbeSnyY8ZfAyD0ZfW8i5YlR3XmAnGAtiW8+W746F9gD18T3YAnkXfAbT11H6ZAHv/A8D19F1N9xOAT/cd8O0mR6YpZ7pYAGM9/VTT4Uj27X+Anp5+A07X03cNAPqX/A+4Xs7E0kG7P/L4DnjI8fT9S1fXF8By2RPr9yV79vA7BvA12QGo1pPr0pP+pZ8pZ7pYAGM9/VTT9pP+ZfgT6yU9vW9P/7Xv6Y+mDA8D18t7A9fLAVS8e7QAAAAASUVORK5CYII=');
-    -fx-background-repeat: no-repeat;
-    -fx-background-position: left 10 center;
-}
-
-.compact-combo .arrow-button {
+/* CALENDAR ICON INSIDE DATEPICKER */
+.compact-datepicker>.arrow-button {
     -fx-background-color: transparent;
-    -fx-padding: 0 6 0 0;
+    -fx-padding: 0 10 0 0;
 }
 
-.compact-combo .arrow {
-    -fx-background-color: #A0836D;
-    -fx-shape: "M7 10l5 5 5-5z";
-}
-
-/* Sync dropdown list style with Sort By */
-.compact-combo .list-view {
-    -fx-background-color: #FAF6F0;
-    /* Signature light beige background */
-    -fx-background-radius: 12;
-    -fx-border-color: #CD7B4E;
-    -fx-border-radius: 12;
-    -fx-padding: 4;
-    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 10, 0, 0, 5);
-}
-
-.compact-combo .list-cell {
-    -fx-background-color: transparent;
-    -fx-padding: 8 12;
-    -fx-text-fill: #3E312D;
-}
-
-.compact-combo .list-view .list-cell:selected {
-    -fx-background-color: #CD7B4E;
-    -fx-text-fill: #FFFFFF;
-    -fx-background-radius: 8;
-}
-
-.compact-combo .list-view .list-cell:hover {
-    -fx-background-color: #FAF0E6;
-    -fx-text-fill: #3E312D;
-    -fx-background-radius: 8;
-}
-
-.compact-combo .list-view .list-cell:selected:hover {
-    -fx-background-color: #B06938;
-    -fx-text-fill: #FFFFFF;
-}
 
 /* CALENDAR ICON INSIDE DATEPICKER */
 .compact-datepicker>.arrow-button {
@@ -274,21 +187,6 @@
     -fx-font-weight: 600;
 }
 
-.card-field,
-.card-combo {
-    -fx-background-color: #FAF6F0;
-    -fx-background-radius: 12;
-    -fx-border-color: #EADFD4;
-    -fx-border-width: 1;
-    -fx-border-radius: 12;
-    -fx-padding: 0 12;
-    -fx-min-height: 36;
-    -fx-max-height: 36;
-    -fx-text-fill: #3E312D;
-    -fx-font-size: 13px;
-    -fx-font-weight: 500;
-}
-
 /* Ensure dropdown items have background */
 .card-combo .list-view {
     -fx-background-color: #FAF6F0;
@@ -299,28 +197,6 @@
     -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 10, 0, 0, 5);
 }
 
-.card-combo .list-cell {
-    -fx-background-color: transparent;
-    -fx-padding: 8 16;
-    -fx-text-fill: #3E312D;
-}
-
-.card-combo .list-view .list-cell:selected {
-    -fx-background-color: #CD7B4E;
-    -fx-text-fill: #FFFFFF;
-    -fx-background-radius: 8;
-}
-
-.card-combo .list-view .list-cell:hover {
-    -fx-background-color: #FAF0E6;
-    -fx-text-fill: #3E312D;
-    -fx-background-radius: 8;
-}
-
-.card-combo .list-view .list-cell:selected:hover {
-    -fx-background-color: #B06938;
-    -fx-text-fill: #FFFFFF;
-}
 
 .card-textarea {
     -fx-background-color: #FAF6F0;
@@ -486,53 +362,6 @@
     -fx-font-size: 14px;
 }
 
-.draft-btn-premium,
-.next-step-btn-premium,
-.finish-btn-premium {
-    -fx-min-height: 44px !important;
-    -fx-max-height: 44px !important;
-    -fx-pref-height: 44px !important;
-    -fx-min-width: 170px !important;
-    -fx-max-width: 170px !important;
-    -fx-pref-width: 170px !important;
-    -fx-font-size: 14px;
-    -fx-font-weight: 800;
-    -fx-background-radius: 100px, 100px;
-    -fx-alignment: center;
-    -fx-border-width: 0 !important;
-    -fx-cursor: hand;
-    -fx-padding: 0 !important;
-    -fx-label-padding: 0 !important;
-    -fx-line-spacing: 0 !important;
-    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 10, 0, 0, 3) !important;
-}
-
-.draft-btn-premium {
-    -fx-background-color: #D1C4B9, white;
-    -fx-background-insets: 0, 1.5;
-    -fx-text-fill: #3E312D;
-}
-
-.next-step-btn-premium {
-    -fx-background-color: #C87941, #C87941;
-    -fx-background-insets: 0, 1.5;
-    -fx-text-fill: white;
-}
-
-.next-step-btn-premium:hover {
-    -fx-background-color: #B06938;
-}
-
-.finish-btn-premium {
-    -fx-background-color: #2D6A4F, #2D6A4F;
-    -fx-background-insets: 0, 1.5;
-    -fx-text-fill: white;
-}
-
-.finish-btn-premium:hover {
-    -fx-background-color: #1B4332;
-    -fx-effect: dropshadow(three-pass-box, rgba(45, 106, 79, 0.35), 20, 0, 0, 8);
-}
 
 /* ICON MOCKS */
 .icon-cloud-upload-large {
