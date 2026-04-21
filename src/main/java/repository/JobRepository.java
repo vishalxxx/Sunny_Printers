@@ -352,7 +352,9 @@ public class JobRepository {
         String sql = """
                     SELECT id, job_no, job_title, job_date
                     FROM jobs
-                    WHERE client_id = ? AND LOWER(status) = 'completed' AND invoice_id IS NULL
+                    WHERE client_id = ?
+                      AND invoice_id IS NULL
+                      AND LOWER(TRIM(REPLACE(COALESCE(status,''), '_', ' '))) = 'completed'
                     ORDER BY id DESC
                 """;
 
@@ -391,8 +393,9 @@ public class JobRepository {
                            (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
                            (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
                     FROM jobs j
-                    WHERE j.client_id = ? 
-                      AND (j.status LIKE 'completed' OR j.status LIKE 'created' OR j.status IS NULL OR 1=1) -- Broadened for debug
+                    WHERE j.client_id = ?
+                      AND j.invoice_id IS NULL
+                      AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
                     ORDER BY j.id DESC
                 """;
         try (Connection con = DBConnection.getConnection();

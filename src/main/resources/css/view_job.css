@@ -13,6 +13,14 @@
     -fx-font-family: "Segoe UI", "Inter", system;
 }
 
+.view-jobs-root .label,
+.view-jobs-root .combo-box,
+.view-jobs-root .list-cell,
+.view-jobs-root .text-field,
+.view-jobs-root .table-view {
+    -fx-font-style: normal;
+}
+
 /* --- 1. HERO HEADER (Inheriting from page-heading/subheading) --- */
 .page-header-container { -fx-padding: 0 0 16 0; -fx-alignment: CENTER_LEFT; }
 

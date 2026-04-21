@@ -112,12 +112,12 @@
 }
 
 .search-combo .combo-box-popup .list-cell:hover {
-    -fx-background-color: #EADFD4;
+    -fx-background-color: #F4EAE0;
 }
 
 .search-combo .combo-box-popup .list-cell:selected {
-    -fx-background-color: #CD7B4E;
-    -fx-text-fill: #FFFFFF;
+    -fx-background-color: #EADFD4;
+    -fx-text-fill: #3E312D;
     -fx-font-weight: 800;
 }
 
@@ -237,20 +237,21 @@
     -fx-border-width: 1.5;
     -fx-border-radius: 0;
     -fx-background-radius: 0;
-    -fx-padding: 32;
-    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.12), 40, 0, 0, 15);
-    -fx-min-width: 480;
-    -fx-pref-width: 500;
+    -fx-padding: 18 20 16 20;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.12), 28, 0, 0, 10);
+    -fx-min-width: 300;
+    -fx-pref-width: 340;
+    -fx-max-width: 380;
 }
 
 .atelier-alert > .header-panel {
     -fx-background-color: transparent;
-    -fx-padding: 0 0 12 0;
+    -fx-padding: 0 0 8 0;
 }
 
 .atelier-alert .header-panel .label {
     -fx-font-family: 'Manrope';
-    -fx-font-size: 20px;
+    -fx-font-size: 17px;
     -fx-font-weight: 800;
     -fx-text-fill: #3E312D;
     -fx-wrap-text: true;
@@ -258,16 +259,16 @@
 
 .atelier-alert > .content.label {
     -fx-font-family: 'Inter';
-    -fx-font-size: 14px;
+    -fx-font-size: 13px;
     -fx-text-fill: #6B5E58;
-    -fx-padding: 0 0 24 0;
-    -fx-line-spacing: 0.5em;
+    -fx-padding: 0 0 12 0;
+    -fx-line-spacing: 0.35em;
     -fx-wrap-text: true;
 }
 
 .atelier-alert .button-bar {
     -fx-background-color: transparent;
-    -fx-padding: 8 0 0 0;
+    -fx-padding: 4 0 0 0;
 }
 
 .atelier-alert .button-bar .button {
@@ -301,19 +302,20 @@
 .alert-icon-warning {
     -fx-shape: "M12 2L1 21h22L12 2zm0 3.45L20.53 19H3.47L12 5.45zM11 16h2v2h-2v-2zm0-6h2v4h-2v-4z";
     -fx-background-color: #CD7B4E;
-    -fx-min-width: 48;
-    -fx-min-height: 48;
-    -fx-max-width: 48;
-    -fx-max-height: 48;
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+    -fx-max-width: 36;
+    -fx-max-height: 36;
+}
+
+.atelier-alert .graphic-container {
+    -fx-padding: 0 0 0 10;
 }
 
 /* ===================== COMPACT DESIGN SYSTEM (SHARED) ===================== */
 .compact-field,
-.compact-combo,
-.client-combo,
 .compact-datepicker,
 .card-field,
-.card-combo,
 .card-textarea {
     -fx-background-color: #FAF6F0;
     -fx-background-radius: 10;
@@ -330,6 +332,49 @@
     -fx-faint-focus-color: transparent;
 }
 
+/* TextArea skins keep a white .content / viewport unless overridden */
+.card-textarea .content,
+.card-textarea .scroll-pane,
+.card-textarea .scroll-pane .viewport {
+    -fx-background-color: #FAF6F0;
+}
+
+.card-textarea .text {
+    -fx-fill: #3E312D;
+}
+
+.card-textarea:focused .content,
+.card-textarea:focused .scroll-pane,
+.card-textarea:focused .scroll-pane .viewport {
+    -fx-background-color: #FAF6F0;
+}
+
+/* Dropdown combos: pill + terracotta. Horizontal inset lives on > .list-cell only (avoid double padding). */
+.sort-combo,
+.compact-combo,
+.client-combo,
+.card-combo {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 20;
+    -fx-background-radius: 20;
+    -fx-min-height: 36;
+    -fx-padding: 0;
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 13px;
+    -fx-font-family: 'Inter';
+    -fx-font-weight: 500;
+    -fx-font-style: normal;
+    -fx-effect: none;
+    -fx-cursor: hand;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.sort-combo:focused,
+.sort-combo:focused-within,
+.sort-combo:showing,
 .compact-field:focused,
 .compact-combo:focused,
 .compact-combo:focused-within,
@@ -347,13 +392,15 @@
     -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.16), 14, 0, 0, 5) !important;
 }
 
-/* Remove default white boxes for editable fields */
+/* Remove default white boxes for editable fields.
+   Do not target .client-combo .list-cell here: that includes the closed button cell and
+   zeroes its padding so it no longer matches .sort-combo (view clients). Popup rows use
+   .client-combo .combo-box-popup .list-cell rules below. */
 .compact-combo .text-field,
 .compact-datepicker .text-field,
 .card-combo .text-field,
 .client-combo .label,
-.client-combo .button,
-.client-combo .list-cell {
+.client-combo .button {
     -fx-background-color: transparent !important;
     -fx-background-insets: 0 !important;
     -fx-background-radius: 0 !important;
@@ -366,6 +413,20 @@
     -fx-faint-focus-color: transparent;
 }
 
+/* Closed combo: single horizontal inset (ComboBox root padding is 0) */
+.sort-combo > .list-cell,
+.client-combo > .list-cell,
+.card-combo > .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 2 8 2 10;
+    -fx-label-padding: 0;
+    -fx-graphic-text-gap: 0;
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter';
+    -fx-font-size: 13px;
+    -fx-font-style: normal;
+}
+
 .client-combo:focused .button,
 .client-combo:focused-within .button,
 .client-combo:focused .list-cell,
@@ -373,81 +434,160 @@
     -fx-background-color: transparent !important;
 }
 
+/* Closed combo: no orange selection block on the main button cell (matches view clients sort-combo) */
+.sort-combo > .list-cell,
+.sort-combo > .list-cell:selected,
+.compact-combo > .list-cell,
+.compact-combo > .list-cell:selected,
+.client-combo > .list-cell,
+.client-combo > .list-cell:selected,
+.card-combo > .list-cell,
+.card-combo > .list-cell:selected {
+    -fx-background-color: transparent !important;
+}
+
+.sort-combo .list-cell,
+.sort-combo .cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #3E312D;
+}
+
 /* SEARCH ICON INSIDE COMBO */
 .compact-combo {
-    -fx-padding: 0 0 0 30;
+    -fx-padding: 2 10 2 30;
     -fx-background-repeat: no-repeat;
     -fx-background-position: left 10 center;
     -fx-background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAC8SURBVHgB7ZJBDsIgEEXfS6/AnXoFST2C98CaeAIn9AreQz2CW70CN366YAnRhI0mbeSnyY8ZfAyD0ZfW8i5YlR3XmAnGAtiW8+W746F9gD18T3YAnkXfAbT11H6ZAHv/A8D19F1N9xOAT/cd8O0mR6YpZ7pYAGM9/VTT4Uj27X+Anp5+A07X03cNAPqX/A+4Xs7E0kG7P/L4DnjI8fT9S1fXF8By2RPr9yV79vA7BvA12QGo1pPr0pP+pZ8pZ7pYAGM9/VTT9pP+ZfgT6yU9vW9P/7Xv6Y+mDA8D18t7A9fLAVS8e7QAAAAASUVORK5CYII=');
 }
 
-.client-combo {
-    -fx-padding: 0 0 0 12; /* Reduced from 30 to match standard alignment */
-}
-
 .compact-combo .arrow-button,
-.client-combo .arrow-button {
+.client-combo .arrow-button,
+.card-combo .arrow-button,
+.sort-combo .arrow-button {
     -fx-background-color: transparent;
-    -fx-padding: 0 6 0 0;
+    -fx-padding: 0 10 0 0;
 }
 
 .compact-combo .arrow,
-.client-combo .arrow {
-    -fx-background-color: #A0836D;
+.client-combo .arrow,
+.card-combo .arrow,
+.sort-combo .arrow {
+    -fx-background-color: #CD7B4E;
     -fx-shape: "M7 10l5 5 5-5z";
 }
 
-/* Sync dropdown list style */
-.compact-combo .list-view,
-.client-combo .list-view,
-.card-combo .list-view {
+/*
+ * ComboBox popup is attached to the scene, not under .client-combo / .card-combo / .add-job-root.
+ * Selectors like ".client-combo .combo-box-popup" never match — style the popup by .combo-box-popup only.
+ */
+.combo-box-popup .list-view {
     -fx-background-color: #FAF6F0;
     -fx-background-radius: 12;
     -fx-border-color: #CD7B4E;
     -fx-border-radius: 12;
+    -fx-border-width: 1;
+    /* Tight inset so row text isn’t indented twice (panel + cell) */
+    -fx-padding: 2 0 2 0;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 10, 0, 0, 5);
+}
+
+.combo-box-popup .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 6 8 6 8;
+    -fx-label-padding: 0;
+    -fx-graphic-text-gap: 0;
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter';
+    -fx-font-size: 13px;
+    -fx-font-style: normal;
+    -fx-background-radius: 8;
+}
+
+.combo-box-popup .list-cell:hover {
+    -fx-background-color: #F4EAE0 !important;
+    -fx-text-fill: #3E312D !important;
+    -fx-background-radius: 8;
+}
+
+.combo-box-popup .list-cell:selected {
+    -fx-background-color: #EADFD4 !important;
+    -fx-text-fill: #3E312D !important;
+    -fx-background-radius: 8;
+    -fx-font-weight: 700;
+}
+
+/* Sync dropdown list style (in-node + popup; chained selectors only when list-view is inside the control) */
+.compact-combo .list-view,
+.client-combo .list-view,
+.card-combo .list-view,
+.sort-combo .list-view,
+.compact-combo .combo-box-popup .list-view,
+.client-combo .combo-box-popup .list-view,
+.card-combo .combo-box-popup .list-view,
+.sort-combo .combo-box-popup .list-view {
+    -fx-background-color: #FAF6F0;
+    -fx-background-radius: 12;
+    -fx-border-color: #CD7B4E;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
     -fx-padding: 4;
     -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 10, 0, 0, 5);
 }
 
+/* Omit .card-combo .list-cell: closed cell uses .card-combo > .list-cell only */
 .compact-combo .list-cell,
-.card-combo .list-cell {
+.compact-combo .combo-box-popup .list-cell,
+.card-combo .combo-box-popup .list-cell,
+.sort-combo .combo-box-popup .list-cell {
     -fx-background-color: transparent;
-    -fx-padding: 10 12;
+    -fx-padding: 6 8 6 8;
+    -fx-label-padding: 0;
     -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter';
+    -fx-font-size: 13px;
+    -fx-font-style: normal;
+    -fx-background-radius: 8;
 }
 
-.client-combo .list-cell {
+/* No -fx-padding here: would override .client-combo > .list-cell (closed). Popup rows use .combo-box-popup .list-cell */
+.client-combo .list-cell,
+.client-combo .combo-box-popup .list-cell {
     -fx-background-color: transparent;
-    -fx-padding: 10 15;
     -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter';
+    -fx-font-size: 13px;
     -fx-background-insets: 1 0;
 }
 
 .compact-combo .list-view .list-cell:selected,
-.card-combo .list-view .list-cell:selected {
-    -fx-background-color: #CD7B4E;
-    -fx-text-fill: #FFFFFF;
-    -fx-background-radius: 8;
-}
-
-.client-combo .list-view .list-cell:selected {
-    -fx-background-color: transparent;
+.card-combo .list-view .list-cell:selected,
+.client-combo .list-view .list-cell:selected,
+.compact-combo .combo-box-popup .list-cell:selected,
+.client-combo .combo-box-popup .list-cell:selected,
+.card-combo .combo-box-popup .list-cell:selected,
+.sort-combo .combo-box-popup .list-cell:selected {
+    -fx-background-color: #EADFD4;
     -fx-text-fill: #3E312D;
-    -fx-background-insets: 1 0;
+    -fx-background-radius: 8;
+    -fx-font-weight: 700;
 }
 
 .compact-combo .list-view .list-cell:hover,
-.card-combo .list-view .list-cell:hover {
-    -fx-background-color: #FAF0E6;
+.card-combo .list-view .list-cell:hover,
+.client-combo .list-cell:hover,
+.client-combo .list-view .list-cell:hover,
+.compact-combo .combo-box-popup .list-cell:hover,
+.client-combo .combo-box-popup .list-cell:hover,
+.card-combo .combo-box-popup .list-cell:hover,
+.sort-combo .combo-box-popup .list-cell:hover {
+    -fx-background-color: #F4EAE0;
     -fx-text-fill: #3E312D;
     -fx-background-radius: 8;
 }
 
 .client-combo .list-cell:hover,
-.client-combo .list-view .list-cell:hover {
-    -fx-background-color: #EADFD4 !important;
-    -fx-text-fill: #3E312D !important;
-    -fx-background-radius: 0 !important;
+.client-combo .list-view .list-cell:hover,
+.client-combo .combo-box-popup .list-cell:hover {
     -fx-background-insets: 1 0 !important;
 }
 

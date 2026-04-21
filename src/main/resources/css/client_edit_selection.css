@@ -35,6 +35,13 @@
     -fx-padding: 8 24;
 }
 
+.client-directory-root .label,
+.client-directory-root .combo-box,
+.client-directory-root .list-cell,
+.client-directory-root .text-field {
+    -fx-font-style: normal;
+}
+
 /* --- BREADCRUMBS --- */
 .breadcrumb-container {
     -fx-spacing: 8;
@@ -316,13 +323,13 @@
 .footer-text {
     -fx-text-fill: #867E78;
     -fx-font-size: 11px;
-    -fx-font-style: italic;
+    -fx-font-style: normal;
 }
 
 .footer-link {
     -fx-text-fill: #CD7B4E;
     -fx-font-size: 11px;
-    -fx-font-style: italic;
+    -fx-font-style: normal;
     -fx-underline: true;
 }
 

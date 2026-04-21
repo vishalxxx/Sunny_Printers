@@ -16,6 +16,14 @@
     -fx-padding: 28;
 }
 
+.edit-job-root .label,
+.edit-job-root .combo-box,
+.edit-job-root .list-cell,
+.edit-job-root .text-field,
+.edit-job-root .text-area {
+    -fx-font-style: normal;
+}
+
 /* ======================================================
    HEADER
    ====================================================== */

@@ -13,6 +13,17 @@
     -fx-background-color: #FAF6F0;
 }
 
+/* Job module: no italic on UI copy (prompts, labels, combo text) */
+.add-job-root .label,
+.add-job-root .text,
+.add-job-root .combo-box,
+.add-job-root .list-cell,
+.add-job-root .text-field,
+.add-job-root .text-area,
+.add-job-root .toggle-button {
+    -fx-font-style: normal;
+}
+
 /* --- BREADCRUMBS --- */
 .breadcrumb-container {
     -fx-spacing: 8;
@@ -187,23 +198,88 @@
     -fx-font-weight: 600;
 }
 
-/* Ensure dropdown items have background */
-.card-combo .list-view {
+/* --- Add Job inputs: neutral border until focused / open; terracotta only when active --- */
+.add-job-root .client-combo,
+.add-job-root .card-combo {
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-cursor: hand;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1;
     -fx-background-color: #FAF6F0;
-    -fx-background-radius: 12;
-    -fx-border-color: #CD7B4E;
-    -fx-border-radius: 12;
-    -fx-padding: 4;
-    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 10, 0, 0, 5);
+    -fx-effect: none;
 }
 
+.add-job-root .client-combo:hover,
+.add-job-root .card-combo:hover {
+    -fx-background-color: #F8F4EF;
+    -fx-border-color: #E0D8CE;
+    -fx-border-width: 1;
+    -fx-effect: none;
+}
+
+.add-job-root .client-combo:focused,
+.add-job-root .client-combo:focused-within,
+.add-job-root .client-combo:showing,
+.add-job-root .card-combo:focused,
+.add-job-root .card-combo:focused-within,
+.add-job-root .card-combo:showing {
+    -fx-border-color: #CD7B4E !important;
+    -fx-border-width: 1.4 !important;
+    -fx-background-color: #FAF6F0 !important;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.16), 14, 0, 0, 5) !important;
+}
+
+.add-job-root .compact-field,
+.add-job-root .compact-datepicker,
+.add-job-root .card-field {
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1;
+    -fx-effect: none;
+}
+
+.add-job-root .compact-field:hover,
+.add-job-root .card-field:hover {
+    -fx-border-color: #E0D8CE;
+}
+
+.add-job-root .compact-field:focused,
+.add-job-root .compact-datepicker:focused,
+.add-job-root .compact-datepicker:focused-within,
+.add-job-root .card-field:focused {
+    -fx-border-color: #CD7B4E !important;
+    -fx-border-width: 1.4 !important;
+    -fx-background-color: #FAF6F0 !important;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.16), 14, 0, 0, 5) !important;
+}
+
+.add-job-root .card-textarea {
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1;
+    -fx-effect: none;
+}
+
+.add-job-root .card-textarea:focused {
+    -fx-border-color: #CD7B4E !important;
+    -fx-border-width: 1.4 !important;
+    -fx-background-color: #FAF6F0 !important;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.16), 14, 0, 0, 5) !important;
+}
+
+/* Segmented toggles: highlight tray when a segment has focus */
+.add-job-root .segmented-control-bg:focus-within {
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.4;
+}
+
+/* Combo dropdown list is a scene popup (.combo-box-popup), not under .add-job-root — hover/selected in theme.css */
 
 .card-textarea {
     -fx-background-color: #FAF6F0;
-    -fx-background-radius: 12;
+    -fx-background-radius: 10;
     -fx-border-color: #EADFD4;
     -fx-border-width: 1;
-    -fx-border-radius: 12;
+    -fx-border-radius: 10;
     -fx-text-fill: #3E312D;
     -fx-font-weight: 500;
 }

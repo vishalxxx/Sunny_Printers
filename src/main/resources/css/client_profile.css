@@ -14,6 +14,14 @@
     -fx-background-color: #FAF6F0;
 }
 
+.profile-root .label,
+.profile-root .combo-box,
+.profile-root .list-cell,
+.profile-root .text-field,
+.profile-root .text-area {
+    -fx-font-style: normal;
+}
+
 /* --- BREADCRUMBS --- */
 .breadcrumb-container {
     -fx-spacing: 8;
@@ -464,7 +472,7 @@
 .notes-content-profile {
     -fx-text-fill: #E2E8F0;
     -fx-font-size: 15px;
-    -fx-font-style: italic;
+    -fx-font-style: normal;
     -fx-line-spacing: 6;
     -fx-padding: 20 0 0 0;
 }

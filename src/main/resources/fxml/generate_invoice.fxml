@@ -11,7 +11,7 @@
             stylesheets="@../css/theme.css, @../css/generate_invoice.css"
             fx:controller="controller.GenerateInvoiceController">
 
-    <VBox spacing="24" styleClass="root-container">
+    <VBox spacing="24" styleClass="root-container, generate-invoice-root">
         <padding>
             <Insets top="20" right="30" bottom="30" left="30" />
         </padding>
@@ -44,32 +44,44 @@
             </VBox>
         </HBox>
 
-        <!-- 3. MAIN LAYOUT -->
-        <HBox spacing="24" VBox.vgrow="ALWAYS">
+        <!-- 3. MAIN LAYOUT: fillHeight=false so the left card is not stretched to match the right column -->
+        <HBox spacing="24" alignment="TOP_LEFT" fillHeight="false" VBox.vgrow="NEVER">
             <!-- LEFT PANEL: JOB SELECTION -->
-            <VBox spacing="16" HBox.hgrow="ALWAYS" styleClass="content-card">
+            <VBox fx:id="jobsCard" spacing="16" HBox.hgrow="ALWAYS" styleClass="content-card" fillWidth="true">
                 <HBox alignment="CENTER_LEFT" spacing="12">
                     <Label text="Select Jobs" styleClass="card-title"/>
                     <Region HBox.hgrow="ALWAYS"/>
-                    <HBox spacing="10" alignment="CENTER_LEFT">
-                        <TextField fx:id="jobSearchField" promptText="Search jobs..." styleClass="compact-field" prefWidth="250"/>
-                    </HBox>
+                    <StackPane maxWidth="260" prefWidth="260" minWidth="260" styleClass="invoice-job-search-wrap">
+                        <TextField fx:id="jobSearchField" promptText="Search jobs..." styleClass="invoice-directory-search-field"/>
+                        <Region styleClass="invoice-directory-search-glyph" mouseTransparent="true" StackPane.alignment="CENTER_LEFT">
+                            <StackPane.margin>
+                                <Insets left="15"/>
+                            </StackPane.margin>
+                        </Region>
+                    </StackPane>
                 </HBox>
 
-                <TableView fx:id="jobsTable" VBox.vgrow="ALWAYS" styleClass="atelier-table">
+                <TableView fx:id="jobsTable" VBox.vgrow="NEVER" styleClass="invoice-jobs-table">
                     <columns>
-                        <TableColumn fx:id="selectCol" prefWidth="40" resizable="false" sortable="false">
+                        <TableColumn fx:id="selectCol" prefWidth="48" minWidth="48" maxWidth="52" resizable="false" sortable="false">
                             <graphic><CheckBox fx:id="selectAllCheckbox"/></graphic>
                         </TableColumn>
-                        <TableColumn fx:id="jobNameCol" text="JOB NAME" prefWidth="250"/>
-                        <TableColumn fx:id="dateCol" text="COMPLETION DATE" prefWidth="150"/>
-                        <TableColumn fx:id="qtyCol" text="QUANTITY" prefWidth="100"/>
-                        <TableColumn fx:id="rateCol" text="UNIT AMOUNT" prefWidth="120"/>
-                        <TableColumn fx:id="totalCol" text="TOTAL" prefWidth="120"/>
+                        <!-- Equal prefWidth so CONSTRAINED_RESIZE_POLICY shares width evenly across data columns -->
+                        <TableColumn fx:id="jobNameCol" text="JOB NAME" prefWidth="120" minWidth="80" sortable="false"/>
+                        <TableColumn fx:id="dateCol" text="COMPLETION DATE" prefWidth="120" minWidth="80" sortable="false"/>
+                        <TableColumn fx:id="qtyCol" text="QUANTITY" prefWidth="120" minWidth="80" sortable="false"/>
+                        <TableColumn fx:id="rateCol" text="UNIT AMOUNT" prefWidth="120" minWidth="80" sortable="false"/>
+                        <TableColumn fx:id="totalCol" text="TOTAL" prefWidth="120" minWidth="80" sortable="false"/>
                     </columns>
                     <columnResizePolicy>
                         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
                     </columnResizePolicy>
+                    <placeholder>
+                        <VBox alignment="CENTER" spacing="8" styleClass="invoice-jobs-empty">
+                            <Label text="No jobs to show" styleClass="invoice-jobs-empty-title"/>
+                            <Label text="Pick a client above to load jobs, or try a different search." styleClass="invoice-jobs-empty-sub" wrapText="true" maxWidth="360" textAlignment="CENTER"/>
+                        </VBox>
+                    </placeholder>
                 </TableView>
             </VBox>
 
@@ -87,11 +99,11 @@
                     <HBox spacing="12">
                         <VBox spacing="6" HBox.hgrow="ALWAYS">
                             <Label text="INVOICE NO." styleClass="field-label-xs"/>
-                            <TextField fx:id="invoiceNoField" text="INV-2023-892" styleClass="compact-field, invoice-no-input"/>
+                            <TextField fx:id="invoiceNoField" text="INV-2023-892" styleClass="compact-field, invoice-no-input" editable="false" focusTraversable="true"/>
                         </VBox>
                         <VBox spacing="6" HBox.hgrow="ALWAYS">
                             <Label text="TERMS" styleClass="field-label-xs"/>
-                            <ComboBox fx:id="termsCombo" promptText="Net 30" styleClass="compact-combo" maxWidth="Infinity"/>
+                            <ComboBox fx:id="termsCombo" promptText="Net 30" styleClass="card-combo" maxWidth="Infinity"/>
                         </VBox>
                     </HBox>
 

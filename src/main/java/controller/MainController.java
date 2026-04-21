@@ -868,6 +868,8 @@ public class MainController implements Initializable {
 			javafx.scene.control.DialogPane pane = alert.getDialogPane();
 			pane.getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
 			pane.getStyleClass().add("atelier-alert");
+			pane.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+			pane.setMaxHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
 			
 			// Custom Warning Icon
 			javafx.scene.layout.Region icon = new javafx.scene.layout.Region();

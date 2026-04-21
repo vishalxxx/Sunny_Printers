@@ -13,6 +13,38 @@
     -fx-background-color: transparent;
 }
 
+/* Match Add Job: neutral border + 10px radius; terracotta ring only when focused / open */
+.generate-invoice-root .client-combo,
+.generate-invoice-root .card-combo {
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-cursor: hand;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1;
+    -fx-background-color: #FAF6F0;
+    -fx-effect: none;
+}
+
+.generate-invoice-root .client-combo:hover,
+.generate-invoice-root .card-combo:hover {
+    -fx-background-color: #F8F4EF;
+    -fx-border-color: #E0D8CE;
+    -fx-border-width: 1;
+    -fx-effect: none;
+}
+
+.generate-invoice-root .client-combo:focused,
+.generate-invoice-root .client-combo:focused-within,
+.generate-invoice-root .client-combo:showing,
+.generate-invoice-root .card-combo:focused,
+.generate-invoice-root .card-combo:focused-within,
+.generate-invoice-root .card-combo:showing {
+    -fx-border-color: #CD7B4E !important;
+    -fx-border-width: 1.4 !important;
+    -fx-background-color: #FAF6F0 !important;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.16), 14, 0, 0, 5) !important;
+}
+
 /* --- BREADCRUMBS --- */
 .breadcrumb-container {
     -fx-padding: 0 0 16 0;
@@ -97,6 +129,67 @@
 
 /* Search box & field are inherited from theme.css */
 
+/* Same magnifying-glass treatment as client_edit_selection (StackPane + left glyph) */
+.invoice-job-search-wrap {
+    -fx-alignment: center-left;
+}
+
+/* Glyph path matches Edit Client / client_edit_selection.fxml */
+.invoice-directory-search-glyph {
+    -fx-shape: "M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z";
+    -fx-background-color: #A7A69D;
+    -fx-min-width: 16;
+    -fx-max-width: 16;
+    -fx-min-height: 16;
+    -fx-max-height: 16;
+}
+
+.invoice-directory-search-field {
+    -fx-background-color: #FAFAF9;
+    -fx-border-color: #E7E5E4;
+    -fx-border-width: 1;
+    -fx-border-radius: 999;
+    -fx-background-radius: 999;
+    -fx-padding: 10 14 10 44;
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 13px;
+    -fx-font-weight: 500;
+    -fx-prompt-text-fill: #9F9085;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.invoice-directory-search-field:focused {
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.4;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.16), 14, 0, 0, 5);
+}
+
+/* Empty table state (no decorative Region: SVG stroke paths fill badly and overlap headers) */
+.invoice-jobs-table .placeholder {
+    -fx-background-color: transparent;
+}
+
+.invoice-jobs-empty {
+    -fx-padding: 28 20 32 20;
+    -fx-alignment: center;
+    -fx-max-width: 400;
+}
+
+.invoice-jobs-empty-title {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
+}
+
+.invoice-jobs-empty-sub {
+    -fx-text-fill: #8E7A6B;
+    -fx-font-size: 13px;
+    -fx-font-weight: 500;
+    -fx-text-alignment: center;
+    -fx-wrap-text: true;
+}
+
 .filter-btn {
     -fx-background-color: #FFFFFF;
     -fx-border-color: #E6E0D5;
@@ -111,66 +204,353 @@
     -fx-cursor: hand;
 }
 
-/* --- TABLE --- */
-.atelier-table {
-    -fx-background-color: transparent;
+/* --- INVOICE JOB TABLE (reference: airy rows, gray rules, teal checks, muted unselected) --- */
+.invoice-jobs-table {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #ECECEC;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-table-cell-border-color: transparent;
+    -fx-min-height: 0;
+    -fx-padding: 0;
+}
+
+/* VirtualFlow / sheet can draw a second hairline under the last row — strip it */
+.invoice-jobs-table .virtual-flow,
+.invoice-jobs-table .virtual-flow .clipped-container,
+.invoice-jobs-table .virtual-flow .sheet {
     -fx-border-width: 0;
+    -fx-border-color: transparent;
+    -fx-background-insets: 0;
 }
 
-.atelier-table .column-header-background {
-    -fx-background-color: transparent;
-    -fx-border-color: #F0EBE5;
-    -fx-border-width: 0 0 1.5 0;
-}
-
-.atelier-table .column-header {
-    -fx-background-color: transparent;
-    -fx-padding: 12 0;
-}
-
-.atelier-table .column-header .label {
-    -fx-text-fill: #A0836D;
-    -fx-font-size: 11px;
-    -fx-font-weight: 800;
-    -fx-letter-spacing: 0.04em;
-}
-
-.atelier-table .table-row-cell {
-    -fx-background-color: transparent;
-    -fx-border-color: #FBF9F7;
+.invoice-jobs-table .column-header-background {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #ECECEC;
     -fx-border-width: 0 0 1 0;
 }
 
-.atelier-table .table-row-cell:selected {
-    -fx-background-color: rgba(205, 123, 78, 0.05);
+.invoice-jobs-table .column-header {
+    -fx-background-color: transparent;
+    -fx-padding: 14 8 14 8;
+    -fx-border-color: transparent;
 }
 
-.atelier-table .table-cell {
-    -fx-padding: 20 0;
-    -fx-text-fill: #3E312D;
-    -fx-font-size: 14px;
+.invoice-jobs-table .column-header .label {
+    -fx-text-fill: #78716C;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-letter-spacing: 0.06em;
 }
 
-.job-name-main { 
-    -fx-font-weight: 700; 
-    -fx-text-fill: #3E312D;
-}
-.job-name-sub { 
-    -fx-text-fill: #8E7A6B; 
-    -fx-font-size: 12px; 
-}
-
-/* --- CHECKBOX --- */
-.atelier-table .check-box .box {
+.invoice-jobs-table .table-row-cell {
     -fx-background-color: #FFFFFF;
-    -fx-border-color: #D6D1C9;
-    -fx-border-radius: 4;
-    -fx-background-radius: 4;
+    -fx-border-color: #ECECEC;
+    -fx-border-width: 0 0 1 0;
 }
 
-.atelier-table .check-box:selected .box {
-    -fx-background-color: #CD7B4E;
-    -fx-border-color: #CD7B4E;
+/* Virtualized filler rows: no extra rule under the last real row */
+.invoice-jobs-table .table-row-cell:empty {
+    -fx-border-width: 0;
+    -fx-background-color: transparent;
+}
+
+/* Last real row: no bottom rule — outer table border is the only closing line (avoids double edge) */
+.invoice-jobs-table .table-row-cell.invoice-last-row {
+    -fx-border-width: 0;
+}
+
+/* Row focus/selection: Modena uses light text on accent; we keep white row — force readable fills */
+.invoice-jobs-table .table-row-cell:selected,
+.invoice-jobs-table .table-row-cell:selected .table-cell,
+.invoice-jobs-table .table-row-cell:focused,
+.invoice-jobs-table .table-row-cell:focused .table-cell,
+.invoice-jobs-table .table-row-cell:filled:selected,
+.invoice-jobs-table .table-row-cell:filled:selected .table-cell,
+.invoice-jobs-table .table-row-cell:filled:focused,
+.invoice-jobs-table .table-row-cell:filled:focused .table-cell,
+.invoice-jobs-table .table-row-cell:filled:selected:focused,
+.invoice-jobs-table .table-row-cell:filled:selected:focused .table-cell {
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 0;
+}
+
+.invoice-jobs-table .table-cell {
+    -fx-padding: 22 10 22 8;
+    -fx-font-size: 14px;
+    -fx-border-color: transparent;
+}
+
+/* Checkbox-selected rows: strong type; unchecked: muted */
+.invoice-jobs-table .table-row-cell.invoice-row-selected .table-cell {
+    -fx-text-fill: #1C1917;
+}
+
+.invoice-jobs-table .table-row-cell.invoice-row-muted .table-cell {
+    -fx-text-fill: #57534E;
+}
+
+.invoice-jobs-table .table-row-cell.invoice-row-selected .job-name-main {
+    -fx-text-fill: #1C1917;
+    -fx-font-size: 15px;
+    -fx-font-weight: 700;
+}
+
+.invoice-jobs-table .table-row-cell.invoice-row-selected .job-name-sub {
+    -fx-text-fill: #44403C;
+    -fx-font-size: 12px;
+}
+
+.invoice-jobs-table .table-row-cell.invoice-row-muted .job-name-main {
+    -fx-text-fill: #44403C;
+    -fx-font-size: 15px;
+    -fx-font-weight: 700;
+}
+
+.invoice-jobs-table .table-row-cell.invoice-row-muted .job-name-sub {
+    -fx-text-fill: #78716C;
+    -fx-font-size: 12px;
+}
+
+.invoice-jobs-table .table-row-cell.invoice-row-selected .invoice-cell-muted {
+    -fx-text-fill: #44403C;
+}
+
+.invoice-jobs-table .table-row-cell.invoice-row-muted .invoice-cell-muted {
+    -fx-text-fill: #78716C;
+}
+
+.invoice-jobs-table .table-row-cell.invoice-row-selected .invoice-total-rupee {
+    -fx-fill: #44403C;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.invoice-jobs-table .table-row-cell.invoice-row-selected .invoice-total-amount {
+    -fx-fill: #1C1917;
+    -fx-font-size: 17px;
+    -fx-font-weight: 800;
+}
+
+.invoice-jobs-table .table-row-cell.invoice-row-muted .invoice-total-rupee,
+.invoice-jobs-table .table-row-cell.invoice-row-muted .invoice-total-amount {
+    -fx-fill: #57534E;
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+}
+
+/* TableView :filled:selected / :focused wins over rules above — repeat checkbox row styles with full pseudo chain */
+.invoice-jobs-table .table-row-cell:filled:selected.invoice-row-selected .table-cell,
+.invoice-jobs-table .table-row-cell:filled:focused.invoice-row-selected .table-cell,
+.invoice-jobs-table .table-row-cell:filled:selected:focused.invoice-row-selected .table-cell {
+    -fx-text-fill: #1C1917;
+}
+
+.invoice-jobs-table .table-row-cell:filled:selected.invoice-row-muted .table-cell,
+.invoice-jobs-table .table-row-cell:filled:focused.invoice-row-muted .table-cell,
+.invoice-jobs-table .table-row-cell:filled:selected:focused.invoice-row-muted .table-cell {
+    -fx-text-fill: #57534E;
+}
+
+.invoice-jobs-table .table-row-cell:filled:selected.invoice-row-selected .job-name-main,
+.invoice-jobs-table .table-row-cell:filled:focused.invoice-row-selected .job-name-main,
+.invoice-jobs-table .table-row-cell:filled:selected:focused.invoice-row-selected .job-name-main {
+    -fx-text-fill: #1C1917;
+}
+
+.invoice-jobs-table .table-row-cell:filled:selected.invoice-row-selected .job-name-sub,
+.invoice-jobs-table .table-row-cell:filled:focused.invoice-row-selected .job-name-sub,
+.invoice-jobs-table .table-row-cell:filled:selected:focused.invoice-row-selected .job-name-sub {
+    -fx-text-fill: #44403C;
+}
+
+.invoice-jobs-table .table-row-cell:filled:selected.invoice-row-muted .job-name-main,
+.invoice-jobs-table .table-row-cell:filled:focused.invoice-row-muted .job-name-main,
+.invoice-jobs-table .table-row-cell:filled:selected:focused.invoice-row-muted .job-name-main {
+    -fx-text-fill: #57534E;
+}
+
+.invoice-jobs-table .table-row-cell:filled:selected.invoice-row-muted .job-name-sub,
+.invoice-jobs-table .table-row-cell:filled:focused.invoice-row-muted .job-name-sub,
+.invoice-jobs-table .table-row-cell:filled:selected:focused.invoice-row-muted .job-name-sub {
+    -fx-text-fill: #78716C;
+}
+
+.invoice-jobs-table .table-row-cell:filled:selected.invoice-row-selected .invoice-cell-muted,
+.invoice-jobs-table .table-row-cell:filled:focused.invoice-row-selected .invoice-cell-muted,
+.invoice-jobs-table .table-row-cell:filled:selected:focused.invoice-row-selected .invoice-cell-muted {
+    -fx-text-fill: #44403C;
+}
+
+.invoice-jobs-table .table-row-cell:filled:selected.invoice-row-muted .invoice-cell-muted,
+.invoice-jobs-table .table-row-cell:filled:focused.invoice-row-muted .invoice-cell-muted,
+.invoice-jobs-table .table-row-cell:filled:selected:focused.invoice-row-muted .invoice-cell-muted {
+    -fx-text-fill: #78716C;
+}
+
+.invoice-jobs-table .table-row-cell:filled:selected.invoice-row-selected .invoice-total-rupee,
+.invoice-jobs-table .table-row-cell:filled:focused.invoice-row-selected .invoice-total-rupee,
+.invoice-jobs-table .table-row-cell:filled:selected:focused.invoice-row-selected .invoice-total-rupee {
+    -fx-fill: #44403C;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.invoice-jobs-table .table-row-cell:filled:selected.invoice-row-selected .invoice-total-amount,
+.invoice-jobs-table .table-row-cell:filled:focused.invoice-row-selected .invoice-total-amount,
+.invoice-jobs-table .table-row-cell:filled:selected:focused.invoice-row-selected .invoice-total-amount {
+    -fx-fill: #1C1917;
+    -fx-font-size: 17px;
+    -fx-font-weight: 800;
+}
+
+.invoice-jobs-table .table-row-cell:filled:selected.invoice-row-muted .invoice-total-rupee,
+.invoice-jobs-table .table-row-cell:filled:focused.invoice-row-muted .invoice-total-rupee,
+.invoice-jobs-table .table-row-cell:filled:selected:focused.invoice-row-muted .invoice-total-rupee,
+.invoice-jobs-table .table-row-cell:filled:selected.invoice-row-muted .invoice-total-amount,
+.invoice-jobs-table .table-row-cell:filled:focused.invoice-row-muted .invoice-total-amount,
+.invoice-jobs-table .table-row-cell:filled:selected:focused.invoice-row-muted .invoice-total-amount {
+    -fx-fill: #57534E;
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+}
+
+/*
+ * Mouse pressed (button down): Modena uses ladder colors so Label text can match the row fill
+ * (invisible on white) while TextFlow amounts keep -fx-fill — mirror idle colors for :pressed.
+ */
+.invoice-jobs-table .table-row-cell:filled:pressed,
+.invoice-jobs-table .table-row-cell:filled:pressed .table-cell,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected .table-cell,
+.invoice-jobs-table .table-row-cell:filled:pressed:focused,
+.invoice-jobs-table .table-row-cell:filled:pressed:focused .table-cell,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected:focused,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected:focused .table-cell {
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 0;
+}
+
+.invoice-jobs-table .table-row-cell:filled:pressed.invoice-row-selected .table-cell,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected.invoice-row-selected .table-cell,
+.invoice-jobs-table .table-row-cell:filled:pressed:focused.invoice-row-selected .table-cell,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected:focused.invoice-row-selected .table-cell {
+    -fx-text-fill: #1C1917;
+}
+
+.invoice-jobs-table .table-row-cell:filled:pressed.invoice-row-muted .table-cell,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected.invoice-row-muted .table-cell,
+.invoice-jobs-table .table-row-cell:filled:pressed:focused.invoice-row-muted .table-cell,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected:focused.invoice-row-muted .table-cell {
+    -fx-text-fill: #57534E;
+}
+
+.invoice-jobs-table .table-row-cell:filled:pressed.invoice-row-selected .job-name-main,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected.invoice-row-selected .job-name-main,
+.invoice-jobs-table .table-row-cell:filled:pressed:focused.invoice-row-selected .job-name-main,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected:focused.invoice-row-selected .job-name-main {
+    -fx-text-fill: #1C1917;
+}
+
+.invoice-jobs-table .table-row-cell:filled:pressed.invoice-row-selected .job-name-sub,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected.invoice-row-selected .job-name-sub,
+.invoice-jobs-table .table-row-cell:filled:pressed:focused.invoice-row-selected .job-name-sub,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected:focused.invoice-row-selected .job-name-sub {
+    -fx-text-fill: #44403C;
+}
+
+.invoice-jobs-table .table-row-cell:filled:pressed.invoice-row-muted .job-name-main,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected.invoice-row-muted .job-name-main,
+.invoice-jobs-table .table-row-cell:filled:pressed:focused.invoice-row-muted .job-name-main,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected:focused.invoice-row-muted .job-name-main {
+    -fx-text-fill: #57534E;
+}
+
+.invoice-jobs-table .table-row-cell:filled:pressed.invoice-row-muted .job-name-sub,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected.invoice-row-muted .job-name-sub,
+.invoice-jobs-table .table-row-cell:filled:pressed:focused.invoice-row-muted .job-name-sub,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected:focused.invoice-row-muted .job-name-sub {
+    -fx-text-fill: #78716C;
+}
+
+.invoice-jobs-table .table-row-cell:filled:pressed.invoice-row-selected .invoice-cell-muted,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected.invoice-row-selected .invoice-cell-muted,
+.invoice-jobs-table .table-row-cell:filled:pressed:focused.invoice-row-selected .invoice-cell-muted,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected:focused.invoice-row-selected .invoice-cell-muted {
+    -fx-text-fill: #44403C;
+}
+
+.invoice-jobs-table .table-row-cell:filled:pressed.invoice-row-muted .invoice-cell-muted,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected.invoice-row-muted .invoice-cell-muted,
+.invoice-jobs-table .table-row-cell:filled:pressed:focused.invoice-row-muted .invoice-cell-muted,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected:focused.invoice-row-muted .invoice-cell-muted {
+    -fx-text-fill: #78716C;
+}
+
+.invoice-jobs-table .table-row-cell:filled:pressed.invoice-row-selected .invoice-total-rupee,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected.invoice-row-selected .invoice-total-rupee,
+.invoice-jobs-table .table-row-cell:filled:pressed:focused.invoice-row-selected .invoice-total-rupee,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected:focused.invoice-row-selected .invoice-total-rupee {
+    -fx-fill: #44403C;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.invoice-jobs-table .table-row-cell:filled:pressed.invoice-row-selected .invoice-total-amount,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected.invoice-row-selected .invoice-total-amount,
+.invoice-jobs-table .table-row-cell:filled:pressed:focused.invoice-row-selected .invoice-total-amount,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected:focused.invoice-row-selected .invoice-total-amount {
+    -fx-fill: #1C1917;
+    -fx-font-size: 17px;
+    -fx-font-weight: 800;
+}
+
+.invoice-jobs-table .table-row-cell:filled:pressed.invoice-row-muted .invoice-total-rupee,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected.invoice-row-muted .invoice-total-rupee,
+.invoice-jobs-table .table-row-cell:filled:pressed:focused.invoice-row-muted .invoice-total-rupee,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected:focused.invoice-row-muted .invoice-total-rupee,
+.invoice-jobs-table .table-row-cell:filled:pressed.invoice-row-muted .invoice-total-amount,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected.invoice-row-muted .invoice-total-amount,
+.invoice-jobs-table .table-row-cell:filled:pressed:focused.invoice-row-muted .invoice-total-amount,
+.invoice-jobs-table .table-row-cell:filled:pressed:selected:focused.invoice-row-muted .invoice-total-amount {
+    -fx-fill: #57534E;
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+}
+
+/* Some skins mark :pressed on the cell only */
+.invoice-jobs-table .table-row-cell.invoice-row-selected .table-cell:filled:pressed {
+    -fx-background-color: #FFFFFF;
+    -fx-text-fill: #1C1917;
+}
+
+.invoice-jobs-table .table-row-cell.invoice-row-muted .table-cell:filled:pressed {
+    -fx-background-color: #FFFFFF;
+    -fx-text-fill: #44403C;
+}
+
+/* --- CHECKBOX (teal selected, soft square) --- */
+.invoice-jobs-table .check-box .box {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #D6D3D1;
+    -fx-border-width: 1.2;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+    -fx-min-width: 18;
+    -fx-min-height: 18;
+    -fx-pref-width: 18;
+    -fx-pref-height: 18;
+}
+
+.invoice-jobs-table .check-box:selected .box {
+    -fx-background-color: #0D9488;
+    -fx-border-color: #0F766E;
+}
+
+.invoice-jobs-table .check-box:selected .mark {
+    -fx-background-color: #FFFFFF;
+    -fx-padding: 1;
 }
 
 /* --- INPUTS (Inheriting background from theme.css where possible) --- */
@@ -187,6 +567,16 @@
     -fx-border-color: #EADFD4;
     -fx-text-fill: #BD7645;
     -fx-font-weight: 800;
+    -fx-cursor: default;
+}
+
+/* Due date auto-filled from terms: keep readable when control is disabled */
+.generate-invoice-root .compact-datepicker:disabled {
+    -fx-opacity: 1;
+}
+
+.generate-invoice-root .compact-datepicker:disabled > .arrow-button {
+    -fx-opacity: 0.35;
 }
 
 
