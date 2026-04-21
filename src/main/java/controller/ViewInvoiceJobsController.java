@@ -8,9 +8,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 import javafx.application.Platform;
-import javafx.scene.shape.Circle;
-import javafx.scene.paint.Color;
-import javafx.scene.control.Tooltip;
+import javafx.beans.binding.Bindings;
 
 import model.Client;
 import model.InvoiceMaster;
@@ -174,6 +172,17 @@ public class ViewInvoiceJobsController {
         jobsTable.setItems(tableData);
         jobsTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         jobsTable.setFixedCellSize(42);
+
+        // ✅ Prevent "empty rows": size table to content
+        // TableView renders filler rows when it has extra vertical space.
+        // Binding pref/min/max height to item count removes those blanks.
+        final double headerHeight = 32; // approx. header height
+        var tableHeight = Bindings.size(jobsTable.getItems())
+                .multiply(jobsTable.getFixedCellSize())
+                .add(headerHeight + 1);
+        jobsTable.prefHeightProperty().bind(tableHeight);
+        jobsTable.minHeightProperty().bind(tableHeight);
+        jobsTable.maxHeightProperty().bind(tableHeight);
     }
 
     private void setupJobActionBarStyles() {
@@ -204,8 +213,8 @@ public class ViewInvoiceJobsController {
 
         String status = job.getStatus() != null ? job.getStatus().toLowerCase() : "";
         boolean isCancelled = status.startsWith("cancel");
-        boolean isCompleted = status.equals("completed");
-        boolean isInProgress = status.equals("in progress");
+        // boolean isCompleted = status.equals("completed");
+        // boolean isInProgress = status.equals("in progress");
         boolean isInvoiced = job.getInvoiceId() != null && job.getInvoiceId() > 0;
 
         boolean isInvoiceDrafted = status.equals("invoice drafted") || status.equals("invoice_drafted");
@@ -249,7 +258,7 @@ public class ViewInvoiceJobsController {
                 btnJobEdit.setDisable(true);
             }
         } else {
-            boolean disableProgressBtns = isCancelled || isCompleted;
+            // boolean disableProgressBtns = isCancelled || isCompleted;
             // btnJobStart removed
             btnJobEdit.setDisable(isCancelled);
             btnJobCancel.setDisable(isCancelled);
@@ -455,7 +464,8 @@ public class ViewInvoiceJobsController {
         amtCol.setCellValueFactory(new PropertyValueFactory<>("amount"));
         amtCol.setPrefWidth(100);
 
-        table.getColumns().addAll(descCol, amtCol);
+        table.getColumns().add(descCol);
+        table.getColumns().add(amtCol);
         table.setItems(FXCollections.observableArrayList(items));
         table.setPrefHeight(200);
 

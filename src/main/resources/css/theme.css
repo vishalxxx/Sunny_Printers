@@ -30,6 +30,97 @@
   -fx-background-color: #FBF9F2;
 }
 
+/* ===================== SEARCH BOX (SHARED) ===================== */
+.search-box {
+    -fx-background-color: #FAF6F0;
+    -fx-background-radius: 12;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-padding: 0 12;
+    -fx-alignment: CENTER_LEFT;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.05), 14, 0, 0, 4);
+}
+
+.search-field {
+    -fx-background-color: transparent;
+    -fx-padding: 10 4;
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-prompt-text-fill: #9F9085;
+}
+
+.search-box:focused-within {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.4;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.16), 14, 0, 0, 5);
+}
+
+.icon-search {
+    -fx-shape: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z";
+    -fx-background-color: #8E7A6B;
+    -fx-min-width: 16;
+    -fx-min-height: 16;
+    -fx-max-width: 16;
+    -fx-max-height: 16;
+}
+
+.search-combo {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.search-combo .list-cell {
+    -fx-text-fill: #3E312D;
+    -fx-padding: 10 6;
+    -fx-background-color: transparent;
+}
+
+.search-combo .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 6 0 0;
+}
+
+.search-combo .arrow {
+    -fx-background-color: #A0836D;
+    -fx-shape: "M7 10l5 5 5-5z";
+}
+
+.search-combo:showing,
+.search-combo:focused {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.search-combo .combo-box-popup .list-view {
+    -fx-background-color: #FAF6F0;
+    -fx-background-radius: 12;
+    -fx-border-color: #CD7B4E;
+    -fx-border-radius: 12;
+    -fx-padding: 4;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.10), 14, 0, 0, 6);
+}
+
+.search-combo .combo-box-popup .list-cell {
+    -fx-padding: 10 12;
+    -fx-background-radius: 10;
+}
+
+.search-combo .combo-box-popup .list-cell:hover {
+    -fx-background-color: #EADFD4;
+}
+
+.search-combo .combo-box-popup .list-cell:selected {
+    -fx-background-color: #CD7B4E;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-weight: 800;
+}
+
 /* DATE PICKER POPUP STYLING */
 .date-picker-popup {
     -fx-background-color: #FAF6F0;

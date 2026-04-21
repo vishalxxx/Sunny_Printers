@@ -85,14 +85,10 @@
                     
                     <VBox spacing="6">
                         <Label text="CLIENT NAME" styleClass="field-label-xs"/>
-                        <StackPane alignment="CENTER_RIGHT">
-                            <TextField fx:id="clientSearchField" promptText="Search client..." styleClass="card-input" maxWidth="Infinity"/>
-                            <Region styleClass="icon-search-sm" mouseTransparent="true">
-                                <StackPane.margin>
-                                    <Insets right="12"/>
-                                </StackPane.margin>
-                            </Region>
-                        </StackPane>
+                        <HBox styleClass="search-box" spacing="10" alignment="CENTER_LEFT">
+                            <Region styleClass="icon-search"/>
+                            <ComboBox fx:id="clientComboBox" promptText="Search client..." styleClass="search-combo" maxWidth="Infinity" editable="true" />
+                        </HBox>
                     </VBox>
 
                     <HBox spacing="12">

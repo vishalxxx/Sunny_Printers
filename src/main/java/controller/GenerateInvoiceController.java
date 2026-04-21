@@ -6,8 +6,13 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.scene.layout.Region;
+import javafx.beans.binding.Bindings;
+import javafx.scene.layout.VBox;
 import java.time.LocalDate;
+import model.Client;
+import service.ClientService;
+import javafx.util.StringConverter;
+import javafx.collections.transformation.FilteredList;
 
 public class GenerateInvoiceController {
 
@@ -22,7 +27,7 @@ public class GenerateInvoiceController {
     @FXML private CheckBox selectAllCheckbox;
 
     @FXML private TextField jobSearchField;
-    @FXML private TextField clientSearchField;
+    @FXML private ComboBox<Client> clientComboBox;
     @FXML private TextField invoiceNoField;
     @FXML private ComboBox<String> termsCombo;
     @FXML private DatePicker invoiceDatePicker;
@@ -37,6 +42,60 @@ public class GenerateInvoiceController {
         setupTable();
         setupFields();
         loadDummyData();
+        setupClientCombo();
+    }
+
+    private final ClientService clientService = new ClientService();
+    private final ObservableList<Client> masterClients = FXCollections.observableArrayList();
+    private FilteredList<Client> filteredClients;
+
+    private void setupClientCombo() {
+        if (clientComboBox == null) return;
+
+        filteredClients = new FilteredList<>(masterClients, c -> true);
+        clientComboBox.setItems(filteredClients);
+        clientComboBox.setEditable(true);
+
+        clientComboBox.setConverter(new StringConverter<>() {
+            @Override public String toString(Client c) {
+                return c == null ? "" : c.getBusinessName();
+            }
+            @Override public Client fromString(String s) { return clientComboBox.getValue(); }
+        });
+
+        clientComboBox.setCellFactory(lv -> new ListCell<>() {
+            @Override protected void updateItem(Client c, boolean empty) {
+                super.updateItem(c, empty);
+                if (empty || c == null) setText(null);
+                else setText(c.getBusinessName() + " (" + c.getClientName() + ")");
+            }
+        });
+        clientComboBox.setButtonCell(new ListCell<>() {
+            @Override protected void updateItem(Client c, boolean empty) {
+                super.updateItem(c, empty);
+                if (empty || c == null) setText(null);
+                else setText(c.getBusinessName() + " (" + c.getClientName() + ")");
+            }
+        });
+
+        // Load clients
+        try {
+            masterClients.setAll(clientService.getAllClients());
+        } catch (Exception e) {
+            // keep empty if DB not ready
+        }
+
+        // Live filter as user types
+        clientComboBox.getEditor().textProperty().addListener((obs, oldV, newV) -> {
+            String q = newV == null ? "" : newV.toLowerCase().trim();
+            filteredClients.setPredicate(c ->
+                q.isEmpty()
+                    || (c.getBusinessName() != null && c.getBusinessName().toLowerCase().contains(q))
+                    || (c.getClientName() != null && c.getClientName().toLowerCase().contains(q))
+                    || (c.getPhone() != null && c.getPhone().contains(q))
+            );
+            if (!clientComboBox.isShowing()) clientComboBox.show();
+        });
     }
 
     private void setupTable() {
@@ -112,6 +171,16 @@ public class GenerateInvoiceController {
             jobsTable.refresh();
             updateSummary();
         });
+
+        // ✅ Prevent empty filler rows: size table to content
+        jobsTable.setFixedCellSize(62); // fits title + subtitle comfortably
+        final double headerHeight = 34;
+        var tableHeight = Bindings.size(jobsTable.getItems())
+                .multiply(jobsTable.getFixedCellSize())
+                .add(headerHeight + 1);
+        jobsTable.prefHeightProperty().bind(tableHeight);
+        jobsTable.minHeightProperty().bind(tableHeight);
+        jobsTable.maxHeightProperty().bind(tableHeight);
     }
 
     private void setupFields() {
