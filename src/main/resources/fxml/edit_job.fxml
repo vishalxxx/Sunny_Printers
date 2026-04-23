@@ -8,7 +8,7 @@
            xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="controller.EditJobController"
            stylesheets="@../css/edit_job.css"
-           styleClass="stack-root">
+           styleClass="stack-root, ui-compact">
 
     <BorderPane styleClass="edit-job-root">
 

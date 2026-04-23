@@ -5,7 +5,7 @@
 <?import javafx.scene.shape.*?>
 <?import javafx.geometry.Insets?>
 
-<ScrollPane fitToWidth="true" stylesheets="@../css/client_profile.css" styleClass="profile-root" xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.ClientProfileController">
+<ScrollPane fitToWidth="true" stylesheets="@../css/client_profile.css" styleClass="profile-root, ui-compact" xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.ClientProfileController">
     <VBox spacing="15" styleClass="content-container">
         <padding>
             <Insets top="12" right="24" bottom="12" left="24"/>

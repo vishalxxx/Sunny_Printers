@@ -944,6 +944,9 @@ public class MainController implements Initializable {
 				if (controller instanceof InvoiceGenerationController c) {
 					c.setRootPane(appRoot); // 👈 global overlay access
 				}
+				if (controller instanceof GenerateInvoiceController g) {
+					g.setRootPane(appRoot);
+				}
 
 				Platform.runLater(() -> {
 					if (taskId != currentLoadTaskId) {
@@ -958,6 +961,10 @@ public class MainController implements Initializable {
 
 					// 2️⃣ Replace center UI
 					centerContentHost.getChildren().setAll(view);
+
+					if (controller instanceof GenerateInvoiceController genInv) {
+						genInv.onShownAfterNavigation();
+					}
 
 					if (controller instanceof AddJobController addJobController) {
 						addJobController.startNewJob();

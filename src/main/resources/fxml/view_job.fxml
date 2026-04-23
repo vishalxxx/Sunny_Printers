@@ -10,17 +10,17 @@
     xmlns:fx="http://javafx.com/fxml/1"
     fx:controller="controller.ViewJobsController"
     fx:id="mainVBox"
-    styleClass="view-jobs-root"
+    styleClass="view-jobs-root, ui-compact"
     stylesheets="@../css/theme.css, @../css/add_job.css, @../css/view_job.css"
     spacing="0"
     focusTraversable="true">
 
-    <padding><Insets top="8" left="24" right="24" bottom="16" /></padding>
+    <padding><Insets top="6" left="16" right="16" bottom="12" /></padding>
 
     <!-- 0. BREADCRUMBS -->
     <HBox styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8">
         <padding>
-            <Insets bottom="10"/>
+            <Insets bottom="6"/>
         </padding>
         <Button fx:id="breadcrumbBackBtn" onAction="#handleBack" styleClass="breadcrumb-back-btn" focusTraversable="false">
             <graphic><Region styleClass="back-icon"/></graphic>
@@ -31,14 +31,14 @@
     </HBox>
 
     <!-- 1. PAGE HEADER -->
-    <VBox spacing="4" styleClass="page-header-container">
+    <VBox spacing="2" styleClass="page-header-container">
         <Label text="Job Management" styleClass="page-heading" />
         <Label text="Track and manage all your printing jobs" styleClass="page-subheading" />
     </VBox>
 
     <!-- 2. TOOLBAR: SEARCH & FILTERS -->
-    <VBox styleClass="header-bar" spacing="16">
-        <padding><Insets top="20" right="20" bottom="20" left="20" /></padding>
+    <VBox styleClass="header-bar" spacing="10">
+        <padding><Insets top="12" right="14" bottom="12" left="14" /></padding>
         
         <HBox fx:id="searchContainer" styleClass="compact-field" alignment="CENTER_LEFT" spacing="8" maxWidth="Infinity">
              <Region styleClass="search-icon" />
@@ -61,7 +61,7 @@
         </HBox>
     </VBox>
     
-    <Region prefHeight="16" /> <!-- Spacer -->
+    <Region prefHeight="8" /> <!-- Spacer -->
 
     <!-- 3. INTEGRATED BULK ACTION BAR (Anchored) -->
     <VBox fx:id="bulkActionBarContainer" visible="false" managed="false" styleClass="bulk-bar-container">
@@ -96,7 +96,7 @@
     </VBox>
 
     <!-- 4. PREMIUM TABLE GRID -->
-    <StackPane VBox.vgrow="ALWAYS" style="-fx-background-color: white; -fx-background-radius: 16; -fx-border-color: #EEECE8; -fx-border-radius: 16;">
+    <StackPane VBox.vgrow="ALWAYS" style="-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #EEECE8; -fx-border-radius: 12;">
         <TableView fx:id="jobsTable" styleClass="jobs-table-premium" VBox.vgrow="ALWAYS">
             <columns>
                 <TableColumn fx:id="selectCol" text="" minWidth="44" prefWidth="44" resizable="false" />
@@ -107,16 +107,16 @@
                 <TableColumn fx:id="actionsCol" text="Actions" minWidth="280" prefWidth="300" />
             </columns>
             <placeholder>
-                <VBox alignment="CENTER" spacing="10">
-                    <Label text="No jobs found matching your filters." style="-fx-text-fill: #8B7E74; -fx-font-size: 16px;" />
+                <VBox alignment="CENTER" spacing="8">
+                    <Label text="No jobs found matching your filters." style="-fx-text-fill: #8B7E74; -fx-font-size: 13px;" />
                 </VBox>
             </placeholder>
         </TableView>
     </StackPane>
 
     <!-- 5. FOOTER & PAGINATION -->
-    <HBox styleClass="footer-section" alignment="CENTER_LEFT" spacing="12">
-        <padding><Insets top="8" left="32" right="32" bottom="8"/></padding>
+    <HBox styleClass="footer-section" alignment="CENTER_LEFT" spacing="10">
+        <padding><Insets top="6" left="16" right="16" bottom="6"/></padding>
         <Label fx:id="paginationInfoLabel" text="Showing 0 to 0 of 0 jobs" styleClass="pagination-info" />
         
         <Region HBox.hgrow="ALWAYS" />

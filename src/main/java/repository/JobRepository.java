@@ -2,6 +2,8 @@ package repository;
 
 import java.sql.*;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -277,8 +279,7 @@ public class JobRepository {
         int cid = rs.getInt("client_id");
         job.setClientId(rs.wasNull() ? null : cid);
 
-        String dateStr = rs.getString("job_date");
-        job.setJobDate(dateStr == null ? null : LocalDate.parse(dateStr));
+        job.setJobDate(parseJobDateFlexible(rs.getString("job_date")));
 
         job.setStatus(rs.getString("status"));
         job.setRemarks(rs.getString("remarks"));
@@ -310,6 +311,36 @@ public class JobRepository {
         } catch (SQLException ignore) {}
 
         return job;
+    }
+
+    /**
+     * Parses job_date from SQLite (ISO date, datetime string, or dd/MM/yyyy). Used so aggregates
+     * and lists do not fail the whole query when one row has a non-ISO format.
+     */
+    private static LocalDate parseJobDateFlexible(String dateStr) {
+        if (dateStr == null || dateStr.isBlank()) {
+            return null;
+        }
+        String s = dateStr.trim();
+        try {
+            return LocalDate.parse(s);
+        } catch (DateTimeParseException e1) {
+            if (s.length() >= 10 && s.charAt(4) == '-' && s.charAt(7) == '-') {
+                try {
+                    return LocalDate.parse(s.substring(0, 10));
+                } catch (DateTimeParseException ignored) {
+                }
+            }
+            try {
+                return LocalDate.parse(s, DateTimeFormatter.ofPattern("d/M/uuuu"));
+            } catch (DateTimeParseException ignored) {
+            }
+            try {
+                return LocalDate.parse(s, DateTimeFormatter.ofPattern("dd/MM/uuuu"));
+            } catch (DateTimeParseException ignored) {
+            }
+        }
+        return null;
     }
 
     public List<Job> findFullJobsByClientId(int clientId) {
@@ -370,8 +401,7 @@ public class JobRepository {
                 String jobNo = rs.getString("job_no");
                 String title = rs.getString("job_title");
 
-                String dateStr = rs.getString("job_date");
-                LocalDate jobDate = dateStr != null ? LocalDate.parse(dateStr) : null;
+                LocalDate jobDate = parseJobDateFlexible(rs.getString("job_date"));
 
                 list.add(new JobSummary(id, jobNo, title, jobDate));
             }
@@ -538,6 +568,164 @@ public class JobRepository {
         }
 
         return list;
+    }
+
+    /**
+     * Completed, un-invoiced jobs for a client whose job_date falls in [from, to] (inclusive).
+     */
+    public List<Job> findCompletedJobsByClientIdInDateRange(int clientId, LocalDate from, LocalDate to) {
+        List<Job> list = new ArrayList<>();
+        String sql = """
+                    SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
+                           j.status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
+                           (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
+                           (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
+                           (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
+                    FROM jobs j
+                    WHERE j.client_id = ?
+                      AND j.invoice_id IS NULL
+                      AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
+                      AND DATE(j.job_date) >= DATE(?)
+                      AND DATE(j.job_date) <= DATE(?)
+                    ORDER BY j.id DESC
+                """;
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, clientId);
+            ps.setString(2, from.toString());
+            ps.setString(3, to.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapRowToJob(rs));
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Failed to fetch completed jobs in range for clientId=" + clientId, e);
+        }
+        return list;
+    }
+
+    /**
+     * Completed, un-invoiced jobs in [from, to] for all clients (job_date in range).
+     */
+    public List<Job> findCompletedJobsAllClientsInDateRange(LocalDate from, LocalDate to) {
+        List<Job> list = new ArrayList<>();
+        String sql = """
+                    SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
+                           j.status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
+                           (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
+                           (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
+                           (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total,
+                           c.business_name AS client_business_name
+                    FROM jobs j
+                    INNER JOIN clients c ON c.id = j.client_id
+                    WHERE j.invoice_id IS NULL
+                      AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
+                      AND DATE(j.job_date) BETWEEN DATE(?) AND DATE(?)
+                    ORDER BY c.business_name ASC, DATE(j.job_date) DESC, j.id DESC
+                """;
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, from.toString());
+            ps.setString(2, to.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Job job = mapRowToJob(rs);
+                    job.setClientBusinessName(rs.getString("client_business_name"));
+                    list.add(job);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch completed jobs in range for all clients", e);
+        }
+        return list;
+    }
+
+    /**
+     * IDs only (no row mapping) for completed, un-invoiced jobs in [from, to] by job_date.
+     * Avoids date-text parsing in Java so non-ISO {@code job_date} values cannot zero out aggregates.
+     */
+    public List<Integer> findCompletedJobIdsByClientIdInDateRange(int clientId, LocalDate from, LocalDate to) {
+        List<Integer> list = new ArrayList<>();
+        String sql = """
+                    SELECT j.id
+                    FROM jobs j
+                    WHERE j.client_id = ?
+                      AND j.invoice_id IS NULL
+                      AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
+                      AND DATE(j.job_date) BETWEEN DATE(?) AND DATE(?)
+                    ORDER BY j.id DESC
+                """;
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, clientId);
+            ps.setString(2, from.toString());
+            ps.setString(3, to.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(rs.getInt("id"));
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Failed to fetch completed job ids in range for clientId=" + clientId, e);
+        }
+        return list;
+    }
+
+    /** Sum of job_items.amount for the given jobs (invoice-style line totals). */
+    public double sumJobItemsAmountForJobIds(List<Integer> jobIds) {
+        if (jobIds == null || jobIds.isEmpty()) {
+            return 0.0;
+        }
+        String placeholders = String.join(",", jobIds.stream().map(x -> "?").toList());
+        String sql = "SELECT COALESCE(SUM(amount), 0) AS total_amt FROM job_items WHERE job_id IN ("
+                + placeholders + ")";
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            int i = 1;
+            for (Integer id : jobIds) {
+                ps.setInt(i++, id);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getDouble("total_amt");
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to sum job_items for jobs", e);
+        }
+        return 0.0;
+    }
+
+    /** Sum printing quantities for the given job ids (via job_items → printing_items). */
+    public long sumPrintingQtyForJobIds(List<Integer> jobIds) {
+        if (jobIds == null || jobIds.isEmpty()) {
+            return 0L;
+        }
+        String placeholders = String.join(",", jobIds.stream().map(x -> "?").toList());
+        String sql = """
+                    SELECT COALESCE(SUM(pi.qty), 0) AS total_qty
+                    FROM printing_items pi
+                    INNER JOIN job_items ji ON pi.job_item_id = ji.id
+                    WHERE ji.job_id IN (""" + placeholders + ")";
+
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            int i = 1;
+            for (Integer id : jobIds) {
+                ps.setInt(i++, id);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong("total_qty");
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to sum printing qty for jobs", e);
+        }
+        return 0L;
     }
 
 }

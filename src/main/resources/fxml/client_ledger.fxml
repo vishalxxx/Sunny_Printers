@@ -17,7 +17,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane stylesheets="@../css/client_ledger.css" xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.ClientLedgerController">
+<BorderPane styleClass="client-ledger-root, ui-compact" stylesheets="@../css/client_ledger.css" xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.ClientLedgerController">
 
     <!-- TOP NAV / HEADER (Mimicking the image's top bar) -->
     <top>

@@ -48,14 +48,14 @@
 
 .page-heading {
     -fx-text-fill: #3E312D;
-    -fx-font-size: 24px;
+    -fx-font-size: 18px;
     -fx-font-family: 'Manrope';
     -fx-font-weight: 700;
 }
 
 .page-subheading {
     -fx-text-fill: #7A726D;
-    -fx-font-size: 13px;
+    -fx-font-size: 11px;
     -fx-font-family: 'Inter';
 }
 
@@ -99,12 +99,12 @@
     -fx-background-color: #E2D6C8;
     /* Slightly muted */
     -fx-background-radius: 10;
-    -fx-min-height: 36;
-    -fx-max-height: 36;
-    -fx-padding: 0 12;
+    -fx-min-height: 30;
+    -fx-max-height: 30;
+    -fx-padding: 0 10;
     -fx-text-fill: #BD7645;
     -fx-font-weight: 800;
-    -fx-font-size: 12px;
+    -fx-font-size: 11px;
     -fx-alignment: CENTER_LEFT;
     -fx-border-color: #E2D6C8;
     -fx-border-width: 1;
@@ -137,7 +137,7 @@
 .step-number {
     -fx-text-fill: #7A726D;
     -fx-font-weight: 800;
-    -fx-font-size: 11px;
+    -fx-font-size: 10px;
 }
 
 .step-active .step-number {
@@ -147,7 +147,7 @@
 .step-label {
     -fx-text-fill: #7A726D;
     -fx-font-weight: 800;
-    -fx-font-size: 12px;
+    -fx-font-size: 11px;
 }
 
 .step-active .step-label {
@@ -162,19 +162,19 @@
 /* --- CONTENT CARD --- */
 .content-card {
     -fx-background-color: white;
-    -fx-background-radius: 16;
-    -fx-padding: 16;
+    -fx-background-radius: 14;
+    -fx-padding: 12;
     /* Reduced from 32 */
     -fx-border-color: #E2D6C8;
     -fx-border-width: 0.5;
-    -fx-border-radius: 16;
+    -fx-border-radius: 14;
     -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.04), 15, 0, 0, 6);
-    -fx-min-height: 420;
+    -fx-min-height: 360;
 }
 
 .card-content-title {
     -fx-text-fill: #3E312D;
-    -fx-font-size: 16px;
+    -fx-font-size: 14px;
     /* Refined from 20 */
     -fx-font-family: 'Manrope';
     -fx-font-weight: 700;
@@ -194,7 +194,7 @@
 .field-heading-sm {
     -fx-text-fill: #5C524D;
     /* Darker for better contrast */
-    -fx-font-size: 11px;
+    -fx-font-size: 10px;
     -fx-font-weight: 600;
 }
 
@@ -293,19 +293,19 @@
     -fx-border-color: #EADFD4;
     -fx-border-width: 1;
     -fx-border-radius: 12;
-    -fx-min-height: 40;
-    -fx-max-height: 40;
+    -fx-min-height: 34;
+    -fx-max-height: 34;
 }
 
 .segmented-btn {
     -fx-background-color: transparent;
     -fx-text-fill: #7A726D;
     -fx-font-weight: 600;
-    -fx-font-size: 12px;
+    -fx-font-size: 11px;
     /* Slightly smaller */
-    -fx-padding: 0 16;
+    -fx-padding: 0 12;
     -fx-background-radius: 10;
-    -fx-min-height: 34;
+    -fx-min-height: 28;
     /* Account for parent padding */
 }
 
@@ -328,7 +328,7 @@
     -fx-background-color: #F3E8DA;
     /* Fintech beige */
     -fx-background-radius: 12;
-    -fx-padding: 16 24;
+    -fx-padding: 12 18;
     -fx-border-color: #E6D8C8;
     -fx-border-width: 0.5;
     -fx-border-radius: 12;
@@ -337,7 +337,7 @@
 .currency-symbol {
     -fx-text-fill: #C26A2D;
     /* Accent color */
-    -fx-font-size: 24px;
+    -fx-font-size: 18px;
     /* Reduced from 34 */
     -fx-font-weight: 700;
 }
@@ -346,7 +346,7 @@
     -fx-background-color: transparent;
     -fx-text-fill: #C26A2D;
     /* Accent color */
-    -fx-font-size: 28px;
+    -fx-font-size: 21px;
     /* Reduced from 42 */
     -fx-font-family: 'Manrope';
     -fx-font-weight: 700;
@@ -366,10 +366,10 @@
     /* Sync with amount */
     -fx-text-fill: white;
     -fx-font-weight: 800;
-    -fx-padding: 12 28;
+    -fx-padding: 10 22;
     -fx-background-radius: 100;
     -fx-cursor: hand;
-    -fx-min-height: 48;
+    -fx-min-height: 40;
 }
 
 .add-item-btn:hover {
@@ -397,19 +397,19 @@
 .upload-hint-premium {
     -fx-text-fill: #3E312D;
     -fx-font-weight: 700;
-    -fx-font-size: 16px;
+    -fx-font-size: 14px;
 }
 
 .upload-sub-hint {
     -fx-text-fill: #8B7E74;
-    -fx-font-size: 13px;
+    -fx-font-size: 12px;
     -fx-font-weight: 500;
 }
 
 .pdf-ready-label {
     -fx-text-fill: #1B5E20;
     -fx-font-weight: 800;
-    -fx-font-size: 15px;
+    -fx-font-size: 13px;
 }
 
 .change-file-btn {
@@ -420,8 +420,8 @@
     -fx-border-radius: 100;
     -fx-background-radius: 100;
     -fx-font-weight: 700;
-    -fx-font-size: 12px;
-    -fx-padding: 8 20;
+    -fx-font-size: 11px;
+    -fx-padding: 6 16;
     -fx-cursor: hand;
 }
 
@@ -435,7 +435,7 @@
     -fx-background-color: transparent;
     -fx-text-fill: #7A726D;
     -fx-font-weight: 700;
-    -fx-font-size: 14px;
+    -fx-font-size: 12px;
 }
 
 
@@ -443,19 +443,19 @@
 .icon-cloud-upload-large {
     -fx-shape: "M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z";
     -fx-background-color: #C26A2D;
-    -fx-min-width: 64;
-    -fx-max-width: 64;
-    -fx-min-height: 64;
-    -fx-max-height: 64;
+    -fx-min-width: 52;
+    -fx-max-width: 52;
+    -fx-min-height: 52;
+    -fx-max-height: 52;
 }
 
 .icon-pdf-large {
     -fx-shape: "M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3.5h-1.5v1.5h1.5V11H19V7h3v1.5zM9 9h1v1H9V9zm5.5 2h1v1h-1v-1zM2 6v14c0 1.1.9 2 2 2h14v-1.5H4V6H2z";
     -fx-background-color: #B71C1C;
-    -fx-min-width: 64;
-    -fx-max-width: 64;
-    -fx-min-height: 64;
-    -fx-max-height: 64;
+    -fx-min-width: 52;
+    -fx-max-width: 52;
+    -fx-min-height: 52;
+    -fx-max-height: 52;
 }
 
 /* SCROLLBAR STYLING */

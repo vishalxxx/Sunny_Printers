@@ -12,6 +12,11 @@ public class ClientService {
 		return repo.findAllSortedById();
 	}
 
+	/** Clients with at least one completed, not-yet-invoiced job. */
+	public List<Client> getClientsWithUninvoicedCompletedJobs() {
+		return repo.findAllWithUninvoicedCompletedJobs();
+	}
+
 	public List<Client> searchClients(String keyword) {
 		if (keyword == null || keyword.trim().isEmpty()) {
 			return repo.findAllSortedById();

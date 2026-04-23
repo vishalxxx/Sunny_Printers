@@ -23,14 +23,14 @@
 
 /* Header (custom layout not in invoice css) */
 .header-bar {
-    -fx-padding: 14 24;
+    -fx-padding: 12 18;
     -fx-background-color: rgba(24, 24, 27, 0.92);
     -fx-border-color: rgba(255, 255, 255, 0.10);
     -fx-border-width: 0 0 1 0;
 }
 
 .header-icon {
-    -fx-font-size: 18px;
+    -fx-font-size: 15px;
 }
 
 .header-title {
@@ -44,7 +44,7 @@
 }
 
 .avatar {
-    -fx-font-size: 16px;
+    -fx-font-size: 14px;
 }
 
 .status-pill {
@@ -71,7 +71,7 @@
 .text-field.input,
 .combo-box.input,
 .date-picker.input {
-    -fx-pref-height: 42;
+    -fx-pref-height: 36;
 }
 
 .amount {
@@ -142,7 +142,7 @@
 }
 
 .brand {
-    -fx-font-size: 16px;
+    -fx-font-size: 14px;
     -fx-font-weight: 900;
 }
 

@@ -22,7 +22,7 @@
 }
 
 /* --- 1. HERO HEADER (Inheriting from page-heading/subheading) --- */
-.page-header-container { -fx-padding: 0 0 16 0; -fx-alignment: CENTER_LEFT; }
+.page-header-container { -fx-padding: 0 0 8 0; -fx-alignment: CENTER_LEFT; }
 
 /* --- 2. TOOLBAR (Inheriting from compact-field/combo) --- */
 .toolbar-section { -fx-padding: 0 0 16 0; -fx-alignment: CENTER_LEFT; }
@@ -40,12 +40,15 @@
     -fx-border-color: #E9E2DB;
     -fx-border-radius: 20;
     -fx-background-radius: 20;
-    -fx-padding: 0 16;
+    -fx-padding: 0 12;
     -fx-text-fill: #2B2320;
     -fx-font-weight: 800;
-    -fx-font-size: 12px;
-    -fx-min-height: 38;
+    -fx-font-size: 11px;
+    -fx-min-height: 30;
     -fx-cursor: hand;
+}
+.view-jobs-root .view-clear-btn .label {
+    -fx-font-size: 11px;
 }
 .view-clear-btn:hover { -fx-background-color: #FBF4EE; }
 
@@ -72,8 +75,8 @@
     -fx-border-color: #F1ECE6;
     -fx-border-width: 0 0 1 0;
 }
-.jobs-table-premium .column-header { -fx-background-color: transparent; -fx-padding: 14 0; -fx-border-color: transparent; }
-.jobs-table-premium .column-header .label { -fx-font-weight: 800; -fx-text-fill: #1A1311; -fx-font-size: 12px; }
+.jobs-table-premium .column-header { -fx-background-color: transparent; -fx-padding: 8 0; -fx-border-color: transparent; }
+.jobs-table-premium .column-header .label { -fx-font-weight: 800; -fx-text-fill: #1A1311; -fx-font-size: 11px; }
 
 .jobs-table-premium .table-row-cell {
     -fx-background-color: white;
@@ -82,7 +85,7 @@
 }
 .jobs-table-premium .table-row-cell:selected { -fx-background-color: #FFF9F3; }
 
-.jobs-table-premium .table-cell { -fx-padding: 12 16; -fx-alignment: CENTER_LEFT; -fx-border-color: transparent; }
+.jobs-table-premium .table-cell { -fx-padding: 6 10; -fx-alignment: CENTER_LEFT; -fx-border-color: transparent; }
 
 /* --- Scrollbars (TableView + VirtualFlow) --- */
 .jobs-table-premium .scroll-bar:vertical,
@@ -131,12 +134,12 @@
 }
 
 /* Row Content Components */
-.job-title-row { -fx-font-family: 'Manrope'; -fx-font-weight: 800; -fx-font-size: 14px; -fx-text-fill: #1A1311; }
-.job-client-row { -fx-font-size: 12px; -fx-text-fill: #8B7E74; -fx-font-weight: 600; }
-.job-id-row { -fx-font-size: 10px; -fx-text-fill: #B5ACA3; -fx-font-weight: 700; }
+.job-title-row { -fx-font-family: 'Manrope'; -fx-font-weight: 800; -fx-font-size: 12px; -fx-text-fill: #1A1311; }
+.job-client-row { -fx-font-size: 11px; -fx-text-fill: #8B7E74; -fx-font-weight: 600; }
+.job-id-row { -fx-font-size: 9px; -fx-text-fill: #B5ACA3; -fx-font-weight: 700; }
 
 .icon-box {
-    -fx-background-radius: 8; -fx-padding: 8; -fx-min-width: 40; -fx-max-width: 40; -fx-min-height: 40; -fx-max-height: 40;
+    -fx-background-radius: 6; -fx-padding: 6; -fx-min-width: 32; -fx-max-width: 32; -fx-min-height: 32; -fx-max-height: 32;
 }
 .icon-box-orange { -fx-background-color: #FFF1E6; }
 .icon-box-blue   { -fx-background-color: #E6F7FF; }
@@ -144,28 +147,28 @@
 .icon-box-purple { -fx-background-color: #F9F0FF; }
 .icon-box-red    { -fx-background-color: #FFF1F0; }
 
-.amount-row { -fx-font-weight: 800; -fx-font-size: 14px; -fx-text-fill: #C26A2D; }
-.meta-row { -fx-font-size: 10px; -fx-text-fill: #8B7E74; -fx-font-weight: 600; }
+.amount-row { -fx-font-weight: 800; -fx-font-size: 12px; -fx-text-fill: #C26A2D; }
+.meta-row { -fx-font-size: 9px; -fx-text-fill: #8B7E74; -fx-font-weight: 600; }
 
 /* ACTION SUITE: BULK (TOP DECK) */
 .bulk-bar-integrated {
     -fx-background-color: white;
-    -fx-padding: 14 18;
+    -fx-padding: 10 12;
     -fx-background-radius: 12 12 0 0;
     -fx-border-color: #F1ECE6;
     -fx-border-width: 0 0 1 0;
 }
-.bulk-count-label { -fx-font-size: 16px; -fx-font-weight: 900; -fx-text-fill: #1A1311; }
-.bulk-subtext { -fx-font-size: 12px; -fx-text-fill: #8B7E74; -fx-font-weight: 600; }
+.bulk-count-label { -fx-font-size: 13px; -fx-font-weight: 900; -fx-text-fill: #1A1311; }
+.bulk-subtext { -fx-font-size: 10px; -fx-text-fill: #8B7E74; -fx-font-weight: 600; }
 
 .bulk-btn {
     -fx-background-color: white;
     -fx-border-color: #E9E2DB;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
-    -fx-padding: 8 16;
+    -fx-padding: 6 12;
     -fx-font-weight: 800;
-    -fx-font-size: 12px;
+    -fx-font-size: 11px;
     -fx-cursor: hand;
 }
 .bulk-btn-blue    { -fx-background-color: #EAF3FF; -fx-text-fill: #2F6FEB; -fx-border-color: transparent; }
@@ -181,11 +184,11 @@
     -fx-border-color: #E9E2DB;
     -fx-border-radius: 10;
     -fx-border-width: 1;
-    -fx-min-height: 34;
+    -fx-min-height: 30;
     -fx-font-weight: 700;
-    -fx-font-size: 12px;
+    -fx-font-size: 11px;
     -fx-text-fill: #2B2320;
-    -fx-padding: 0 10;
+    -fx-padding: 0 8;
 }
 .bulk-combo .arrow-button { -fx-background-color: transparent; -fx-border-color: transparent; -fx-padding: 0 6 0 0; }
 .bulk-combo .arrow { -fx-background-color: #B97952; -fx-shape: "M7 10l5 5 5-5z"; }
@@ -200,7 +203,7 @@
 }
 
 .status-badge {
-    -fx-background-radius: 60; -fx-padding: 6 14; -fx-font-size: 10px; -fx-font-weight: 800;
+    -fx-background-radius: 60; -fx-padding: 4 10; -fx-font-size: 9px; -fx-font-weight: 800;
 }
 .status-badge-draft      { -fx-background-color: #F0EDE9; -fx-text-fill: #5B4F47; }
 .status-badge-processing { -fx-background-color: #E6F7FF; -fx-text-fill: #1890FF; }
@@ -209,14 +212,14 @@
 
 /* In-Row Actions: TARGET PARITY */
 .row-action-btn-primary {
-    -fx-background-radius: 8; -fx-padding: 8 20; -fx-font-weight: 800; -fx-text-fill: white; -fx-font-size: 12px;
+    -fx-background-radius: 6; -fx-padding: 5 12; -fx-font-weight: 800; -fx-text-fill: white; -fx-font-size: 11px;
     -fx-cursor: hand; -fx-background-color: #1890FF; 
 }
 .row-action-btn-primary:hover { -fx-background-color: #007BD4; }
 
 .row-action-btn {
-    -fx-background-color: white; -fx-border-color: #E2DDD8; -fx-border-radius: 8; -fx-background-radius: 8;
-    -fx-min-width: 36; -fx-min-height: 36; -fx-max-width: 36; -fx-max-height: 36;
+    -fx-background-color: white; -fx-border-color: #E2DDD8; -fx-border-radius: 6; -fx-background-radius: 6;
+    -fx-min-width: 28; -fx-min-height: 28; -fx-max-width: 28; -fx-max-height: 28;
     -fx-padding: 0; -fx-cursor: hand; -fx-alignment: CENTER;
 }
 .row-btn-blue:hover   { -fx-background-color: #E6F7FF; -fx-border-color: #1890FF; }
@@ -224,27 +227,27 @@
 .row-btn-gray:hover   { -fx-background-color: #F5F5F5; -fx-border-color: #8B7E74; }
 
 /* --- 4. ATELIER PAGINATION --- */
-.footer-section { -fx-padding: 14 0; -fx-background-color: transparent; }
-.pagination-info { -fx-font-size: 13px; -fx-text-fill: #8B7E74; -fx-font-weight: 600; }
+.footer-section { -fx-padding: 8 0; -fx-background-color: transparent; }
+.pagination-info { -fx-font-size: 11px; -fx-text-fill: #8B7E74; -fx-font-weight: 600; }
 
 .page-btn, .page-nav-btn {
-    -fx-background-color: white; -fx-border-color: #E9E2DB; -fx-border-radius: 8; -fx-background-radius: 8;
-    -fx-min-width: 34; -fx-min-height: 34; -fx-text-fill: #5B4F47; -fx-font-weight: 700; -fx-font-size: 13px; -fx-cursor: hand;
+    -fx-background-color: white; -fx-border-color: #E9E2DB; -fx-border-radius: 6; -fx-background-radius: 6;
+    -fx-min-width: 28; -fx-min-height: 28; -fx-text-fill: #5B4F47; -fx-font-weight: 700; -fx-font-size: 11px; -fx-cursor: hand;
 }
 .page-btn-active { -fx-background-color: #B97952; -fx-border-color: #B97952; -fx-text-fill: white; }
 .page-btn:hover { -fx-background-color: #FAF0E6; }
 
 .pagination-go-field {
-    -fx-background-color: white; -fx-border-color: #E2DDD8; -fx-border-radius: 8; -fx-background-radius: 8;
-    -fx-padding: 4 8; -fx-font-size: 13px; -fx-text-fill: #3E312D;
+    -fx-background-color: white; -fx-border-color: #E2DDD8; -fx-border-radius: 6; -fx-background-radius: 6;
+    -fx-padding: 2 6; -fx-font-size: 11px; -fx-text-fill: #3E312D;
 }
 
 /* --- STEPPER MAP EVOLUTION --- */
-.stepper-label { -fx-font-size: 10px; -fx-font-weight: 700; -fx-text-fill: #B5ACA3; -fx-padding: 4 0 0 0; }
+.stepper-label { -fx-font-size: 9px; -fx-font-weight: 700; -fx-text-fill: #B5ACA3; -fx-padding: 2 0 0 0; }
 .stepper-label-active { -fx-text-fill: #1A1311; -fx-font-weight: 800; }
 
 .stepper-dot {
-    -fx-min-width: 12; -fx-max-width: 12; -fx-min-height: 12; -fx-max-height: 12;
+    -fx-min-width: 10; -fx-max-width: 10; -fx-min-height: 10; -fx-max-height: 10;
     -fx-shape: "M 100, 100 m -75, 0 a 75,75 0 1,0 150,0 a 75,75 0 1,0 -150,0"; 
     -fx-background-color: white; -fx-border-color: #DDD8D3; -fx-border-width: 2;
 }

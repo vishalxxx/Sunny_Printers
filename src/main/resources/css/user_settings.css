@@ -49,7 +49,7 @@
 /* TITLES */
 .page-title {
     -fx-text-fill: #f9fafb;
-    -fx-font-size: 22px;
+    -fx-font-size: 17px;
     -fx-font-weight: bold;
 }
 
@@ -59,7 +59,7 @@
 
 .section-title {
     -fx-text-fill: #e5e7eb;
-    -fx-font-size: 15px;
+    -fx-font-size: 13px;
     -fx-font-weight: bold;
 }
 
@@ -69,7 +69,7 @@
     -fx-background-radius: 14;
     -fx-border-radius: 14;
     -fx-border-color: #1f2a44;
-    -fx-padding: 18;
+    -fx-padding: 14;
 }
 
 /* PROFILE CARD */

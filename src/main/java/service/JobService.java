@@ -2,6 +2,7 @@ package service;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.time.LocalDate;
 import java.util.List;
 
 import model.Job;
@@ -187,6 +188,35 @@ public class JobService {
 	public List<Job> getCompletedJobsByClient(int clientId) {
 	    return repo.findCompletedJobsByClientId(clientId);
 	}
-	
+
+	public List<Job> getCompletedJobsByClientInDateRange(int clientId, LocalDate from, LocalDate to) {
+		if (from == null || to == null) {
+			return List.of();
+		}
+		return repo.findCompletedJobsByClientIdInDateRange(clientId, from, to);
+	}
+
+	public List<Job> getCompletedJobsAllClientsInDateRange(LocalDate from, LocalDate to) {
+		if (from == null || to == null) {
+			return List.of();
+		}
+		return repo.findCompletedJobsAllClientsInDateRange(from, to);
+	}
+
+	/** Job IDs only; safe for live UI totals (no per-row date parsing). */
+	public List<Integer> getCompletedJobIdsByClientInDateRange(int clientId, LocalDate from, LocalDate to) {
+		if (from == null || to == null) {
+			return List.of();
+		}
+		return repo.findCompletedJobIdsByClientIdInDateRange(clientId, from, to);
+	}
+
+	public double getSumJobItemsAmountForJobIds(List<Integer> jobIds) {
+		return repo.sumJobItemsAmountForJobIds(jobIds);
+	}
+
+	public long getTotalPrintingQtyForJobIds(List<Integer> jobIds) {
+		return repo.sumPrintingQtyForJobIds(jobIds);
+	}
 
 }

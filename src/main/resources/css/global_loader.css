@@ -17,14 +17,14 @@
 
 /* Center card layout */
 .loader-card {
-    -fx-padding: 32;
+    -fx-padding: 24;
     -fx-alignment: center;
 }
 
 /* Spinner ring */
 .loader-spinner {
-    -fx-pref-width: 80;
-    -fx-pref-height: 80;
+    -fx-pref-width: 68;
+    -fx-pref-height: 68;
     -fx-progress-color: #CD7B4E;
 }
 
@@ -32,7 +32,7 @@
 .loader-title {
     -fx-text-fill: #3E312D;
     -fx-font-family: 'Manrope', sans-serif;
-    -fx-font-size: 28px;
+    -fx-font-size: 21px;
     -fx-font-weight: 800;
 }
 
@@ -40,7 +40,7 @@
 .loader-subtitle {
     -fx-text-fill: #8B7E74;
     -fx-font-family: 'Inter', sans-serif;
-    -fx-font-size: 14px;
+    -fx-font-size: 12px;
     -fx-font-weight: 500;
     -fx-alignment: center;
     -fx-text-alignment: center;
@@ -56,7 +56,7 @@
 
 .loader-percent {
     -fx-text-fill: #CD7B4E;
-    -fx-font-size: 14px;
+    -fx-font-size: 12px;
     -fx-font-weight: 800;
 }
 

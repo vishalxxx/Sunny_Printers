@@ -4,13 +4,13 @@
 
 .left-pane {
     -fx-background-color: #1E1E1E; /* Dark overlay like screenshot */
-    -fx-padding: 40;
+    -fx-padding: 32;
     -fx-border-color: #E0E0E0;
     -fx-border-width: 0 1 0 0;
 }
 
 .logo-text {
-    -fx-font-size: 28px;
+    -fx-font-size: 21px;
     -fx-font-weight: bold;
     -fx-text-fill: #333;
 }
@@ -20,8 +20,8 @@
     -fx-border-color: #D1D1D1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
-    -fx-padding: 10;
-    -fx-font-size: 14px;
+    -fx-padding: 8;
+    -fx-font-size: 12px;
 }
 
 .login-button {
@@ -29,7 +29,7 @@
     -fx-text-fill: white;
     -fx-font-weight: bold;
     -fx-background-radius: 8;
-    -fx-padding: 10 20;
+    -fx-padding: 8 16;
 }
 
 .login-button:hover {
@@ -41,7 +41,7 @@
     -fx-background-radius: 12;
     -fx-border-color: #E6E6E6;
     -fx-border-radius: 12;
-    -fx-padding: 20;
+    -fx-padding: 16;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.10), 15, 0, 0, 5);
 }
 

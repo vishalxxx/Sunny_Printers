@@ -147,7 +147,7 @@
 .sidebar-collapsed .header-box {
     -fx-spacing: 0;
     -fx-alignment: CENTER;
-    -fx-pref-width: 40; /* Force a consistent width smaller than sidebar */
+    -fx-pref-width: 34; /* Force a consistent width smaller than sidebar */
 }
 
 /* Hide everything except icons when collapsed */
@@ -185,14 +185,14 @@
 
 /* Header Elements */
 .header-icon-btn {
-    -fx-padding: 8;
+    -fx-padding: 6;
     -fx-background-color: transparent;
     -fx-alignment: CENTER;
     -fx-cursor: hand;
-    -fx-min-width: 40; /* Force circularity during hover */
-    -fx-max-width: 40;
-    -fx-min-height: 40;
-    -fx-max-height: 40;
+    -fx-min-width: 34; /* Force circularity during hover */
+    -fx-max-width: 34;
+    -fx-min-height: 34;
+    -fx-max-height: 34;
 }
 
 .header-icon-btn:hover {
@@ -221,10 +221,10 @@
 .sidebar-collapsed .sidebar-btn-active {
     -fx-alignment: CENTER;
     -fx-padding: 0; 
-    -fx-min-width: 40;
-    -fx-max-width: 40;
-    -fx-min-height: 40;
-    -fx-max-height: 40;
+    -fx-min-width: 34;
+    -fx-max-width: 34;
+    -fx-min-height: 34;
+    -fx-max-height: 34;
     -fx-background-radius: 50; /* Perfect circle */
     -fx-content-display: GRAPHIC_ONLY;
     -fx-graphic-text-gap: 0;
@@ -276,10 +276,10 @@
 }
 
 .sidebar-collapsed .new-job-btn {
-    -fx-min-width: 40;
-    -fx-max-width: 40;
-    -fx-min-height: 40;
-    -fx-max-height: 40;
+    -fx-min-width: 34;
+    -fx-max-width: 34;
+    -fx-min-height: 34;
+    -fx-max-height: 34;
     -fx-padding: 0; 
     -fx-background-radius: 50;
     -fx-alignment: CENTER;
@@ -292,7 +292,7 @@
     -fx-text-fill: white;
     -fx-font-weight: 800;
     -fx-background-radius: 25;
-    -fx-padding: 10 16 10 12; 
+    -fx-padding: 8 14 8 10; 
     -fx-alignment: CENTER_LEFT;
     -fx-graphic-text-gap: 10;
 }

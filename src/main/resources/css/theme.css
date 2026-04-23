@@ -17,10 +17,10 @@
 .breadcrumb-back-btn {
   -fx-background-color: white;
   -fx-background-radius: 10;
-  -fx-min-width: 34;
-  -fx-min-height: 34;
-  -fx-max-width: 34;
-  -fx-max-height: 34;
+  -fx-min-width: 32;
+  -fx-min-height: 32;
+  -fx-max-width: 32;
+  -fx-max-height: 32;
   -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.04), 10, 0, 0, 4);
   -fx-padding: 0;
   -fx-cursor: hand;
@@ -61,10 +61,10 @@
 .icon-search {
     -fx-shape: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z";
     -fx-background-color: #8E7A6B;
-    -fx-min-width: 16;
-    -fx-min-height: 16;
-    -fx-max-width: 16;
-    -fx-max-height: 16;
+    -fx-min-width: 18;
+    -fx-min-height: 18;
+    -fx-max-width: 18;
+    -fx-max-height: 18;
 }
 
 .search-combo {
@@ -77,7 +77,7 @@
 
 .search-combo .list-cell {
     -fx-text-fill: #3E312D;
-    -fx-padding: 10 6;
+    -fx-padding: 8 6;
     -fx-background-color: transparent;
 }
 
@@ -107,7 +107,7 @@
 }
 
 .search-combo .combo-box-popup .list-cell {
-    -fx-padding: 10 12;
+    -fx-padding: 8 10;
     -fx-background-radius: 10;
 }
 
@@ -139,7 +139,7 @@
     -fx-text-fill: #3E312D;
     -fx-font-family: 'Manrope';
     -fx-font-weight: 800;
-    -fx-font-size: 14px;
+    -fx-font-size: 13px;
 }
 
 .date-picker-popup .calendar {
@@ -169,7 +169,7 @@
 
 .date-picker-popup .day-name-cell {
     -fx-font-family: 'Inter';
-    -fx-font-size: 11px;
+    -fx-font-size: 12px;
     -fx-font-weight: 700;
     -fx-text-fill: #8E7A6B;
     -fx-background-color: transparent;
@@ -181,9 +181,9 @@
     -fx-background-radius: 8;
     -fx-border-color: transparent;
     -fx-text-fill: #3E312D;
-    -fx-font-size: 12px;
+    -fx-font-size: 13px;
     -fx-font-weight: 600;
-    -fx-padding: 6;
+    -fx-padding: 8;
 }
 
 .date-picker-popup .day-cell:hover {
@@ -215,7 +215,7 @@
 
 /* DATE PICKER BUTTON STYLING */
 .date-picker > .arrow-button {
-    -fx-padding: 0 18;
+    -fx-padding: 0 14;
     -fx-cursor: hand;
 }
 
@@ -237,7 +237,7 @@
     -fx-border-width: 1.5;
     -fx-border-radius: 0;
     -fx-background-radius: 0;
-    -fx-padding: 18 20 16 20;
+    -fx-padding: 14 16 12 16;
     -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.12), 28, 0, 0, 10);
     -fx-min-width: 300;
     -fx-pref-width: 340;
@@ -251,7 +251,7 @@
 
 .atelier-alert .header-panel .label {
     -fx-font-family: 'Manrope';
-    -fx-font-size: 17px;
+    -fx-font-size: 15px;
     -fx-font-weight: 800;
     -fx-text-fill: #3E312D;
     -fx-wrap-text: true;
@@ -261,7 +261,7 @@
     -fx-font-family: 'Inter';
     -fx-font-size: 13px;
     -fx-text-fill: #6B5E58;
-    -fx-padding: 0 0 12 0;
+    -fx-padding: 0 0 10 0;
     -fx-line-spacing: 0.35em;
     -fx-wrap-text: true;
 }
@@ -280,7 +280,7 @@
     -fx-font-family: 'Inter';
     -fx-font-weight: 700;
     -fx-font-size: 13px;
-    -fx-padding: 10 24;
+    -fx-padding: 10 20;
     -fx-cursor: hand;
 }
 
@@ -302,17 +302,18 @@
 .alert-icon-warning {
     -fx-shape: "M12 2L1 21h22L12 2zm0 3.45L20.53 19H3.47L12 5.45zM11 16h2v2h-2v-2zm0-6h2v4h-2v-4z";
     -fx-background-color: #CD7B4E;
-    -fx-min-width: 36;
-    -fx-min-height: 36;
-    -fx-max-width: 36;
-    -fx-max-height: 36;
+    -fx-min-width: 34;
+    -fx-min-height: 34;
+    -fx-max-width: 34;
+    -fx-max-height: 34;
 }
 
 .atelier-alert .graphic-container {
     -fx-padding: 0 0 0 10;
 }
 
-/* ===================== COMPACT DESIGN SYSTEM (SHARED) ===================== */
+/* ===================== FORM CONTROLS (DEFAULT / COMFORTABLE) =====================
+   Tighter density for module screens: compact_screens.css under .ui-compact. */
 .compact-field,
 .compact-datepicker,
 .card-field,
@@ -322,7 +323,7 @@
     -fx-border-color: #EADFD4;
     -fx-border-width: 1;
     -fx-border-radius: 10;
-    -fx-min-height: 36;
+    -fx-min-height: 38;
     -fx-padding: 0 10;
     -fx-text-fill: #3E312D;
     -fx-font-size: 13px;
@@ -332,7 +333,6 @@
     -fx-faint-focus-color: transparent;
 }
 
-/* TextArea skins keep a white .content / viewport unless overridden */
 .card-textarea .content,
 .card-textarea .scroll-pane,
 .card-textarea .scroll-pane .viewport {
@@ -349,7 +349,6 @@
     -fx-background-color: #FAF6F0;
 }
 
-/* Dropdown combos: pill + terracotta. Horizontal inset lives on > .list-cell only (avoid double padding). */
 .sort-combo,
 .compact-combo,
 .client-combo,
@@ -392,10 +391,6 @@
     -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.16), 14, 0, 0, 5) !important;
 }
 
-/* Remove default white boxes for editable fields.
-   Do not target .client-combo .list-cell here: that includes the closed button cell and
-   zeroes its padding so it no longer matches .sort-combo (view clients). Popup rows use
-   .client-combo .combo-box-popup .list-cell rules below. */
 .compact-combo .text-field,
 .compact-datepicker .text-field,
 .card-combo .text-field,
@@ -413,18 +408,29 @@
     -fx-faint-focus-color: transparent;
 }
 
-/* Closed combo: single horizontal inset (ComboBox root padding is 0) */
 .sort-combo > .list-cell,
-.client-combo > .list-cell,
 .card-combo > .list-cell {
     -fx-background-color: transparent;
-    -fx-padding: 2 8 2 10;
+    -fx-padding: 3 8 3 10;
     -fx-label-padding: 0;
     -fx-graphic-text-gap: 0;
     -fx-text-fill: #3E312D;
     -fx-font-family: 'Inter';
     -fx-font-size: 13px;
     -fx-font-style: normal;
+}
+
+/* Closed combo only — insets must not apply to popup/list rows (clips hover fill). */
+.client-combo > .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 3 8 3 10;
+    -fx-label-padding: 0;
+    -fx-graphic-text-gap: 0;
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter';
+    -fx-font-size: 13px;
+    -fx-font-style: normal;
+    -fx-background-insets: 1 0;
 }
 
 .client-combo:focused .button,
@@ -434,7 +440,6 @@
     -fx-background-color: transparent !important;
 }
 
-/* Closed combo: no orange selection block on the main button cell (matches view clients sort-combo) */
 .sort-combo > .list-cell,
 .sort-combo > .list-cell:selected,
 .compact-combo > .list-cell,
@@ -452,9 +457,8 @@
     -fx-text-fill: #3E312D;
 }
 
-/* SEARCH ICON INSIDE COMBO */
 .compact-combo {
-    -fx-padding: 2 10 2 30;
+    -fx-padding: 2 10 2 28;
     -fx-background-repeat: no-repeat;
     -fx-background-position: left 10 center;
     -fx-background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAC8SURBVHgB7ZJBDsIgEEXfS6/AnXoFST2C98CaeAIn9AreQz2CW70CN366YAnRhI0mbeSnyY8ZfAyD0ZfW8i5YlR3XmAnGAtiW8+W746F9gD18T3YAnkXfAbT11H6ZAHv/A8D19F1N9xOAT/cd8O0mR6YpZ7pYAGM9/VTT4Uj27X+Anp5+A07X03cNAPqX/A+4Xs7E0kG7P/L4DnjI8fT9S1fXF8By2RPr9yV79vA7BvA12QGo1pPr0pP+pZ8pZ7pYAGM9/VTT9pP+ZfgT6yU9vW9P/7Xv6Y+mDA8D18t7A9fLAVS8e7QAAAAASUVORK5CYII=');
@@ -465,7 +469,7 @@
 .card-combo .arrow-button,
 .sort-combo .arrow-button {
     -fx-background-color: transparent;
-    -fx-padding: 0 10 0 0;
+    -fx-padding: 0 12 0 0;
 }
 
 .compact-combo .arrow,
@@ -476,24 +480,19 @@
     -fx-shape: "M7 10l5 5 5-5z";
 }
 
-/*
- * ComboBox popup is attached to the scene, not under .client-combo / .card-combo / .add-job-root.
- * Selectors like ".client-combo .combo-box-popup" never match — style the popup by .combo-box-popup only.
- */
 .combo-box-popup .list-view {
     -fx-background-color: #FAF6F0;
     -fx-background-radius: 12;
     -fx-border-color: #CD7B4E;
     -fx-border-radius: 12;
     -fx-border-width: 1;
-    /* Tight inset so row text isn’t indented twice (panel + cell) */
-    -fx-padding: 2 0 2 0;
+    -fx-padding: 4 0 4 0;
     -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 10, 0, 0, 5);
 }
 
 .combo-box-popup .list-cell {
     -fx-background-color: transparent;
-    -fx-padding: 6 8 6 8;
+    -fx-padding: 7 10 7 10;
     -fx-label-padding: 0;
     -fx-graphic-text-gap: 0;
     -fx-text-fill: #3E312D;
@@ -503,28 +502,29 @@
     -fx-background-radius: 8;
 }
 
-.combo-box-popup .list-cell:hover {
+.combo-box-popup .list-cell:hover,
+.combo-box-popup .list-cell:filled:hover,
+.combo-box-popup .list-view .list-cell:hover,
+.combo-box-popup .list-view .list-cell:filled:hover {
     -fx-background-color: #F4EAE0 !important;
+    -fx-background-insets: 0 !important;
     -fx-text-fill: #3E312D !important;
     -fx-background-radius: 8;
 }
 
 .combo-box-popup .list-cell:selected {
     -fx-background-color: #EADFD4 !important;
+    -fx-background-insets: 0 !important;
     -fx-text-fill: #3E312D !important;
     -fx-background-radius: 8;
-    -fx-font-weight: 700;
+    -fx-font-weight: 600;
+    -fx-font-style: normal;
 }
 
-/* Sync dropdown list style (in-node + popup; chained selectors only when list-view is inside the control) */
 .compact-combo .list-view,
 .client-combo .list-view,
 .card-combo .list-view,
-.sort-combo .list-view,
-.compact-combo .combo-box-popup .list-view,
-.client-combo .combo-box-popup .list-view,
-.card-combo .combo-box-popup .list-view,
-.sort-combo .combo-box-popup .list-view {
+.sort-combo .list-view {
     -fx-background-color: #FAF6F0;
     -fx-background-radius: 12;
     -fx-border-color: #CD7B4E;
@@ -534,13 +534,11 @@
     -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 10, 0, 0, 5);
 }
 
-/* Omit .card-combo .list-cell: closed cell uses .card-combo > .list-cell only */
+/* Exclude .client-combo / .sort-combo here so > .list-cell padding on the closed button is preserved. */
 .compact-combo .list-cell,
-.compact-combo .combo-box-popup .list-cell,
-.card-combo .combo-box-popup .list-cell,
-.sort-combo .combo-box-popup .list-cell {
+.card-combo .list-cell {
     -fx-background-color: transparent;
-    -fx-padding: 6 8 6 8;
+    -fx-padding: 7 8 7 8;
     -fx-label-padding: 0;
     -fx-text-fill: #3E312D;
     -fx-font-family: 'Inter';
@@ -549,23 +547,17 @@
     -fx-background-radius: 8;
 }
 
-/* No -fx-padding here: would override .client-combo > .list-cell (closed). Popup rows use .combo-box-popup .list-cell */
-.client-combo .list-cell,
-.client-combo .combo-box-popup .list-cell {
+/* Popup / list rows: typography only — no background-insets (see .client-combo > .list-cell). */
+.client-combo .list-cell {
     -fx-background-color: transparent;
     -fx-text-fill: #3E312D;
     -fx-font-family: 'Inter';
     -fx-font-size: 13px;
-    -fx-background-insets: 1 0;
 }
 
 .compact-combo .list-view .list-cell:selected,
 .card-combo .list-view .list-cell:selected,
-.client-combo .list-view .list-cell:selected,
-.compact-combo .combo-box-popup .list-cell:selected,
-.client-combo .combo-box-popup .list-cell:selected,
-.card-combo .combo-box-popup .list-cell:selected,
-.sort-combo .combo-box-popup .list-cell:selected {
+.client-combo .list-view .list-cell:selected {
     -fx-background-color: #EADFD4;
     -fx-text-fill: #3E312D;
     -fx-background-radius: 8;
@@ -574,28 +566,20 @@
 
 .compact-combo .list-view .list-cell:hover,
 .card-combo .list-view .list-cell:hover,
-.client-combo .list-cell:hover,
-.client-combo .list-view .list-cell:hover,
-.compact-combo .combo-box-popup .list-cell:hover,
-.client-combo .combo-box-popup .list-cell:hover,
-.card-combo .combo-box-popup .list-cell:hover,
-.sort-combo .combo-box-popup .list-cell:hover {
+.client-combo .list-view .list-cell:hover {
     -fx-background-color: #F4EAE0;
+    -fx-background-insets: 0;
     -fx-text-fill: #3E312D;
     -fx-background-radius: 8;
 }
 
-.client-combo .list-cell:hover,
-.client-combo .list-view .list-cell:hover,
-.client-combo .combo-box-popup .list-cell:hover {
+.client-combo > .list-cell:hover {
     -fx-background-insets: 1 0 !important;
 }
 
-
-/* CALENDAR ICON INSIDE DATEPICKER */
 .compact-datepicker>.arrow-button {
     -fx-background-color: transparent;
-    -fx-padding: 0 10 0 0;
+    -fx-padding: 0 12 0 0;
 }
 
 .compact-datepicker>.arrow-button>.arrow {
@@ -603,55 +587,6 @@
     -fx-shape: "M20 3h-1V1h-2v2H7V1H5v2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H4V8h16v13z";
     -fx-scale-x: 0.8;
     -fx-scale-y: 0.8;
-}
-
-/* ===================== PREMIUM BUTTONS (SHARED) ===================== */
-.draft-btn-premium,
-.next-step-btn-premium,
-.finish-btn-premium {
-    -fx-min-height: 44px !important;
-    -fx-max-height: 44px !important;
-    -fx-pref-height: 44px !important;
-    -fx-min-width: 170px !important;
-    -fx-max-width: 170px !important;
-    -fx-pref-width: 170px !important;
-    -fx-font-size: 14px;
-    -fx-font-weight: 800;
-    -fx-background-radius: 100px, 100px;
-    -fx-alignment: center;
-    -fx-border-width: 0 !important;
-    -fx-cursor: hand;
-    -fx-padding: 0 !important;
-    -fx-label-padding: 0 !important;
-    -fx-line-spacing: 0 !important;
-    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 10, 0, 0, 3) !important;
-}
-
-.draft-btn-premium {
-    -fx-background-color: #D1C4B9, white;
-    -fx-background-insets: 0, 1.5;
-    -fx-text-fill: #3E312D;
-}
-
-.next-step-btn-premium {
-    -fx-background-color: #C87941, #C87941;
-    -fx-background-insets: 0, 1.5;
-    -fx-text-fill: white;
-}
-
-.next-step-btn-premium:hover {
-    -fx-background-color: #B06938;
-}
-
-.finish-btn-premium {
-    -fx-background-color: #2D6A4F, #2D6A4F;
-    -fx-background-insets: 0, 1.5;
-    -fx-text-fill: white;
-}
-
-.finish-btn-premium:hover {
-    -fx-background-color: #1B4332;
-    -fx-effect: dropshadow(three-pass-box, rgba(45, 106, 79, 0.35), 20, 0, 0, 8);
 }
 
 /* SCROLLBAR STYLING (GLOBAL) */

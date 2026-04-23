@@ -1,0 +1,305 @@
+/* ============================================================
+   COMPACT CONTROLS (SCOPED)
+   Apply only under .ui-compact — see client/job/invoice FXML.
+   Loaded globally after theme.css; rules no-op on other screens.
+   ============================================================ */
+
+/* ===================== COMPACT DESIGN SYSTEM (SHARED) ===================== */
+.ui-compact .compact-field,
+.ui-compact .compact-datepicker,
+.ui-compact .card-field,
+.ui-compact .card-textarea{
+    -fx-background-color: #FAF6F0;
+    -fx-background-radius: 10;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-min-height: 30;
+    -fx-padding: 0 8;
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+    -fx-effect: none;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+/* TextArea skins keep a white .content / viewport unless overridden */
+.ui-compact .card-textarea .content,
+.ui-compact .card-textarea .scroll-pane,
+.ui-compact .card-textarea .scroll-pane .viewport{
+    -fx-background-color: #FAF6F0;
+}
+
+.ui-compact .card-textarea .text{
+    -fx-fill: #3E312D;
+}
+
+.ui-compact .card-textarea:focused .content,
+.ui-compact .card-textarea:focused .scroll-pane,
+.ui-compact .card-textarea:focused .scroll-pane .viewport{
+    -fx-background-color: #FAF6F0;
+}
+
+/* Dropdown combos: pill + terracotta. Horizontal inset lives on > .list-cell only (avoid double padding). */
+.ui-compact .sort-combo,
+.ui-compact .compact-combo,
+.ui-compact .client-combo,
+.ui-compact .card-combo{
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 20;
+    -fx-background-radius: 20;
+    -fx-min-height: 30;
+    -fx-padding: 0;
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 12px;
+    -fx-font-family: 'Inter';
+    -fx-font-weight: 500;
+    -fx-font-style: normal;
+    -fx-effect: none;
+    -fx-cursor: hand;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.ui-compact .sort-combo:focused,
+.ui-compact .sort-combo:focused-within,
+.ui-compact .sort-combo:showing,
+.ui-compact .compact-field:focused,
+.ui-compact .compact-combo:focused,
+.ui-compact .compact-combo:focused-within,
+.ui-compact .client-combo:focused,
+.ui-compact .client-combo:focused-within,
+.ui-compact .compact-datepicker:focused,
+.ui-compact .compact-datepicker:focused-within,
+.ui-compact .card-field:focused,
+.ui-compact .card-combo:focused,
+.ui-compact .card-combo:focused-within,
+.ui-compact .card-textarea:focused{
+    -fx-border-color: #CD7B4E !important;
+    -fx-border-width: 1.4 !important;
+    -fx-background-color: #FAF6F0 !important;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.16), 14, 0, 0, 5) !important;
+}
+
+/* Remove default white boxes for editable fields.
+   Do not target .client-combo .list-cell here: that includes the closed button cell and
+   zeroes its padding so it no longer matches .sort-combo (view clients). Popup rows use
+   .client-combo .combo-box-popup .list-cell rules below. */
+.ui-compact .compact-combo .text-field,
+.ui-compact .compact-datepicker .text-field,
+.ui-compact .card-combo .text-field,
+.ui-compact .client-combo .label,
+.ui-compact .client-combo .button{
+    -fx-background-color: transparent !important;
+    -fx-background-insets: 0 !important;
+    -fx-background-radius: 0 !important;
+    -fx-border-width: 0 !important;
+    -fx-padding: 0 !important;
+    -fx-text-fill: #3E312D;
+    -fx-alignment: center-left;
+    -fx-focus-traversable: false;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+/* Closed combo: single horizontal inset (ComboBox root padding is 0) */
+.ui-compact .sort-combo > .list-cell,
+.ui-compact .card-combo > .list-cell{
+    -fx-background-color: transparent;
+    -fx-padding: 2 6 2 8;
+    -fx-label-padding: 0;
+    -fx-graphic-text-gap: 0;
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter';
+    -fx-font-size: 12px;
+    -fx-font-style: normal;
+}
+
+.ui-compact .client-combo > .list-cell{
+    -fx-background-color: transparent;
+    -fx-padding: 2 6 2 8;
+    -fx-label-padding: 0;
+    -fx-graphic-text-gap: 0;
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter';
+    -fx-font-size: 12px;
+    -fx-font-style: normal;
+    -fx-background-insets: 1 0;
+}
+
+.ui-compact .client-combo:focused .button,
+.ui-compact .client-combo:focused-within .button,
+.ui-compact .client-combo:focused .list-cell,
+.ui-compact .client-combo:focused-within .list-cell{
+    -fx-background-color: transparent !important;
+}
+
+/* Closed combo: no orange selection block on the main button cell (matches view clients sort-combo) */
+.ui-compact .sort-combo > .list-cell,
+.ui-compact .sort-combo > .list-cell:selected,
+.ui-compact .compact-combo > .list-cell,
+.ui-compact .compact-combo > .list-cell:selected,
+.ui-compact .client-combo > .list-cell,
+.ui-compact .client-combo > .list-cell:selected,
+.ui-compact .card-combo > .list-cell,
+.ui-compact .card-combo > .list-cell:selected{
+    -fx-background-color: transparent !important;
+}
+
+.ui-compact .sort-combo .list-cell,
+.ui-compact .sort-combo .cell{
+    -fx-background-color: transparent;
+    -fx-text-fill: #3E312D;
+}
+
+/* SEARCH ICON INSIDE COMBO */
+.ui-compact .compact-combo{
+    -fx-padding: 2 8 2 26;
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: left 8 center;
+    -fx-background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAC8SURBVHgB7ZJBDsIgEEXfS6/AnXoFST2C98CaeAIn9AreQz2CW70CN366YAnRhI0mbeSnyY8ZfAyD0ZfW8i5YlR3XmAnGAtiW8+W746F9gD18T3YAnkXfAbT11H6ZAHv/A8D19F1N9xOAT/cd8O0mR6YpZ7pYAGM9/VTT4Uj27X+Anp5+A07X03cNAPqX/A+4Xs7E0kG7P/L4DnjI8fT9S1fXF8By2RPr9yV79vA7BvA12QGo1pPr0pP+pZ8pZ7pYAGM9/VTT9pP+ZfgT6yU9vW9P/7Xv6Y+mDA8D18t7A9fLAVS8e7QAAAAASUVORK5CYII=');
+}
+
+.ui-compact .compact-combo .arrow-button,
+.ui-compact .client-combo .arrow-button,
+.ui-compact .card-combo .arrow-button,
+.ui-compact .sort-combo .arrow-button{
+    -fx-background-color: transparent;
+    -fx-padding: 0 10 0 0;
+}
+
+.ui-compact .compact-combo .arrow,
+.ui-compact .client-combo .arrow,
+.ui-compact .card-combo .arrow,
+.ui-compact .sort-combo .arrow{
+    -fx-background-color: #CD7B4E;
+    -fx-shape: "M7 10l5 5 5-5z";
+}
+
+/*
+ * ComboBox popup list is not under .ui-compact in the scene graph.
+ * Popup rows use global .combo-box-popup rules in theme.css.
+ */
+/* Sync dropdown list style when list-view is inside the control */
+.ui-compact .compact-combo .list-view,
+.ui-compact .client-combo .list-view,
+.ui-compact .card-combo .list-view,
+.ui-compact .sort-combo .list-view{
+    -fx-background-color: #FAF6F0;
+    -fx-background-radius: 12;
+    -fx-border-color: #CD7B4E;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 4;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 10, 0, 0, 5);
+}
+
+/* Omit .client-combo / .sort-combo — would override > .list-cell padding on the closed button. */
+.ui-compact .compact-combo .list-cell,
+.ui-compact .card-combo .list-cell{
+    -fx-background-color: transparent;
+    -fx-padding: 5 6 5 6;
+    -fx-label-padding: 0;
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter';
+    -fx-font-size: 12px;
+    -fx-font-style: normal;
+    -fx-background-radius: 8;
+}
+
+/* Popup / list rows: no background-insets (clips hover). Closed cell: .client-combo > .list-cell */
+.ui-compact .client-combo .list-cell{
+    -fx-background-color: transparent;
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter';
+    -fx-font-size: 12px;
+}
+
+.ui-compact .compact-combo .list-view .list-cell:selected,
+.ui-compact .card-combo .list-view .list-cell:selected,
+.ui-compact .client-combo .list-view .list-cell:selected{
+    -fx-background-color: #EADFD4;
+    -fx-text-fill: #3E312D;
+    -fx-background-radius: 8;
+    -fx-font-weight: 700;
+}
+
+.ui-compact .compact-combo .list-view .list-cell:hover,
+.ui-compact .card-combo .list-view .list-cell:hover,
+.ui-compact .client-combo .list-view .list-cell:hover{
+    -fx-background-color: #F4EAE0;
+    -fx-background-insets: 0;
+    -fx-text-fill: #3E312D;
+    -fx-background-radius: 8;
+}
+
+.ui-compact .client-combo > .list-cell:hover{
+    -fx-background-insets: 1 0 !important;
+}
+
+
+/* CALENDAR ICON INSIDE DATEPICKER */
+.ui-compact .compact-datepicker>.arrow-button{
+    -fx-background-color: transparent;
+    -fx-padding: 0 10 0 0;
+}
+
+.ui-compact .compact-datepicker>.arrow-button>.arrow{
+    -fx-background-color: #A0836D;
+    -fx-shape: "M20 3h-1V1h-2v2H7V1H5v2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H4V8h16v13z";
+    -fx-scale-x: 0.8;
+    -fx-scale-y: 0.8;
+}
+
+/* ===================== PREMIUM BUTTONS (SHARED) ===================== */
+.ui-compact .draft-btn-premium,
+.ui-compact .next-step-btn-premium,
+.ui-compact .finish-btn-premium{
+    -fx-min-height: 38px !important;
+    -fx-max-height: 38px !important;
+    -fx-pref-height: 38px !important;
+    -fx-min-width: 148px !important;
+    -fx-max-width: 148px !important;
+    -fx-pref-width: 148px !important;
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+    -fx-background-radius: 100px, 100px;
+    -fx-alignment: center;
+    -fx-border-width: 0 !important;
+    -fx-cursor: hand;
+    -fx-padding: 0 !important;
+    -fx-label-padding: 0 !important;
+    -fx-line-spacing: 0 !important;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 10, 0, 0, 3) !important;
+}
+
+.ui-compact .draft-btn-premium{
+    -fx-background-color: #D1C4B9, white;
+    -fx-background-insets: 0, 1.5;
+    -fx-text-fill: #3E312D;
+}
+
+.ui-compact .next-step-btn-premium{
+    -fx-background-color: #C87941, #C87941;
+    -fx-background-insets: 0, 1.5;
+    -fx-text-fill: white;
+}
+
+.ui-compact .next-step-btn-premium:hover{
+    -fx-background-color: #B06938;
+}
+
+.ui-compact .finish-btn-premium{
+    -fx-background-color: #2D6A4F, #2D6A4F;
+    -fx-background-insets: 0, 1.5;
+    -fx-text-fill: white;
+}
+
+.ui-compact .finish-btn-premium:hover{
+    -fx-background-color: #1B4332;
+    -fx-effect: dropshadow(three-pass-box, rgba(45, 106, 79, 0.35), 20, 0, 0, 8);
+}
+

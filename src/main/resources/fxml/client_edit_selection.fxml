@@ -3,7 +3,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.*?>
 
-<VBox spacing="0" styleClass="client-directory-root"
+<VBox spacing="0" styleClass="client-directory-root, ui-compact"
       onMouseClicked="#handleRootClick"
       stylesheets="@../css/client_edit_selection.css"
       focusTraversable="true"

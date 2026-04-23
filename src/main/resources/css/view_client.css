@@ -40,14 +40,14 @@
 .page-heading {
     -fx-text-fill: #3E312D;
     /* Dark warm brown */
-    -fx-font-size: 24px;
+    -fx-font-size: 18px;
     -fx-font-family: 'Manrope';
     -fx-font-weight: 800;
 }
 
 .page-subheading {
     -fx-text-fill: #7A726D;
-    -fx-font-size: 13px;
+    -fx-font-size: 11px;
     -fx-font-family: 'Inter';
 }
 
@@ -61,10 +61,10 @@
     -fx-border-width: 1.5;
     -fx-border-radius: 20;
     -fx-background-radius: 20;
-    -fx-padding: 8 15;
+    -fx-padding: 6 12;
     -fx-text-fill: #3E312D;
     -fx-font-family: 'Inter';
-    -fx-font-size: 13px;
+    -fx-font-size: 12px;
 }
 
 /* .sort-combo, compact-combo, client-combo, card-combo: shared in theme.css */
@@ -77,7 +77,7 @@
     -fx-background-color: #F7EDE0;
     -fx-border-color: #E6E0D5;
     -fx-border-width: 1.2;
-    -fx-padding: 22 28;
+    -fx-padding: 16 20;
     -fx-background-radius: 16;
     -fx-border-radius: 16;
     -fx-alignment: CENTER_LEFT;
@@ -99,7 +99,7 @@
 
 .kpi-value-dark {
     -fx-text-fill: #3E312D;
-    -fx-font-size: 28px;
+    -fx-font-size: 21px;
     -fx-font-weight: 800;
 }
 
@@ -114,7 +114,7 @@
 
 .kpi-value-green {
     -fx-text-fill: #3E5B45;
-    -fx-font-size: 28px;
+    -fx-font-size: 21px;
     -fx-font-weight: 800;
 }
 
@@ -129,7 +129,7 @@
 
 .kpi-value-orange {
     -fx-text-fill: #B25D3B;
-    -fx-font-size: 28px;
+    -fx-font-size: 21px;
     -fx-font-weight: 800;
 }
 
@@ -147,21 +147,21 @@
 
 .kpi-value-dark {
     -fx-text-fill: #433934;
-    -fx-font-size: 26px;
+    -fx-font-size: 20px;
     -fx-font-weight: 800;
     -fx-font-family: 'Manrope';
 }
 
 .kpi-value-green {
     -fx-text-fill: #5D8063;
-    -fx-font-size: 26px;
+    -fx-font-size: 20px;
     -fx-font-weight: 800;
     -fx-font-family: 'Manrope';
 }
 
 .kpi-value-red {
     -fx-text-fill: #CD7B4E;
-    -fx-font-size: 26px;
+    -fx-font-size: 20px;
     -fx-font-weight: 800;
     -fx-font-family: 'Manrope';
 }
@@ -206,10 +206,10 @@
 .client-icon-box {
     -fx-background-color: #FAF0E6;
     -fx-background-radius: 10;
-    -fx-min-width: 40;
-    -fx-min-height: 40;
-    -fx-max-width: 40;
-    -fx-max-height: 40;
+    -fx-min-width: 34;
+    -fx-min-height: 34;
+    -fx-max-width: 34;
+    -fx-max-height: 34;
 }
 
 .client-icon {
@@ -224,7 +224,7 @@
 
 .client-name {
     -fx-text-fill: #3E312D;
-    -fx-font-size: 14px;
+    -fx-font-size: 12px;
     -fx-font-weight: 800;
 }
 

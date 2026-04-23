@@ -5,7 +5,7 @@
 <?import javafx.scene.shape.*?>
 <?import javafx.geometry.Insets?>
 
-<ScrollPane fitToWidth="true" stylesheets="@../css/client_form.css" styleClass="center-area"
+<ScrollPane fitToWidth="true" stylesheets="@../css/client_form.css" styleClass="center-area, ui-compact"
     xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1"
     fx:controller="controller.ClientFormController">
     <VBox spacing="15" styleClass="content-container">

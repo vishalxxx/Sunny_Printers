@@ -12,7 +12,7 @@
 }
 
 .content-container {
-    -fx-padding: 12 24;
+    -fx-padding: 10 18;
     -fx-background-color: #FAF6F0;
 }
 
@@ -46,14 +46,14 @@
 
 .page-heading {
     -fx-text-fill: #3E312D;
-    -fx-font-size: 24px;
+    -fx-font-size: 18px;
     -fx-font-weight: 800;
     -fx-font-family: 'Manrope';
 }
 
 .profile-title {
     -fx-text-fill: #3E312D;
-    -fx-font-size: 20px;
+    -fx-font-size: 15px;
     -fx-font-weight: 800;
     -fx-font-family: 'Manrope';
 }
@@ -66,7 +66,7 @@
 
 .client-id-value {
     -fx-text-fill: #3E312D;
-    -fx-font-size: 16px;
+    -fx-font-size: 14px;
     -fx-font-weight: 800;
     -fx-font-family: 'Manrope';
 }
@@ -75,8 +75,8 @@
 .form-card {
     -fx-background-color: #FFFFFF;
     -fx-background-radius: 12;
-    -fx-padding: 20;
-    -fx-spacing: 16;
+    -fx-padding: 16;
+    -fx-spacing: 12;
     -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.02), 15, 0, 0, 4);
 }
 
@@ -95,7 +95,7 @@
 
 .card-title {
     -fx-text-fill: #00302E; /* Dark Teal for headers */
-    -fx-font-size: 16px;
+    -fx-font-size: 14px;
     -fx-font-weight: 800;
 }
 
@@ -106,7 +106,7 @@
 
 .field-label {
     -fx-text-fill: #9F9085;
-    -fx-font-size: 11px;
+    -fx-font-size: 10px;
     -fx-font-weight: 800;
     -fx-letter-spacing: 0.05em;
 }
@@ -117,9 +117,9 @@
     -fx-border-color: transparent; /* No border by default */
     -fx-border-width: 2;
     -fx-border-radius: 8;
-    -fx-padding: 6 12;
+    -fx-padding: 6 10;
     -fx-text-fill: #3E312D;
-    -fx-font-size: 13px;
+    -fx-font-size: 12px;
     -fx-font-weight: 500;
     -fx-prompt-text-fill: #9F9085;
     -fx-focus-color: transparent;
@@ -155,17 +155,17 @@
 /* --- TOGGLE SWITCH (Stitch Style) --- */
 .switch-label {
     -fx-text-fill: #5D6D7E; /* Slate grey from image */
-    -fx-font-size: 13px;
+    -fx-font-size: 12px;
     -fx-font-weight: 600;
 }
 
 .ios-toggle {
     -fx-background-color: #D1CEC6; /* Off state */
     -fx-background-radius: 30;
-    -fx-min-width: 44;
-    -fx-max-width: 44;
-    -fx-min-height: 22;
-    -fx-max-height: 22;
+    -fx-min-width: 38;
+    -fx-max-width: 38;
+    -fx-min-height: 20;
+    -fx-max-height: 20;
     -fx-cursor: hand;
     -fx-padding: 0;
 }
@@ -177,15 +177,15 @@
 .ios-toggle .toggle-thumb {
     -fx-background-color: white;
     -fx-background-radius: 20;
-    -fx-min-width: 14;
-    -fx-max-width: 14;
-    -fx-min-height: 14;
-    -fx-max-height: 14;
-    -fx-translate-x: -11; /* Left position */
+    -fx-min-width: 12;
+    -fx-max-width: 12;
+    -fx-min-height: 12;
+    -fx-max-height: 12;
+    -fx-translate-x: -10; /* Left position */
 }
 
 .ios-toggle:selected .toggle-thumb {
-    -fx-translate-x: 11; /* Right position */
+    -fx-translate-x: 10; /* Right position */
 }
 
 /* --- FOOTER --- */
@@ -199,8 +199,8 @@
     -fx-background-color: transparent;
     -fx-text-fill: #9F9085;
     -fx-font-weight: 800;
-    -fx-font-size: 14px;
-    -fx-padding: 10 20;
+    -fx-font-size: 12px;
+    -fx-padding: 8 16;
     -fx-cursor: hand;
 }
 
@@ -208,9 +208,9 @@
     -fx-background-color: #C87941;
     -fx-text-fill: #FFFFFF;
     -fx-font-weight: 800;
-    -fx-font-size: 13px;
+    -fx-font-size: 12px;
     -fx-background-radius: 10;
-    -fx-padding: 10 24;
+    -fx-padding: 8 20;
     -fx-cursor: hand;
     -fx-effect: dropshadow(three-pass-box, rgba(200, 121, 65, 0.3), 10, 0, 0, 4);
 }

@@ -21,6 +21,9 @@ public class Job {
     private String updatedAt;
     private String imagePath;
 
+    /** Filled when listing jobs joined with clients (e.g. monthly all-clients view). */
+    private String clientBusinessName;
+
     public Job() {}
 
     public int getId() { return id; }
@@ -58,6 +61,9 @@ public class Job {
 
     public String getImagePath() { return imagePath; }
     public void setImagePath(String imagePath) { this.imagePath = imagePath; }
+
+    public String getClientBusinessName() { return clientBusinessName; }
+    public void setClientBusinessName(String clientBusinessName) { this.clientBusinessName = clientBusinessName; }
 
     private String invoiceNo;
     public String getInvoiceNo() { return invoiceNo; }

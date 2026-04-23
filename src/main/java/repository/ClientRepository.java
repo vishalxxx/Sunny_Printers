@@ -67,6 +67,37 @@ public class ClientRepository {
 		return list;
 	}
 
+	/**
+	 * Clients that have at least one completed job not yet linked to an invoice
+	 * (same eligibility as job listing for Generate Invoice).
+	 */
+	public List<Client> findAllWithUninvoicedCompletedJobs() {
+		List<Client> list = new ArrayList<>();
+		String sql = """
+				SELECT DISTINCT c.*
+				FROM clients c
+				INNER JOIN jobs j ON j.client_id = c.id
+				WHERE j.invoice_id IS NULL
+				  AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
+				ORDER BY c.id ASC
+				""";
+		try (Connection conn = DBConnection.getConnection();
+				PreparedStatement ps = conn.prepareStatement(sql);
+				ResultSet rs = ps.executeQuery()) {
+			while (rs.next()) {
+				Client client = new Client(rs.getString("business_name"), rs.getString("client_name"),
+						rs.getString("nick_name"), rs.getString("phone"), rs.getString("alt_phone"),
+						rs.getString("email"), rs.getString("gst"), rs.getString("pan"),
+						rs.getString("billing_address"), rs.getString("shipping_address"), rs.getString("notes"));
+				client.setId(rs.getInt("id"));
+				list.add(client);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return list;
+	}
+
 	public List<Client> search(String keyword) {
 
 		List<Client> list = new ArrayList<>();

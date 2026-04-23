@@ -41,6 +41,7 @@ public class Main extends Application {
 		Scene scene = new Scene(root);
 		// Global theme (uniform fonts + controls across screens)
 		scene.getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+		scene.getStylesheets().add(getClass().getResource("/css/compact_screens.css").toExternalForm());
 
 		primaryStage.setScene(scene);
 		primaryStage.setTitle("Sunny Printers");

@@ -3,6 +3,8 @@
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.shape.Circle?>
+<?import javafx.scene.text.Text?>
+<?import javafx.scene.text.TextFlow?>
 
 <ScrollPane xmlns="http://javafx.com/javafx/23" 
             xmlns:fx="http://javafx.com/fxml/1"
@@ -11,7 +13,7 @@
             stylesheets="@../css/theme.css, @../css/generate_invoice.css"
             fx:controller="controller.GenerateInvoiceController">
 
-    <VBox spacing="24" styleClass="root-container, generate-invoice-root">
+    <VBox spacing="24" styleClass="root-container, generate-invoice-root, ui-compact">
         <padding>
             <Insets top="20" right="30" bottom="30" left="30" />
         </padding>
@@ -30,15 +32,15 @@
 
         <!-- 2. TABS SECTION -->
         <HBox spacing="32" styleClass="tab-header">
-            <VBox styleClass="tab-item, tab-active">
+            <VBox fx:id="tabBtnSelectedJobs" styleClass="tab-item, tab-active" onMouseClicked="#onTabSelectedJobs">
                 <Label text="Selected Jobs" styleClass="tab-label"/>
                 <Region styleClass="tab-indicator"/>
             </VBox>
-            <VBox styleClass="tab-item">
+            <VBox fx:id="tabBtnDateRange" styleClass="tab-item" onMouseClicked="#onTabDateRange">
                 <Label text="Date Range" styleClass="tab-label"/>
                 <Region styleClass="tab-indicator"/>
             </VBox>
-            <VBox styleClass="tab-item">
+            <VBox fx:id="tabBtnMonthly" styleClass="tab-item" onMouseClicked="#onTabMonthly">
                 <Label text="Monthly" styleClass="tab-label"/>
                 <Region styleClass="tab-indicator"/>
             </VBox>
@@ -46,27 +48,110 @@
 
         <!-- 3. MAIN LAYOUT: fillHeight=false so the left card is not stretched to match the right column -->
         <HBox spacing="24" alignment="TOP_LEFT" fillHeight="false" VBox.vgrow="NEVER">
-            <!-- LEFT PANEL: JOB SELECTION -->
+            <!-- LEFT PANEL: JOB SELECTION OR DATE RANGE -->
             <VBox fx:id="jobsCard" spacing="16" HBox.hgrow="ALWAYS" styleClass="content-card" fillWidth="true">
-                <HBox alignment="CENTER_LEFT" spacing="12">
-                    <Label text="Select Jobs" styleClass="card-title"/>
-                    <Region HBox.hgrow="ALWAYS"/>
-                    <StackPane maxWidth="260" prefWidth="260" minWidth="260" styleClass="invoice-job-search-wrap">
-                        <TextField fx:id="jobSearchField" promptText="Search jobs..." styleClass="invoice-directory-search-field"/>
-                        <Region styleClass="invoice-directory-search-glyph" mouseTransparent="true" StackPane.alignment="CENTER_LEFT">
-                            <StackPane.margin>
-                                <Insets left="15"/>
-                            </StackPane.margin>
-                        </Region>
-                    </StackPane>
-                </HBox>
+                <StackPane>
+                    <!-- Selected jobs: header + search (table sits below StackPane) -->
+                    <VBox fx:id="selectedJobsContainer" spacing="16" fillWidth="true">
+                        <HBox alignment="CENTER_LEFT" spacing="12">
+                            <Label fx:id="leftPanelTitle" text="Select Jobs" styleClass="card-title"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <StackPane maxWidth="260" prefWidth="260" minWidth="260" styleClass="invoice-job-search-wrap">
+                                <TextField fx:id="jobSearchField" promptText="Search jobs..." styleClass="invoice-directory-search-field"/>
+                                <Region styleClass="invoice-directory-search-glyph" mouseTransparent="true" StackPane.alignment="CENTER_LEFT">
+                                    <StackPane.margin>
+                                        <Insets left="15"/>
+                                    </StackPane.margin>
+                                </Region>
+                            </StackPane>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Date range: filters + summary (replaces table) -->
+                    <VBox fx:id="dateRangeContainer" spacing="16" fillWidth="true" visible="false" managed="false" styleClass="date-range-root">
+                        <Label text="Select Date Range" styleClass="dr-panel-title"/>
+
+                        <VBox spacing="14" styleClass="dr-filter-card">
+                            <HBox spacing="20" alignment="CENTER_LEFT">
+                                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                                    <Label text="FROM DATE" styleClass="field-label-xs"/>
+                                    <DatePicker fx:id="dateRangeFromPicker" editable="false" styleClass="compact-datepicker" maxWidth="Infinity"/>
+                                </VBox>
+                                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                                    <Label text="TO DATE" styleClass="field-label-xs"/>
+                                    <DatePicker fx:id="dateRangeToPicker" editable="false" styleClass="compact-datepicker" maxWidth="Infinity"/>
+                                </VBox>
+                            </HBox>
+                        </VBox>
+
+                        <VBox spacing="0" styleClass="dr-summary-dashboard">
+                            <HBox alignment="CENTER_LEFT" spacing="0" styleClass="dr-metrics-row">
+                                <HBox HBox.hgrow="ALWAYS" spacing="12" alignment="CENTER_LEFT" styleClass="dr-metric-cell">
+                                    <StackPane styleClass="dr-icon-circle, dr-icon-jobs">
+                                        <Label text="💼" styleClass="dr-metric-emoji"/>
+                                    </StackPane>
+                                    <VBox spacing="4">
+                                        <Label text="TOTAL JOBS" styleClass="dr-metric-label"/>
+                                        <Label fx:id="drTotalJobsLabel" text="0" styleClass="dr-metric-value"/>
+                                    </VBox>
+                                </HBox>
+                                <Region styleClass="dr-metric-divider" prefWidth="1" maxHeight="Infinity"/>
+                                <HBox HBox.hgrow="ALWAYS" spacing="12" alignment="CENTER_LEFT" styleClass="dr-metric-cell">
+                                    <StackPane styleClass="dr-icon-circle, dr-icon-qty">
+                                        <Label text="📚" styleClass="dr-metric-emoji"/>
+                                    </StackPane>
+                                    <VBox spacing="4">
+                                        <Label text="TOTAL QUANTITY" styleClass="dr-metric-label"/>
+                                        <Label fx:id="drTotalQtyLabel" text="0" styleClass="dr-metric-value"/>
+                                    </VBox>
+                                </HBox>
+                                <Region styleClass="dr-metric-divider" prefWidth="1" maxHeight="Infinity"/>
+                                <HBox HBox.hgrow="ALWAYS" spacing="12" alignment="CENTER_LEFT" styleClass="dr-metric-cell">
+                                    <StackPane styleClass="dr-icon-circle, dr-icon-amount">
+                                        <Label text="₹" styleClass="dr-metric-rupee"/>
+                                    </StackPane>
+                                    <VBox spacing="4">
+                                        <Label text="TOTAL AMOUNT" styleClass="dr-metric-label"/>
+                                        <Label fx:id="drTotalAmountLabel" text="₹ 0.00" styleClass="dr-metric-value"/>
+                                    </VBox>
+                                </HBox>
+                            </HBox>
+                            <HBox alignment="CENTER_LEFT" spacing="10" styleClass="dr-info-banner">
+                                <Label text="ⓘ" styleClass="dr-info-icon"/>
+                                <TextFlow styleClass="dr-banner-flow">
+                                    <Text text="This invoice will include all jobs between " styleClass="dr-banner-text"/>
+                                    <Text fx:id="bannerDateFromText" text="—" styleClass="dr-banner-strong"/>
+                                    <Text text=" and " styleClass="dr-banner-text"/>
+                                    <Text fx:id="bannerDateToText" text="—" styleClass="dr-banner-strong"/>
+                                    <Text text="." styleClass="dr-banner-text"/>
+                                </TextFlow>
+                            </HBox>
+                        </VBox>
+                    </VBox>
+
+                    <!-- Monthly: month/year filters (table below StackPane) -->
+                    <VBox fx:id="monthlyContainer" spacing="16" fillWidth="true" visible="false" managed="false" styleClass="date-range-root">
+                        <Label text="Select Month &amp; Year" styleClass="dr-panel-title"/>
+                        <VBox spacing="14" styleClass="dr-filter-card">
+                            <HBox spacing="20" alignment="CENTER_LEFT">
+                                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                                    <Label text="MONTH" styleClass="field-label-xs"/>
+                                    <ComboBox fx:id="monthlyMonthCombo" styleClass="card-combo" maxWidth="Infinity"/>
+                                </VBox>
+                                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                                    <Label text="YEAR" styleClass="field-label-xs"/>
+                                    <ComboBox fx:id="monthlyYearCombo" styleClass="card-combo" maxWidth="Infinity"/>
+                                </VBox>
+                            </HBox>
+                        </VBox>
+                    </VBox>
+                </StackPane>
 
                 <TableView fx:id="jobsTable" VBox.vgrow="NEVER" styleClass="invoice-jobs-table">
                     <columns>
                         <TableColumn fx:id="selectCol" prefWidth="48" minWidth="48" maxWidth="52" resizable="false" sortable="false">
                             <graphic><CheckBox fx:id="selectAllCheckbox"/></graphic>
                         </TableColumn>
-                        <!-- Equal prefWidth so CONSTRAINED_RESIZE_POLICY shares width evenly across data columns -->
                         <TableColumn fx:id="jobNameCol" text="JOB NAME" prefWidth="120" minWidth="80" sortable="false"/>
                         <TableColumn fx:id="dateCol" text="COMPLETION DATE" prefWidth="120" minWidth="80" sortable="false"/>
                         <TableColumn fx:id="qtyCol" text="QUANTITY" prefWidth="120" minWidth="80" sortable="false"/>
@@ -79,7 +164,7 @@
                     <placeholder>
                         <VBox alignment="CENTER" spacing="8" styleClass="invoice-jobs-empty">
                             <Label text="No jobs to show" styleClass="invoice-jobs-empty-title"/>
-                            <Label text="Pick a client above to load jobs, or try a different search." styleClass="invoice-jobs-empty-sub" wrapText="true" maxWidth="360" textAlignment="CENTER"/>
+                            <Label fx:id="jobsTablePlaceholderSub" text="Pick a client above to load jobs, or try a different search." styleClass="invoice-jobs-empty-sub" wrapText="true" maxWidth="360" textAlignment="CENTER"/>
                         </VBox>
                     </placeholder>
                 </TableView>
@@ -110,11 +195,11 @@
                     <HBox spacing="12">
                         <VBox spacing="6" HBox.hgrow="ALWAYS">
                             <Label text="INVOICE DATE" styleClass="field-label-xs"/>
-                            <DatePicker fx:id="invoiceDatePicker" promptText="mm/dd/yyyy" styleClass="compact-datepicker" maxWidth="Infinity"/>
+                            <DatePicker fx:id="invoiceDatePicker" editable="false" promptText="mm/dd/yyyy" styleClass="compact-datepicker" maxWidth="Infinity"/>
                         </VBox>
                         <VBox spacing="6" HBox.hgrow="ALWAYS">
                             <Label text="DUE DATE" styleClass="field-label-xs"/>
-                            <DatePicker fx:id="dueDatePicker" promptText="mm/dd/yyyy" styleClass="compact-datepicker" maxWidth="Infinity"/>
+                            <DatePicker fx:id="dueDatePicker" editable="false" promptText="mm/dd/yyyy" styleClass="compact-datepicker" maxWidth="Infinity"/>
                         </VBox>
                     </HBox>
 

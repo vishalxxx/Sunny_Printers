@@ -8,13 +8,13 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.chart.PieChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
 import javafx.scene.shape.SVGPath;
 import javafx.stage.Stage;
 import model.Client;
@@ -51,11 +51,31 @@ public class ViewInvoicesController {
     @FXML private TableColumn<InvoiceMaster, String> colType;
 
     @FXML private Button btnEdit, btnFinalize, btnSend, btnPayment, btnCancel, btnRevised, btnRaiseCnDn;
+    @FXML private Label paginationInfoLabel;
+    @FXML private HBox paginationPagesBox;
+    @FXML private ComboBox<Integer> pageSizeCombo;
+    @FXML private PieChart statusPieChart;
+    @FXML private Label sumCountLabel;
+    @FXML private Label sumBaseLabel;
+    @FXML private Label sumAdjustmentLabel;
+    @FXML private Label sumNetLabel;
+    @FXML private Label sumPaidLabel;
+    @FXML private Label sumDueLabel;
+    @FXML private Button quickAllBtn;
+    @FXML private Button quickPaidBtn;
+    @FXML private Button quickUnpaidBtn;
+    @FXML private Button quickOverdueBtn;
 
     public static String pendingSearchInvoiceNo;
+    private static final int ALL_CLIENTS_ID = 0;
+
     private final ClientService clientService = new ClientService();
     private final InvoiceMasterService invoiceMasterService = new InvoiceMasterService();
-    private final ObservableList<InvoiceMaster> invoiceList = FXCollections.observableArrayList();
+    /** Current page rows shown in the table (same object references as {@link #fullInvoiceResults}). */
+    private final ObservableList<InvoiceMaster> tablePageItems = FXCollections.observableArrayList();
+    private final List<InvoiceMaster> fullInvoiceResults = new ArrayList<>();
+    private int currentPageIndex = 0;
+    private int pageSize = 20;
 
     private static ViewInvoicesController instance;
     public static ViewInvoicesController getInstance() { return instance; }
@@ -75,11 +95,19 @@ public class ViewInvoicesController {
             setupAutoPopupDatePicker(startDatePicker);
             setupAutoPopupDatePicker(endDatePicker);
 
-            // Styling - wrap in safety
-            applyButtonStyles();
-            applyButtonIcons();
+            if (startDatePicker != null) {
+                startDatePicker.setValue(LocalDate.now().withDayOfMonth(1));
+            }
+            if (endDatePicker != null) {
+                endDatePicker.setValue(LocalDate.now());
+            }
 
-            invoiceTable.setItems(invoiceList);
+            applyButtonIcons();
+            setupPaginationControls();
+            setupStatusPieChart();
+            setupQuickFilterSync();
+
+            invoiceTable.setItems(tablePageItems);
 
             invoiceTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
                 updateButtonStates(newSel);
@@ -116,15 +144,102 @@ public class ViewInvoicesController {
         }
     }
 
-    private void applyButtonStyles() {
-        String btnStyle = "-fx-font-size: 11.5px; -fx-padding: 5 10; -fx-cursor: hand; -fx-font-weight: bold; -fx-background-radius: 4px;";
-        if (btnEdit != null) btnEdit.setStyle(btnStyle + " -fx-background-color: #FF9800; -fx-text-fill: white;");
-        if (btnFinalize != null) btnFinalize.setStyle(btnStyle + " -fx-background-color: #28a745; -fx-text-fill: white;");
-        if (btnSend != null) btnSend.setStyle(btnStyle + " -fx-background-color: #17a2b8; -fx-text-fill: white;");
-        if (btnPayment != null) btnPayment.setStyle(btnStyle + " -fx-background-color: #007bff; -fx-text-fill: white;");
-        if (btnCancel != null) btnCancel.setStyle(btnStyle + " -fx-background-color: #dc3545; -fx-text-fill: white;");
-        if (btnRevised != null) btnRevised.setStyle(btnStyle + " -fx-background-color: #fd7e14; -fx-text-fill: white;");
-        if (btnRaiseCnDn != null) btnRaiseCnDn.setStyle(btnStyle + " -fx-background-color: #6c757d; -fx-text-fill: white;");
+    private void setupPaginationControls() {
+        if (pageSizeCombo != null) {
+            pageSizeCombo.setItems(FXCollections.observableArrayList(20, 50, 100));
+            pageSizeCombo.setValue(20);
+            pageSizeCombo.valueProperty().addListener((o, a, b) -> {
+                if (b != null) {
+                    pageSize = b;
+                    currentPageIndex = 0;
+                    repaginate();
+                }
+            });
+        }
+    }
+
+    private void setupStatusPieChart() {
+        if (statusPieChart != null) {
+            statusPieChart.setTitle("");
+            statusPieChart.setLabelsVisible(true);
+            statusPieChart.setLegendVisible(true);
+            statusPieChart.setClockwise(false);
+            statusPieChart.setStartAngle(90);
+        }
+    }
+
+    private void setupQuickFilterSync() {
+        if (statusComboBox != null) {
+            statusComboBox.getSelectionModel().selectedItemProperty().addListener((o, a, b) -> syncQuickFilterButtons());
+        }
+        syncQuickFilterButtons();
+    }
+
+    private void syncQuickFilterButtons() {
+        String s = statusComboBox != null ? statusComboBox.getValue() : "All";
+        if (s == null) {
+            s = "All";
+        }
+        setQuickFilterActive(switch (s.toUpperCase()) {
+            case "PAID" -> quickPaidBtn;
+            case "UNPAID" -> quickUnpaidBtn;
+            case "OVERDUE" -> quickOverdueBtn;
+            default -> quickAllBtn;
+        });
+    }
+
+    private void setQuickFilterActive(Button active) {
+        for (Button b : new Button[] { quickAllBtn, quickPaidBtn, quickUnpaidBtn, quickOverdueBtn }) {
+            if (b == null) {
+                continue;
+            }
+            b.getStyleClass().removeAll("action-pill-orange");
+            if (!b.getStyleClass().contains("action-pill-white")) {
+                b.getStyleClass().add("action-pill-white");
+            }
+        }
+        if (active != null) {
+            active.getStyleClass().removeAll("action-pill-white");
+            if (!active.getStyleClass().contains("action-pill-orange")) {
+                active.getStyleClass().add("action-pill-orange");
+            }
+        }
+    }
+
+    @FXML
+    private void handleQuickFilterAll(ActionEvent e) {
+        if (statusComboBox != null) {
+            statusComboBox.getSelectionModel().select("All");
+        }
+        setQuickFilterActive(quickAllBtn);
+        handleSearch(null);
+    }
+
+    @FXML
+    private void handleQuickFilterPaid(ActionEvent e) {
+        if (statusComboBox != null) {
+            statusComboBox.getSelectionModel().select("PAID");
+        }
+        setQuickFilterActive(quickPaidBtn);
+        handleSearch(null);
+    }
+
+    @FXML
+    private void handleQuickFilterUnpaid(ActionEvent e) {
+        if (statusComboBox != null) {
+            statusComboBox.getSelectionModel().select("UNPAID");
+        }
+        setQuickFilterActive(quickUnpaidBtn);
+        handleSearch(null);
+    }
+
+    @FXML
+    private void handleQuickFilterOverdue(ActionEvent e) {
+        if (statusComboBox != null) {
+            statusComboBox.getSelectionModel().select("OVERDUE");
+        }
+        setQuickFilterActive(quickOverdueBtn);
+        handleSearch(null);
     }
 
     private void applyButtonIcons() {
@@ -144,17 +259,26 @@ public class ViewInvoicesController {
             LocalDate date = cellData.getValue().getInvoiceDate();
             return new SimpleStringProperty(date != null ? date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy")) : "");
         });
-        if (colAmount != null) colAmount.setCellValueFactory(new PropertyValueFactory<>("amount"));
+        if (colAmount != null) {
+            colAmount.setCellValueFactory(new PropertyValueFactory<>("amount"));
+            colAmount.setCellFactory(c -> rupeeMoneyCell(false));
+        }
         if (colAdjustment != null) {
             colAdjustment.setCellValueFactory(new PropertyValueFactory<>("adjustment"));
             colAdjustment.setCellFactory(col -> new AdjustmentCell());
         }
-        if (colNetAmount != null) colNetAmount.setCellValueFactory(new PropertyValueFactory<>("netAmount"));
+        if (colNetAmount != null) {
+            colNetAmount.setCellValueFactory(new PropertyValueFactory<>("netAmount"));
+            colNetAmount.setCellFactory(c -> rupeeMoneyCell(false));
+        }
         if (colNetPaid != null) {
             colNetPaid.setCellValueFactory(new PropertyValueFactory<>("paidAmount"));
             colNetPaid.setCellFactory(col -> new NetPaidCell());
         }
-        if (colDue != null) colDue.setCellValueFactory(new PropertyValueFactory<>("dueAmount"));
+        if (colDue != null) {
+            colDue.setCellValueFactory(new PropertyValueFactory<>("dueAmount"));
+            colDue.setCellFactory(c -> rupeeMoneyCell(true));
+        }
         if (colType != null) colType.setCellValueFactory(new PropertyValueFactory<>("type"));
 
         if (colStatus != null) {
@@ -178,23 +302,94 @@ public class ViewInvoicesController {
     }
 
     private class StatusCell extends TableCell<InvoiceMaster, String> {
-        private final Circle circle = new Circle(6);
-        private final Label label = new Label();
-        private final HBox box = new HBox(10, circle, label);
-        { box.setAlignment(Pos.CENTER_LEFT); label.setStyle("-fx-text-fill: white; -fx-font-weight: bold;"); }
+        private final Label pill = new Label();
+
         @Override
         protected void updateItem(String status, boolean empty) {
             super.updateItem(status, empty);
-            if (empty || status == null) { 
-                setGraphic(null); 
-                setText(null); 
+            if (empty || status == null) {
+                setGraphic(null);
+                setText(null);
             } else {
-                label.setText(status);
-                updateCircleColor(circle, status);
-                setGraphic(box);
+                pill.setText(status);
+                applyStatusPillStyle(pill, status);
+                setGraphic(pill);
                 setText(null);
             }
         }
+    }
+
+    private static String fmtRupee(double v) {
+        return String.format("₹ %,.2f", v);
+    }
+
+    private TableCell<InvoiceMaster, Double> rupeeMoneyCell(boolean dueColumn) {
+        return new TableCell<>() {
+            @Override
+            protected void updateItem(Double item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle(null);
+                } else {
+                    setText(fmtRupee(item));
+                    if (dueColumn && item > 0.009) {
+                        setStyle("-fx-text-fill: #C24141; -fx-font-weight: 800;");
+                    } else {
+                        setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700;");
+                    }
+                }
+            }
+        };
+    }
+
+    private void applyStatusPillStyle(Label pill, String status) {
+        if (pill == null || status == null) {
+            return;
+        }
+        String u = status.toUpperCase().replace(' ', '_');
+        String bg;
+        String fg;
+        switch (u) {
+            case "PAID":
+            case "FINAL":
+                bg = "#DCFCE7";
+                fg = "#166534";
+                break;
+            case "UNPAID":
+            case "VOID":
+                bg = "#FEE2E2";
+                fg = "#B91C1C";
+                break;
+            case "OVERDUE":
+                bg = "#FFEDD5";
+                fg = "#C2410C";
+                break;
+            case "PARTIAL_PAID":
+            case "PARTIAL PAID":
+                bg = "#DBEAFE";
+                fg = "#1D4ED8";
+                break;
+            case "DRAFT":
+                bg = "#F3E8FF";
+                fg = "#6B21A8";
+                break;
+            case "SENT":
+            case "SENT_TO_CLIENT":
+                bg = "#E0F2FE";
+                fg = "#0369A1";
+                break;
+            case "CANCELLED":
+            case "REVISED":
+                bg = "#F5F5F4";
+                fg = "#57534E";
+                break;
+            default:
+                bg = "#F5F5F4";
+                fg = "#44403C";
+        }
+        pill.setStyle("-fx-background-color: " + bg + "; -fx-text-fill: " + fg
+                + "; -fx-background-radius: 20; -fx-padding: 4 10; -fx-font-size: 10px; -fx-font-weight: 800;");
     }
 
     private class AdjustmentCell extends TableCell<InvoiceMaster, String> {
@@ -229,13 +424,13 @@ public class ViewInvoicesController {
                 InvoiceMaster inv = (getTableRow() != null) ? getTableRow().getItem() : null;
                 if (inv == null || item.equals("-")) {
                     textLabel.setText(item != null ? item : "-");
-                    textLabel.setStyle("-fx-text-fill: white;");
+                    textLabel.setStyle("-fx-text-fill: #78716C;");
                     eyeIcon.setVisible(false);
                 } else {
                     textLabel.setText(item);
-                    textLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
+                    textLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 800;");
                     eyeIcon.setVisible(true);
-                    eyeIcon.setFill(Color.WHITE);
+                    eyeIcon.setFill(Color.web("#78716C"));
                 }
                 setGraphic(box);
             }
@@ -272,38 +467,18 @@ public class ViewInvoicesController {
                 setText(null);
             } else {
                 InvoiceMaster inv = (getTableRow() != null) ? getTableRow().getItem() : null;
-                textLabel.setText(String.format("%.1f", item));
-                textLabel.setStyle("-fx-text-fill: white;");
+                textLabel.setText(fmtRupee(item));
                 if (inv != null && inv.getPaidAmount() != 0) {
+                    textLabel.setStyle("-fx-text-fill: #2F7D4A; -fx-font-weight: 800;");
                     eyeIcon.setVisible(true);
-                    eyeIcon.setFill(Color.WHITE);
+                    eyeIcon.setFill(Color.web("#57534E"));
                 } else {
+                    textLabel.setStyle("-fx-text-fill: #78716C;");
                     eyeIcon.setVisible(false);
                 }
                 setGraphic(box);
             }
         }
-    }
-
-    private void updateCircleColor(Circle circle, String status) {
-        if (circle == null || status == null) return;
-        String color;
-        switch(status.toUpperCase()) {
-            case "DRAFT": color = "#6f42c1"; break;
-            case "FINAL": color = "#28a745"; break;
-            case "SENT":
-            case "SENT TO CLIENT": color = "#17a2b8"; break;
-            case "PAID": color = "#28a745"; break;
-            case "PARTIAL PAID":
-            case "PARTIAL_PAID": color = "#007bff"; break;
-            case "OVERDUE": color = "#dc3545"; break;
-            case "CANCELLED":
-            case "VOID": color = "#dc3545"; break;
-            case "REVISED": color = "#fd7e14"; break;
-            default: color = "#808080"; break;
-        }
-        circle.setFill(Color.web(color));
-        circle.setStyle("-fx-effect: dropshadow(three-pass-box, " + color + ", 10, 0, 0, 0);");
     }
 
     private void updateButtonStates(InvoiceMaster inv) {
@@ -347,13 +522,15 @@ public class ViewInvoicesController {
 
     @FXML
     private void handleSearch(ActionEvent event) {
-        Integer clientId = (clientComboBox != null && clientComboBox.getValue() != null) ? clientComboBox.getValue().getId() : null;
+        final Integer clientId = (clientComboBox != null && clientComboBox.getValue() != null
+                && clientComboBox.getValue().getId() != ALL_CLIENTS_ID)
+                ? clientComboBox.getValue().getId()
+                : null;
         String status = (statusComboBox != null) ? statusComboBox.getValue() : "All";
         LocalDate start = (startDatePicker != null) ? startDatePicker.getValue() : null;
         LocalDate end = (endDatePicker != null) ? endDatePicker.getValue() : null;
         String invoiceNo = (invoiceSearchField != null) ? invoiceSearchField.getText() : "";
 
-        // 💾 Save current selection to restore it later
         InvoiceMaster selected = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
         final Integer selectedId = (selected != null) ? selected.getId() : null;
 
@@ -361,17 +538,27 @@ public class ViewInvoicesController {
             try {
                 List<InvoiceMaster> results = invoiceMasterService.getFilteredInvoices(clientId, status, start, end, invoiceNo);
                 Platform.runLater(() -> {
-                    invoiceList.setAll(results);
-                    
-                    // 🔄 Restore selection if possible
+                    fullInvoiceResults.clear();
+                    fullInvoiceResults.addAll(results);
+                    currentPageIndex = 0;
+                    updateSidebarTotals();
+                    updatePieChartData();
+                    repaginate();
+
                     if (selectedId != null && invoiceTable != null) {
-                        for (InvoiceMaster inv : invoiceList) {
-                            if (inv.getId() == selectedId) {
-                                invoiceTable.getSelectionModel().select(inv);
-                                // Ensure the table has focus to show the selection clearly
-                                invoiceTable.requestFocus(); 
+                        int idx = -1;
+                        for (int i = 0; i < fullInvoiceResults.size(); i++) {
+                            if (fullInvoiceResults.get(i).getId() == selectedId) {
+                                idx = i;
                                 break;
                             }
+                        }
+                        if (idx >= 0) {
+                            currentPageIndex = idx / pageSize;
+                            repaginate();
+                            InvoiceMaster sel = fullInvoiceResults.get(idx);
+                            invoiceTable.getSelectionModel().select(sel);
+                            invoiceTable.requestFocus();
                         }
                     }
 
@@ -379,17 +566,167 @@ public class ViewInvoicesController {
                         Toast.show((Stage) searchBtn.getScene().getWindow(), "No matching invoices found.");
                     }
                 });
-            } catch (Exception e) { e.printStackTrace(); }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }).start();
+    }
+
+    private void repaginate() {
+        if (paginationInfoLabel == null) {
+            tablePageItems.clear();
+            int total = fullInvoiceResults.size();
+            int from = currentPageIndex * pageSize;
+            int to = Math.min(from + pageSize, total);
+            if (from < to) {
+                tablePageItems.addAll(fullInvoiceResults.subList(from, to));
+            }
+            return;
+        }
+        int total = fullInvoiceResults.size();
+        int pages = Math.max(1, (int) Math.ceil(total / (double) pageSize));
+        if (currentPageIndex >= pages) {
+            currentPageIndex = Math.max(0, pages - 1);
+        }
+        int from = currentPageIndex * pageSize;
+        int to = Math.min(from + pageSize, total);
+        tablePageItems.clear();
+        if (from < to) {
+            tablePageItems.addAll(fullInvoiceResults.subList(from, to));
+        }
+        int fromDisplay = total == 0 ? 0 : from + 1;
+        paginationInfoLabel.setText(String.format("Showing %d to %d of %d invoices", fromDisplay, to, total));
+        rebuildPaginationControls();
+    }
+
+    private void pageChange(int newIndex) {
+        int total = fullInvoiceResults.size();
+        int pages = Math.max(1, (int) Math.ceil(total / (double) pageSize));
+        if (newIndex < 0 || newIndex >= pages) {
+            return;
+        }
+        currentPageIndex = newIndex;
+        repaginate();
+    }
+
+    private void rebuildPaginationControls() {
+        if (paginationPagesBox == null) {
+            return;
+        }
+        paginationPagesBox.getChildren().clear();
+        int total = fullInvoiceResults.size();
+        int pages = Math.max(1, (int) Math.ceil(total / (double) pageSize));
+
+        Button prev = new Button("‹");
+        prev.getStyleClass().add("vi-page-btn");
+        prev.setDisable(currentPageIndex <= 0);
+        prev.setOnAction(e -> pageChange(currentPageIndex - 1));
+
+        Button next = new Button("›");
+        next.getStyleClass().add("vi-page-btn");
+        next.setDisable(currentPageIndex >= pages - 1);
+        next.setOnAction(e -> pageChange(currentPageIndex + 1));
+
+        paginationPagesBox.getChildren().add(prev);
+
+        final int window = 5;
+        int start = Math.max(0, Math.min(currentPageIndex - 2, pages - window));
+        int end = Math.min(pages, start + window);
+        if (end - start < window) {
+            start = Math.max(0, end - window);
+        }
+        for (int p = start; p < end; p++) {
+            final int pi = p;
+            Button b = new Button(String.valueOf(p + 1));
+            b.getStyleClass().add("vi-page-btn");
+            if (p == currentPageIndex) {
+                b.getStyleClass().add("vi-page-btn-active");
+            }
+            b.setOnAction(e -> pageChange(pi));
+            paginationPagesBox.getChildren().add(b);
+        }
+
+        paginationPagesBox.getChildren().add(next);
+    }
+
+    private void updateSidebarTotals() {
+        long n = fullInvoiceResults.size();
+        double base = 0;
+        double adj = 0;
+        double net = 0;
+        double paid = 0;
+        double due = 0;
+        for (InvoiceMaster inv : fullInvoiceResults) {
+            base += inv.getAmount();
+            double cn = inv.getCnAmount() != null ? inv.getCnAmount() : 0;
+            double dn = inv.getDnAmount() != null ? inv.getDnAmount() : 0;
+            adj += dn - cn;
+            net += inv.getNetAmount();
+            paid += inv.getPaidAmount();
+            due += inv.getDueAmount();
+        }
+        if (sumCountLabel != null) {
+            sumCountLabel.setText(String.valueOf(n));
+        }
+        if (sumBaseLabel != null) {
+            sumBaseLabel.setText(fmtRupee(base));
+        }
+        if (sumAdjustmentLabel != null) {
+            sumAdjustmentLabel.setText(fmtRupee(adj));
+        }
+        if (sumNetLabel != null) {
+            sumNetLabel.setText(fmtRupee(net));
+        }
+        if (sumPaidLabel != null) {
+            sumPaidLabel.setText(fmtRupee(paid));
+        }
+        if (sumDueLabel != null) {
+            sumDueLabel.setText(fmtRupee(due));
+        }
+    }
+
+    private void updatePieChartData() {
+        if (statusPieChart == null) {
+            return;
+        }
+        int paid = 0;
+        int unpaid = 0;
+        int overdue = 0;
+        for (InvoiceMaster inv : fullInvoiceResults) {
+            String ps = inv.getPaymentStatus() != null ? inv.getPaymentStatus().toUpperCase() : "";
+            if ("PAID".equals(ps)) {
+                paid++;
+            } else if ("OVERDUE".equals(ps)) {
+                overdue++;
+            } else {
+                unpaid++;
+            }
+        }
+        ObservableList<PieChart.Data> data = FXCollections.observableArrayList(
+                new PieChart.Data("Paid", paid),
+                new PieChart.Data("Unpaid", unpaid),
+                new PieChart.Data("Overdue", overdue));
+        statusPieChart.setData(data);
     }
 
     @FXML
     private void handleClear(ActionEvent event) {
-        if (clientComboBox != null) clientComboBox.setValue(null);
-        if (statusComboBox != null) statusComboBox.getSelectionModel().selectFirst();
-        if (startDatePicker != null) startDatePicker.setValue(null);
-        if (endDatePicker != null) endDatePicker.setValue(null);
-        if (invoiceSearchField != null) invoiceSearchField.clear();
+        if (clientComboBox != null) {
+            clientComboBox.getSelectionModel().selectFirst();
+        }
+        if (statusComboBox != null) {
+            statusComboBox.getSelectionModel().selectFirst();
+        }
+        if (startDatePicker != null) {
+            startDatePicker.setValue(LocalDate.now().withDayOfMonth(1));
+        }
+        if (endDatePicker != null) {
+            endDatePicker.setValue(LocalDate.now());
+        }
+        if (invoiceSearchField != null) {
+            invoiceSearchField.clear();
+        }
+        setQuickFilterActive(quickAllBtn);
         handleSearch(null);
     }
 
@@ -466,7 +803,20 @@ public class ViewInvoicesController {
         }
     }
 
-    private void loadClients() { if (clientComboBox != null) clientComboBox.getItems().setAll(clientService.getAllClients()); }
+    private void loadClients() {
+        if (clientComboBox == null) {
+            return;
+        }
+        List<Client> all = clientService.getAllClients();
+        Client sentinel = new Client();
+        sentinel.setId(ALL_CLIENTS_ID);
+        sentinel.businessNameProperty().set("All Clients");
+        sentinel.clientNameProperty().set("");
+        ObservableList<Client> items = FXCollections.observableArrayList(sentinel);
+        items.addAll(all);
+        clientComboBox.setItems(items);
+        clientComboBox.getSelectionModel().selectFirst();
+    }
     private void loadStatuses() {
         if (statusComboBox != null) {
             statusComboBox.getItems().setAll("All", "UNPAID", "PARTIAL PAID", "PAID", "OVERDUE", "CANCELLED");

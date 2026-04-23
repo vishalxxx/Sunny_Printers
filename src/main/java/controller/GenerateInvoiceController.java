@@ -1,27 +1,50 @@
 package controller;
 
-import javafx.fxml.FXML;
-import javafx.scene.control.*;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
+import java.awt.Desktop;
+import java.io.File;
+import java.time.LocalDate;
+import java.time.Month;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.CancellationException;
+import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.binding.Bindings;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.concurrent.Task;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
+import javafx.util.StringConverter;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.text.TextFlow;
-import java.util.List;
-import java.time.LocalDate;
+
+import service.InvoiceMasterService.CreateOrGetResult;
+import javafx.stage.Stage;
+
 import model.Client;
+import model.Invoice;
 import service.ClientService;
-import javafx.collections.transformation.FilteredList;
-import javafx.collections.ListChangeListener;
-import javafx.application.Platform;
-import javafx.scene.Node;
+import service.InvoiceBuilderService;
+import service.InvoiceMasterService;
+import service.PdfInvoiceService;
+import utils.Toast;
 
 public class GenerateInvoiceController {
 
@@ -67,7 +90,72 @@ public class GenerateInvoiceController {
     private VBox jobsCard;
 
     @FXML
+    private VBox tabBtnSelectedJobs;
+    @FXML
+    private VBox tabBtnDateRange;
+    @FXML
+    private VBox tabBtnMonthly;
+    @FXML
+    private VBox selectedJobsContainer;
+    @FXML
+    private VBox dateRangeContainer;
+    @FXML
+    private VBox monthlyContainer;
+    @FXML
+    private ComboBox<Month> monthlyMonthCombo;
+    @FXML
+    private ComboBox<Integer> monthlyYearCombo;
+    @FXML
+    private Label leftPanelTitle;
+    @FXML
+    private Label jobsTablePlaceholderSub;
+    @FXML
+    private DatePicker dateRangeFromPicker;
+    @FXML
+    private DatePicker dateRangeToPicker;
+    @FXML
+    private Label drTotalJobsLabel;
+    @FXML
+    private Label drTotalQtyLabel;
+    @FXML
+    private Label drTotalAmountLabel;
+    @FXML
+    private Text bannerDateFromText;
+    @FXML
+    private Text bannerDateToText;
+
+    private enum BillingTab {
+        SELECTED_JOBS, DATE_RANGE, MONTHLY
+    }
+
+    private BillingTab activeTab = BillingTab.SELECTED_JOBS;
+    /** Keeps combo display when switching tabs (e.g. Date Range → Monthly) while combo is disabled. */
+    private Client lastClientSelectionForMonthly;
+    private int dateRangeJobCount;
+    private long dateRangeTotalQty;
+    private double dateRangeTotalAmount;
+
+    private static final DateTimeFormatter DR_BANNER_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+    public void setRootPane(StackPane rootPane) {
+        this.rootStackPane = rootPane;
+    }
+
+    /**
+     * Run after the FXML root is attached to the scene. {@link MainController} loads FXML on a
+     * background thread, so this re-applies tab state and live date-range totals on the FX thread.
+     */
+    public void onShownAfterNavigation() {
+        if (!Platform.isFxApplicationThread()) {
+            Platform.runLater(this::onShownAfterNavigation);
+            return;
+        }
+        applyTabContent();
+    }
+
+    @FXML
     public void initialize() {
+        filteredMonthlyJobs = new FilteredList<>(monthlyMasterJobs, j -> true);
         setupTable();
         if (jobsCard != null) {
             jobsCard.setMaxHeight(Region.USE_PREF_SIZE);
@@ -75,14 +163,25 @@ public class GenerateInvoiceController {
         setupFields();
         setupClientCombo();
         setupJobSearch();
+        setupDateRangeTab();
+        setupMonthlyTab();
+        refreshTabVisuals();
+        applyTabContent();
     }
 
     private final ClientService clientService = new ClientService();
     private final service.JobService jobService = new service.JobService();
+    private final InvoiceBuilderService invoiceBuilder = new InvoiceBuilderService();
+    private final InvoiceMasterService invoiceMasterService = new InvoiceMasterService();
+    private final PdfInvoiceService pdfInvoiceService = new PdfInvoiceService();
+
+    private StackPane rootStackPane;
     private final ObservableList<Client> masterClients = FXCollections.observableArrayList();
     private final ObservableList<JobItem> masterJobs = FXCollections.observableArrayList();
+    private final ObservableList<JobItem> monthlyMasterJobs = FXCollections.observableArrayList();
     private FilteredList<Client> filteredClients;
     private FilteredList<JobItem> filteredJobs;
+    private FilteredList<JobItem> filteredMonthlyJobs;
 
     private void setupClientCombo() {
         if (clientComboBox == null)
@@ -95,10 +194,23 @@ public class GenerateInvoiceController {
         // Selection listener to load jobs
         clientComboBox.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
             if (newV != null) {
-                loadJobsForClient(newV);
+                lastClientSelectionForMonthly = newV;
+                if (activeTab != BillingTab.MONTHLY) {
+                    loadJobsForClient(newV);
+                }
             } else {
-                masterJobs.clear();
-                updateSummary();
+                if (activeTab != BillingTab.MONTHLY) {
+                    // Combo can report null briefly when disabled; monthly table uses monthlyMasterJobs.
+                } else {
+                    masterJobs.clear();
+                    updateSummary();
+                }
+            }
+            if (activeTab == BillingTab.DATE_RANGE) {
+                refreshDateRangeLive();
+            }
+            if (activeTab == BillingTab.MONTHLY) {
+                refreshMonthlyJobs();
             }
         });
 
@@ -126,10 +238,23 @@ public class GenerateInvoiceController {
             }
         });
 
-        // Load data
+        final String promptHasClients = "Select client name.";
+        final String promptNoClients = "No client exists to be invoiced";
+
+        // Load only clients who have uninvoiced completed jobs (matches jobs table)
         try {
-            masterClients.setAll(clientService.getAllClients());
+            List<Client> eligible = clientService.getClientsWithUninvoicedCompletedJobs();
+            masterClients.setAll(eligible);
+            if (eligible.isEmpty()) {
+                clientComboBox.setPromptText(promptNoClients);
+                clientComboBox.getSelectionModel().clearSelection();
+                masterJobs.clear();
+            } else {
+                clientComboBox.setPromptText(promptHasClients);
+            }
         } catch (Exception e) {
+            masterClients.clear();
+            clientComboBox.setPromptText(promptNoClients);
         }
     }
 
@@ -154,8 +279,26 @@ public class GenerateInvoiceController {
             return row;
         });
 
-        jobsTable.getItems()
-                .addListener((ListChangeListener<JobItem>) c -> Platform.runLater(this::refreshInvoiceLastRowStyles));
+        masterJobs.addListener((ListChangeListener<JobItem>) c -> {
+            if (jobsTable != null && jobsTable.getItems() == filteredJobs) {
+                Platform.runLater(() -> {
+                    refreshInvoiceLastRowStyles();
+                    if (jobsTable.getItems().size() <= 1 && selectAllCheckbox != null) {
+                        selectAllCheckbox.setSelected(false);
+                    }
+                });
+            }
+        });
+        monthlyMasterJobs.addListener((ListChangeListener<JobItem>) c -> {
+            if (jobsTable != null && jobsTable.getItems() == filteredMonthlyJobs) {
+                Platform.runLater(() -> {
+                    refreshInvoiceLastRowStyles();
+                    if (jobsTable.getItems().size() <= 1 && selectAllCheckbox != null) {
+                        selectAllCheckbox.setSelected(false);
+                    }
+                });
+            }
+        });
 
         // Select column with checkboxes
         selectCol.setCellValueFactory(data -> data.getValue().selectedProperty());
@@ -330,9 +473,17 @@ public class GenerateInvoiceController {
             updateSummary();
         });
 
-        // Size table to content; when empty, reserve body height so the placeholder
-        // does not overlap the header
         jobsTable.setFixedCellSize(72);
+        bindJobsTableDynamicHeight();
+        Platform.runLater(this::refreshInvoiceLastRowStyles);
+    }
+
+    private void bindJobsTableDynamicHeight() {
+        if (jobsTable == null) {
+            return;
+        }
+        jobsTable.prefHeightProperty().unbind();
+        jobsTable.maxHeightProperty().unbind();
         final double headerHeight = 46;
         final double emptyBodyMin = 268;
         var tableHeight = Bindings.createDoubleBinding(
@@ -348,7 +499,6 @@ public class GenerateInvoiceController {
         jobsTable.prefHeightProperty().bind(tableHeight);
         jobsTable.maxHeightProperty().bind(tableHeight);
         jobsTable.setMinHeight(headerHeight + 1);
-        Platform.runLater(this::refreshInvoiceLastRowStyles);
     }
 
     private static void styleInvoiceJobRow(TableRow<JobItem> row) {
@@ -429,17 +579,18 @@ public class GenerateInvoiceController {
      * bulk select).
      */
     private void bindSelectAllCheckboxVisibility() {
+        rebindSelectAllCheckboxToCurrentItems();
+    }
+
+    private void rebindSelectAllCheckboxToCurrentItems() {
         if (selectAllCheckbox == null || jobsTable == null) {
             return;
         }
+        selectAllCheckbox.visibleProperty().unbind();
+        selectAllCheckbox.managedProperty().unbind();
         var showSelectAll = Bindings.greaterThan(Bindings.size(jobsTable.getItems()), 1);
         selectAllCheckbox.visibleProperty().bind(showSelectAll);
         selectAllCheckbox.managedProperty().bind(showSelectAll);
-        jobsTable.getItems().addListener((ListChangeListener<JobItem>) c -> {
-            if (jobsTable.getItems().size() <= 1) {
-                selectAllCheckbox.setSelected(false);
-            }
-        });
     }
 
     private void setupFields() {
@@ -448,6 +599,8 @@ public class GenerateInvoiceController {
         }
         termsCombo.setItems(FXCollections.observableArrayList("Net 30", "Net 15", "Due on Receipt", "Custom"));
         termsCombo.setValue("Net 30");
+        invoiceDatePicker.setEditable(false);
+        dueDatePicker.setEditable(false);
         invoiceDatePicker.setValue(LocalDate.now());
 
         termsCombo.valueProperty().addListener((o, oldVal, newVal) -> applyTermsToDueDate());
@@ -518,6 +671,334 @@ public class GenerateInvoiceController {
         });
     }
 
+    private void setupDateRangeTab() {
+        if (dateRangeFromPicker != null) {
+            dateRangeFromPicker.setValue(LocalDate.now().withDayOfMonth(1));
+            setupAutoPopupDatePicker(dateRangeFromPicker);
+            dateRangeFromPicker.valueProperty().addListener((o, ov, nv) -> refreshDateRangeLive());
+        }
+        if (dateRangeToPicker != null) {
+            dateRangeToPicker.setValue(LocalDate.now());
+            setupAutoPopupDatePicker(dateRangeToPicker);
+            dateRangeToPicker.valueProperty().addListener((o, ov, nv) -> refreshDateRangeLive());
+        }
+    }
+
+    private void setupMonthlyTab() {
+        if (monthlyMonthCombo != null) {
+            monthlyMonthCombo.setItems(FXCollections.observableArrayList(Month.values()));
+            monthlyMonthCombo.setConverter(new StringConverter<>() {
+                @Override
+                public String toString(Month m) {
+                    return m == null ? "" : m.getDisplayName(TextStyle.FULL, Locale.getDefault());
+                }
+
+                @Override
+                public Month fromString(String s) {
+                    return null;
+                }
+            });
+            monthlyMonthCombo.setValue(LocalDate.now().getMonth());
+            monthlyMonthCombo.valueProperty().addListener((o, ov, nv) -> refreshMonthlyJobs());
+        }
+        if (monthlyYearCombo != null) {
+            int y = LocalDate.now().getYear();
+            List<Integer> years = new ArrayList<>();
+            for (int i = y - 5; i <= y + 2; i++) {
+                years.add(i);
+            }
+            monthlyYearCombo.setItems(FXCollections.observableArrayList(years));
+            monthlyYearCombo.setValue(y);
+            monthlyYearCombo.valueProperty().addListener((o, ov, nv) -> refreshMonthlyJobs());
+        }
+    }
+
+    private void updateJobsTablePlaceholderText() {
+        if (jobsTablePlaceholderSub == null) {
+            return;
+        }
+        if (activeTab == BillingTab.MONTHLY) {
+            jobsTablePlaceholderSub.setText(
+                    "Choose month and year. The table lists completed jobs for all clients. Invoice uses the client shown above (only their selected rows).");
+        } else {
+            jobsTablePlaceholderSub.setText("Pick a client above to load jobs, or try a different search.");
+        }
+    }
+
+    /** Load completed jobs for the chosen client in the selected calendar month (Monthly tab). */
+    private void refreshMonthlyJobs() {
+        if (!Platform.isFxApplicationThread()) {
+            Platform.runLater(this::refreshMonthlyJobs);
+            return;
+        }
+        if (activeTab != BillingTab.MONTHLY) {
+            return;
+        }
+        monthlyMasterJobs.clear();
+        Month month = monthlyMonthCombo != null ? monthlyMonthCombo.getValue() : null;
+        Integer year = monthlyYearCombo != null ? monthlyYearCombo.getValue() : null;
+        if (month == null || year == null) {
+            if (jobsTable != null) {
+                jobsTable.refresh();
+            }
+            updateSummary();
+            return;
+        }
+        YearMonth ym = YearMonth.of(year, month);
+        LocalDate from = ym.atDay(1);
+        LocalDate to = ym.atEndOfMonth();
+        try {
+            List<model.Job> jobs = jobService.getCompletedJobsAllClientsInDateRange(from, to);
+            for (model.Job j : jobs) {
+                String dateStr = j.getJobDate() != null ? j.getJobDate().toString() : "-";
+                String totalStr = j.getJobTotal() != null ? String.format("₹ %,.2f", j.getJobTotal()) : "₹ 0.00";
+                String biz = j.getClientBusinessName();
+                String subtitle = (biz != null && !biz.isBlank() ? biz + " · " : "") + j.getJobNo();
+                int cid = j.getClientId() != null ? j.getClientId() : 0;
+                monthlyMasterJobs.add(new JobItem(
+                        j.getId(),
+                        cid,
+                        j.getJobTitle(),
+                        subtitle,
+                        dateStr,
+                        "1",
+                        totalStr,
+                        totalStr));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (jobsTable != null) {
+            jobsTable.refresh();
+        }
+        updateSummary();
+    }
+
+    /** Live totals for Date Range tab from client + From/To pickers (banner + metrics + right summary). */
+    private void refreshDateRangeLive() {
+        if (!Platform.isFxApplicationThread()) {
+            Platform.runLater(this::refreshDateRangeLive);
+            return;
+        }
+        LocalDate from = dateRangeFromPicker != null ? dateRangeFromPicker.getValue() : null;
+        LocalDate to = dateRangeToPicker != null ? dateRangeToPicker.getValue() : null;
+        if (bannerDateFromText != null) {
+            bannerDateFromText.setText(from != null ? from.format(DR_BANNER_FMT) : "—");
+        }
+        if (bannerDateToText != null) {
+            bannerDateToText.setText(to != null ? to.format(DR_BANNER_FMT) : "—");
+        }
+
+        if (activeTab != BillingTab.DATE_RANGE) {
+            return;
+        }
+
+        Client client = clientComboBox != null ? clientComboBox.getValue() : null;
+        if (client == null || from == null || to == null || to.isBefore(from)) {
+            dateRangeJobCount = 0;
+            dateRangeTotalQty = 0;
+            dateRangeTotalAmount = 0.0;
+            if (drTotalJobsLabel != null) {
+                drTotalJobsLabel.setText("0");
+            }
+            if (drTotalQtyLabel != null) {
+                drTotalQtyLabel.setText("0");
+            }
+            if (drTotalAmountLabel != null) {
+                drTotalAmountLabel.setText("₹ 0.00");
+            }
+            updateSummary();
+            return;
+        }
+
+        try {
+            List<Integer> ids = jobService.getCompletedJobIdsByClientInDateRange(client.getId(), from, to);
+            dateRangeJobCount = ids.size();
+            dateRangeTotalQty = jobService.getTotalPrintingQtyForJobIds(ids);
+            dateRangeTotalAmount = jobService.getSumJobItemsAmountForJobIds(ids);
+        } catch (Exception e) {
+            dateRangeJobCount = 0;
+            dateRangeTotalQty = 0;
+            dateRangeTotalAmount = 0.0;
+            e.printStackTrace();
+        }
+
+        if (drTotalJobsLabel != null) {
+            drTotalJobsLabel.setText(String.valueOf(dateRangeJobCount));
+        }
+        if (drTotalQtyLabel != null) {
+            drTotalQtyLabel.setText(String.format("%,d", dateRangeTotalQty));
+        }
+        if (drTotalAmountLabel != null) {
+            drTotalAmountLabel.setText(String.format("₹ %,.2f", dateRangeTotalAmount));
+        }
+        updateSummary();
+    }
+
+    private void setupAutoPopupDatePicker(DatePicker dp) {
+        if (dp == null) {
+            return;
+        }
+        dp.setEditable(false);
+        dp.setDayCellFactory(picker -> new DateCell() {
+            @Override
+            public void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                if (empty || date == null)
+                    return;
+                if (date.isAfter(LocalDate.now())) {
+                    setDisable(true);
+                    setStyle("-fx-opacity: 0.35;");
+                }
+            }
+        });
+        dp.addEventFilter(javafx.scene.input.MouseEvent.MOUSE_PRESSED, e -> {
+            if (!dp.isShowing())
+                dp.show();
+        });
+        dp.focusedProperty().addListener((obs, oldV, isFocused) -> {
+            if (Boolean.TRUE.equals(isFocused) && !dp.isShowing())
+                dp.show();
+        });
+    }
+
+    private void refreshTabVisuals() {
+        if (tabBtnSelectedJobs != null) {
+            tabBtnSelectedJobs.getStyleClass().remove("tab-active");
+        }
+        if (tabBtnDateRange != null) {
+            tabBtnDateRange.getStyleClass().remove("tab-active");
+        }
+        if (tabBtnMonthly != null) {
+            tabBtnMonthly.getStyleClass().remove("tab-active");
+        }
+        switch (activeTab) {
+            case SELECTED_JOBS -> {
+                if (tabBtnSelectedJobs != null)
+                    tabBtnSelectedJobs.getStyleClass().add("tab-active");
+            }
+            case DATE_RANGE -> {
+                if (tabBtnDateRange != null)
+                    tabBtnDateRange.getStyleClass().add("tab-active");
+            }
+            case MONTHLY -> {
+                if (tabBtnMonthly != null)
+                    tabBtnMonthly.getStyleClass().add("tab-active");
+            }
+        }
+    }
+
+    private void applyTabContent() {
+        boolean showSelected = activeTab == BillingTab.SELECTED_JOBS;
+        boolean showDateRange = activeTab == BillingTab.DATE_RANGE;
+        boolean showMonthly = activeTab == BillingTab.MONTHLY;
+        boolean showJobsTable = showSelected || showMonthly;
+
+        if (selectedJobsContainer != null) {
+            selectedJobsContainer.setVisible(showSelected);
+            selectedJobsContainer.setManaged(showSelected);
+        }
+        if (dateRangeContainer != null) {
+            dateRangeContainer.setVisible(showDateRange);
+            dateRangeContainer.setManaged(showDateRange);
+        }
+        if (monthlyContainer != null) {
+            monthlyContainer.setVisible(showMonthly);
+            monthlyContainer.setManaged(showMonthly);
+        }
+        if (jobsTable != null) {
+            jobsTable.setVisible(showJobsTable);
+            jobsTable.setManaged(showJobsTable);
+        }
+        if (leftPanelTitle != null) {
+            leftPanelTitle.setText("Select Jobs");
+        }
+
+        boolean monthlyTab = showMonthly;
+        if (clientComboBox != null && showMonthly) {
+            Client cur = clientComboBox.getValue();
+            if (cur != null) {
+                lastClientSelectionForMonthly = cur;
+            }
+        }
+        if (clientComboBox != null) {
+            clientComboBox.setDisable(monthlyTab || masterClients.isEmpty());
+        }
+        if (invoiceNoField != null) {
+            invoiceNoField.setDisable(activeTab == BillingTab.DATE_RANGE || monthlyTab);
+        }
+
+        updateJobsTablePlaceholderText();
+
+        if (jobsTable != null) {
+            if (showMonthly) {
+                jobsTable.setItems(filteredMonthlyJobs);
+            } else {
+                jobsTable.setItems(filteredJobs);
+            }
+            bindJobsTableDynamicHeight();
+            rebindSelectAllCheckboxToCurrentItems();
+        }
+
+        if (activeTab == BillingTab.DATE_RANGE) {
+            refreshDateRangeLive();
+        } else if (activeTab == BillingTab.MONTHLY) {
+            refreshMonthlyJobs();
+        } else {
+            Client c = clientComboBox != null ? clientComboBox.getValue() : null;
+            if (c != null) {
+                loadJobsForClient(c);
+            } else {
+                masterJobs.clear();
+                updateSummary();
+            }
+        }
+
+        Platform.runLater(this::restoreClientComboSelection);
+    }
+
+    /** Re-select client in combo after tab/disable changes (value can appear lost on Monthly). */
+    private void restoreClientComboSelection() {
+        if (clientComboBox == null || masterClients.isEmpty()) {
+            return;
+        }
+        Client ref = lastClientSelectionForMonthly;
+        if (ref == null) {
+            return;
+        }
+        masterClients.stream()
+                .filter(c -> c.getId() == ref.getId())
+                .findFirst()
+                .ifPresent(c -> {
+                    if (activeTab == BillingTab.MONTHLY) {
+                        clientComboBox.getSelectionModel().select(c);
+                    } else if (clientComboBox.getValue() == null) {
+                        clientComboBox.getSelectionModel().select(c);
+                    }
+                });
+    }
+
+    @FXML
+    private void onTabSelectedJobs(MouseEvent e) {
+        activeTab = BillingTab.SELECTED_JOBS;
+        refreshTabVisuals();
+        applyTabContent();
+    }
+
+    @FXML
+    private void onTabDateRange(MouseEvent e) {
+        activeTab = BillingTab.DATE_RANGE;
+        refreshTabVisuals();
+        applyTabContent();
+    }
+
+    @FXML
+    private void onTabMonthly(MouseEvent e) {
+        activeTab = BillingTab.MONTHLY;
+        refreshTabVisuals();
+        applyTabContent();
+    }
+
     private void loadJobsForClient(Client client) {
         if (client == null)
             return;
@@ -541,7 +1022,10 @@ public class GenerateInvoiceController {
                 String dateStr = j.getJobDate() != null ? j.getJobDate().toString() : "-";
                 String totalStr = j.getJobTotal() != null ? String.format("₹ %,.2f", j.getJobTotal()) : "₹ 0.00";
 
+                int cid = j.getClientId() != null ? j.getClientId() : 0;
                 masterJobs.add(new JobItem(
+                        j.getId(),
+                        cid,
                         j.getJobTitle(),
                         j.getJobNo(),
                         dateStr,
@@ -557,6 +1041,17 @@ public class GenerateInvoiceController {
     }
 
     private void updateSummary() {
+        if (activeTab == BillingTab.DATE_RANGE) {
+            if (itemCountLabel != null) {
+                long c = dateRangeJobCount;
+                itemCountLabel.setText(c + (c == 1 ? " job" : " jobs"));
+            }
+            if (totalAmountLabel != null) {
+                totalAmountLabel.setText(String.format("₹ %,.2f", dateRangeTotalAmount));
+            }
+            return;
+        }
+
         long count = jobsTable.getItems().stream().filter(JobItem::isSelected).count();
         double total = jobsTable.getItems().stream()
                 .filter(JobItem::isSelected)
@@ -570,8 +1065,12 @@ public class GenerateInvoiceController {
                 })
                 .sum();
 
-        itemCountLabel.setText(count + (count == 1 ? " job" : " jobs"));
-        totalAmountLabel.setText(String.format("₹ %,.2f", total));
+        if (itemCountLabel != null) {
+            itemCountLabel.setText(count + (count == 1 ? " job" : " jobs"));
+        }
+        if (totalAmountLabel != null) {
+            totalAmountLabel.setText(String.format("₹ %,.2f", total));
+        }
     }
 
     @FXML
@@ -581,16 +1080,303 @@ public class GenerateInvoiceController {
 
     @FXML
     private void handlePreview() {
-        System.out.println("Previewing Invoice...");
+        Client client = clientComboBox.getValue();
+        if (client == null) {
+            toast("Please select a client first.");
+            return;
+        }
+        if (rootStackPane == null) {
+            toast("Unable to show progress.");
+            return;
+        }
+
+        final LocalDate invoiceDate = invoiceDatePicker.getValue();
+        final boolean dateRangeMode = activeTab == BillingTab.DATE_RANGE;
+        final LocalDate drFrom;
+        final LocalDate drTo;
+        final List<Integer> previewJobIds;
+        if (dateRangeMode) {
+            LocalDate f = dateRangeFromPicker != null ? dateRangeFromPicker.getValue() : null;
+            LocalDate t = dateRangeToPicker != null ? dateRangeToPicker.getValue() : null;
+            if (f == null || t == null) {
+                toast("Choose both From and To dates.");
+                return;
+            }
+            if (t.isBefore(f)) {
+                toast("To date must be on or after From date.");
+                return;
+            }
+            if (dateRangeJobCount == 0) {
+                toast("No completed jobs in the selected date range.");
+                return;
+            }
+            drFrom = f;
+            drTo = t;
+            previewJobIds = List.of();
+        } else {
+            drFrom = null;
+            drTo = null;
+            previewJobIds = collectSelectedJobIds();
+            if (previewJobIds.isEmpty()) {
+                toast("Please select at least 1 job.");
+                return;
+            }
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/progress_dialog.fxml"));
+            StackPane progressRoot = loader.load();
+            ProgressDialogController progress = loader.getController();
+
+            rootStackPane.getChildren().add(progressRoot);
+            progress.show("Preview Invoice");
+
+            Task<Void> task = new Task<>() {
+                @Override
+                protected Void call() {
+                    updateMessage("Building preview...");
+                    Invoice invoice;
+                    if (dateRangeMode) {
+                        invoice = invoiceBuilder.buildInvoiceForClient(client.getId(),
+                                client.getClientName(), client.getBusinessName(),
+                                drFrom, drTo, invoiceDate, false);
+                    } else {
+                        invoice = invoiceBuilder.buildInvoiceForClientByJobs(client.getId(),
+                                client.getClientName(), client.getBusinessName(),
+                                previewJobIds, invoiceDate, false);
+                    }
+
+                    if (isCancelled()) {
+                        throw new CancellationException();
+                    }
+                    if (invoice.getJobs().isEmpty()) {
+                        throw new RuntimeException("No invoice lines found.");
+                    }
+
+                    updateMessage("Generating PDF...");
+                    File pdf = pdfInvoiceService.generateSingleInvoicePDF(invoice);
+                    if (pdf == null || !pdf.exists()) {
+                        throw new RuntimeException("PDF was not created.");
+                    }
+
+                    Platform.runLater(() -> {
+                        try {
+                            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                                Desktop.getDesktop().open(pdf);
+                            } else {
+                                toast("PDF saved to:\n" + pdf.getAbsolutePath());
+                            }
+                        } catch (Exception e) {
+                            toast("Could not open PDF: " + e.getMessage());
+                        }
+                    });
+
+                    updateMessage("Done");
+                    return null;
+                }
+            };
+
+            progress.setOnCancel(task::cancel);
+
+            task.setOnSucceeded(ev -> {
+                progress.hide();
+                rootStackPane.getChildren().remove(progressRoot);
+            });
+
+            task.setOnCancelled(ev -> {
+                progress.hide();
+                rootStackPane.getChildren().remove(progressRoot);
+                toast("Preview cancelled.");
+            });
+
+            task.setOnFailed(ev -> {
+                progress.hide();
+                rootStackPane.getChildren().remove(progressRoot);
+                Throwable ex = task.getException();
+                toast("Preview failed: " + (ex != null ? ex.getMessage() : "Unknown"));
+            });
+
+            new Thread(task).start();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            toast("Preview failed: " + ex.getMessage());
+        }
     }
 
     @FXML
     private void handleGenerate() {
-        System.out.println("Generating Invoice...");
+        Client client = clientComboBox.getValue();
+        if (client == null) {
+            toast("Please select a client first.");
+            return;
+        }
+        if (rootStackPane == null) {
+            toast("Unable to show progress.");
+            return;
+        }
+
+        final LocalDate invoiceDate = invoiceDatePicker.getValue();
+        final boolean dateRangeMode = activeTab == BillingTab.DATE_RANGE;
+        final boolean monthlyMode = activeTab == BillingTab.MONTHLY;
+        final LocalDate drFromGen;
+        final LocalDate drToGen;
+        final List<Integer> generateJobIds;
+        if (dateRangeMode) {
+            LocalDate f = dateRangeFromPicker != null ? dateRangeFromPicker.getValue() : null;
+            LocalDate t = dateRangeToPicker != null ? dateRangeToPicker.getValue() : null;
+            if (f == null || t == null) {
+                toast("Choose both From and To dates.");
+                return;
+            }
+            if (t.isBefore(f)) {
+                toast("To date must be on or after From date.");
+                return;
+            }
+            if (dateRangeJobCount == 0) {
+                toast("No completed jobs in the selected date range.");
+                return;
+            }
+            drFromGen = f;
+            drToGen = t;
+            generateJobIds = List.of();
+        } else {
+            drFromGen = null;
+            drToGen = null;
+            generateJobIds = collectSelectedJobIds();
+            if (generateJobIds.isEmpty()) {
+                toast("Please select at least 1 job.");
+                return;
+            }
+        }
+
+        final List<Integer> newlyCreatedIds = new ArrayList<>();
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/progress_dialog.fxml"));
+            StackPane progressRoot = loader.load();
+            ProgressDialogController progress = loader.getController();
+
+            rootStackPane.getChildren().add(progressRoot);
+            progress.show("Creating Draft Invoice");
+
+            Task<Void> task = new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    updateProgress(0.1, 1);
+                    updateMessage("Building invoice...");
+
+                    Invoice invoice;
+                    if (dateRangeMode) {
+                        invoice = invoiceBuilder.buildInvoiceForClient(client.getId(),
+                                client.getClientName(), client.getBusinessName(),
+                                drFromGen, drToGen, invoiceDate);
+                    } else {
+                        invoice = invoiceBuilder.buildInvoiceForClientByJobs(client.getId(),
+                                client.getClientName(), client.getBusinessName(), generateJobIds, invoiceDate);
+                    }
+
+                    if (isCancelled()) {
+                        throw new CancellationException();
+                    }
+                    if (invoice.getJobs().isEmpty()) {
+                        throw new RuntimeException("No invoice lines found.");
+                    }
+
+                    if (dateRangeMode) {
+                        updateMessage("Saving draft...");
+                        CreateOrGetResult reserved = invoiceMasterService.createNewDraftInvoice(invoice, "DATE_RANGE",
+                                null);
+                        if (reserved != null) {
+                            invoice.setInvoiceNo(reserved.master().getInvoiceNo());
+                            if (reserved.wasNewlyCreated()) {
+                                newlyCreatedIds.add(reserved.master().getId());
+                            }
+                        }
+                        if (isCancelled()) {
+                            throw new CancellationException();
+                        }
+                        invoiceMasterService.registerDateRangeInvoice(invoice, drFromGen,
+                                drToGen, "DATE_RANGE", null);
+                    } else {
+                        updateMessage("Saving draft...");
+                        invoiceMasterService.saveGeneratedInvoice(invoice, "JOB_SPECIFIC", "DRAFT", null);
+                    }
+
+                    updateProgress(1, 1);
+                    updateMessage("Completed");
+                    return null;
+                }
+            };
+
+            progress.setOnCancel(task::cancel);
+
+            task.setOnSucceeded(ev -> {
+                progress.hide();
+                rootStackPane.getChildren().remove(progressRoot);
+                if (dateRangeMode) {
+                    refreshDateRangeLive();
+                } else if (monthlyMode) {
+                    refreshMonthlyJobs();
+                } else {
+                    loadJobsForClient(client);
+                }
+                toast("Draft invoice created successfully.");
+            });
+
+            task.setOnCancelled(ev -> {
+                if (dateRangeMode) {
+                    new Thread(() -> invoiceMasterService.deleteInvoicesIfCancelled(newlyCreatedIds)).start();
+                }
+                progress.hide();
+                rootStackPane.getChildren().remove(progressRoot);
+                toast("Cancelled.");
+            });
+
+            task.setOnFailed(ev -> {
+                progress.hide();
+                rootStackPane.getChildren().remove(progressRoot);
+                Throwable ex = task.getException();
+                toast("Failed: " + (ex != null ? ex.getMessage() : "Unknown"));
+            });
+
+            new Thread(task).start();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            toast("Failed: " + ex.getMessage());
+        }
+    }
+
+    private List<Integer> collectSelectedJobIds() {
+        Client invoiceClient = clientComboBox != null ? clientComboBox.getValue() : null;
+        return jobsTable.getItems().stream()
+                .filter(JobItem::isSelected)
+                .filter(item -> {
+                    if (activeTab != BillingTab.MONTHLY || invoiceClient == null) {
+                        return true;
+                    }
+                    int cid = item.getClientId();
+                    return cid == 0 || cid == invoiceClient.getId();
+                })
+                .mapToInt(JobItem::getJobId)
+                .distinct()
+                .boxed()
+                .toList();
+    }
+
+    private void toast(String message) {
+        Node anchor = clientComboBox != null ? clientComboBox : jobsTable;
+        if (anchor == null || anchor.getScene() == null) {
+            return;
+        }
+        Stage stage = (Stage) anchor.getScene().getWindow();
+        Toast.show(stage, message);
     }
 
     // Helper class for TableView
     public static class JobItem {
+        private final int jobId;
+        /** 0 = unknown / single-client screen; otherwise jobs.client_id for monthly filtering. */
+        private final int clientId;
         private final SimpleBooleanProperty selected = new SimpleBooleanProperty(false);
         private final SimpleStringProperty name;
         private final SimpleStringProperty subtitle;
@@ -599,7 +1385,14 @@ public class GenerateInvoiceController {
         private final SimpleStringProperty rate;
         private final SimpleStringProperty total;
 
-        public JobItem(String name, String subtitle, String date, String qty, String rate, String total) {
+        public JobItem(int jobId, String name, String subtitle, String date, String qty, String rate, String total) {
+            this(jobId, 0, name, subtitle, date, qty, rate, total);
+        }
+
+        public JobItem(int jobId, int clientId, String name, String subtitle, String date, String qty, String rate,
+                String total) {
+            this.jobId = jobId;
+            this.clientId = clientId;
             this.name = new SimpleStringProperty(name);
             this.subtitle = new SimpleStringProperty(subtitle);
             this.date = new SimpleStringProperty(date);
@@ -618,6 +1411,14 @@ public class GenerateInvoiceController {
 
         public void setSelected(boolean val) {
             selected.set(val);
+        }
+
+        public int getJobId() {
+            return jobId;
+        }
+
+        public int getClientId() {
+            return clientId;
         }
 
         public SimpleStringProperty nameProperty() {

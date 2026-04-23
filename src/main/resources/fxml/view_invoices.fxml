@@ -1,76 +1,115 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.chart.PieChart?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.*?>
 
 <VBox xmlns="http://javafx.com/javafx/23"
 	xmlns:fx="http://javafx.com/fxml/1"
-	fx:controller="controller.ViewInvoicesController" spacing="20"
-	stylesheets="@../css/view_job.css" styleClass="view-clients-root">
+	fx:controller="controller.ViewInvoicesController"
+	styleClass="view-invoices-root"
+	spacing="14"
+	stylesheets="@../css/modern_dashboard.css,@../css/view_invoices.css">
 
-	<!-- PAGE TITLE -->
-	<Label text="View Invoices" styleClass="page-heading" />
-
-	<!-- ACTION BUTTONS -->
-	<HBox spacing="10" alignment="CENTER_LEFT" styleClass="action-bar">
-		<Button fx:id="btnEdit" text="Edit" onAction="#handleEditAction" disable="true"/>
-		<Button fx:id="btnFinalize" text="Finalize" onAction="#handleFinalizeAction" disable="true"/>
-		<Button fx:id="btnSend" text="Send" onAction="#handleSendAction" disable="true"/>
-		<Button fx:id="btnRevised" text="Revised" onAction="#handleRevisedAction" disable="true"/>
-		<Button fx:id="btnPayment" text="Payment" onAction="#handlePaymentAction" disable="true"/>
-		<Button fx:id="btnRaiseCnDn" text="Raise CN/DN" onAction="#handleRaiseCnDnAction" disable="true"/>
-		<Button fx:id="btnCancel" text="Cancel Invoice" onAction="#handleCancelAction" disable="true"/>
-	</HBox>
-
-	<!-- FILTER BAR -->
-	<HBox spacing="12" alignment="CENTER_LEFT">
-
-		<TextField fx:id="invoiceSearchField"
-				   promptText="Invoice No..."
-				   styleClass="search-field"
-				   prefWidth="160"/>
-
-		<ComboBox fx:id="clientComboBox"
-				  promptText="Select Client..."
-				  styleClass="combo-box-base"
-				  prefWidth="240"/>
-
-		<ComboBox fx:id="statusComboBox"
-				  promptText="Status: All"
-				  styleClass="combo-box-base"
-				  prefWidth="160"/>
-
-		<DatePicker fx:id="startDatePicker"
-					promptText="From Date"
-					styleClass="date-picker"
-					prefWidth="160"/>
-
-		<DatePicker fx:id="endDatePicker"
-					promptText="To Date"
-					styleClass="date-picker"
-					prefWidth="160"/>
-
-		<Button text="Search" fx:id="searchBtn" styleClass="search-button" onAction="#handleSearch"/>
-		<Button text="Clear Filters" fx:id="clearBtn" styleClass="search-button" onAction="#handleClear"/>
-	</HBox>
-
-	<!-- TABLE CARD -->
-	<VBox styleClass="table-card" VBox.vgrow="ALWAYS">
-		<TableView fx:id="invoiceTable" styleClass="history-table" VBox.vgrow="ALWAYS">
-			<columns>
-				<TableColumn fx:id="colInvoiceNo" text="Invoice No" prefWidth="250" />
-				<TableColumn fx:id="colClientName" text="Client Name" prefWidth="250" />
-				<TableColumn fx:id="colInvoiceDate" text="Date" prefWidth="100" />
-				<TableColumn fx:id="colAmount" text="Base Amt" prefWidth="120" />
-				<TableColumn fx:id="colAdjustment" text="Adjustment" prefWidth="180" />
-				<TableColumn fx:id="colNetAmount" text="Net Total" prefWidth="120" />
-				<TableColumn fx:id="colNetPaid" text="Net Paid" prefWidth="120" />
-				<TableColumn fx:id="colDue" text="Due" prefWidth="120" />
-				<TableColumn fx:id="colStatus" text="Status" prefWidth="180" />
-				<TableColumn fx:id="colPaymentStatus" text="Payment Status" prefWidth="180" />
-				<TableColumn fx:id="colType" text="Type" prefWidth="120" />
-			</columns>
-		</TableView>
+	<VBox spacing="2">
+		<Label text="View Invoices" styleClass="page-heading" />
+		<Label text="Filter, review, and act on invoices — layout matches your dashboard cards and theme."
+			styleClass="dashboard-subtitle" wrapText="true" />
 	</VBox>
+
+	<VBox styleClass="dashboard-kpi-card vi-toolbar-card" spacing="10">
+		<HBox spacing="8" alignment="CENTER_LEFT" styleClass="vi-action-bar">
+			<Button fx:id="btnEdit" text="Edit" onAction="#handleEditAction" disable="true" styleClass="vi-btn-edit" />
+			<Button fx:id="btnFinalize" text="Finalize" onAction="#handleFinalizeAction" disable="true" styleClass="vi-btn-finalize" />
+			<Button fx:id="btnSend" text="Send" onAction="#handleSendAction" disable="true" styleClass="vi-btn-send" />
+			<Button fx:id="btnRevised" text="Revised" onAction="#handleRevisedAction" disable="true" styleClass="vi-btn-revised" />
+			<Button fx:id="btnPayment" text="Payment" onAction="#handlePaymentAction" disable="true" styleClass="vi-btn-payment" />
+			<Button fx:id="btnRaiseCnDn" text="Raise CN/DN" onAction="#handleRaiseCnDnAction" disable="true" styleClass="vi-btn-cndn" />
+			<Button fx:id="btnCancel" text="Cancel Invoice" onAction="#handleCancelAction" disable="true" styleClass="vi-btn-cancel" />
+		</HBox>
+	</VBox>
+
+	<HBox spacing="10" alignment="CENTER_LEFT" styleClass="dashboard-kpi-card vi-filter-bar">
+		<Label text="Client" styleClass="kpi-title" />
+		<ComboBox fx:id="clientComboBox" promptText="All Clients" prefWidth="196" styleClass="client-combo" />
+		<Label text="Invoice status" styleClass="kpi-title" />
+		<ComboBox fx:id="statusComboBox" promptText="All" prefWidth="132" styleClass="compact-combo" />
+		<Label text="From" styleClass="kpi-title" />
+		<DatePicker fx:id="startDatePicker" promptText="From date" prefWidth="128" styleClass="compact-datepicker" />
+		<Label text="To" styleClass="kpi-title" />
+		<DatePicker fx:id="endDatePicker" promptText="To date" prefWidth="128" styleClass="compact-datepicker" />
+		<Label text="Invoice no." styleClass="kpi-title" />
+		<TextField fx:id="invoiceSearchField" promptText="Search…" prefWidth="136" styleClass="compact-field" />
+		<Button fx:id="searchBtn" text="Search" styleClass="action-pill-orange vi-search-cap" onAction="#handleSearch" />
+		<Button fx:id="clearBtn" text="Clear filters" styleClass="vi-clear-button" onAction="#handleClear" />
+	</HBox>
+
+	<HBox spacing="14" alignment="TOP_LEFT" styleClass="vi-main-row" VBox.vgrow="ALWAYS">
+		<VBox spacing="0" styleClass="vi-left-stack" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+			<VBox styleClass="dashboard-kpi-card vi-table-shell" VBox.vgrow="ALWAYS">
+				<TableView fx:id="invoiceTable" styleClass="history-table" VBox.vgrow="ALWAYS">
+					<columns>
+						<TableColumn fx:id="colInvoiceNo" text="Invoice No" prefWidth="220" />
+						<TableColumn fx:id="colClientName" text="Client Name" prefWidth="200" />
+						<TableColumn fx:id="colInvoiceDate" text="Invoice Date" prefWidth="110" />
+						<TableColumn fx:id="colAmount" text="Base Amt" prefWidth="120" />
+						<TableColumn fx:id="colAdjustment" text="Adjustment" prefWidth="160" />
+						<TableColumn fx:id="colNetAmount" text="Net Total" prefWidth="120" />
+						<TableColumn fx:id="colNetPaid" text="Net Paid" prefWidth="120" />
+						<TableColumn fx:id="colDue" text="Due" prefWidth="110" />
+						<TableColumn fx:id="colStatus" text="Status" prefWidth="130" />
+						<TableColumn fx:id="colPaymentStatus" text="Payment Status" prefWidth="140" />
+						<TableColumn fx:id="colType" text="Type" prefWidth="100" />
+					</columns>
+				</TableView>
+				<HBox spacing="10" alignment="CENTER_LEFT" styleClass="vi-pagination-bar">
+					<Label fx:id="paginationInfoLabel" text="Showing 0 of 0" styleClass="vi-page-info" />
+					<Region HBox.hgrow="ALWAYS" />
+					<HBox fx:id="paginationPagesBox" spacing="4" styleClass="vi-page-nav" />
+					<ComboBox fx:id="pageSizeCombo" prefWidth="92" styleClass="compact-combo vi-page-size" />
+				</HBox>
+			</VBox>
+		</VBox>
+
+		<VBox spacing="12" styleClass="vi-sidebar">
+			<VBox styleClass="dashboard-kpi-card vi-side-card" spacing="8">
+				<Label text="Invoice summary" styleClass="vi-side-title" />
+				<GridPane hgap="10" vgap="8">
+					<columnConstraints>
+						<ColumnConstraints minWidth="118" />
+						<ColumnConstraints hgrow="ALWAYS" halignment="RIGHT" />
+					</columnConstraints>
+					<Label text="Total invoices" styleClass="kpi-title" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+					<Label fx:id="sumCountLabel" text="0" styleClass="kpi-value vi-sum-metric" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+					<Label text="Total base amount" styleClass="kpi-title" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+					<Label fx:id="sumBaseLabel" text="₹ 0.00" styleClass="kpi-value vi-sum-metric" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+					<Label text="Total adjustment" styleClass="kpi-title" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+					<Label fx:id="sumAdjustmentLabel" text="₹ 0.00" styleClass="kpi-value vi-sum-metric" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+					<Label text="Total net amount" styleClass="kpi-title" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+					<Label fx:id="sumNetLabel" text="₹ 0.00" styleClass="kpi-value vi-sum-metric" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+					<Label text="Total paid" styleClass="kpi-title" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+					<Label fx:id="sumPaidLabel" text="₹ 0.00" styleClass="kpi-value vi-sum-metric vi-sum-paid" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+					<Label text="Total due" styleClass="kpi-title" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+					<Label fx:id="sumDueLabel" text="₹ 0.00" styleClass="kpi-value vi-sum-metric vi-sum-due" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+				</GridPane>
+			</VBox>
+
+			<VBox styleClass="dashboard-kpi-card vi-side-card" spacing="6">
+				<Label text="Status overview" styleClass="vi-side-title" />
+				<PieChart fx:id="statusPieChart" labelsVisible="true" legendVisible="true" styleClass="vi-chart" />
+			</VBox>
+
+			<VBox styleClass="dashboard-kpi-card vi-side-card" spacing="10">
+				<Label text="Quick filters" styleClass="vi-side-title" />
+				<HBox spacing="8" styleClass="vi-quick-row">
+					<Button fx:id="quickAllBtn" text="All" onAction="#handleQuickFilterAll" styleClass="action-pill-white vi-quick-cap" />
+					<Button fx:id="quickPaidBtn" text="Paid" onAction="#handleQuickFilterPaid" styleClass="action-pill-white vi-quick-cap" />
+					<Button fx:id="quickUnpaidBtn" text="Unpaid" onAction="#handleQuickFilterUnpaid" styleClass="action-pill-white vi-quick-cap" />
+					<Button fx:id="quickOverdueBtn" text="Overdue" onAction="#handleQuickFilterOverdue" styleClass="action-pill-white vi-quick-cap" />
+				</HBox>
+			</VBox>
+		</VBox>
+	</HBox>
 </VBox>

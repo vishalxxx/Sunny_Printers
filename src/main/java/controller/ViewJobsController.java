@@ -100,7 +100,7 @@ public class ViewJobsController {
     @FXML private HBox paginationButtonContainer;
 
     private int currentPage = 1;
-    private final int pageSize = 15;
+    private final int pageSize = 20;
     private final ObservableList<Job> pagedItems = FXCollections.observableArrayList();
 
 
@@ -175,7 +175,8 @@ public class ViewJobsController {
 
         // Bind table to paged items instead of sortedData directly
         jobsTable.setItems(pagedItems);
-        
+        jobsTable.setFixedCellSize(78);
+
         // Listen to changes in sorted data to refresh pagination
         sortedData.addListener((javafx.collections.ListChangeListener<Job>) c -> {
             currentPage = 1;
@@ -402,11 +403,11 @@ public class ViewJobsController {
         // 2. JOB DETAILS COLUMN (Target Vision Alignment)
         jobDetailsCol.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<Job>(cellData.getValue()));
         jobDetailsCol.setCellFactory(col -> new TableCell<Job, Job>() {
-            private final VBox box = new VBox(2);
+            private final VBox box = new VBox(1);
             private final Label title = new Label();
             private final Label clientLabel = new Label();
             private final Label idLabel = new Label();
-            private final HBox root = new HBox(10);
+            private final HBox root = new HBox(8);
             private final StackPane iconBox = new StackPane();
             private final Region icon = new Region();
             
@@ -416,8 +417,8 @@ public class ViewJobsController {
                 idLabel.getStyleClass().add("job-id-row");
                 box.getChildren().addAll(title, clientLabel, idLabel);
                 root.setAlignment(Pos.CENTER_LEFT);
-                iconBox.setMinWidth(48); iconBox.setMaxWidth(48);
-                iconBox.setMinHeight(48); iconBox.setMaxHeight(48);
+                iconBox.setMinWidth(36); iconBox.setMaxWidth(36);
+                iconBox.setMinHeight(36); iconBox.setMaxHeight(36);
                 iconBox.getStyleClass().add("icon-box");
                 icon.getStyleClass().add("inner-icon");
                 iconBox.getChildren().add(icon);
@@ -447,7 +448,7 @@ public class ViewJobsController {
                 
                 iconBox.getStyleClass().add("icon-box-" + type);
                 String colorHex = type.equals("orange") ? "#FA8C16" : type.equals("blue") ? "#1890FF" : type.equals("green") ? "#52C41A" : type.equals("purple") ? "#722ED1" : "#F5222D";
-                icon.setStyle("-fx-shape: '" + shape + "'; -fx-background-color: " + colorHex + "; -fx-min-width: 24; -fx-min-height: 24; -fx-max-width: 24; -fx-max-height: 24;");
+                icon.setStyle("-fx-shape: '" + shape + "'; -fx-background-color: " + colorHex + "; -fx-min-width: 18; -fx-min-height: 18; -fx-max-width: 18; -fx-max-height: 18;");
 
                 setGraphic(root);
             }
@@ -456,13 +457,13 @@ public class ViewJobsController {
         // 3. DATE COLUMN (Target Icons)
         dateCol.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<LocalDate>(cellData.getValue().getJobDate()));
         dateCol.setCellFactory(col -> new TableCell<Job, LocalDate>() {
-            private final HBox root = new HBox(8);
+            private final HBox root = new HBox(6);
             private final Region icon = new Region();
             private final Label label = new Label();
             {
                 root.setAlignment(Pos.CENTER_LEFT);
-                icon.setStyle("-fx-shape: 'M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z'; -fx-background-color: #A0836D; -fx-min-width: 14; -fx-min-height: 14; -fx-max-width: 14; -fx-max-height: 14;");
-                label.setStyle("-fx-text-fill: #1A1311; -fx-font-weight: 600; -fx-font-size: 11px;");
+                icon.setStyle("-fx-shape: 'M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z'; -fx-background-color: #A0836D; -fx-min-width: 12; -fx-min-height: 12; -fx-max-width: 12; -fx-max-height: 12;");
+                label.setStyle("-fx-text-fill: #1A1311; -fx-font-weight: 600; -fx-font-size: 10px;");
                 root.getChildren().addAll(icon, label);
             }
             @Override
@@ -477,7 +478,7 @@ public class ViewJobsController {
         // 4. AMOUNT COLUMN (Metadata Synthesis with Clickable Links)
         amountCol.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<Job>(cellData.getValue()));
         amountCol.setCellFactory(col -> new TableCell<Job, Job>() {
-            private final VBox box = new VBox(2);
+            private final VBox box = new VBox(1);
             private final Label amount = new Label();
             private final HBox metaBox = new HBox(4);
             private final Label invPrefix = new Label("Invoice:");
@@ -557,7 +558,7 @@ public class ViewJobsController {
             protected void updateItem(Job job, boolean empty) {
                 super.updateItem(job, empty);
                 if (empty || job == null) { setGraphic(null); return; }
-                VBox box = new VBox(8);
+                VBox box = new VBox(4);
                 box.setAlignment(Pos.CENTER_LEFT);
                 
                 String status = job.getStatus() != null ? job.getStatus() : "";
@@ -572,7 +573,7 @@ public class ViewJobsController {
         // 6. ACTIONS COLUMN (Triad Suite)
         actionsCol.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<Job>(cellData.getValue()));
         actionsCol.setCellFactory(col -> new TableCell<Job, Job>() {
-            private final HBox root = new HBox(8);
+            private final HBox root = new HBox(6);
             { root.setAlignment(Pos.CENTER_LEFT); }
 
             @Override
@@ -583,7 +584,7 @@ public class ViewJobsController {
                 
                 String statusMsg = job.getStatus() != null ? job.getStatus().toLowerCase() : "";
                 Button primaryBtn = new Button();
-                primaryBtn.setPadding(new Insets(6, 16, 6, 16));
+                primaryBtn.setPadding(new Insets(4, 12, 4, 12));
                 
                 if (statusMsg.contains("draft") || statusMsg.contains("created")) {
                     primaryBtn.setText("Start Processing");
@@ -592,18 +593,18 @@ public class ViewJobsController {
                     primaryBtn.setOnAction(e -> handleStartActionForJob(job));
                 } else if (statusMsg.contains("progress")) {
                     primaryBtn.setText("Mark Completed");
-                    primaryBtn.setStyle("-fx-background-color: #52C41A; -fx-text-fill: white; -fx-background-radius: 6; -fx-font-weight: 800; -fx-font-size: 11px;");
+                    primaryBtn.setStyle("-fx-background-color: #52C41A; -fx-text-fill: white; -fx-background-radius: 6; -fx-font-weight: 800; -fx-font-size: 10px;");
                     primaryBtn.setGraphic(createIcon("M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z", "white"));
                     primaryBtn.setOnAction(e -> handleCompleteActionForJob(job));
                 } else if (statusMsg.contains("completed")) {
                     primaryBtn.setText("Generate Invoice");
-                    primaryBtn.setStyle("-fx-background-color: #722ED1; -fx-text-fill: white; -fx-background-radius: 6; -fx-font-weight: 800; -fx-font-size: 11px;");
+                    primaryBtn.setStyle("-fx-background-color: #722ED1; -fx-text-fill: white; -fx-background-radius: 6; -fx-font-weight: 800; -fx-font-size: 10px;");
                     primaryBtn.setGraphic(createIcon("M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z", "white"));
                     primaryBtn.setOnAction(e -> handleInvoicedRequest(job));
                 } else {
                     primaryBtn.setText("No Actions");
                     primaryBtn.setDisable(true);
-                    primaryBtn.setStyle("-fx-background-color: #F5F5F5; -fx-text-fill: #B5ACA3; -fx-opacity: 1.0; -fx-background-radius: 6; -fx-font-weight: 800; -fx-font-size: 11px;");
+                    primaryBtn.setStyle("-fx-background-color: #F5F5F5; -fx-text-fill: #B5ACA3; -fx-opacity: 1.0; -fx-background-radius: 6; -fx-font-weight: 800; -fx-font-size: 10px;");
                 }
                 
                 Button vBtn = new Button(); vBtn.getStyleClass().addAll("row-action-btn", "row-btn-blue");
@@ -646,8 +647,8 @@ public class ViewJobsController {
     private javafx.scene.Node createStepper(String currentStatus) {
         String s = currentStatus != null ? currentStatus.toLowerCase() : "";
         javafx.scene.layout.Pane pane = new javafx.scene.layout.Pane();
-        pane.setMinHeight(30);
-        pane.setPrefHeight(30);
+        pane.setMinHeight(26);
+        pane.setPrefHeight(26);
 
         String[] stages = {"Draft", "Processing", "Completed", "Invoice"};
         int activeIdx = 0;
@@ -659,9 +660,9 @@ public class ViewJobsController {
         else if (s.contains("invoiced") || s.contains("final")) { activeIdx = 3; color = "#722ED1"; }
         else if (s.contains("cancel") || s.contains("cancelled")) { activeIdx = 0; color = "#F5222D"; }
 
-        int dotSpacing = 72; // Distance between dot centers
-        int dotRadius = 6;
-        int dotDiameter = 12;
+        int dotSpacing = 52; // Distance between dot centers
+        int dotRadius = 5;
+        int dotDiameter = 10;
 
         // Draw Lines first so they are behind dots
         for (int i = 0; i < stages.length - 1; i++) {
@@ -673,7 +674,7 @@ public class ViewJobsController {
             // Line spans from center of current dot to center of next dot
             rail.setPrefWidth(dotSpacing);
             rail.setLayoutX(i * dotSpacing + dotRadius);
-            rail.setLayoutY(dotRadius - 1); // Center vertically with dot (which is at Y=0, center is 6)
+            rail.setLayoutY(dotRadius - 1);
             
             if (i < activeIdx) {
                 if (color.contains("1890")) rail.getStyleClass().add("stepper-line-blue");
@@ -722,10 +723,10 @@ public class ViewJobsController {
                 lbl.setLayoutX(centerX - dotRadius);
             } else {
                 // Estimate width to center other labels under their dots
-                double estWidth = stages[i].length() * 5.5;
+                double estWidth = stages[i].length() * 4.8;
                 lbl.setLayoutX(centerX - estWidth / 2);
             }
-            lbl.setLayoutY(16); // Below the dot
+            lbl.setLayoutY(12);
             
             pane.getChildren().addAll(node, lbl);
         }
@@ -739,8 +740,8 @@ public class ViewJobsController {
         svg.setFill(javafx.scene.paint.Color.web(color));
         javafx.scene.layout.StackPane pane = new javafx.scene.layout.StackPane(svg);
         pane.setAlignment(Pos.CENTER);
-        pane.setMinWidth(16); pane.setMaxWidth(16);
-        pane.setMinHeight(16); pane.setMaxHeight(16);
+        pane.setMinWidth(14); pane.setMaxWidth(14);
+        pane.setMinHeight(14); pane.setMaxHeight(14);
         return pane;
     }
 

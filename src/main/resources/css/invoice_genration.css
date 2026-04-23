@@ -4,6 +4,7 @@
 .root {
     -fx-background-color: #0f0f0f;
     -fx-font-family: "Segoe UI", System;
+    -fx-font-size: 11px;
 }
 
 .page {
@@ -385,7 +386,7 @@
 
 .history-title {
     -fx-text-fill: #e8e8e8;
-    -fx-font-size: 15px;
+    -fx-font-size: 13px;
     -fx-font-weight: 800;
 }
 

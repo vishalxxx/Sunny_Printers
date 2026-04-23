@@ -27,15 +27,28 @@ public class InvoiceBuilderService {
 	// =========================================================
 	public Invoice buildInvoiceForClient(int clientId, String clientName, String businessName, LocalDate fromDate,
 			LocalDate toDate, LocalDate invoiceDate) {
+		return buildInvoiceForClient(clientId, clientName, businessName, fromDate, toDate, invoiceDate, true);
+	}
+
+	/**
+	 * @param reserveTempInvoiceNumber when false (PDF preview), uses "PREVIEW" and does
+	 *                                 not advance the TEMP-* sequence.
+	 */
+	public Invoice buildInvoiceForClient(int clientId, String clientName, String businessName, LocalDate fromDate,
+			LocalDate toDate, LocalDate invoiceDate, boolean reserveTempInvoiceNumber) {
 
 		return AtomicDB.run(con -> {
 
 			Invoice invoice = new Invoice();
 
-			try {
-				invoice.setInvoiceNo(settingsService.generateNextTempInvoiceNumber(con));
-			} catch (Exception e) {
-				throw new RuntimeException("Failed to generate temp invoice number", e);
+			if (reserveTempInvoiceNumber) {
+				try {
+					invoice.setInvoiceNo(settingsService.generateNextTempInvoiceNumber(con));
+				} catch (Exception e) {
+					throw new RuntimeException("Failed to generate temp invoice number", e);
+				}
+			} else {
+				invoice.setInvoiceNo("PREVIEW");
 			}
 
 			invoice.setInvoiceDate(invoiceDate != null ? invoiceDate : LocalDate.now());
@@ -60,15 +73,28 @@ public class InvoiceBuilderService {
 
 	public Invoice buildInvoiceForClientByJobs(int clientId, String clientName, String businessName,
 			List<Integer> jobIds, LocalDate invoiceDate) {
+		return buildInvoiceForClientByJobs(clientId, clientName, businessName, jobIds, invoiceDate, true);
+	}
+
+	/**
+	 * @param reserveTempInvoiceNumber when false (e.g. PDF preview), uses a fixed
+	 *                                   invoice no and does not advance TEMP-* sequence.
+	 */
+	public Invoice buildInvoiceForClientByJobs(int clientId, String clientName, String businessName,
+			List<Integer> jobIds, LocalDate invoiceDate, boolean reserveTempInvoiceNumber) {
 
 		return AtomicDB.run(con -> {
 
 			Invoice invoice = new Invoice();
 
-			try {
-				invoice.setInvoiceNo(settingsService.generateNextTempInvoiceNumber(con));
-			} catch (Exception e) {
-				throw new RuntimeException("Failed to generate temp invoice number", e);
+			if (reserveTempInvoiceNumber) {
+				try {
+					invoice.setInvoiceNo(settingsService.generateNextTempInvoiceNumber(con));
+				} catch (Exception e) {
+					throw new RuntimeException("Failed to generate temp invoice number", e);
+				}
+			} else {
+				invoice.setInvoiceNo("PREVIEW");
 			}
 
 			invoice.setInvoiceDate(invoiceDate != null ? invoiceDate : LocalDate.now());
@@ -256,7 +282,7 @@ public class InvoiceBuilderService {
 				JOIN job_items ji ON ji.job_id = j.id
 				WHERE j.client_id = ?
 				AND DATE(j.job_date) BETWEEN ? AND ?
-				AND j.status = 'Completed'
+				AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
 				AND j.invoice_id IS NULL
 				ORDER BY j.job_date, j.id, ji.sort_order
 				""";
