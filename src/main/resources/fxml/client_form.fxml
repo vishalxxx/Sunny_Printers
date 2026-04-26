@@ -11,14 +11,7 @@
     <VBox spacing="15" styleClass="content-container">
 
         <!-- BREADCRUMBS -->
-        <HBox styleClass="breadcrumb-container" spacing="8" alignment="CENTER_LEFT">
-            <Button fx:id="breadcrumbBackBtn" onAction="#handleBack" styleClass="breadcrumb-back-btn" focusTraversable="false">
-                <graphic><Region styleClass="back-icon"/></graphic>
-            </Button>
-            <Label text="CLIENTS" styleClass="breadcrumb-label" />
-            <Label text="›" styleClass="breadcrumb-separator" />
-            <Label fx:id="breadcrumbCurrent" text="EDIT CLIENT" styleClass="breadcrumb-label, breadcrumb-current" />
-        </HBox>
+        <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" spacing="8" alignment="CENTER_LEFT" />
 
         <!-- HEADER -->
         <HBox styleClass="header-row">

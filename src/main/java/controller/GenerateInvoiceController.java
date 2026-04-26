@@ -28,6 +28,7 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.util.StringConverter;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -49,7 +50,7 @@ import utils.Toast;
 public class GenerateInvoiceController {
 
     @FXML
-    private Button breadcrumbBackBtn;
+    private HBox breadcrumbContainer;
     @FXML
     private TableView<JobItem> jobsTable;
     @FXML
@@ -167,6 +168,7 @@ public class GenerateInvoiceController {
         setupMonthlyTab();
         refreshTabVisuals();
         applyTabContent();
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Generate Invoice", this::handleBack);
     }
 
     private final ClientService clientService = new ClientService();

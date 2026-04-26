@@ -30,34 +30,6 @@
     -fx-alignment: CENTER_LEFT;
 }
 
-.breadcrumb-label {
-    -fx-text-fill: #A0836D;
-    -fx-font-size: 10px;
-    -fx-font-weight: 800;
-    -fx-letter-spacing: 0.1em;
-}
-
-.breadcrumb-separator {
-    -fx-text-fill: #A0836D;
-    -fx-font-size: 10px;
-}
-
-.breadcrumb-current {
-    -fx-text-fill: #C87941;
-}
-
-.page-heading {
-    -fx-text-fill: #3E312D;
-    -fx-font-size: 18px;
-    -fx-font-family: 'Manrope';
-    -fx-font-weight: 700;
-}
-
-.page-subheading {
-    -fx-text-fill: #7A726D;
-    -fx-font-size: 11px;
-    -fx-font-family: 'Inter';
-}
 
 /* --- COMPACT HEADER BAR (Fintech Style) --- */
 .header-bar {
@@ -380,12 +352,12 @@
 /* --- UPLOAD ZONE --- */
 .upload-zone-premium {
     -fx-background-color: #FAF6F0;
-    -fx-background-radius: 20;
+    -fx-background-radius: 8;
     -fx-cursor: hand;
     -fx-border-color: #D6C5B3;
     -fx-border-width: 2.5;
     -fx-border-style: dashed;
-    -fx-border-radius: 20;
+    -fx-border-radius: 8;
     -fx-transition: all 0.3s ease;
 }
 

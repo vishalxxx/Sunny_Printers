@@ -9,6 +9,7 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
+import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import model.Client;
 import repository.ClientRepository;
@@ -24,9 +25,7 @@ public class ClientFormController implements Initializable {
 	@FXML
 	private Label lblClientId;
     @FXML
-    private Label breadcrumbCurrent;
-    @FXML
-    private Button breadcrumbBackBtn;
+    private HBox breadcrumbContainer;
     @FXML
     private Button btnSave;
 
@@ -58,10 +57,8 @@ public class ClientFormController implements Initializable {
 
 	@Override
 	public void initialize(URL url, ResourceBundle resourceBundle) {
-        if (breadcrumbBackBtn != null) {
-            breadcrumbBackBtn.visibleProperty().bind(NavigationManager.getInstance().canGoBackProperty());
-            breadcrumbBackBtn.managedProperty().bind(breadcrumbBackBtn.visibleProperty());
-        }
+        // Initial population
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Client Form", () -> handleBack(null));
 	}
 
     @FXML
@@ -77,7 +74,7 @@ public class ClientFormController implements Initializable {
             // "ADD MODE"
             if (lblTitleName != null) lblTitleName.setText("Register New Client");
             if (lblClientId != null) lblClientId.setText("#CL-NEW");
-            if (breadcrumbCurrent != null) breadcrumbCurrent.setText("ADD NEW CLIENT");
+            utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Add Client", () -> handleBack(null));
             if (btnSave != null) btnSave.setText("Register Client");
             
             clearFields();
@@ -87,7 +84,7 @@ public class ClientFormController implements Initializable {
         // "EDIT MODE"
         if (lblTitleName != null) lblTitleName.setText(client.getBusinessName());
         if (lblClientId != null) lblClientId.setText("#CL-" + client.getId());
-        if (breadcrumbCurrent != null) breadcrumbCurrent.setText("EDIT CLIENT");
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Edit Client", () -> handleBack(null));
         if (btnSave != null) btnSave.setText("Update Profile");
 
 		businessNameField.setText(client.getBusinessName());

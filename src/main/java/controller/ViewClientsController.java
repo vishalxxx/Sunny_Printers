@@ -30,7 +30,7 @@ public class ViewClientsController implements Initializable {
 
     @FXML private TextField searchField;
     @FXML private ListView<Client> clientListView;
-    @FXML private Button breadcrumbBackBtn;
+    @FXML private HBox breadcrumbContainer;
     @FXML private Label lblTotalClients;
     @FXML private Label lblPreferredClients;
     @FXML private Label lblTotalReceivables;
@@ -49,10 +49,7 @@ public class ViewClientsController implements Initializable {
 
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
-        if (breadcrumbBackBtn != null) {
-            breadcrumbBackBtn.visibleProperty().bind(NavigationManager.getInstance().canGoBackProperty());
-            breadcrumbBackBtn.managedProperty().bind(breadcrumbBackBtn.visibleProperty());
-        }
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Client Directory", () -> handleBack(null));
 
 		// Load DB data
 		masterList.setAll(repo.findAllSortedById());

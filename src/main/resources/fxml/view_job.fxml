@@ -18,16 +18,10 @@
     <padding><Insets top="6" left="16" right="16" bottom="12" /></padding>
 
     <!-- 0. BREADCRUMBS -->
-    <HBox styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8">
+    <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8">
         <padding>
             <Insets bottom="6"/>
         </padding>
-        <Button fx:id="breadcrumbBackBtn" onAction="#handleBack" styleClass="breadcrumb-back-btn" focusTraversable="false">
-            <graphic><Region styleClass="back-icon"/></graphic>
-        </Button>
-        <Label text="JOBS" styleClass="breadcrumb-label" />
-        <Label text="›" styleClass="breadcrumb-separator" />
-        <Label text="MANAGEMENT" styleClass="breadcrumb-label, breadcrumb-current" />
     </HBox>
 
     <!-- 1. PAGE HEADER -->
@@ -40,16 +34,16 @@
     <VBox styleClass="header-bar" spacing="10">
         <padding><Insets top="12" right="14" bottom="12" left="14" /></padding>
         
-        <HBox fx:id="searchContainer" styleClass="compact-field" alignment="CENTER_LEFT" spacing="8" maxWidth="Infinity">
+        <HBox fx:id="searchContainer" styleClass="taste-field" alignment="CENTER_LEFT" spacing="8" maxWidth="Infinity">
              <Region styleClass="search-icon" />
              <TextField fx:id="searchField" promptText="Search by Job Name, Job Title, Client..." styleClass="text-field" HBox.hgrow="ALWAYS" style="-fx-background-color: transparent;"/>
         </HBox>
         
         <HBox spacing="12" alignment="CENTER_LEFT">
-            <ComboBox fx:id="clientComboBox" promptText="Select Client" styleClass="client-combo" prefWidth="320" editable="false" />
-            <ComboBox fx:id="statusFilterComboBox" promptText="All Status" styleClass="compact-combo" prefWidth="180" />
-            <DatePicker fx:id="fromDatePicker" promptText="From Date" styleClass="compact-datepicker" prefWidth="160"/>
-            <DatePicker fx:id="toDatePicker" promptText="To Date" styleClass="compact-datepicker" prefWidth="160"/>
+            <ComboBox fx:id="clientComboBox" promptText="Select Client" styleClass="taste-combo" prefWidth="320" editable="false" />
+            <ComboBox fx:id="statusFilterComboBox" promptText="All Status" styleClass="taste-combo" prefWidth="180" />
+            <DatePicker fx:id="fromDatePicker" promptText="From Date" styleClass="taste-datepicker" prefWidth="160"/>
+            <DatePicker fx:id="toDatePicker" promptText="To Date" styleClass="taste-datepicker" prefWidth="160"/>
             <Button styleClass="view-clear-btn" onAction="#clearFilters" >
                 <graphic>
                     <HBox spacing="8" alignment="CENTER">

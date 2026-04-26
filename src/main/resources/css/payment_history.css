@@ -5,7 +5,7 @@
 
 .root-container {
     -fx-background-color: transparent;
-    -fx-padding: 0 28 28 28;
+    -fx-padding: 0 40 40 40;
 }
 
 /* Header Section */
@@ -22,7 +22,7 @@
 
 .page-subtitle {
     -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
-    -fx-font-size: 12px;
+    -fx-font-size: 14px;
     -fx-text-fill: #64748b; 
     -fx-padding: 2 0 0 0;
 }
@@ -31,7 +31,7 @@
 .filters-card {
     -fx-background-color: white;
     -fx-background-radius: 12px;
-    -fx-padding: 18;
+    -fx-padding: 25;
     -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 10, 0, 0, 4);
     -fx-border-color: #f1f5f9;
     -fx-border-radius: 12px;

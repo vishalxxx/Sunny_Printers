@@ -18,17 +18,14 @@
             <Insets top="20" right="30" bottom="30" left="30" />
         </padding>
 
-        <!-- 1. BREADCRUMBS -->
-        <HBox styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="12">
-            <Button fx:id="breadcrumbBackBtn" onAction="#handleBack" styleClass="breadcrumb-back-btn">
-                <graphic><Region styleClass="back-icon"/></graphic>
-            </Button>
-            <HBox alignment="CENTER_LEFT" spacing="8">
-                <Label text="Invoices" styleClass="breadcrumb-label" />
-                <Label text="›" styleClass="breadcrumb-separator" />
-                <Label text="Generate Invoice" styleClass="breadcrumb-label, breadcrumb-current" />
-            </HBox>
-        </HBox>
+        <!-- 1. HEADER SECTION -->
+        <VBox spacing="2">
+            <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8" />
+            <VBox spacing="2" styleClass="page-header-container">
+                <Label text="Generate Invoice" styleClass="page-heading" />
+                <Label text="Create professional invoices for your printing jobs" styleClass="page-subheading" />
+            </VBox>
+        </VBox>
 
         <!-- 2. TABS SECTION -->
         <HBox spacing="32" styleClass="tab-header">

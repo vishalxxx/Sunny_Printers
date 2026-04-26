@@ -39,7 +39,7 @@ public class ClientProfileController implements Initializable {
     
     @FXML private VBox cardBalance;
 
-    @FXML private Button breadcrumbBackBtn;
+    @FXML private HBox breadcrumbContainer;
     @FXML private Button btnEditProfile;
 
     @FXML private VBox pipelineContainer;
@@ -53,10 +53,7 @@ public class ClientProfileController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        if (breadcrumbBackBtn != null) {
-            breadcrumbBackBtn.visibleProperty().bind(NavigationManager.getInstance().canGoBackProperty());
-            breadcrumbBackBtn.managedProperty().bind(breadcrumbBackBtn.visibleProperty());
-        }
+
         if (btnEditProfile != null) {
             btnEditProfile.setOnAction(e -> {
                 if (currentClient != null) {
@@ -79,6 +76,9 @@ public class ClientProfileController implements Initializable {
 
     public void refreshProfile() {
         if (currentClient == null) return;
+        
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, currentClient.getBusinessName(), () -> handleBack(null));
+        
         updateUI();
         loadInvoiceHistory();
         loadActivePipeline();

@@ -5,29 +5,138 @@
 
 /* Shared back icon (used in breadcrumbs) */
 .back-icon {
-  -fx-shape: 'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z';
-  -fx-background-color: #8E857C;
-  -fx-min-width: 16;
-  -fx-min-height: 16;
-  -fx-max-width: 16;
-  -fx-max-height: 16;
+    -fx-shape: 'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z';
+    -fx-background-color: #8E857C;
+    -fx-min-width: 16;
+    -fx-min-height: 16;
+    -fx-max-width: 16;
+    -fx-max-height: 16;
 }
 
 /* Breadcrumb back button (matches old top back button styling) */
 .breadcrumb-back-btn {
-  -fx-background-color: white;
-  -fx-background-radius: 10;
-  -fx-min-width: 32;
-  -fx-min-height: 32;
-  -fx-max-width: 32;
-  -fx-max-height: 32;
-  -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.04), 10, 0, 0, 4);
-  -fx-padding: 0;
-  -fx-cursor: hand;
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-max-width: 32;
+    -fx-max-height: 32;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.04), 10, 0, 0, 4);
+    -fx-padding: 0;
+    -fx-cursor: hand;
 }
 
 .breadcrumb-back-btn:hover {
-  -fx-background-color: #FBF9F2;
+    -fx-background-color: #FBF9F2;
+}
+
+.page-header-container {
+    -fx-padding: 0 0 8 0;
+    -fx-alignment: CENTER_LEFT;
+}
+
+/* ===================== TYPOGRAPHY & HEADINGS (SHARED) ===================== */
+.page-heading {
+    -fx-font-family: 'Manrope';
+    -fx-font-size: 24px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #3E312D;
+    -fx-padding: 4 0;
+}
+
+.page-subheading {
+    -fx-font-family: 'Inter';
+    -fx-font-size: 13px;
+    -fx-font-weight: 500;
+    -fx-text-fill: #8E7B71;
+    -fx-padding: 0 0 10 0;
+}
+
+.field-heading-sm {
+    -fx-font-family: 'Inter';
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #8E7B71;
+    -fx-text-transform: uppercase;
+    -fx-letter-spacing: 0.05em;
+}
+
+.card-title {
+    -fx-font-family: 'Manrope';
+    -fx-font-size: 16px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #3E312D;
+}
+
+.card-title-sm {
+    -fx-font-family: 'Manrope';
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #3E312D;
+}
+
+/* ===================== BREADCRUMBS (SHARED) ===================== */
+.breadcrumb-container {
+    -fx-padding: 0 0 12 0;
+    -fx-spacing: 12;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.breadcrumb-label {
+    -fx-text-fill: #8E7A6B;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+}
+
+.breadcrumb-separator {
+    -fx-text-fill: #D6D1C9;
+    -fx-font-size: 11px;
+}
+
+.breadcrumb-current {
+    -fx-text-fill: #3E312D;
+    -fx-font-weight: 700;
+}
+
+.breadcrumb-mini {
+    -fx-opacity: 0.8;
+}
+
+.breadcrumb-mini .breadcrumb-label,
+.breadcrumb-mini .breadcrumb-current {
+    -fx-font-size: 10px;
+}
+
+/* ===================== BREADCRUMBS (SHARED) ===================== */
+.breadcrumb-container {
+    -fx-padding: 0 0 12 0;
+    -fx-spacing: 12;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.breadcrumb-label {
+    -fx-text-fill: #8E7A6B;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+}
+
+.breadcrumb-separator {
+    -fx-text-fill: #D6D1C9;
+    -fx-font-size: 11px;
+}
+
+.breadcrumb-current {
+    -fx-text-fill: #3E312D;
+    -fx-font-weight: 700;
+}
+
+.breadcrumb-mini {
+    -fx-opacity: 0.8;
+}
+
+.breadcrumb-mini .breadcrumb-label,
+.breadcrumb-mini .breadcrumb-current {
+    -fx-font-size: 10px;
 }
 
 /* ===================== SEARCH BOX (SHARED) ===================== */
@@ -130,12 +239,12 @@
     -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 15, 0, 0, 5);
 }
 
-.date-picker-popup > .month-year-pane {
+.date-picker-popup>.month-year-pane {
     -fx-background-color: transparent;
     -fx-padding: 10 10 4 10;
 }
 
-.date-picker-popup > .month-year-pane > .label {
+.date-picker-popup>.month-year-pane>.label {
     -fx-text-fill: #3E312D;
     -fx-font-family: 'Manrope';
     -fx-font-weight: 800;
@@ -204,22 +313,24 @@
 }
 
 .date-picker-popup .day-cell:disabled {
+    -fx-opacity: 0.3;
+    -fx-text-fill: #B5ACA3;
+}
+
+/* Only display one month calendar at a time - hide leading/trailing days */
+.date-picker-popup .day-cell.next-month,
+.date-picker-popup .day-cell.previous-month {
     -fx-opacity: 0;
-    -fx-pref-height: 0;
-    -fx-max-height: 0;
-    -fx-padding: 0;
-    -fx-border-width: 0;
-    -fx-text-fill: transparent;
-    -fx-background-color: transparent;
+    -fx-mouse-transparent: true;
 }
 
 /* DATE PICKER BUTTON STYLING */
-.date-picker > .arrow-button {
+.date-picker>.arrow-button {
     -fx-padding: 0 14;
     -fx-cursor: hand;
 }
 
-.date-picker > .arrow-button > .arrow {
+.date-picker>.arrow-button>.arrow {
     -fx-shape: "M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zM7 14h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2z";
     -fx-background-color: #CD7B4E;
     -fx-min-width: 14;
@@ -244,7 +355,7 @@
     -fx-max-width: 380;
 }
 
-.atelier-alert > .header-panel {
+.atelier-alert>.header-panel {
     -fx-background-color: transparent;
     -fx-padding: 0 0 8 0;
 }
@@ -257,7 +368,7 @@
     -fx-wrap-text: true;
 }
 
-.atelier-alert > .content.label {
+.atelier-alert>.content.label {
     -fx-font-family: 'Inter';
     -fx-font-size: 13px;
     -fx-text-fill: #6B5E58;
@@ -354,10 +465,10 @@
 .client-combo,
 .card-combo {
     -fx-background-color: #FAF6F0;
-    -fx-border-color: #CD7B4E;
-    -fx-border-width: 1.5;
-    -fx-border-radius: 20;
-    -fx-background-radius: 20;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
     -fx-min-height: 36;
     -fx-padding: 0;
     -fx-text-fill: #3E312D;
@@ -370,6 +481,107 @@
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
 }
+
+/* ===================== TASTE FORM CONTROLS (SHARED) ===================== */
+.taste-field, .taste-datepicker {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-min-height: 36;
+    -fx-padding: 0 10;
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 13px;
+    -fx-font-weight: 500;
+}
+
+.taste-combo {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-min-height: 36;
+    -fx-padding: 0;
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 13px;
+    -fx-font-family: 'Inter';
+    -fx-font-weight: 500;
+    -fx-cursor: hand;
+}
+
+.taste-combo .text-field,
+.taste-datepicker .text-field {
+    -fx-background-color: transparent !important;
+    -fx-padding: 0 !important;
+    -fx-text-fill: #3E312D;
+}
+
+.taste-combo > .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 3 8 3 12;
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter';
+}
+
+.taste-combo .arrow-button,
+.taste-datepicker .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 12 0 0;
+}
+
+.taste-combo .arrow {
+    -fx-background-color: #CD7B4E;
+    -fx-shape: "M7 10l5 5 5-5z";
+}
+
+.taste-datepicker .arrow {
+    -fx-background-color: #A0836D;
+    -fx-shape: "M20 3h-1V1h-2v2H7V1H5v2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H4V8h16v13z";
+    -fx-scale-x: 0.8;
+    -fx-scale-y: 0.8;
+}
+
+.taste-field:focused, .taste-combo:focused, .taste-datepicker:focused,
+.taste-field:focused-within, .taste-combo:focused-within, .taste-datepicker:focused-within {
+    -fx-border-color: #CD7B4E !important;
+    -fx-border-width: 1.4 !important;
+    -fx-background-color: #FAF6F0 !important;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.16), 14, 0, 0, 5) !important;
+}
+
+.taste-combo-sm {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-min-height: 32;
+    -fx-padding: 0;
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 11px;
+    -fx-font-family: 'Inter';
+    -fx-font-weight: 700;
+    -fx-cursor: hand;
+}
+
+.taste-combo-sm > .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 2 8 2 10;
+    -fx-text-fill: #3E312D;
+}
+
+.taste-combo-sm .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 8 0 0;
+}
+
+.taste-combo-sm .arrow {
+    -fx-background-color: #CD7B4E;
+    -fx-shape: "M7 10l5 5 5-5z";
+}
+
 
 .sort-combo:focused,
 .sort-combo:focused-within,
@@ -408,8 +620,8 @@
     -fx-faint-focus-color: transparent;
 }
 
-.sort-combo > .list-cell,
-.card-combo > .list-cell {
+.sort-combo>.list-cell,
+.card-combo>.list-cell {
     -fx-background-color: transparent;
     -fx-padding: 3 8 3 10;
     -fx-label-padding: 0;
@@ -421,7 +633,7 @@
 }
 
 /* Closed combo only — insets must not apply to popup/list rows (clips hover fill). */
-.client-combo > .list-cell {
+.client-combo>.list-cell {
     -fx-background-color: transparent;
     -fx-padding: 3 8 3 10;
     -fx-label-padding: 0;
@@ -440,14 +652,14 @@
     -fx-background-color: transparent !important;
 }
 
-.sort-combo > .list-cell,
-.sort-combo > .list-cell:selected,
-.compact-combo > .list-cell,
-.compact-combo > .list-cell:selected,
-.client-combo > .list-cell,
-.client-combo > .list-cell:selected,
-.card-combo > .list-cell,
-.card-combo > .list-cell:selected {
+.sort-combo>.list-cell,
+.sort-combo>.list-cell:selected,
+.compact-combo>.list-cell,
+.compact-combo>.list-cell:selected,
+.client-combo>.list-cell,
+.client-combo>.list-cell:selected,
+.card-combo>.list-cell,
+.card-combo>.list-cell:selected {
     -fx-background-color: transparent !important;
 }
 
@@ -573,7 +785,7 @@
     -fx-background-radius: 8;
 }
 
-.client-combo > .list-cell:hover {
+.client-combo>.list-cell:hover {
     -fx-background-insets: 1 0 !important;
 }
 
@@ -602,4 +814,3 @@
 .scroll-bar:vertical .track {
     -fx-background-color: #FAF6F0;
 }
-

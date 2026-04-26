@@ -94,6 +94,7 @@ public class ViewJobsController {
     @FXML private Button bulkCompleteBtn;
     @FXML private Button bulkInvoiceBtn;
     @FXML private Button bulkCancelBtn;
+    @FXML private HBox breadcrumbContainer;
 
     @FXML private Label paginationInfoLabel;
     @FXML private TextField goToPageField;
@@ -193,6 +194,8 @@ public class ViewJobsController {
             });
             return row;
         });
+        
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Job Management", () -> handleBack(null));
     }
     
     // =========================================================

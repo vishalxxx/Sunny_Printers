@@ -45,25 +45,6 @@
     -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.16), 14, 0, 0, 5) !important;
 }
 
-/* --- BREADCRUMBS --- */
-.breadcrumb-container {
-    -fx-padding: 0 0 10 0;
-}
-
-.breadcrumb-label {
-    -fx-text-fill: #8E7A6B;
-    -fx-font-size: 11px;
-    -fx-font-weight: 600;
-}
-
-.breadcrumb-separator {
-    -fx-text-fill: #D6D1C9;
-}
-
-.breadcrumb-current {
-    -fx-text-fill: #3E312D;
-    -fx-font-weight: 700;
-}
 
 /* --- TABS (Editorial Style) --- */
 .tab-header {

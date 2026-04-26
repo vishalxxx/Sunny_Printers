@@ -61,6 +61,18 @@ public class NavigationManager {
         return canGoBack;
     }
 
+    public java.util.List<NavState> getHistory() {
+        java.util.List<NavState> list = new java.util.ArrayList<>(history);
+        if (currentState != null) {
+            list.add(currentState);
+        }
+        return list;
+    }
+
+    public NavState getCurrentState() {
+        return currentState;
+    }
+
     public static class NavState {
         private final String fxmlPath;
         private final String title;

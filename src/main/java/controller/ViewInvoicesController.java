@@ -35,7 +35,6 @@ public class ViewInvoicesController {
     @FXML private DatePicker startDatePicker;
     @FXML private DatePicker endDatePicker;
     @FXML private TextField invoiceSearchField;
-    @FXML private Button searchBtn, clearBtn;
 
     @FXML private TableView<InvoiceMaster> invoiceTable;
     @FXML private TableColumn<InvoiceMaster, String> colInvoiceNo;
@@ -47,8 +46,7 @@ public class ViewInvoicesController {
     @FXML private TableColumn<InvoiceMaster, Double> colNetPaid;
     @FXML private TableColumn<InvoiceMaster, Double> colDue;
     @FXML private TableColumn<InvoiceMaster, String> colStatus;
-    @FXML private TableColumn<InvoiceMaster, String> colPaymentStatus;
-    @FXML private TableColumn<InvoiceMaster, String> colType;
+    @FXML private TableColumn<InvoiceMaster, Void> colActions;
 
     @FXML private Button btnEdit, btnFinalize, btnSend, btnPayment, btnCancel, btnRevised, btnRaiseCnDn;
     @FXML private Label paginationInfoLabel;
@@ -61,10 +59,11 @@ public class ViewInvoicesController {
     @FXML private Label sumNetLabel;
     @FXML private Label sumPaidLabel;
     @FXML private Label sumDueLabel;
-    @FXML private Button quickAllBtn;
-    @FXML private Button quickPaidBtn;
-    @FXML private Button quickUnpaidBtn;
-    @FXML private Button quickOverdueBtn;
+    @FXML private ToggleButton quickAllBtn;
+    @FXML private ToggleButton quickPaidBtn;
+    @FXML private ToggleButton quickUnpaidBtn;
+    @FXML private ToggleButton quickOverdueBtn;
+    @FXML private HBox breadcrumbContainer;
 
     public static String pendingSearchInvoiceNo;
     private static final int ALL_CLIENTS_ID = 0;
@@ -92,6 +91,8 @@ public class ViewInvoicesController {
             loadClients();
             loadStatuses();
             
+            utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "View Invoices", () -> handleBack(null));
+            
             setupAutoPopupDatePicker(startDatePicker);
             setupAutoPopupDatePicker(endDatePicker);
 
@@ -102,10 +103,10 @@ public class ViewInvoicesController {
                 endDatePicker.setValue(LocalDate.now());
             }
 
-            applyButtonIcons();
             setupPaginationControls();
             setupStatusPieChart();
             setupQuickFilterSync();
+            setupLiveFilters();
 
             invoiceTable.setItems(tablePageItems);
 
@@ -142,6 +143,29 @@ public class ViewInvoicesController {
             System.err.println("CRITICAL ERROR initializing ViewInvoicesController: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    private void setupLiveFilters() {
+        if (invoiceSearchField != null) {
+            invoiceSearchField.textProperty().addListener((obs, oldVal, newVal) -> handleSearch(null));
+        }
+        if (clientComboBox != null) {
+            clientComboBox.valueProperty().addListener((obs, oldVal, newVal) -> handleSearch(null));
+        }
+        if (statusComboBox != null) {
+            statusComboBox.valueProperty().addListener((obs, oldVal, newVal) -> handleSearch(null));
+        }
+        if (startDatePicker != null) {
+            startDatePicker.valueProperty().addListener((obs, oldVal, newVal) -> handleSearch(null));
+        }
+        if (endDatePicker != null) {
+            endDatePicker.valueProperty().addListener((obs, oldVal, newVal) -> handleSearch(null));
+        }
+    }
+
+    @FXML
+    private void handleBack(ActionEvent event) {
+        MainController.getInstance().handleBack(event);
     }
 
     private void setupPaginationControls() {
@@ -188,21 +212,10 @@ public class ViewInvoicesController {
         });
     }
 
-    private void setQuickFilterActive(Button active) {
-        for (Button b : new Button[] { quickAllBtn, quickPaidBtn, quickUnpaidBtn, quickOverdueBtn }) {
-            if (b == null) {
-                continue;
-            }
-            b.getStyleClass().removeAll("action-pill-orange");
-            if (!b.getStyleClass().contains("action-pill-white")) {
-                b.getStyleClass().add("action-pill-white");
-            }
-        }
-        if (active != null) {
-            active.getStyleClass().removeAll("action-pill-white");
-            if (!active.getStyleClass().contains("action-pill-orange")) {
-                active.getStyleClass().add("action-pill-orange");
-            }
+    private void setQuickFilterActive(ToggleButton active) {
+        for (ToggleButton b : new ToggleButton[] { quickAllBtn, quickPaidBtn, quickUnpaidBtn, quickOverdueBtn }) {
+            if (b == null) continue;
+            b.setSelected(b == active);
         }
     }
 
@@ -279,15 +292,36 @@ public class ViewInvoicesController {
             colDue.setCellValueFactory(new PropertyValueFactory<>("dueAmount"));
             colDue.setCellFactory(c -> rupeeMoneyCell(true));
         }
-        if (colType != null) colType.setCellValueFactory(new PropertyValueFactory<>("type"));
 
         if (colStatus != null) {
             colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
             colStatus.setCellFactory(col -> new StatusCell());
         }
-        if (colPaymentStatus != null) {
-            colPaymentStatus.setCellValueFactory(new PropertyValueFactory<>("paymentStatus"));
-            colPaymentStatus.setCellFactory(col -> new StatusCell());
+
+        if (colActions != null) {
+            colActions.setCellFactory(col -> new TableCell<>() {
+                private final Button btn = new Button("...");
+                {
+                    btn.getStyleClass().add("vi-btn-actions");
+                    btn.setOnAction(e -> {
+                        InvoiceMaster inv = getTableRow().getItem();
+                        if (inv != null) {
+                            // Show a context menu or simple popup
+                            ContextMenu menu = new ContextMenu();
+                            MenuItem view = new MenuItem("View Details");
+                            view.setOnAction(ae -> handleViewOnlyAction(inv));
+                            menu.getItems().add(view);
+                            menu.show(btn, javafx.geometry.Side.BOTTOM, 0, 0);
+                        }
+                    });
+                }
+                @Override
+                protected void updateItem(Void item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty) setGraphic(null);
+                    else setGraphic(btn);
+                }
+            });
         }
     }
 
@@ -328,15 +362,14 @@ public class ViewInvoicesController {
             @Override
             protected void updateItem(Double item, boolean empty) {
                 super.updateItem(item, empty);
+                getStyleClass().removeAll("vi-money", "vi-due-unpaid");
                 if (empty || item == null) {
                     setText(null);
-                    setStyle(null);
                 } else {
                     setText(fmtRupee(item));
+                    getStyleClass().add("vi-money");
                     if (dueColumn && item > 0.009) {
-                        setStyle("-fx-text-fill: #C24141; -fx-font-weight: 800;");
-                    } else {
-                        setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700;");
+                        getStyleClass().add("vi-due-unpaid");
                     }
                 }
             }
@@ -344,52 +377,25 @@ public class ViewInvoicesController {
     }
 
     private void applyStatusPillStyle(Label pill, String status) {
-        if (pill == null || status == null) {
-            return;
-        }
+        if (pill == null || status == null) return;
+        pill.getStyleClass().add("status-pill");
         String u = status.toUpperCase().replace(' ', '_');
-        String bg;
-        String fg;
+        String bg, fg;
         switch (u) {
-            case "PAID":
-            case "FINAL":
-                bg = "#DCFCE7";
-                fg = "#166534";
-                break;
-            case "UNPAID":
-            case "VOID":
-                bg = "#FEE2E2";
-                fg = "#B91C1C";
-                break;
+            case "PAID": case "FINAL":
+                bg = "#E8F5E9"; fg = "#2E7D32"; break;
+            case "UNPAID": case "VOID": case "CANCELLED":
+                bg = "#FFEBEE"; fg = "#C62828"; break;
             case "OVERDUE":
-                bg = "#FFEDD5";
-                fg = "#C2410C";
-                break;
+                bg = "#FFF3E0"; fg = "#EF6C00"; break;
             case "PARTIAL_PAID":
-            case "PARTIAL PAID":
-                bg = "#DBEAFE";
-                fg = "#1D4ED8";
-                break;
-            case "DRAFT":
-                bg = "#F3E8FF";
-                fg = "#6B21A8";
-                break;
-            case "SENT":
-            case "SENT_TO_CLIENT":
-                bg = "#E0F2FE";
-                fg = "#0369A1";
-                break;
-            case "CANCELLED":
-            case "REVISED":
-                bg = "#F5F5F4";
-                fg = "#57534E";
-                break;
-            default:
-                bg = "#F5F5F4";
-                fg = "#44403C";
+                bg = "#E3F2FD"; fg = "#1565C0"; break;
+            case "SENT": case "SENT_TO_CLIENT":
+                bg = "#E0F2FE"; fg = "#0369A1"; break;
+            case "DRAFT": default:
+                bg = "#F3E5F5"; fg = "#7B1FA2"; break;
         }
-        pill.setStyle("-fx-background-color: " + bg + "; -fx-text-fill: " + fg
-                + "; -fx-background-radius: 20; -fx-padding: 4 10; -fx-font-size: 10px; -fx-font-weight: 800;");
+        pill.setStyle("-fx-background-color: " + bg + "; -fx-text-fill: " + fg + ";");
     }
 
     private class AdjustmentCell extends TableCell<InvoiceMaster, String> {
@@ -520,7 +526,6 @@ public class ViewInvoicesController {
         if (btnRaiseCnDn != null) btnRaiseCnDn.setDisable(true);
     }
 
-    @FXML
     private void handleSearch(ActionEvent event) {
         final Integer clientId = (clientComboBox != null && clientComboBox.getValue() != null
                 && clientComboBox.getValue().getId() != ALL_CLIENTS_ID)
@@ -560,10 +565,6 @@ public class ViewInvoicesController {
                             invoiceTable.getSelectionModel().select(sel);
                             invoiceTable.requestFocus();
                         }
-                    }
-
-                    if (results.isEmpty() && event != null && searchBtn != null && searchBtn.getScene() != null) {
-                        Toast.show((Stage) searchBtn.getScene().getWindow(), "No matching invoices found.");
                     }
                 });
             } catch (Exception e) {

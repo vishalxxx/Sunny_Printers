@@ -137,7 +137,7 @@ public class AddJobController implements utils.DirtySupport {
 	private Button addJobBtn;
 
 	@FXML
-	private Button breadcrumbBackBtn;
+	private HBox breadcrumbContainer;
 
 	@FXML
 	private TextField jobName;
@@ -1071,10 +1071,7 @@ public class AddJobController implements utils.DirtySupport {
 
 	@FXML
 	public void initialize() {
-		if (breadcrumbBackBtn != null) {
-			breadcrumbBackBtn.visibleProperty().bind(NavigationManager.getInstance().canGoBackProperty());
-			breadcrumbBackBtn.managedProperty().bind(breadcrumbBackBtn.visibleProperty());
-		}
+		utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "New Job Wizard", () -> handleBack(null));
 		setupJobDatePicker(jobDate);
 
 		filteredClients.setPredicate(c -> true);
