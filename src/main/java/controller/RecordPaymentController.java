@@ -899,41 +899,43 @@ public class RecordPaymentController implements Initializable {
 
             try (PreparedStatement ps = con.prepareStatement(sql)) {
                 ps.setInt(1, clientId);
+                java.util.List<InvoiceMaster> loaded = new java.util.ArrayList<>();
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
-                        InvoiceMaster inv = repo.mapRowPublic(rs);
-                        BigDecimal due = BigDecimal.valueOf(inv.getDueAmount());
-                        BigDecimal netPaid = BigDecimal.valueOf(inv.getPaidAmount());
-                        BigDecimal total = BigDecimal.valueOf(inv.getAmount());
-
-                        totalOutstanding += inv.getDueAmount();
-                        double cn = inv.getCnAmount() != null ? inv.getCnAmount() : 0;
-                        double dn = inv.getDnAmount() != null ? inv.getDnAmount() : 0;
-                        BigDecimal netTotal = BigDecimal.valueOf(inv.getAmount() + dn - cn);
-
-                        boolean shouldBeSelected;
-                        if (!previouslySelectedIds.isEmpty()) {
-                            // Restore if it was selected before
-                            shouldBeSelected = previouslySelectedIds.contains(inv.getId());
-                        } else {
-                            // Default behavior for new loads
-                            shouldBeSelected = !isRefund;
-                        }
-
-                        invoiceItems.add(new InvoiceRow(
-                                inv,
-                                inv.getInvoiceNo(),
-                                inv.getStatus(),
-                                inv.getInvoiceDate() == null ? "" : inv.getInvoiceDate().format(java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy")),
-                                total,
-                                inv.getAdjustment(),
-                                netTotal,
-                                netPaid,
-                                due,
-                                due, // default allocate full due
-                                shouldBeSelected
-                        ));
+                        loaded.add(repo.mapInvoiceRowWithoutSummaries(rs));
                     }
+                }
+                for (InvoiceMaster inv : loaded) {
+                    repo.applyAdjustmentSummaries(con, inv);
+                    BigDecimal due = BigDecimal.valueOf(inv.getDueAmount());
+                    BigDecimal netPaid = BigDecimal.valueOf(inv.getPaidAmount());
+                    BigDecimal total = BigDecimal.valueOf(inv.getAmount());
+
+                    totalOutstanding += inv.getDueAmount();
+                    double cn = inv.getCnAmount() != null ? inv.getCnAmount() : 0;
+                    double dn = inv.getDnAmount() != null ? inv.getDnAmount() : 0;
+                    BigDecimal netTotal = BigDecimal.valueOf(inv.getAmount() + dn - cn);
+
+                    boolean shouldBeSelected;
+                    if (!previouslySelectedIds.isEmpty()) {
+                        shouldBeSelected = previouslySelectedIds.contains(inv.getId());
+                    } else {
+                        shouldBeSelected = !isRefund;
+                    }
+
+                    invoiceItems.add(new InvoiceRow(
+                            inv,
+                            inv.getInvoiceNo(),
+                            inv.getStatus(),
+                            inv.getInvoiceDate() == null ? "" : inv.getInvoiceDate().format(java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy")),
+                            total,
+                            inv.getAdjustment(),
+                            netTotal,
+                            netPaid,
+                            due,
+                            due,
+                            shouldBeSelected
+                    ));
                 }
             }
             

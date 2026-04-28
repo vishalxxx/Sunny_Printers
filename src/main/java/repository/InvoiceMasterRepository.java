@@ -261,12 +261,15 @@ public class InvoiceMasterRepository {
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, limit);
-            ResultSet rs = ps.executeQuery();
-
-            while (rs.next())
-                list.add(mapRowPublic(rs));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapInvoiceRowBase(rs));
+                }
+            }
         }
-
+        for (InvoiceMaster inv : list) {
+            fetchAdjustmentSummaries(con, inv);
+        }
         return list;
     }
 
@@ -289,9 +292,12 @@ public class InvoiceMasterRepository {
             ps.setInt(1, clientId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    list.add(mapRowPublic(rs));
+                    list.add(mapInvoiceRowBase(rs));
                 }
             }
+        }
+        for (InvoiceMaster inv : list) {
+            fetchAdjustmentSummaries(con, inv);
         }
         return list;
     }
@@ -336,9 +342,12 @@ public class InvoiceMasterRepository {
             }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    list.add(mapRowPublic(rs));
+                    list.add(mapInvoiceRowBase(rs));
                 }
             }
+        }
+        for (InvoiceMaster inv : list) {
+            fetchAdjustmentSummaries(con, inv);
         }
         return list;
     }
@@ -361,7 +370,13 @@ public class InvoiceMasterRepository {
         return null;
     }
 
-    public InvoiceMaster mapRowPublic(ResultSet rs) throws Exception {
+    /**
+     * Maps {@code invoice_master} columns only. When reading many rows from one {@link ResultSet},
+     * use this in the loop, close the result set, then call {@link #fetchAdjustmentSummaries} per
+     * invoice — nested queries on the same connection fail on some JDBC drivers while the outer
+     * result set is still open.
+     */
+    private InvoiceMaster mapInvoiceRowBase(ResultSet rs) throws Exception {
         InvoiceMaster inv = new InvoiceMaster();
         inv.setId(rs.getInt("id"));
         inv.setInvoiceNo(rs.getString("invoice_no"));
@@ -376,17 +391,32 @@ public class InvoiceMasterRepository {
         inv.setStatus(rs.getString("status"));
         inv.setPeriodFrom(parseDate(rs.getString("period_from")));
         inv.setPeriodTo(parseDate(rs.getString("period_to")));
-        
+
         int replacedId = rs.getInt("replaced_by_invoice_id");
-        if (!rs.wasNull()) inv.setReplacedByInvoiceId(replacedId);
+        if (!rs.wasNull()) {
+            inv.setReplacedByInvoiceId(replacedId);
+        }
         int parentId = rs.getInt("parent_invoice_id");
-        if (!rs.wasNull()) inv.setParentInvoiceId(parentId);
+        if (!rs.wasNull()) {
+            inv.setParentInvoiceId(parentId);
+        }
         inv.setFilePath(rs.getString("file_path"));
-
-        // Efficiently fetch adjustment summaries only if needed or keep it robust
-        fetchAdjustmentSummaries(rs.getStatement().getConnection(), inv);
-
         return inv;
+    }
+
+    public InvoiceMaster mapRowPublic(ResultSet rs) throws Exception {
+        InvoiceMaster inv = mapInvoiceRowBase(rs);
+        fetchAdjustmentSummaries(rs.getStatement().getConnection(), inv);
+        return inv;
+    }
+
+    /** Row mapping only; call {@link #applyAdjustmentSummaries} after the driving {@link ResultSet} is closed. */
+    public InvoiceMaster mapInvoiceRowWithoutSummaries(ResultSet rs) throws Exception {
+        return mapInvoiceRowBase(rs);
+    }
+
+    public void applyAdjustmentSummaries(Connection con, InvoiceMaster inv) {
+        fetchAdjustmentSummaries(con, inv);
     }
 
     private void fetchAdjustmentSummaries(Connection con, InvoiceMaster inv) {

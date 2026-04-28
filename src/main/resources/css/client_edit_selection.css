@@ -284,23 +284,23 @@
     -fx-background-color: #E2D9D2;
 }
 
-/* ===================== PAGINATION ===================== */
+/* ===================== FOOTER / PAGINATION ===================== */
 .pagination-container {
+    -fx-padding: 12 24;
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #EEECE8 transparent transparent transparent;
     -fx-spacing: 10;
     -fx-alignment: CENTER;
-    -fx-padding: 20 0 0 0;
 }
 
 .footer-text {
     -fx-text-fill: #867E78;
     -fx-font-size: 11px;
-    -fx-font-style: normal;
 }
 
 .footer-link {
     -fx-text-fill: #CD7B4E;
     -fx-font-size: 11px;
-    -fx-font-style: normal;
     -fx-underline: true;
 }
 
@@ -317,20 +317,36 @@
     -fx-cursor: hand;
 }
 
+.page-btn:hover {
+    -fx-background-color: #E2D9D2;
+}
+
 .page-btn-active {
     -fx-background-color: #C16738;
     -fx-text-fill: white;
 }
 
-.goto-label {
-    -fx-text-fill: #867E78;
+.goto-field, .pagination-go-field {
+    -fx-background-color: #FAF6F0;
+    -fx-control-inner-background: #FAF6F0;
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 4 8;
     -fx-font-size: 11px;
-    -fx-font-family: 'Inter';
+    -fx-pref-width: 45;
+    -fx-text-fill: #3E312D;
+    -fx-prompt-text-fill: #867E78;
 }
 
-.goto-field {
-    -fx-background-color: #FAF6F0;
-    -fx-border-color: #CD7B4E;
+.goto-field:focused, .pagination-go-field:focused {
+    -fx-border-color: #C16738;
+    -fx-background-color: #FFFDF9;
+    -fx-control-inner-background: #FFFDF9;
+}
+
+.goto-label {
     -fx-border-width: 1.5;
     -fx-border-radius: 15;
     -fx-background-radius: 15;
@@ -341,8 +357,4 @@
     -fx-alignment: CENTER;
     -fx-font-family: 'Inter';
     -fx-font-weight: 700;
-}
-
-.goto-field:focused {
-    -fx-border-color: #CD7B4E;
 }

@@ -232,23 +232,62 @@
 .row-btn-gray:hover   { -fx-background-color: #F5F5F5; -fx-border-color: #8B7E74; }
 
 /* --- 4. ATELIER PAGINATION --- */
-.footer-section { -fx-padding: 8 0; -fx-background-color: transparent; }
-.pagination-info { -fx-font-size: 11px; -fx-text-fill: #8B7E74; -fx-font-weight: 600; }
-
-.page-btn, .page-nav-btn {
-    -fx-background-color: white; -fx-border-color: #E9E2DB; -fx-border-radius: 6; -fx-background-radius: 6;
-    -fx-min-width: 28; -fx-min-height: 28; -fx-text-fill: #5B4F47; -fx-font-weight: 700; -fx-font-size: 11px; -fx-cursor: hand;
-}
-.page-btn-active { -fx-background-color: #B97952; -fx-border-color: #B97952; -fx-text-fill: white; }
-.page-btn:hover { -fx-background-color: #FAF0E6; }
-
-.pagination-go-field {
-    -fx-background-color: white; -fx-border-color: #E2DDD8; -fx-border-radius: 6; -fx-background-radius: 6;
-    -fx-padding: 2 6; -fx-font-size: 11px; -fx-text-fill: #3E312D;
+/* ===================== FOOTER / PAGINATION ===================== */
+.footer-section {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #EEECE8 transparent transparent transparent;
 }
 
-/* --- STEPPER MAP EVOLUTION --- */
-.stepper-label { -fx-font-size: 9px; -fx-font-weight: 700; -fx-text-fill: #B5ACA3; -fx-padding: 2 0 0 0; }
+.pagination-info {
+    -fx-text-fill: #867E78;
+    -fx-font-size: 11px;
+}
+
+.page-btn {
+    -fx-background-color: #F1EBE5;
+    -fx-text-fill: #433934;
+    -fx-font-weight: 700;
+    -fx-background-radius: 50;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-max-width: 32;
+    -fx-max-height: 32;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.page-btn:hover {
+    -fx-background-color: #E2D9D2;
+}
+
+.page-btn-active {
+    -fx-background-color: #C16738;
+    -fx-text-fill: white;
+}
+
+.goto-field, .pagination-go-field {
+    -fx-background-color: #FAF6F0;
+    -fx-control-inner-background: #FAF6F0;
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 4 8;
+    -fx-font-size: 11px;
+    -fx-pref-width: 45;
+    -fx-text-fill: #3E312D;
+    -fx-prompt-text-fill: #867E78;
+}
+
+.goto-field:focused, .pagination-go-field:focused {
+    -fx-border-color: #C16738;
+    -fx-background-color: #FFFDF9;
+    -fx-control-inner-background: #FFFDF9;
+}
+
+.page-subtitle {
+    -fx-text-fill: #A79F99;
+}.stepper-label { -fx-font-size: 9px; -fx-font-weight: 700; -fx-text-fill: #B5ACA3; -fx-padding: 2 0 0 0; }
 .stepper-label-active { -fx-text-fill: #1A1311; -fx-font-weight: 800; }
 
 .stepper-dot {

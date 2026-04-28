@@ -97,6 +97,7 @@ public class ViewJobsController {
     @FXML private HBox breadcrumbContainer;
 
     @FXML private Label paginationInfoLabel;
+    /** Optional in FXML; created in code when missing (pagination row is rebuilt). */
     @FXML private TextField goToPageField;
     @FXML private HBox paginationButtonContainer;
 
@@ -184,6 +185,8 @@ public class ViewJobsController {
             updatePagination();
         });
 
+        ensureGoToPageField();
+
         // ✅ Double click to view
         jobsTable.setRowFactory(tv -> {
             TableRow<Job> row = new TableRow<>();
@@ -196,6 +199,18 @@ public class ViewJobsController {
         });
         
         utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Job Management", () -> handleBack(null));
+    }
+
+    private void ensureGoToPageField() {
+        if (goToPageField != null) {
+            return;
+        }
+        goToPageField = new TextField();
+        goToPageField.setPromptText("Page");
+        goToPageField.setPrefColumnCount(4);
+        goToPageField.setMaxWidth(72);
+        goToPageField.getStyleClass().add("goto-field");
+        goToPageField.setOnAction(e -> handleGoToPage());
     }
     
     // =========================================================
@@ -993,44 +1008,44 @@ public class ViewJobsController {
 
         // Previous Button
         Button prevBtn = new Button("<");
-        prevBtn.getStyleClass().add("page-nav-btn");
+        prevBtn.getStyleClass().add("page-btn");
         prevBtn.setDisable(currentPage == 1);
         prevBtn.setOnAction(e -> { currentPage--; updatePagination(); });
         paginationButtonContainer.getChildren().add(prevBtn);
 
-        // Dynamic Page Numbers (Simplified logic: show first, current, last and neighbors)
-        int startPage = Math.max(1, currentPage - 2);
-        int endPage = Math.min(totalPages, startPage + 4);
-        if (endPage == totalPages) startPage = Math.max(1, endPage - 4);
-
-        if (startPage > 1) {
-            addPageButton(1);
-            if (startPage > 2) paginationButtonContainer.getChildren().add(new Label("..."));
+        // Logic to show a max of 3 pages (sliding window) - matching view_client.css style
+        int startPage = Math.max(1, currentPage - 1);
+        int endPage = Math.min(totalPages, startPage + 2);
+        if (endPage - startPage < 2 && startPage > 1) {
+            startPage = Math.max(1, endPage - 2);
         }
 
         for (int i = startPage; i <= endPage; i++) {
-            addPageButton(i);
-        }
-
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) paginationButtonContainer.getChildren().add(new Label("..."));
-            addPageButton(totalPages);
+            final int p = i;
+            Button pBtn = new Button(String.valueOf(i));
+            pBtn.getStyleClass().add("page-btn");
+            if (i == currentPage) pBtn.getStyleClass().add("page-btn-active");
+            pBtn.setOnAction(e -> { currentPage = p; updatePagination(); });
+            paginationButtonContainer.getChildren().add(pBtn);
         }
 
         // Next Button
         Button nextBtn = new Button(">");
-        nextBtn.getStyleClass().add("page-nav-btn");
+        nextBtn.getStyleClass().add("page-btn");
         nextBtn.setDisable(currentPage == totalPages);
         nextBtn.setOnAction(e -> { currentPage++; updatePagination(); });
         paginationButtonContainer.getChildren().add(nextBtn);
-    }
 
-    private void addPageButton(int page) {
-        Button btn = new Button(String.valueOf(page));
-        btn.getStyleClass().add("page-btn");
-        if (page == currentPage) btn.getStyleClass().add("page-btn-active");
-        btn.setOnAction(e -> { currentPage = page; updatePagination(); });
-        paginationButtonContainer.getChildren().add(btn);
+        // Jump to page label
+        Label jumpLabel = new Label("Go to:");
+        jumpLabel.setStyle("-fx-text-fill: #A79F99; -fx-font-size: 11px; -fx-padding: 0 0 0 10;");
+        paginationButtonContainer.getChildren().add(jumpLabel);
+
+        if (goToPageField != null) {
+            if (!paginationButtonContainer.getChildren().contains(goToPageField)) {
+                paginationButtonContainer.getChildren().add(goToPageField);
+            }
+        }
     }
 
     @FXML

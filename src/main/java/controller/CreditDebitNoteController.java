@@ -318,19 +318,29 @@ public class CreditDebitNoteController {
         }
     }
 
+    /**
+     * Next CN-#### / DN-#### using the highest numeric suffix for this prefix.
+     * The old logic used {@code ORDER BY id DESC}, which could pick a row whose suffix was
+     * not the max (e.g. id=100 → CN-0003 while CN-0004 exists) and violate UNIQUE on {@code note_no}.
+     */
     private String generateNoteNumber(Connection con, String prefix) throws java.sql.SQLException {
-        String sql = "SELECT note_no FROM invoice_adjustments WHERE note_no LIKE ? ORDER BY id DESC LIMIT 1";
+        int start = prefix.length() + 1; // 1-based substr: digits start after "CN-" / "DN-"
+        String sql = """
+                SELECT COALESCE(MAX(CAST(substr(note_no, ?) AS INTEGER)), 0)
+                FROM invoice_adjustments
+                WHERE note_no LIKE ?
+                AND length(note_no) > ?
+                """;
         try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, prefix + "%");
+            ps.setInt(1, start);
+            ps.setString(2, prefix + "%");
+            ps.setInt(3, prefix.length());
             try (java.sql.ResultSet rs = ps.executeQuery()) {
-                int nextNo = 1;
+                int max = 0;
                 if (rs.next()) {
-                    String lastNo = rs.getString("note_no");
-                    try {
-                        nextNo = Integer.parseInt(lastNo.substring(prefix.length())) + 1;
-                    } catch (Exception e) {}
+                    max = rs.getInt(1);
                 }
-                return prefix + String.format("%04d", nextNo);
+                return prefix + String.format("%04d", max + 1);
             }
         }
     }

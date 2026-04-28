@@ -116,16 +116,8 @@
         <Region HBox.hgrow="ALWAYS" />
         
         <HBox spacing="16" alignment="CENTER_RIGHT" styleClass="pagination-cluster">
-            <!-- Go to Page Feature -->
-            <HBox spacing="8" alignment="CENTER_LEFT">
-                 <Label text="Go to:" styleClass="page-subtitle" style="-fx-font-size: 11px; -fx-padding: 0 0 2 0;"/>
-                 <TextField fx:id="goToPageField" prefWidth="55" promptText="Page" onAction="#handleGoToPage" styleClass="pagination-go-field" />
-            </HBox>
-
-            <!-- Page Buttons Container -->
-            <HBox fx:id="paginationButtonContainer" spacing="6" alignment="CENTER_RIGHT">
-                <!-- Navigation and Page numbers will be injected by Controller -->
-            </HBox>
+            <!-- Page Buttons & Go To will be injected here -->
+            <HBox fx:id="paginationButtonContainer" spacing="8" alignment="CENTER_RIGHT" />
         </HBox>
     </HBox>
 </VBox>

@@ -1,80 +1,276 @@
 /* =============================================================================
-   V I E W   I N V O I C E S   -   P R E M I U M   F I N T E C H   S T Y L E
+   V I E W   I N V O I C E S  —  D A S H B O A R D  ( o r a n g e  a c c e n t )
    ============================================================================= */
 
+/* Full-screen canvas (ScrollPane + content stack; cards stay white) */
 .view-invoices-root {
-    -fx-background-color: #FAF6F0; /* Shared Global Base */
+    -fx-background-color: #FAF6F0;
     -fx-background: #FAF6F0;
+}
+
+.view-invoices-root.main-scroll-pane {
+    -fx-background-color: #FAF6F0;
+    -fx-background: #FAF6F0;
+}
+.view-invoices-root.main-scroll-pane > .viewport {
+    -fx-background-color: #FAF6F0;
+}
+.view-invoices-root.main-scroll-pane .corner {
+    -fx-background-color: #FAF6F0;
 }
 
 .root-container {
     -fx-background-color: transparent;
 }
 
-/* --- 1. HEADER & TYPOGRAPHY --- */
+.view-invoices-root .vi-main-row,
+.view-invoices-root .vi-left-stack,
+.view-invoices-root .vi-sidebar,
+.view-invoices-root .page-header-container,
+.view-invoices-root .breadcrumb-container {
+    -fx-background-color: transparent;
+}
 
-
-.filter-label-taste {
-    -fx-font-size: 11px;
+.view-invoices-root .page-heading {
+    -fx-text-fill: #111827;
+    -fx-font-size: 22px;
     -fx-font-weight: 800;
-    -fx-text-fill: #8E7B71;
+}
+.view-invoices-root .page-subheading {
+    -fx-text-fill: #6B7280;
+    -fx-font-size: 12px;
+}
+
+/* --- 1. HEADER & FILTERS --- */
+.view-invoices-root .filter-label-taste,
+.filter-label-taste {
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #6B7280;
     -fx-text-transform: uppercase;
-    -fx-letter-spacing: 0.5px;
+    -fx-letter-spacing: 0.4px;
 }
 
-/* --- 2. PREMIUM CARDS (Atelier Alignment) --- */
-.info-card-premium {
-    -fx-background-color: white;
-    -fx-background-radius: 12;
-    -fx-padding: 16;
-    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.05), 15, 0, 0, 4);
-    -fx-border-color: #EADFD4; /* Atelier Border */
-    -fx-border-width: 1;
-    -fx-border-radius: 12;
-}
-
+/* --- 2. CARDS --- */
+.view-invoices-root .info-card-premium,
+.view-invoices-root .content-card-premium,
+.info-card-premium,
 .content-card-premium {
-    -fx-background-color: white;
-    -fx-background-radius: 12;
-    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.05), 15, 0, 0, 4);
-    -fx-border-color: #EADFD4;
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 10;
+    -fx-border-color: #E5E7EB;
     -fx-border-width: 1;
-    -fx-border-radius: 12;
+    -fx-border-radius: 10;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.04), 12, 0, 0, 4);
 }
 
-/* --- 3. ACTION BUTTONS & ICONS --- */
-.vi-btn-premium {
-    -fx-background-radius: 10;
-    -fx-padding: 8 16;
+.view-invoices-root .vi-table-shell {
+    -fx-background-color: #FAF6F0;
+}
+
+/* Filter row: warm wash + amber border (wins over .info-card-premium alone) */
+.view-invoices-root .vi-filter-bar.info-card-premium {
+    -fx-background-color: #FFF8F3;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 20 24;
+}
+
+.view-invoices-root .vi-summary-context {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #6B7280;
+}
+
+/* Removed conflicting vi-summary-icon-wrap to use the global one */
+
+.view-invoices-root .vi-summary-breakdown-heading {
     -fx-font-size: 12px;
     -fx-font-weight: 800;
-    -fx-text-fill: white;
+    -fx-text-fill: #4A657A;
+    -fx-padding: 10 0 6 0;
+}
+.view-invoices-root .vi-summary-breakdown-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+.view-invoices-root .vi-summary-breakdown-scroll .viewport {
+    -fx-background-color: transparent;
+}
+.view-invoices-root .vi-summary-breakdown-scroll .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 8;
+}
+.view-invoices-root .vi-summary-breakdown-scroll .scroll-bar:vertical .track {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+.view-invoices-root .vi-summary-breakdown-scroll .scroll-bar:vertical .thumb {
+    -fx-background-color: #2A303C;
+    -fx-background-radius: 6;
+}
+.view-invoices-root .vi-summary-break-row-name {
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #6B7280;
+    -fx-min-width: 155;
+    -fx-padding: 4 0;
+}
+.view-invoices-root .vi-summary-break-row-value {
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+    -fx-text-fill: #2B2320;
+    -fx-padding: 4 0;
+}
+.view-invoices-root .vi-summary-separator .line {
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1 0 0 0;
+}
+
+.view-invoices-root .vi-toolbar-card {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-effect: null;
+    -fx-padding: 8 0;
+}
+
+/* --- 3. TOOLBAR: outline buttons, colored border + text + icon (reference UI) --- */
+.view-invoices-root .vi-btn-premium {
+    -fx-background-color: #FFFFFF;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-border-width: 1.5;
+    -fx-padding: 6 12 6 10;
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+    -fx-cursor: hand;
+    -fx-graphic-text-gap: 6;
+    -fx-effect: null;
+}
+.view-invoices-root .vi-btn-premium:hover {
+    -fx-translate-y: 0;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 6, 0, 0, 1);
+}
+
+.view-invoices-root .vi-btn-edit     { -fx-text-fill: #EA580C; -fx-border-color: #EA580C; }
+.view-invoices-root .vi-btn-edit:hover   { -fx-background-color: #FFF7ED; }
+.view-invoices-root .vi-btn-finalize { -fx-text-fill: #16A34A; -fx-border-color: #16A34A; }
+.view-invoices-root .vi-btn-finalize:hover { -fx-background-color: #F0FDF4; }
+.view-invoices-root .vi-btn-send     { -fx-text-fill: #2563EB; -fx-border-color: #2563EB; }
+.view-invoices-root .vi-btn-send:hover   { -fx-background-color: #EFF6FF; }
+.view-invoices-root .vi-btn-revised  { -fx-text-fill: #EA580C; -fx-border-color: #EA580C; }
+.view-invoices-root .vi-btn-revised:hover{ -fx-background-color: #FFF7ED; }
+.view-invoices-root .vi-btn-payment  { -fx-text-fill: #7C3AED; -fx-border-color: #7C3AED; }
+.view-invoices-root .vi-btn-payment:hover{ -fx-background-color: #F5F3FF; }
+.view-invoices-root .vi-btn-cndn     { -fx-text-fill: #4B5563; -fx-border-color: #4B5563; }
+.view-invoices-root .vi-btn-cndn:hover   { -fx-background-color: #F9FAFB; }
+.view-invoices-root .vi-btn-cancel   { -fx-text-fill: #DC2626; -fx-border-color: #DC2626; }
+.view-invoices-root .vi-btn-cancel:hover { -fx-background-color: #FEF2F2; }
+
+/* Icon glyph colors follow button accent */
+.view-invoices-root .vi-btn-edit     .vi-icon-edit     { -fx-background-color: #EA580C; }
+.view-invoices-root .vi-btn-finalize .vi-icon-finalize { -fx-background-color: #16A34A; }
+.view-invoices-root .vi-btn-send     .vi-icon-send     { -fx-background-color: #2563EB; }
+.view-invoices-root .vi-btn-revised  .vi-icon-revised  { -fx-background-color: #EA580C; }
+.view-invoices-root .vi-btn-payment  .vi-icon-payment  { -fx-background-color: #7C3AED; }
+.view-invoices-root .vi-btn-cndn     .vi-icon-document{ -fx-background-color: #4B5563; }
+.view-invoices-root .vi-btn-cancel   .vi-icon-cancel   { -fx-background-color: #DC2626; }
+
+/* SVG icon shapes (fill comes from parent rules above) */
+.vi-icon-edit { -fx-shape: "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"; -fx-min-width: 14; -fx-min-height: 14; }
+.vi-icon-finalize { -fx-shape: "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"; -fx-min-width: 14; -fx-min-height: 14; }
+.vi-icon-send { -fx-shape: "M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"; -fx-min-width: 14; -fx-min-height: 14; }
+.vi-icon-revised { -fx-shape: "M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"; -fx-min-width: 14; -fx-min-height: 14; }
+.vi-icon-payment { -fx-shape: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.63 0-1.88 1.47-3.05 3.11-3.41V4h2.67v1.91c1.47.28 2.72 1.14 2.84 3.03h-1.92c-.11-.84-.71-1.47-2.32-1.47-1.49 0-2.35.6-2.35 1.56 0 .84.77 1.37 2.76 1.84 2.6.63 4.1 1.73 4.1 3.75 0 2.11-1.6 3.09-3.11 3.44z"; -fx-min-width: 14; -fx-min-height: 14; }
+.vi-icon-document { -fx-shape: "M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"; -fx-min-width: 14; -fx-min-height: 14; }
+.vi-icon-cancel { -fx-shape: "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"; -fx-min-width: 14; -fx-min-height: 14; }
+
+/* Filter row: apply (solid orange) + clear (outline) */
+.view-invoices-root .vi-btn-filter-apply {
+    -fx-background-color: #EA580C;
+    -fx-text-fill: #FFFFFF;
+    -fx-border-color: #EA580C;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 16 8 12;
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
     -fx-cursor: hand;
     -fx-graphic-text-gap: 8;
-    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.12), 10, 0, 0, 3);
 }
-
-.vi-btn-premium:hover {
-    -fx-translate-y: -1;
-    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.2), 12, 0, 0, 4);
+.view-invoices-root .vi-btn-filter-apply:hover {
+    -fx-background-color: #C2410C;
+    -fx-border-color: #C2410C;
 }
+.view-invoices-root .vi-btn-filter-apply .vi-icon-filter {
+    -fx-background-color: #FFFFFF;
+}
+.view-invoices-root .vi-btn-filter-clear {
+    -fx-background-color: #FFFFFF;
+    -fx-text-fill: #C2410C;
+    -fx-border-color: #EA580C;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 9 18 9 14;
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+    -fx-cursor: hand;
+    -fx-graphic-text-gap: 8;
+    -fx-content-display: LEFT;
+    -fx-text-overrun: clip;
+    -fx-wrap-text: false;
+    -fx-min-width: 172;
+    -fx-label-padding: 0 2 0 0;
+}
+.view-invoices-root .vi-btn-filter-clear:hover {
+    -fx-background-color: #FFF7ED;
+    -fx-border-color: #C2410C;
+    -fx-text-fill: #9A3412;
+}
+.view-invoices-root .vi-btn-filter-clear .vi-icon-clear { -fx-background-color: #EA580C; }
 
-.vi-btn-edit { -fx-background-color: #DB7F61; }
-.vi-btn-finalize { -fx-background-color: #646D5B; }
-.vi-btn-send { -fx-background-color: #5B7587; }
-.vi-btn-revised { -fx-background-color: #C87941; }
-.vi-btn-payment { -fx-background-color: #7C6BB8; }
-.vi-btn-cndn { -fx-background-color: #9CA3AF; }
-.vi-btn-cancel { -fx-background-color: #D64545; }
-
-/* SVG Icon Shapes */
-.vi-icon-edit { -fx-shape: "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"; -fx-background-color: white; -fx-min-width: 14; -fx-min-height: 14; }
-.vi-icon-finalize { -fx-shape: "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"; -fx-background-color: white; -fx-min-width: 14; -fx-min-height: 14; }
-.vi-icon-send { -fx-shape: "M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"; -fx-background-color: white; -fx-min-width: 14; -fx-min-height: 14; }
-.vi-icon-revised { -fx-shape: "M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"; -fx-background-color: white; -fx-min-width: 14; -fx-min-height: 14; }
-.vi-icon-payment { -fx-shape: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.63 0-1.88 1.47-3.05 3.11-3.41V4h2.67v1.91c1.47.28 2.72 1.14 2.84 3.03h-1.92c-.11-.84-.71-1.47-2.32-1.47-1.49 0-2.35.6-2.35 1.56 0 .84.77 1.37 2.76 1.84 2.6.63 4.1 1.73 4.1 3.75 0 2.11-1.6 3.09-3.11 3.44z"; -fx-background-color: white; -fx-min-width: 14; -fx-min-height: 14; }
-.vi-icon-document { -fx-shape: "M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"; -fx-background-color: white; -fx-min-width: 14; -fx-min-height: 14; }
-.vi-icon-cancel { -fx-shape: "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"; -fx-background-color: white; -fx-min-width: 14; -fx-min-height: 14; }
+/* Row selection checkbox (invoice table) */
+.view-invoices-root .vi-invoice-table .check-box.vi-row-select-cb {
+    -fx-padding: 0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+.view-invoices-root .vi-invoice-table .check-box.vi-row-select-cb > .box {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #D1D5DB;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-min-width: 16;
+    -fx-min-height: 16;
+    -fx-pref-width: 16;
+    -fx-pref-height: 16;
+    -fx-max-width: 16;
+    -fx-max-height: 16;
+}
+.view-invoices-root .vi-invoice-table .check-box.vi-row-select-cb:hover > .box {
+    -fx-border-color: #EA580C;
+}
+.view-invoices-root .vi-invoice-table .check-box.vi-row-select-cb:armed > .box {
+    -fx-border-color: #C2410C;
+}
+.view-invoices-root .vi-invoice-table .check-box.vi-row-select-cb:selected > .box {
+    -fx-background-color: #EA580C;
+    -fx-border-color: #C2410C;
+}
+.view-invoices-root .vi-invoice-table .check-box.vi-row-select-cb:selected > .box > .mark {
+    -fx-background-color: #FFFFFF;
+    -fx-padding: 0.28em;
+    -fx-scale-shape: true;
+}
+.view-invoices-root .vi-invoice-table .check-box.vi-row-select-cb:selected:armed > .box {
+    -fx-background-color: #C2410C;
+}
 
 /* Filter Buttons (Theme Aligned) */
 .vi-btn-search-taste {
@@ -213,54 +409,191 @@
 
 /* --- 6. SIDEBAR --- */
 .vi-side-title-taste {
-    -fx-font-size: 14px;
+    -fx-font-size: 15px;
     -fx-font-weight: 800;
-    -fx-text-fill: #3E312D;
+    -fx-text-fill: #2B2320;
+}
+
+.vi-summary-context {
+    -fx-font-size: 11px;
+    -fx-text-fill: #8E7B71;
+}
+
+.vi-summary-icon-wrap {
+    -fx-background-color: #FBF4EE;
+    -fx-padding: 10;
+    -fx-background-radius: 8;
+}
+
+.vi-summary-list {
+    -fx-padding: 6 0 0 0;
 }
 
 .vi-summary-label {
     -fx-font-size: 12px;
+    -fx-font-weight: 600;
     -fx-text-fill: #8E7B71;
 }
 
 .vi-summary-value-bold {
-    -fx-font-size: 13px;
+    -fx-font-size: 14px;
     -fx-font-weight: 800;
-    -fx-text-fill: #3E312D;
+    -fx-text-fill: #2B2320;
+}
+
+.vi-summary-link {
+    -fx-text-fill: #C2410C;
+    -fx-underline: true;
+    -fx-cursor: hand;
+}
+.view-invoices-root .vi-summary-link:hover {
+    -fx-text-fill: #9A3412;
 }
 
 .vi-summary-value-hero {
-    -fx-font-size: 18px;
-    -fx-font-weight: 800;
+    -fx-font-size: 20px;
+    -fx-font-weight: 900;
     -fx-text-fill: #CD7B4E;
 }
 
-.vi-summary-value-paid { -fx-text-fill: #646D5B; }
-.vi-summary-value-due { -fx-text-fill: #D32F2F; }
+.vi-summary-value-paid { -fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: #646D5B; }
+.vi-summary-value-due { -fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: #B94A4A; }
 
 .vi-icon-summary { -fx-shape: "M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v2H7v-2zm0 4h2v2H7v-2zm4-4h6v2h-6v-2zm0 4h6v2h-6v-2z"; -fx-background-color: #CD7B4E; -fx-min-width: 18; -fx-min-height: 18; }
 .vi-icon-chart { -fx-shape: "M11 2v20c-5.07-.5-9-4.79-9-10s3.93-9.5 9-10zm2.03 0v8.99H22c-.47-4.74-4.24-8.52-8.97-8.99zm0 11.01V22c4.74-.47 8.5-4.25 8.97-8.99h-8.97z"; -fx-background-color: #CD7B4E; -fx-min-width: 18; -fx-min-height: 18; }
-.vi-icon-filter { -fx-shape: "M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"; -fx-background-color: #CD7B4E; -fx-min-width: 18; -fx-min-height: 18; }
+.vi-icon-filter { -fx-shape: "M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"; -fx-min-width: 18; -fx-min-height: 18; }
+.view-invoices-root .vi-filter-bar .vi-icon-filter { -fx-background-color: #CD7B4E; }
 
-.vi-donut-chart {
-    -fx-legend-side: right;
+/* Arc donut (aligned with dashboard.fxml Payment Health rings) */
+.vi-donut-ring-base {
+    -fx-fill: transparent;
+    -fx-stroke: #F4F1E0;
+    -fx-stroke-width: 18;
+    -fx-stroke-type: centered;
+}
+.vi-donut-ring-paid {
+    -fx-fill: transparent;
+    -fx-stroke: #68765A;
+    -fx-stroke-width: 18;
+    -fx-stroke-line-cap: round;
+}
+.vi-donut-ring-unpaid {
+    -fx-fill: transparent;
+    -fx-stroke: #C4A574;
+    -fx-stroke-width: 18;
+    -fx-stroke-line-cap: round;
+}
+.vi-donut-ring-overdue {
+    -fx-fill: transparent;
+    -fx-stroke: #B94A4A;
+    -fx-stroke-width: 18;
+    -fx-stroke-line-cap: round;
+}
+.vi-donut-center-label {
+    -fx-font-size: 18px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #2B2320;
+}
+.vi-donut-center-sub {
+    -fx-font-size: 8px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #6B7280;
+    -fx-letter-spacing: 0.5px;
+}
+.vi-donut-legend-dot-paid { -fx-fill: #68765A; }
+.vi-donut-legend-dot-unpaid { -fx-fill: #C4A574; }
+.vi-donut-legend-dot-overdue { -fx-fill: #B94A4A; }
+
+.vi-side-card {
+    -fx-padding: 16;
 }
 
-/* --- 7. QUICK FILTER PILLS --- */
-.vi-quick-pill {
+/* --- 7. POPUP DIALOGS --- */
+.vi-premium-dialog {
     -fx-background-color: #FAF6F0;
+}
+.vi-premium-dialog > *.button-bar > *.container {
+    -fx-background-color: #FAF6F0;
+    -fx-padding: 10 20;
+}
+.vi-premium-dialog > *.button-bar > *.container .button {
+    -fx-background-color: #3E312D;
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-padding: 8 24;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+.vi-premium-dialog > *.button-bar > *.container .button:hover {
+    -fx-background-color: #2B2320;
+}
+.vi-premium-dialog > *.label.content {
+    -fx-background-color: transparent;
+}
+.vi-premium-dialog:header .header-panel {
+    -fx-background-color: #FAF6F0;
+    -fx-padding: 16 20;
+}
+.vi-premium-dialog:header .header-panel .label {
+    -fx-font-size: 16px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #2B2320;
+}
+
+.vi-premium-tabs .tab-header-area {
+    -fx-padding: 10 20 0 20;
+}
+.vi-premium-tabs .tab-header-background {
+    -fx-background-color: transparent;
+}
+.vi-premium-tabs .tab {
+    -fx-background-color: transparent;
+    -fx-border-width: 0 0 2 0;
+    -fx-border-color: transparent;
+    -fx-padding: 8 16;
+}
+.vi-premium-tabs .tab:selected {
+    -fx-border-color: #CD7B4E;
+}
+.vi-premium-tabs .tab:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+.vi-premium-tabs .tab .focus-indicator {
+    -fx-border-width: 0;
+    -fx-border-color: transparent;
+}
+.vi-premium-tabs .tab .tab-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #8E7B71;
+}
+.vi-premium-tabs .tab:selected .tab-label {
+    -fx-text-fill: #2B2320;
+}
+.vi-premium-tabs .tab-content-area {
+    -fx-background-color: transparent;
+    -fx-padding: 8 20 20 20;
+}
+
+/* --- 8. QUICK FILTER PILLS --- */
+.view-invoices-root .vi-quick-pill,
+.vi-quick-pill {
+    -fx-background-color: #F9FAFB;
     -fx-padding: 6 12;
-    -fx-background-radius: 8;
-    -fx-border-radius: 8;
-    -fx-border-color: #EADFD4;
+    -fx-background-radius: 20;
+    -fx-border-radius: 20;
+    -fx-border-color: #E5E7EB;
     -fx-border-width: 1;
     -fx-cursor: hand;
 }
 
+.view-invoices-root .vi-quick-pill .label,
 .vi-quick-pill .label {
     -fx-font-size: 11px;
     -fx-font-weight: 800;
-    -fx-text-fill: #8E7B71;
+    -fx-text-fill: #6B7280;
 }
 
 .pill-count {
@@ -270,36 +603,376 @@
     -fx-font-size: 10px;
 }
 
+.view-invoices-root .vi-quick-pill:selected,
 .vi-quick-pill:selected {
-    -fx-background-color: #FEF3EB;
-    -fx-border-color: #CD7B4E;
+    -fx-background-color: #FFF7ED;
+    -fx-border-color: #FDBA74;
 }
-.vi-quick-pill:selected .label { -fx-text-fill: #CD7B4E; }
+.view-invoices-root .vi-quick-pill:selected .label,
+.vi-quick-pill:selected .label { -fx-text-fill: #C2410C; }
 
-/* --- 8. PAGINATION --- */
+/* --- 8. PAGINATION (Atelier Style from view_job.css) --- */
+.view-invoices-root .vi-pagination-bar-premium,
 .vi-pagination-bar-premium {
-    -fx-padding: 12 16;
-    -fx-background-color: #FAF6F0;
-    -fx-border-color: #EADFD4;
-    -fx-border-width: 1 0 0 0;
+    -fx-padding: 8 0;
+    -fx-background-color: transparent;
 }
 
+.view-invoices-root .vi-page-info-taste,
 .vi-page-info-taste {
     -fx-font-size: 11px;
-    -fx-font-weight: 700;
-    -fx-text-fill: #8E7B71;
+    -fx-text-fill: #8B7E74;
+    -fx-font-weight: 600;
 }
 
-.vi-nav-btn {
-    -fx-background-color: white;
-    -fx-border-color: #EADFD4;
-    -fx-border-radius: 6;
-    -fx-min-width: 28;
-    -fx-min-height: 28;
-    -fx-font-weight: 800;
+.vi-page-btn, .vi-nav-btn {
+    -fx-background-color: #F1EBE5;
+    -fx-text-fill: #433934;
+    -fx-font-weight: 700;
+    -fx-background-radius: 50;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-max-width: 32;
+    -fx-max-height: 32;
+    -fx-padding: 0;
     -fx-cursor: hand;
 }
 
-.vi-nav-btn:hover {
+.vi-page-btn-active {
+    -fx-background-color: #C16738;
+    -fx-text-fill: white;
+}
+
+.vi-page-btn:hover, .vi-nav-btn:hover {
+    -fx-background-color: #E2D9D2;
+}
+
+.pagination-go-field {
+    -fx-background-color: white;
+    -fx-border-color: #E2DDD8;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 2 6;
+    -fx-font-size: 11px;
+    -fx-text-fill: #3E312D;
+}
+
+.pagination-go-field:focused {
+    -fx-border-color: #CD7B4E;
+}
+
+/* ===================== PAGINATION ===================== */
+
+.vi-pagination-bar-premium {
+    -fx-padding: 12 16;
     -fx-background-color: #FAF6F0;
+    -fx-border-color: #EEECE8 transparent transparent transparent;
+}
+
+.vi-page-info-taste {
+    -fx-text-fill: #867E78;
+    -fx-font-size: 11px;
+}
+
+.page-btn, .vi-page-btn {
+    -fx-background-color: #F1EBE5;
+    -fx-text-fill: #433934;
+    -fx-font-weight: 700;
+    -fx-background-radius: 50;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-max-width: 32;
+    -fx-max-height: 32;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.page-btn:hover, .vi-page-btn:hover {
+    -fx-background-color: #E2D9D2;
+}
+
+.page-btn-active, .vi-page-btn-active {
+    -fx-background-color: #C16738;
+    -fx-text-fill: white;
+}
+
+.goto-field, .pagination-go-field {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2DDD8;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 4 8;
+    -fx-font-size: 11px;
+    -fx-pref-width: 45;
+    -fx-text-fill: #3E312D;
+}
+
+.goto-field:focused, .pagination-go-field:focused {
+    -fx-border-color: #C16738;
+}
+
+.goto-label {
+    -fx-text-fill: #A79F99;
+    -fx-font-size: 11px;
+}
+
+/* --- View Invoices table (invoice list grid) --- */
+
+.view-invoices-root .vi-invoice-table {
+    -fx-background-color: transparent;
+    -fx-table-cell-border-color: transparent;
+    -fx-table-header-border-color: transparent;
+    -fx-border-color: #EEECE8; 
+    -fx-border-width: 1 0 1 0;
+}
+
+.view-invoices-root .vi-invoice-table .column-header-background {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #F1ECE6;
+    -fx-border-width: 0 0 1 0;
+}
+
+.view-invoices-root .vi-invoice-table .column-header,
+.view-invoices-root .vi-invoice-table .filler {
+    -fx-background-color: transparent;
+}
+
+.view-invoices-root .vi-invoice-table .column-header .label {
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #4B5563;
+    -fx-padding: 0 8 0 8;
+}
+
+.view-invoices-root .vi-invoice-table .table-column.vi-chead-right .label {
+    -fx-alignment: center;
+}
+
+.view-invoices-root .vi-invoice-table .table-column.vi-chead-center .label {
+    -fx-alignment: center;
+}
+
+.view-invoices-root .vi-invoice-table .table-row-cell {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+}
+
+/* Row banding so the grid stays scannable without row borders */
+.view-invoices-root .vi-invoice-table .table-row-cell:even {
+    -fx-background-color: #FAFBFC;
+}
+
+.view-invoices-root .vi-invoice-table .table-row-cell:filled:hover {
+    -fx-background-color: #F3F4F6;
+}
+
+.view-invoices-root .vi-invoice-table .table-row-cell:filled:selected,
+.view-invoices-root .vi-invoice-table .table-row-cell:filled:selected .table-cell {
+    -fx-background-color: #FFEDD5;
+}
+
+.view-invoices-root .vi-invoice-table .table-row-cell .table-cell {
+    -fx-padding: 6 10;
+    -fx-alignment: CENTER_LEFT;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+}
+
+.view-invoices-root .vi-invoice-id { -fx-font-weight: 800; -fx-text-fill: #111827; -fx-font-size: 12px; }
+.view-invoices-root .vi-client-name { -fx-font-weight: 800; -fx-text-fill: #111827; -fx-font-size: 12px; }
+.view-invoices-root .vi-client-email { -fx-font-weight: 500; -fx-text-fill: #6B7280; -fx-font-size: 10px; }
+.view-invoices-root .vi-date { -fx-text-fill: #6B7280; -fx-font-size: 12px; }
+.view-invoices-root .vi-date-overdue { -fx-text-fill: #B91C1C; -fx-font-weight: 700; }
+.view-invoices-root .vi-amount { -fx-font-weight: 800; -fx-text-fill: #111827; -fx-font-size: 12px; }
+
+.view-invoices-root .vi-invoice-table .ref-pill {
+    -fx-background-radius: 20;
+    -fx-padding: 3 10 3 8;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #4B5563;
+}
+
+/* Status pills: dot + light wash (matches dashboard reference) */
+.view-invoices-root .ref-pill--paid {
+    -fx-text-fill: #15803D;
+    -fx-background-color: #DCFCE7;
+}
+.view-invoices-root .ref-pill--overdue {
+    -fx-text-fill: #B91C1C;
+    -fx-background-color: #FEE2E2;
+}
+.view-invoices-root .ref-pill--partial {
+    -fx-text-fill: #C2410C;
+    -fx-background-color: #FFEDD5;
+}
+.view-invoices-root .ref-pill--pending {
+    -fx-text-fill: #4B5563;
+    -fx-background-color: #F3F4F6;
+}
+
+.view-invoices-root .ref-pill-status-dot {
+    -fx-min-width: 6;
+    -fx-min-height: 6;
+    -fx-max-width: 6;
+    -fx-max-height: 6;
+    -fx-background-radius: 3;
+    -fx-background-insets: 0;
+}
+.view-invoices-root .ref-pill-status-dot--paid   { -fx-background-color: #16A34A; }
+.view-invoices-root .ref-pill-status-dot--overdue { -fx-background-color: #EF4444; }
+.view-invoices-root .ref-pill-status-dot--partial { -fx-background-color: #EA580C; }
+.view-invoices-root .ref-pill-status-dot--pending { -fx-background-color: #9CA3AF; }
+
+.view-invoices-root .vi-ellipsis-btn {
+    -fx-background-color: #FFF7ED;
+    -fx-border-color: #FDBA74;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-border-width: 1;
+    -fx-text-fill: #EA580C;
+    -fx-font-weight: 900;
+    -fx-font-size: 16px;
+    -fx-cursor: hand;
+    -fx-min-width: 32;
+    -fx-max-width: 32;
+    -fx-min-height: 28;
+    -fx-max-height: 28;
+    -fx-padding: 0;
+    -fx-alignment: CENTER;
+}
+
+.view-invoices-root .vi-ellipsis-btn:hover {
+    -fx-background-color: #FFEDD5;
+    -fx-border-color: #FB923C;
+    -fx-effect: dropshadow(three-pass-box, rgba(234, 88, 12, 0.15), 8, 0, 0, 2);
+}
+
+.view-invoices-root .vi-ellipsis-btn:focused {
+    -fx-border-color: #EA580C;
+    -fx-border-width: 1.5;
+}
+
+.view-invoices-root .vi-page-btn {
+    -fx-background-color: #F1EBE5;
+    -fx-text-fill: #433934;
+    -fx-font-weight: 700;
+    -fx-background-radius: 50;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-max-width: 32;
+    -fx-max-height: 32;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+.view-invoices-root .vi-page-btn:hover { -fx-background-color: #E2D9D2; }
+.view-invoices-root .vi-page-btn:disabled {
+    -fx-opacity: 0.45;
+}
+.view-invoices-root .vi-page-btn-active {
+    -fx-background-color: #C16738;
+    -fx-text-fill: white;
+}
+.view-invoices-root .vi-page-btn-active:hover {
+    -fx-background-color: #B25D3B;
+}
+
+/* View Invoices: overflow actions (⋯) context menu */
+.context-menu.vi-invoice-actions-menu {
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 0;
+    -fx-padding: 4 0 4 0;
+    -fx-background-radius: 8;
+    -fx-border-color: #E5E7EB;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 10, 0, 0, 2);
+}
+.context-menu.vi-invoice-actions-menu .separator:horizontal .line {
+    -fx-border-color: #E5E7EB;
+    -fx-border-width: 1 0 0 0;
+    -fx-padding: 0;
+}
+.context-menu.vi-invoice-actions-menu .menu-item {
+    -fx-padding: 8 18 8 18;
+    -fx-background-color: transparent;
+}
+.context-menu.vi-invoice-actions-menu .menu-item .label {
+    -fx-text-fill: #111827;
+    -fx-font-weight: 600;
+    -fx-font-size: 12px;
+}
+.context-menu.vi-invoice-actions-menu .menu-item:hover,
+.context-menu.vi-invoice-actions-menu .menu-item:focused {
+    -fx-background-color: #FFF7ED;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4;
+}
+.context-menu.vi-invoice-actions-menu .menu-item:hover .label,
+.context-menu.vi-invoice-actions-menu .menu-item:focused .label {
+    -fx-text-fill: #C2410C;
+}
+.context-menu.vi-invoice-actions-menu .menu-item:disabled {
+    -fx-opacity: 1;
+}
+.context-menu.vi-invoice-actions-menu .menu-item:disabled .label {
+    -fx-text-fill: #9CA3AF;
+    -fx-font-weight: 600;
+}
+.context-menu.vi-invoice-actions-menu .menu-item:disabled:hover,
+.context-menu.vi-invoice-actions-menu .menu-item:disabled:focused {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+}
+.context-menu.vi-invoice-actions-menu .menu-item:disabled:hover .label,
+.context-menu.vi-invoice-actions-menu .menu-item:disabled:focused .label {
+    -fx-text-fill: #9CA3AF;
+}
+
+/* --- 6. MINIMALIST SCROLLBAR (Shared from view_job.css) --- */
+.view-invoices-root .scroll-bar:vertical,
+.view-invoices-root .scroll-bar:horizontal,
+.vi-invoice-table .scroll-bar:vertical,
+.vi-invoice-table .scroll-bar:horizontal {
+    -fx-background-color: transparent;
+    -fx-pref-width: 8;
+}
+
+.view-invoices-root .scroll-bar:vertical .track,
+.view-invoices-root .scroll-bar:horizontal .track,
+.vi-invoice-table .scroll-bar:vertical .track,
+.vi-invoice-table .scroll-bar:horizontal .track {
+    -fx-background-color: transparent;
+}
+
+.view-invoices-root .scroll-bar:vertical .thumb,
+.view-invoices-root .scroll-bar:horizontal .thumb,
+.vi-invoice-table .scroll-bar:vertical .thumb,
+.vi-invoice-table .scroll-bar:horizontal .thumb {
+    -fx-background-color: rgba(62, 49, 45, 0.1);
+    -fx-background-radius: 5px;
+}
+
+.view-invoices-root .scroll-bar:vertical .thumb:hover,
+.view-invoices-root .scroll-bar:horizontal .thumb:hover,
+.vi-invoice-table .scroll-bar:vertical .thumb:hover,
+.vi-invoice-table .scroll-bar:horizontal .thumb:hover {
+    -fx-background-color: rgba(62, 49, 45, 0.2);
+}
+
+.view-invoices-root .scroll-bar .increment-button,
+.view-invoices-root .scroll-bar .decrement-button,
+.vi-invoice-table .scroll-bar .increment-button,
+.vi-invoice-table .scroll-bar .decrement-button {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+
+.view-invoices-root .scroll-bar .increment-arrow,
+.view-invoices-root .scroll-bar .decrement-arrow,
+.vi-invoice-table .scroll-bar .increment-arrow,
+.vi-invoice-table .scroll-bar .decrement-arrow {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
 }

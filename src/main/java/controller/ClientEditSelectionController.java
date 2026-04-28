@@ -40,6 +40,7 @@ public class ClientEditSelectionController implements Initializable {
     @FXML private VBox clientListContainer;
     @FXML private Label lblShowingCount;
     @FXML private HBox paginationContainer;
+    /** Optional in FXML; created in code if missing (pagination row rebuilds children). */
     @FXML private TextField pageInput;
 
     private ClientRepository clientRepo = new ClientRepository();
@@ -61,6 +62,7 @@ public class ClientEditSelectionController implements Initializable {
             breadcrumbBackBtn.managedProperty().bind(breadcrumbBackBtn.visibleProperty());
         }
         setupComboBoxes();
+        ensurePageInputField();
         loadInitialData();
         setupFiltering();
         setupPageInput();
@@ -124,10 +126,24 @@ public class ClientEditSelectionController implements Initializable {
         timeline.play();
     }
 
+    private void ensurePageInputField() {
+        if (pageInput != null) {
+            return;
+        }
+        pageInput = new TextField();
+        pageInput.setPromptText("Page");
+        pageInput.setPrefColumnCount(4);
+        pageInput.setMaxWidth(72);
+        pageInput.getStyleClass().add("goto-field");
+    }
+
     private void setupPageInput() {
+        if (pageInput == null) {
+            return;
+        }
         pageInput.setOnAction(e -> {
             try {
-                int targetPage = Integer.parseInt(pageInput.getText());
+                int targetPage = Integer.parseInt(pageInput.getText().trim());
                 goToPage(targetPage);
                 pageInput.clear();
             } catch (NumberFormatException ex) {
@@ -202,16 +218,18 @@ public class ClientEditSelectionController implements Initializable {
         paginationContainer.getChildren().clear();
         
         // Prev Button
-        Button prevBtn = new Button("‹");
+        Button prevBtn = new Button("<");
         prevBtn.getStyleClass().add("page-btn");
         prevBtn.setDisable(currentPage == 1);
         prevBtn.setOnAction(e -> goToPage(currentPage - 1));
         paginationContainer.getChildren().add(prevBtn);
 
-        // Logic for page numbers (show few around current)
+        // Logic to show a max of 3 pages (sliding window) - matching view_client.css style
         int startPage = Math.max(1, currentPage - 1);
         int endPage = Math.min(totalPages, startPage + 2);
-        if (endPage - startPage < 2) startPage = Math.max(1, endPage - 2);
+        if (endPage - startPage < 2 && startPage > 1) {
+            startPage = Math.max(1, endPage - 2);
+        }
 
         for (int i = startPage; i <= endPage; i++) {
             final int p = i;
@@ -222,23 +240,26 @@ public class ClientEditSelectionController implements Initializable {
             paginationContainer.getChildren().add(pBtn);
         }
 
-        if (endPage < totalPages) {
-            Label dot = new Label("...");
-            dot.getStyleClass().add("footer-text");
-            paginationContainer.getChildren().add(dot);
-            
-            Button lastBtn = new Button(String.valueOf(totalPages));
-            lastBtn.getStyleClass().add("page-btn");
-            lastBtn.setOnAction(e -> goToPage(totalPages));
-            paginationContainer.getChildren().add(lastBtn);
-        }
-
         // Next Button
-        Button nextBtn = new Button("›");
+        Button nextBtn = new Button(">");
         nextBtn.getStyleClass().add("page-btn");
         nextBtn.setDisable(currentPage == totalPages);
         nextBtn.setOnAction(e -> goToPage(currentPage + 1));
         paginationContainer.getChildren().add(nextBtn);
+
+        // Jump to page label
+        Label jumpLabel = new Label("Go to:");
+        jumpLabel.setStyle("-fx-text-fill: #A79F99; -fx-font-size: 11px; -fx-padding: 0 0 0 10;");
+        paginationContainer.getChildren().add(jumpLabel);
+        
+        // Ensure pageInput is managed within the container if it was separate in FXML
+        // But the user wants the exact type on view client screen which has it inside paginationContainer
+        if (pageInput != null) {
+            pageInput.getStyleClass().add("goto-field");
+            if (!paginationContainer.getChildren().contains(pageInput)) {
+                paginationContainer.getChildren().add(pageInput);
+            }
+        }
     }
 
     private void renderList() {
