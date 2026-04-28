@@ -1,7 +1,7 @@
 /* =============================================================================
    RECORD PAYMENT — warm dashboard theme (with View Jobs / Client Edit Selection)
    Root: .record-payment-root (record_payment.fxml)
-   Legacy: .app-root (payment_history.fxml + invoice_genration.css)
+   Legacy: .app-root (dialogs / older screens that still use invoice_genration + app-root)
    ============================================================================= */
 
 /* --- Record Payment (current app theme) --- */
@@ -346,7 +346,7 @@
 }
 
 /* =============================================================================
-   LEGACY — payment_history.fxml (.app-root + invoice_genration.css)
+   LEGACY — screens using BorderPane styleClass app-root + invoice_genration.css
    ============================================================================= */
 
 .app-root {
