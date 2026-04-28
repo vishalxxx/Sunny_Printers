@@ -2,302 +2,299 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
 
 <BorderPane xmlns="http://javafx.com/javafx/23"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="controller.RecordPaymentController"
-            stylesheets="@../css/invoice_genration.css,@../css/record_payment.css"
-            styleClass="app-root">
+            stylesheets="@../css/theme.css, @../css/record_payment.css"
+            styleClass="record-payment-root">
 
-    <!-- ===================================================== -->
-    <!-- HEADER (FIXED) -->
-    <!-- ===================================================== -->
-    <top>
-        <HBox styleClass="header-bar" alignment="CENTER_LEFT">
-
-            <!-- LEFT TITLE -->
-            <HBox spacing="12" alignment="CENTER_LEFT">
-                <Label text="💳" styleClass="header-icon"/>
-                <VBox spacing="2">
-                    <Label text="RECORD CLIENT PAYMENT" styleClass="header-title"/>
-                    <Label text="ACCOUNTS › PAYMENTS" styleClass="header-subtitle"/>
-                </VBox>
-            </HBox>
-
-            <Pane HBox.hgrow="ALWAYS"/>
-
-            <!-- RIGHT STATUS -->
-            <HBox spacing="20" alignment="CENTER_RIGHT">
-                <Label text="● PENDING" styleClass="status-pill"/>
-                <VBox alignment="CENTER_RIGHT">
-                    <Label text="CURRENT DATE" styleClass="date-label"/>
-                    <Label fx:id="currentDateLabel" text="Oct 24, 2023" styleClass="date-value"/>
-                </VBox>
-                <Label text="👤" styleClass="avatar"/>
-            </HBox>
-        </HBox>
-    </top>
-
-    <!-- ===================================================== -->
-    <!-- CENTER SCROLLABLE CONTENT -->
-    <!-- ===================================================== -->
     <center>
-        <ScrollPane fitToWidth="true" styleClass="content-scroll">
+        <ScrollPane fitToWidth="true" styleClass="rp-scroll" hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED">
             <content>
-                <VBox spacing="24" styleClass="page" fillWidth="true">
+                <VBox spacing="16" styleClass="rp-page, ui-compact" fillWidth="true">
+                    <padding>
+                        <Insets top="8" right="20" bottom="24" left="20"/>
+                    </padding>
+
+                    <!-- Page intro + outstanding KPI (top right, same as view_client KPIs) -->
+                    <HBox alignment="TOP_LEFT" spacing="20">
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <Label text="Record Payment" styleClass="page-heading"/>
+                            <Label text="Allocate receipts against outstanding invoices for the selected client."
+                                   styleClass="page-subheading"/>
+                        </VBox>
+                        <VBox styleClass="kpi-card, kpi-card-orange" minWidth="168" maxWidth="220" spacing="6"
+                              alignment="CENTER_LEFT">
+                            <Label text="TOTAL OUTSTANDING" styleClass="kpi-label"/>
+                            <Label fx:id="totalOutstandingLabel" text="₹ 0.00" styleClass="kpi-value-orange"/>
+                        </VBox>
+                    </HBox>
 
                     <!-- PAYMENT CARD -->
-                    <VBox spacing="16" styleClass="card">
-                        <!-- CLIENT selection with balance -->
-                        <HBox spacing="20" alignment="BOTTOM_LEFT">
-                            <VBox spacing="6" HBox.hgrow="ALWAYS">
-                                <Label text="SELECT CLIENT" styleClass="field-label"/>
-                                <ComboBox fx:id="clientCombo" promptText="Select Client" prefWidth="0" maxWidth="Infinity" styleClass="client-combo" editable="false"/>
-                            </VBox>
-                            <VBox spacing="6" alignment="BOTTOM_RIGHT" minWidth="200">
-                                <Label text="TOTAL OUTSTANDING" styleClass="field-label"/>
-                                <Label fx:id="totalOutstandingLabel" text="₹ 0.00" styleClass="total-value" style="-fx-text-fill: #e74c3c; -fx-font-weight: bold;"/>
-                            </VBox>
-                        </HBox>
+                    <VBox spacing="16" styleClass="info-card-premium, rp-card">
+                        <VBox spacing="8">
+                            <Label text="Select client" styleClass="field-heading-sm"/>
+                            <ComboBox fx:id="clientCombo" promptText="Select client" maxWidth="Infinity"
+                                      styleClass="taste-combo" editable="false"/>
+                        </VBox>
 
-                        <!-- TYPE, DATE, AMOUNT, MODE, NOTES in grid -->
-                        <GridPane hgap="18" vgap="18">
+                        <GridPane hgap="16" vgap="16">
                             <columnConstraints>
                                 <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
                                 <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
                                 <ColumnConstraints percentWidth="33.4" hgrow="ALWAYS"/>
                             </columnConstraints>
 
-                            <!-- ROW 0 -->
-                            <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                                <Label text="TRANSACTION TYPE" styleClass="field-label"/>
-                                <ComboBox fx:id="paymentTypeCombo" promptText="Payment / Refund" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                <Label text="Transaction type" styleClass="field-heading-sm"/>
+                                <ComboBox fx:id="paymentTypeCombo" promptText="Payment / Refund" maxWidth="Infinity"
+                                          styleClass="taste-combo"/>
                             </VBox>
 
-                            <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
-                                <Label text="PAYMENT DATE" styleClass="field-label"/>
-                                <DatePicker fx:id="paymentDatePicker" promptText="mm/dd/yy" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
-                            </VBox>
-                            
-                            <VBox spacing="6" GridPane.columnIndex="2" GridPane.rowIndex="0">
-                                <Label text="PAYMENT AMOUNT" styleClass="field-label"/>
-                                <TextField fx:id="amountField" promptText="0.00" styleClass="input amount"/>
+                            <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                <Label text="Payment date" styleClass="field-heading-sm"/>
+                                <DatePicker fx:id="paymentDatePicker" promptText="Select date" maxWidth="Infinity"
+                                            styleClass="taste-datepicker" editable="false"/>
                             </VBox>
 
-                            <!-- ROW 1 -->
-                            <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="1">
-                                <Label text="PAYMENT MODE" styleClass="field-label"/>
-                                <ComboBox fx:id="paymentModeCombo" promptText="Cash / Cheque / UPI / Bank Transfer" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                                <Label text="Payment amount" styleClass="field-heading-sm"/>
+                                <TextField fx:id="amountField" promptText="0.00" styleClass="taste-field, rp-amount-field"/>
                             </VBox>
 
-                            <VBox spacing="6" GridPane.rowIndex="1" GridPane.columnIndex="1" GridPane.columnSpan="2">
-                                <Label text="NOTES" styleClass="field-label"/>
-                                <TextField fx:id="notesField" promptText="Add transaction remarks..." styleClass="input"/>
+                            <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                                <Label text="Payment mode" styleClass="field-heading-sm"/>
+                                <ComboBox fx:id="paymentModeCombo" promptText="Cash / Cheque / UPI / Bank transfer"
+                                          maxWidth="Infinity" styleClass="taste-combo"/>
+                            </VBox>
+
+                            <VBox spacing="8" GridPane.rowIndex="1" GridPane.columnIndex="1" GridPane.columnSpan="2">
+                                <Label text="Notes" styleClass="field-heading-sm"/>
+                                <TextField fx:id="notesField" promptText="Transaction remarks (optional)"
+                                           styleClass="taste-field"/>
                             </VBox>
                         </GridPane>
                     </VBox>
 
-                    <!-- CHEQUE DETAILS (visible only for cheque) -->
-                    <VBox fx:id="chequeDetailsBox" spacing="14" styleClass="card">
+                    <!-- CHEQUE DETAILS -->
+                    <VBox fx:id="chequeDetailsBox" spacing="14" styleClass="info-card-premium, rp-card" managed="false" visible="false">
                         <HBox alignment="CENTER_LEFT" spacing="10">
-                            <Label text="🏦" styleClass="section-icon"/>
-                            <Label text="CHEQUE DETAILS" styleClass="section-title"/>
+                            <StackPane styleClass="rp-section-icon-wrap">
+                                <Region styleClass="rp-section-icon-bank"/>
+                            </StackPane>
+                            <Label text="Cheque details" styleClass="card-title-sm"/>
                         </HBox>
 
-                        <HBox spacing="10" alignment="CENTER_LEFT" styleClass="info-banner">
-                            <Label text="ℹ" styleClass="info-icon"/>
-                            <Label text="This cheque is pending clearance. Invoices will remain unpaid until cleared." styleClass="info-text" wrapText="true"/>
+                        <HBox alignment="CENTER_LEFT" spacing="10" styleClass="rp-info-banner">
+                            <Label text="This cheque is pending clearance. Invoices stay unpaid until cleared."
+                                   styleClass="rp-info-text" wrapText="true"/>
                         </HBox>
 
-                        <GridPane hgap="18" vgap="18">
+                        <GridPane hgap="16" vgap="16">
                             <columnConstraints>
                                 <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
                                 <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
                                 <ColumnConstraints percentWidth="33.4" hgrow="ALWAYS"/>
                             </columnConstraints>
 
-                            <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                                <Label text="CHEQUE NO" styleClass="field-label"/>
-                                <TextField fx:id="chequeNumberField" promptText="No..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                <Label text="Cheque no." styleClass="field-heading-sm"/>
+                                <TextField fx:id="chequeNumberField" promptText="Cheque number" maxWidth="Infinity"
+                                           styleClass="taste-field"/>
                             </VBox>
 
-                            <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
-                                <Label text="SENDER BANK NAME" styleClass="field-label"/>
-                                <ComboBox fx:id="bankNameCombo" promptText="Select bank..." prefWidth="0" maxWidth="Infinity" styleClass="input bank-combo"/>
+                            <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                <Label text="Sender bank" styleClass="field-heading-sm"/>
+                                <ComboBox fx:id="bankNameCombo" promptText="Select bank" maxWidth="Infinity"
+                                          styleClass="taste-combo, rp-bank-combo"/>
                             </VBox>
 
-                            <VBox spacing="6" GridPane.columnIndex="2" GridPane.rowIndex="0">
-                                <Label text="CHEQUE DATE" styleClass="field-label"/>
-                                <DatePicker fx:id="chequeDatePicker" promptText="mm/dd/yy" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                                <Label text="Cheque date" styleClass="field-heading-sm"/>
+                                <DatePicker fx:id="chequeDatePicker" promptText="Select date" maxWidth="Infinity"
+                                            styleClass="taste-datepicker" editable="false"/>
                             </VBox>
 
-                            <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="1">
-                                <Label text="CLEARANCE DATE" styleClass="field-label"/>
-                                <DatePicker fx:id="clearanceDatePicker" promptText="mm/dd/yy" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                                <Label text="Clearance date" styleClass="field-heading-sm"/>
+                                <DatePicker fx:id="clearanceDatePicker" promptText="Select date" maxWidth="Infinity"
+                                            styleClass="taste-datepicker" editable="false"/>
                             </VBox>
 
-                            <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="1">
-                                <Label text="RECEIVER BANK A/C" styleClass="field-label"/>
-                                <ComboBox fx:id="chequeReceiverBankCombo" promptText="Select bank..." prefWidth="0" maxWidth="Infinity" styleClass="input bank-combo"/>
+                            <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                <Label text="Receiver bank A/C" styleClass="field-heading-sm"/>
+                                <ComboBox fx:id="chequeReceiverBankCombo" promptText="Select bank" maxWidth="Infinity"
+                                          styleClass="taste-combo"/>
                             </VBox>
 
-                            <VBox spacing="6" GridPane.columnIndex="2" GridPane.rowIndex="1">
-                                <Label text="STATUS" styleClass="field-label"/>
-                                <ComboBox fx:id="chequeStatusCombo" promptText="Select status..." prefWidth="0" maxWidth="Infinity" styleClass="input bank-combo"/>
+                            <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                                <Label text="Status" styleClass="field-heading-sm"/>
+                                <ComboBox fx:id="chequeStatusCombo" promptText="Status" maxWidth="Infinity"
+                                          styleClass="taste-combo"/>
                             </VBox>
                         </GridPane>
                     </VBox>
 
-                    <!-- UPI DETAILS (visible only for UPI) -->
-                    <VBox fx:id="upiDetailsBox" spacing="14" styleClass="card">
+                    <!-- UPI DETAILS -->
+                    <VBox fx:id="upiDetailsBox" spacing="14" styleClass="info-card-premium, rp-card" managed="false" visible="false">
                         <HBox alignment="CENTER_LEFT" spacing="10">
-                            <Label text="📱" styleClass="section-icon"/>
-                            <Label text="UPI DETAILS" styleClass="section-title"/>
+                            <StackPane styleClass="rp-section-icon-wrap">
+                                <Region styleClass="rp-section-icon-upi"/>
+                            </StackPane>
+                            <Label text="UPI details" styleClass="card-title-sm"/>
                         </HBox>
 
-                        <GridPane hgap="18" vgap="18">
+                        <GridPane hgap="16" vgap="16">
                             <columnConstraints>
                                 <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
                                 <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
                                 <ColumnConstraints percentWidth="33.4" hgrow="ALWAYS"/>
                             </columnConstraints>
 
-                            <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                                <Label text="SENDER UPI ID" styleClass="field-label"/>
-                                <TextField fx:id="upiIdField" promptText="name@bank" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                <Label text="Sender UPI ID" styleClass="field-heading-sm"/>
+                                <TextField fx:id="upiIdField" promptText="name@bank" maxWidth="Infinity" styleClass="taste-field"/>
                             </VBox>
 
-                            <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
-                                <Label text="UTR" styleClass="field-label"/>
-                                <TextField fx:id="upiUtrField" promptText="UTR / reference..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                <Label text="UTR" styleClass="field-heading-sm"/>
+                                <TextField fx:id="upiUtrField" promptText="UTR / reference" maxWidth="Infinity" styleClass="taste-field"/>
                             </VBox>
 
-                            <VBox spacing="6" GridPane.columnIndex="2" GridPane.rowIndex="0">
-                                <Label text="RECEIVER UPI ID" styleClass="field-label"/>
-                                <TextField fx:id="receiverUpiIdField" promptText="receiver@bank" prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                                <Label text="Receiver UPI ID" styleClass="field-heading-sm"/>
+                                <TextField fx:id="receiverUpiIdField" promptText="receiver@bank" maxWidth="Infinity"
+                                           styleClass="taste-field"/>
                             </VBox>
 
-                            <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="1">
-                                <Label text="RECEIVER BANK A/C" styleClass="field-label"/>
-                                <ComboBox fx:id="upiReceiverBankCombo" promptText="Select bank..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                                <Label text="Receiver bank A/C" styleClass="field-heading-sm"/>
+                                <ComboBox fx:id="upiReceiverBankCombo" promptText="Select bank" maxWidth="Infinity"
+                                          styleClass="taste-combo"/>
                             </VBox>
 
-                            <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="1">
-                                <Label text="STATUS" styleClass="field-label"/>
-                                <ComboBox fx:id="upiStatusCombo" promptText="Select status..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                <Label text="Status" styleClass="field-heading-sm"/>
+                                <ComboBox fx:id="upiStatusCombo" promptText="Status" maxWidth="Infinity" styleClass="taste-combo"/>
                             </VBox>
                         </GridPane>
                     </VBox>
 
-                    <!-- BANK TRANSFER DETAILS (visible only for Bank Transfer) -->
-                    <VBox fx:id="bankTransferDetailsBox" spacing="14" styleClass="card" visible="false" managed="false">
+                    <!-- BANK TRANSFER -->
+                    <VBox fx:id="bankTransferDetailsBox" spacing="14" styleClass="info-card-premium, rp-card" visible="false" managed="false">
                         <HBox alignment="CENTER_LEFT" spacing="10">
-                            <Label text="🏦" styleClass="section-icon"/>
-                            <Label text="BANK TRANSFER DETAILS" styleClass="section-title"/>
+                            <StackPane styleClass="rp-section-icon-wrap">
+                                <Region styleClass="rp-section-icon-transfer"/>
+                            </StackPane>
+                            <Label text="Bank transfer details" styleClass="card-title-sm"/>
                         </HBox>
 
-                        <GridPane hgap="18" vgap="18">
+                        <GridPane hgap="16" vgap="16">
                             <columnConstraints>
                                 <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
                                 <ColumnConstraints percentWidth="33.3" hgrow="ALWAYS"/>
                                 <ColumnConstraints percentWidth="33.4" hgrow="ALWAYS"/>
                             </columnConstraints>
 
-                            <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                                <Label text="SENDER A/C NAME" styleClass="field-label"/>
-                                <TextField fx:id="senderNameField" promptText="Account holder name..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                <Label text="Sender A/C name" styleClass="field-heading-sm"/>
+                                <TextField fx:id="senderNameField" promptText="Account holder name" maxWidth="Infinity"
+                                           styleClass="taste-field"/>
                             </VBox>
 
-                            <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
-                                <Label text="SENDER A/C NUMBER" styleClass="field-label"/>
-                                <TextField fx:id="senderAccountField" promptText="Account number..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                <Label text="Sender A/C number" styleClass="field-heading-sm"/>
+                                <TextField fx:id="senderAccountField" promptText="Account number" maxWidth="Infinity"
+                                           styleClass="taste-field"/>
                             </VBox>
 
-                            <VBox spacing="6" GridPane.columnIndex="2" GridPane.rowIndex="0">
-                                <Label text="UTR / REF NO" styleClass="field-label"/>
-                                <TextField fx:id="bankTransferUtrField" promptText="UTR number..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
-                            </VBox>
-                            
-                            <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="1">
-                                <Label text="RECEIVER BANK A/C" styleClass="field-label"/>
-                                <ComboBox fx:id="receiverBankCombo" promptText="Select bank..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                                <Label text="UTR / ref no." styleClass="field-heading-sm"/>
+                                <TextField fx:id="bankTransferUtrField" promptText="UTR number" maxWidth="Infinity"
+                                           styleClass="taste-field"/>
                             </VBox>
 
-                            <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="1">
-                                <Label text="STATUS" styleClass="field-label"/>
-                                <ComboBox fx:id="bankTransferStatusCombo" promptText="Select status..." prefWidth="0" maxWidth="Infinity" styleClass="input"/>
+                            <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                                <Label text="Receiver bank A/C" styleClass="field-heading-sm"/>
+                                <ComboBox fx:id="receiverBankCombo" promptText="Select bank" maxWidth="Infinity"
+                                          styleClass="taste-combo"/>
+                            </VBox>
+
+                            <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                <Label text="Status" styleClass="field-heading-sm"/>
+                                <ComboBox fx:id="bankTransferStatusCombo" promptText="Status" maxWidth="Infinity"
+                                          styleClass="taste-combo"/>
                             </VBox>
                         </GridPane>
                     </VBox>
 
-                    <!-- TABLE CARD -->
-                    <VBox spacing="0" styleClass="card">
-
-                        <HBox styleClass="table-header">
-                            <Label text="ALLOCATION AGAINST OUTSTANDING INVOICES" styleClass="table-title"/>
-                            <Pane HBox.hgrow="ALWAYS"/>
-                            <Label fx:id="invoiceCountLabel" text="0 records found" styleClass="muted"/>
+                    <!-- INVOICE ALLOCATION TABLE -->
+                    <VBox spacing="0" styleClass="content-card-premium, rp-table-card" VBox.vgrow="ALWAYS" minHeight="320">
+                        <HBox styleClass="rp-table-header" alignment="CENTER_LEFT" spacing="12">
+                            <padding>
+                                <Insets top="14" right="16" bottom="14" left="16"/>
+                            </padding>
+                            <Label text="Allocation against outstanding invoices" styleClass="card-title-sm"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="invoiceCountLabel" text="0 records found" styleClass="rp-muted"/>
                         </HBox>
 
-                        <TableView fx:id="invoiceTable" styleClass="history-table" VBox.vgrow="ALWAYS">
+                        <TableView fx:id="invoiceTable" styleClass="rp-invoice-table" VBox.vgrow="ALWAYS" minHeight="280">
                             <columns>
-                                <TableColumn fx:id="selectColumn" text="" prefWidth="60"/>
-                                <TableColumn fx:id="invoiceNoColumn" text="INVOICE NO" prefWidth="140"/>
-                                <TableColumn fx:id="statusColumn" text="STATUS" prefWidth="100"/>
-                                <TableColumn fx:id="invoiceDateColumn" text="DATE" prefWidth="120"/>
-                                <TableColumn fx:id="totalAmountColumn" text="BASE AMT" prefWidth="120"/>
-                                <TableColumn fx:id="adjustmentColumn" text="ADJUSTMENT" prefWidth="150"/>
-                                <TableColumn fx:id="netTotalColumn" text="NET TOTAL" prefWidth="120"/>
-                                <TableColumn fx:id="netPaidColumn" text="NET PAID" prefWidth="120"/>
-                                <TableColumn fx:id="dueAmountColumn" text="DUE" prefWidth="120"/>
-                                <TableColumn fx:id="allocateAmountColumn" text="ALLOCATE" prefWidth="140"/>
+                                <TableColumn fx:id="selectColumn" text="" prefWidth="56"/>
+                                <TableColumn fx:id="invoiceNoColumn" text="Invoice no." prefWidth="130"/>
+                                <TableColumn fx:id="statusColumn" text="Status" prefWidth="100"/>
+                                <TableColumn fx:id="invoiceDateColumn" text="Date" prefWidth="110"/>
+                                <TableColumn fx:id="totalAmountColumn" text="Base amt" prefWidth="110"/>
+                                <TableColumn fx:id="adjustmentColumn" text="Adjustment" prefWidth="130"/>
+                                <TableColumn fx:id="netTotalColumn" text="Net total" prefWidth="110"/>
+                                <TableColumn fx:id="netPaidColumn" text="Net paid" prefWidth="110"/>
+                                <TableColumn fx:id="dueAmountColumn" text="Due" prefWidth="110"/>
+                                <TableColumn fx:id="allocateAmountColumn" text="Allocate" prefWidth="120"/>
                             </columns>
                         </TableView>
                     </VBox>
-
                 </VBox>
             </content>
         </ScrollPane>
     </center>
 
-    <!-- ===================================================== -->
-    <!-- FOOTER (FIXED ACTION BAR) -->
-    <!-- ===================================================== -->
     <bottom>
-        <HBox styleClass="footer-bar" alignment="CENTER_LEFT">
+        <HBox styleClass="rp-footer" alignment="CENTER_LEFT" spacing="16">
+            <padding>
+                <Insets top="12" right="20" bottom="12" left="20"/>
+            </padding>
 
-            <!-- CLIENT NAME -->
-            <Label fx:id="footerClientLabel" text="Select Client" styleClass="brand"/>
+            <Label fx:id="footerClientLabel" text="Select client" styleClass="rp-footer-client"/>
 
-            <Pane HBox.hgrow="ALWAYS"/>
+            <Region HBox.hgrow="ALWAYS"/>
 
-            <!-- TOTALS -->
-            <HBox spacing="30" alignment="CENTER_LEFT" styleClass="totals-box">
-                <VBox>
-                    <Label text="AMOUNT RECEIVED" styleClass="total-label"/>
-                    <Label fx:id="totalEnteredLabel" text="₹ 0.00" styleClass="total-value"/>
+            <HBox spacing="20" alignment="CENTER_LEFT" styleClass="rp-totals-cluster">
+                <VBox spacing="2">
+                    <Label text="Amount received" styleClass="rp-total-label"/>
+                    <Label fx:id="totalEnteredLabel" text="₹ 0.00" styleClass="rp-total-value"/>
                 </VBox>
-                <VBox>
-                    <Label text="TOTAL ALLOCATED" styleClass="total-label"/>
-                    <Label fx:id="totalAllocatedLabel" text="₹ 0.00" styleClass="total-value"/>
+                <VBox spacing="2">
+                    <Label text="Total allocated" styleClass="rp-total-label"/>
+                    <Label fx:id="totalAllocatedLabel" text="₹ 0.00" styleClass="rp-total-value"/>
                 </VBox>
-                <VBox>
-                    <Label text="DUE" styleClass="total-label"/>
-                    <Label fx:id="remainingBalanceLabel" text="₹ 0.00" styleClass="total-green"/>
+                <VBox spacing="2">
+                    <Label text="Due" styleClass="rp-total-label"/>
+                    <Label fx:id="remainingBalanceLabel" text="₹ 0.00" styleClass="rp-total-due"/>
                 </VBox>
             </HBox>
 
-            <Pane HBox.hgrow="ALWAYS"/>
+            <Region HBox.hgrow="ALWAYS"/>
 
-            <!-- ACTIONS -->
-            <HBox spacing="12">
-                <Label fx:id="excessPaymentLabel" text="" visible="false" managed="false" styleClass="excess-pill"/>
-                <Button text="Cancel" onAction="#onCancel" styleClass="ghost-btn"/>
-                <Button text="Reset" onAction="#onReset" styleClass="outline-btn"/>
-                <Button text="Print Receipt" onAction="#onPrintReceipt" styleClass="soft-btn"/>
-                <Button text="Add Payment" onAction="#onAddPayment" styleClass="btn-primary"/>
+            <HBox spacing="10" alignment="CENTER_RIGHT">
+                <Label fx:id="excessPaymentLabel" text="" visible="false" managed="false" styleClass="rp-excess-pill"/>
+                <Button text="Cancel" onAction="#onCancel" styleClass="rp-btn, rp-btn-ghost"/>
+                <Button text="Reset" onAction="#onReset" styleClass="rp-btn, rp-btn-outline"/>
+                <Button text="Print receipt" onAction="#onPrintReceipt" styleClass="rp-btn, rp-btn-soft"/>
+                <Button text="Add payment" onAction="#onAddPayment" styleClass="rp-btn, rp-btn-primary"/>
             </HBox>
         </HBox>
     </bottom>
-
 </BorderPane>

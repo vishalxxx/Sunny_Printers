@@ -1,53 +1,397 @@
-/* This file is only for Record Payment specifics.
-   Base styling comes from invoice_genration.css. */
+/* =============================================================================
+   RECORD PAYMENT — warm dashboard theme (with View Jobs / Client Edit Selection)
+   Root: .record-payment-root (record_payment.fxml)
+   Legacy: .app-root (payment_history.fxml + invoice_genration.css)
+   ============================================================================= */
+
+/* --- Record Payment (current app theme) --- */
+.record-payment-root {
+    -fx-background-color: #FAF6F0;
+}
+
+.record-payment-root .rp-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.record-payment-root .rp-scroll > .viewport {
+    -fx-background-color: #FAF6F0;
+}
+
+.record-payment-root .rp-page {
+    -fx-background-color: transparent;
+}
+
+.record-payment-root .info-card-premium,
+.record-payment-root .content-card-premium {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 10;
+    -fx-border-color: #E5E7EB;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.04), 12, 0, 0, 4);
+}
+
+.record-payment-root .rp-card {
+    -fx-padding: 20;
+}
+
+/* KPI cards — match view_client.fxml / view_client.css (TOTAL RECEIVABLES style) */
+.record-payment-root .kpi-card {
+    -fx-background-color: #F7EDE0;
+    -fx-border-color: #E6E0D5;
+    -fx-border-width: 1.2;
+    -fx-padding: 16 20;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-alignment: CENTER_LEFT;
+    -fx-spacing: 6;
+    -fx-cursor: hand;
+}
+
+.record-payment-root .kpi-card:hover {
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.03), 15, 0, 0, 5);
+}
+
+.record-payment-root .kpi-label {
+    -fx-text-fill: #8E7A6B;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-letter-spacing: 0.05em;
+}
+
+.record-payment-root .kpi-card-orange {
+    -fx-background-color: #FDF4ED;
+    -fx-border-color: #EFE0D4;
+}
+
+.record-payment-root .kpi-card-orange:hover {
+    -fx-border-color: #C87941;
+}
+
+.record-payment-root .kpi-value-orange {
+    -fx-text-fill: #B25D3B;
+    -fx-font-size: 21px;
+    -fx-font-weight: 800;
+    -fx-font-family: 'Manrope';
+}
+
+.record-payment-root .rp-amount-field {
+    -fx-font-weight: 800;
+}
+
+.record-payment-root .rp-section-icon-wrap {
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+    -fx-max-width: 36;
+    -fx-max-height: 36;
+    -fx-background-color: #FFF7ED;
+    -fx-background-radius: 10;
+    -fx-border-color: #FDBA74;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-alignment: center;
+}
+
+.record-payment-root .rp-section-icon-bank {
+    -fx-min-width: 14;
+    -fx-min-height: 14;
+    -fx-background-color: #CD7B4E;
+    -fx-background-radius: 4;
+}
+
+.record-payment-root .rp-section-icon-upi {
+    -fx-min-width: 14;
+    -fx-min-height: 14;
+    -fx-background-color: #2563EB;
+    -fx-background-radius: 4;
+}
+
+.record-payment-root .rp-section-icon-transfer {
+    -fx-min-width: 14;
+    -fx-min-height: 14;
+    -fx-background-color: #15803D;
+    -fx-background-radius: 4;
+}
+
+.record-payment-root .rp-info-banner {
+    -fx-background-color: #EFF6FF;
+    -fx-border-color: #BFDBFE;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 12 14;
+}
+
+.record-payment-root .rp-info-text {
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #1E40AF;
+}
+
+/* Editable bank combo inner field (if made editable later) */
+.record-payment-root #bankNameCombo .text-field,
+.record-payment-root #bankNameCombo .text-field:focused {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-background-insets: 0;
+    -fx-effect: null;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.record-payment-root .rp-table-card {
+    -fx-padding: 0;
+}
+
+.record-payment-root .rp-table-header {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #EEECE8;
+    -fx-border-width: 0 0 1 0;
+}
+
+.record-payment-root .rp-muted {
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #6B7280;
+}
+
+.record-payment-root .rp-invoice-table {
+    -fx-background-color: #FFFFFF;
+    -fx-table-cell-border-color: transparent;
+    -fx-table-header-border-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.record-payment-root .rp-invoice-table .column-header-background {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #F1ECE6;
+    -fx-border-width: 0 0 1 0;
+}
+
+.record-payment-root .rp-invoice-table .column-header,
+.record-payment-root .rp-invoice-table .filler {
+    -fx-background-color: transparent;
+}
+
+.record-payment-root .rp-invoice-table .column-header .label {
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #4B5563;
+    -fx-padding: 0 8;
+}
+
+.record-payment-root .rp-invoice-table .table-row-cell {
+    -fx-background-color: #FFFFFF;
+}
+
+.record-payment-root .rp-invoice-table .table-row-cell:even {
+    -fx-background-color: #FAFBFC;
+}
+
+.record-payment-root .rp-invoice-table .table-row-cell:filled:hover {
+    -fx-background-color: #F3F4F6;
+}
+
+.record-payment-root .rp-invoice-table .table-row-cell .table-cell {
+    -fx-padding: 8 10;
+    -fx-text-fill: #111827;
+    -fx-font-size: 12px;
+}
+
+.record-payment-root .rp-invoice-table .table-row-cell:filled:selected,
+.record-payment-root .rp-invoice-table .table-row-cell:filled:selected .table-cell {
+    -fx-background-color: #FFEDD5;
+}
+
+/* Scrollbars (warm / slate thumb) */
+.record-payment-root .scroll-bar:vertical,
+.record-payment-root .scroll-bar:horizontal {
+    -fx-background-color: transparent;
+}
+
+.record-payment-root .scroll-bar .track {
+    -fx-background-color: transparent;
+}
+
+.record-payment-root .scroll-bar .thumb {
+    -fx-background-color: rgba(62, 49, 45, 0.18);
+    -fx-background-radius: 6;
+}
+
+.record-payment-root .scroll-bar .thumb:hover {
+    -fx-background-color: rgba(62, 49, 45, 0.28);
+}
+
+.record-payment-root .scroll-bar .increment-button,
+.record-payment-root .scroll-bar .decrement-button {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+
+.record-payment-root .scroll-bar .increment-arrow,
+.record-payment-root .scroll-bar .decrement-arrow {
+    -fx-shape: "";
+    -fx-padding: 0;
+}
+
+/* Footer */
+.record-payment-root .rp-footer {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #EEECE8;
+    -fx-border-width: 1 0 0 0;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.06), 12, 0, 0, -4);
+}
+
+.record-payment-root .rp-footer-client {
+    -fx-font-size: 14px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #3E312D;
+}
+
+.record-payment-root .rp-totals-cluster {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #EADFD4;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 10 16;
+}
+
+.record-payment-root .rp-total-label {
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #6B7280;
+    -fx-text-transform: uppercase;
+}
+
+.record-payment-root .rp-total-value {
+    -fx-font-size: 15px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #3E312D;
+}
+
+.record-payment-root .rp-total-due {
+    -fx-font-size: 15px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #15803D;
+}
+
+.record-payment-root .rp-excess-pill {
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #B45309;
+    -fx-padding: 8 12;
+    -fx-background-radius: 999;
+    -fx-background-color: #FFEDD5;
+    -fx-border-color: #FDBA74;
+    -fx-border-radius: 999;
+}
+
+.record-payment-root .rp-btn {
+    -fx-cursor: hand;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-padding: 10 18;
+}
+
+.record-payment-root .rp-btn-ghost {
+    -fx-background-color: transparent;
+    -fx-text-fill: #6B7280;
+    -fx-border-color: transparent;
+}
+
+.record-payment-root .rp-btn-ghost:hover {
+    -fx-background-color: #F3F4F6;
+    -fx-text-fill: #3E312D;
+}
+
+.record-payment-root .rp-btn-outline {
+    -fx-background-color: #FFFFFF;
+    -fx-text-fill: #3E312D;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1.5;
+}
+
+.record-payment-root .rp-btn-outline:hover {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #CD7B4E;
+}
+
+.record-payment-root .rp-btn-soft {
+    -fx-background-color: #FFF7ED;
+    -fx-text-fill: #C2410C;
+    -fx-border-color: #FDBA74;
+    -fx-border-width: 1;
+}
+
+.record-payment-root .rp-btn-soft:hover {
+    -fx-background-color: #FFEDD5;
+}
+
+.record-payment-root .rp-btn-primary {
+    -fx-background-color: #CD7B4E;
+    -fx-text-fill: #FFFFFF;
+    -fx-border-color: transparent;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.35), 12, 0, 0, 4);
+}
+
+.record-payment-root .rp-btn-primary:hover {
+    -fx-background-color: #B06938;
+}
+
+/* =============================================================================
+   LEGACY — payment_history.fxml (.app-root + invoice_genration.css)
+   ============================================================================= */
 
 .app-root {
     -fx-background-color: #0f0f0f;
-    /* match invoice css root */
 }
 
-/* Make all labels white (as requestFied) */
-.label {
+.app-root .label {
     -fx-text-fill: #ffffff;
 }
 
-/* ScrollPane transparency */
-.content-scroll {
+.app-root .content-scroll {
     -fx-background: transparent;
     -fx-background-color: transparent;
 }
 
-.content-scroll>.viewport {
+.app-root .content-scroll > .viewport {
     -fx-background-color: transparent;
 }
 
-/* Header (custom layout not in invoice css) */
-.header-bar {
+.app-root .header-bar {
     -fx-padding: 12 18;
     -fx-background-color: rgba(24, 24, 27, 0.92);
     -fx-border-color: rgba(255, 255, 255, 0.10);
     -fx-border-width: 0 0 1 0;
 }
 
-.header-icon {
+.app-root .header-icon {
     -fx-font-size: 15px;
 }
 
-.header-title {
+.app-root .header-title {
     -fx-font-size: 14px;
     -fx-font-weight: 900;
 }
 
-.header-subtitle {
+.app-root .header-subtitle {
     -fx-font-size: 10px;
     -fx-font-weight: 800;
 }
 
-.avatar {
+.app-root .avatar {
     -fx-font-size: 14px;
 }
 
-.status-pill {
+.app-root .status-pill {
     -fx-font-size: 10px;
     -fx-font-weight: 900;
     -fx-padding: 6 10;
@@ -57,29 +401,26 @@
     -fx-border-radius: 999;
 }
 
-.date-label {
+.app-root .date-label {
     -fx-font-size: 9px;
     -fx-font-weight: 900;
 }
 
-.date-value {
+.app-root .date-value {
     -fx-font-size: 11px;
     -fx-font-weight: 900;
 }
 
-/* Inputs: keep invoice css, just ensure height */
-.text-field.input,
-.combo-box.input,
-.date-picker.input {
+.app-root .text-field.input,
+.app-root .combo-box.input,
+.app-root .date-picker.input {
     -fx-pref-height: 36;
 }
 
-.amount {
+.app-root .amount {
     -fx-font-weight: 900;
 }
 
-/* Remove inner text-field border for editable bank combo (avoids double border) */
-/* Remove inner text-field border for editable bank combo (avoids double border) */
 #bankNameCombo .text-field,
 #bankNameCombo .text-field:focused {
     -fx-background-color: transparent;
@@ -93,18 +434,16 @@
     -fx-faint-focus-color: transparent;
 }
 
-/* Section titles */
-.section-title {
+.app-root .section-title {
     -fx-font-size: 12px;
     -fx-font-weight: 900;
 }
 
-.section-icon {
+.app-root .section-icon {
     -fx-font-size: 14px;
 }
 
-/* Info banner */
-.info-banner {
+.app-root .info-banner {
     -fx-background-color: rgba(59, 130, 246, 0.12);
     -fx-border-color: rgba(59, 130, 246, 0.28);
     -fx-border-radius: 0.9em;
@@ -112,41 +451,39 @@
     -fx-padding: 0.9em 1.0em;
 }
 
-.info-icon {
+.app-root .info-icon {
     -fx-font-weight: 900;
 }
 
-.info-text {
+.app-root .info-text {
     -fx-font-size: 0.92em;
     -fx-font-weight: 700;
 }
 
-/* Table header row above history-table */
-.table-header {
+.app-root .table-header {
     -fx-padding: 14 16;
     -fx-border-color: rgba(255, 255, 255, 0.08);
     -fx-border-width: 0 0 1 0;
 }
 
-.table-title {
+.app-root .table-title {
     -fx-font-size: 12px;
     -fx-font-weight: 900;
 }
 
-/* Footer bar (custom) */
-.footer-bar {
+.app-root .footer-bar {
     -fx-padding: 14 24;
     -fx-background-color: rgba(24, 24, 27, 0.92);
     -fx-border-color: rgba(255, 255, 255, 0.10);
     -fx-border-width: 1 0 0 0;
 }
 
-.brand {
+.app-root .brand {
     -fx-font-size: 14px;
     -fx-font-weight: 900;
 }
 
-.totals-box {
+.app-root .totals-box {
     -fx-background-color: #0b0b0c;
     -fx-border-color: #27272a;
     -fx-border-radius: 0.9em;
@@ -154,39 +491,37 @@
     -fx-padding: 0.85em 1.0em;
 }
 
-.total-label {
+.app-root .total-label {
     -fx-font-size: 0.78em;
     -fx-font-weight: 900;
 }
 
-.total-value {
+.app-root .total-value {
     -fx-font-size: 1.25em;
     -fx-font-weight: 900;
 }
 
-.total-green {
+.app-root .total-green {
     -fx-text-fill: #4ade80;
     -fx-font-size: 1.25em;
     -fx-font-weight: 900;
 }
 
-/* Action buttons (keep invoice .button base) */
-.ghost-btn {
+.app-root .ghost-btn {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
 }
 
-.outline-btn {
+.app-root .outline-btn {
     -fx-background-color: transparent;
     -fx-border-color: #3f3f46;
 }
 
-.soft-btn {
+.app-root .soft-btn {
     -fx-background-color: #27272a;
 }
 
-/* Excess pill */
-.excess-pill {
+.app-root .excess-pill {
     -fx-font-size: 10px;
     -fx-font-weight: 900;
     -fx-padding: 8 10;

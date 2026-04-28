@@ -20,7 +20,6 @@ import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.time.format.DateTimeFormatter;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,8 +56,6 @@ public class RecordPaymentController implements Initializable {
     private ComboBox<String> paymentModeCombo;
     @FXML
     private TextField notesField;
-    @FXML
-    private Label currentDateLabel;
     @FXML
     private Label totalOutstandingLabel;
     @FXML
@@ -285,9 +282,6 @@ public class RecordPaymentController implements Initializable {
     private void setupDefaults() {
         paymentDatePicker.setValue(LocalDate.now());
 
-        if (currentDateLabel != null) {
-            currentDateLabel.setText(LocalDate.now().format(DateTimeFormatter.ofPattern("MMM dd, yyyy")));
-        }
         if (footerClientLabel != null) {
             footerClientLabel.setText("Select Client");
         }
@@ -1230,6 +1224,8 @@ public class RecordPaymentController implements Initializable {
         private final TextField textField = new TextField();
 
         EditingBigDecimalCell() {
+            textField.getStyleClass().add("taste-field");
+            textField.setStyle("-fx-min-height: 28; -fx-padding: 4 8;");
             textField.setOnAction(e -> commitEdit(parse(textField.getText())));
             textField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
                 if (!isNowFocused) {
@@ -1320,7 +1316,7 @@ public class RecordPaymentController implements Initializable {
                 
                 if (inv == null || item.equals("-")) {
                     textLabel.setText(item != null ? item : "-");
-                    textLabel.setStyle("-fx-text-fill: white;");
+                    textLabel.setStyle("-fx-text-fill: #3E312D;");
                     eyeIcon.setVisible(false);
                     setGraphic(box);
                     setText(null);
@@ -1329,13 +1325,13 @@ public class RecordPaymentController implements Initializable {
                     double dn = inv.getDnAmount() != null ? inv.getDnAmount() : 0;
                     double net = dn - cn;
 
-                    String colorStr = "white";
-                    if (net > 0) colorStr = "#28a745"; // Green
-                    else if (net < 0) colorStr = "#dc3545"; // Red
-                    
+                    String colorStr = "#3E312D";
+                    if (net > 0) colorStr = "#15803D";
+                    else if (net < 0) colorStr = "#B91C1C";
+
                     textLabel.setText(item);
                     textLabel.setStyle("-fx-text-fill: " + colorStr + "; -fx-font-weight: bold;");
-                    eyeIcon.setFill(Color.web(colorStr.equals("white") ? "#a0a0a0" : colorStr));
+                    eyeIcon.setFill(Color.web(colorStr.equals("#3E312D") ? "#6B7280" : colorStr));
                     
                     eyeIcon.setVisible(true);
                     
@@ -1436,10 +1432,10 @@ public class RecordPaymentController implements Initializable {
                 setText(null);
             } else {
                 textLabel.setText(item.toPlainString());
-                textLabel.setStyle("-fx-text-fill: white;");
+                textLabel.setStyle("-fx-text-fill: #3E312D;");
                 if (item.doubleValue() != 0) {
                     eyeIcon.setVisible(true);
-                    eyeIcon.setFill(Color.WHITE);
+                    eyeIcon.setFill(Color.web("#CD7B4E"));
                 } else {
                     eyeIcon.setVisible(false);
                 }
