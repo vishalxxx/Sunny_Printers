@@ -1,0 +1,102 @@
+/* =========================================================
+   SUNNY PRINTERS: CREDIT / DEBIT NOTE REDESIGN
+   Atelier / Taste Design System - Warm Editorial
+   ========================================================= */
+
+.cn-dn-root {
+    -fx-background-color: #FAF6F0;
+}
+
+.cn-dn-scroll {
+    -fx-background-color: #FAF6F0;
+    -fx-background: #FAF6F0;
+    -fx-border-width: 0;
+}
+
+/* Page Header Styling */
+.cn-dn-header-container {
+    -fx-padding: 0 0 16 0;
+}
+
+.cn-dn-title {
+    -fx-font-family: 'Manrope';
+    -fx-font-size: 26px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #3E312D;
+}
+
+.cn-dn-subtitle {
+    -fx-font-family: 'Inter';
+    -fx-font-size: 13px;
+    -fx-font-weight: 500;
+    -fx-text-fill: #8E7B71;
+}
+
+/* Card Container */
+.cn-dn-card {
+    -fx-background-color: white;
+    -fx-background-radius: 16;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-padding: 28;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.05), 20, 0, 0, 8);
+}
+
+/* Field Label */
+.cn-dn-field-label {
+    -fx-font-family: 'Inter';
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #5C524D;
+    -fx-text-transform: uppercase;
+    -fx-letter-spacing: 0.05em;
+    -fx-padding: 0 0 4 0;
+}
+
+/* Button Styling (Premium Terracotta) */
+.cn-dn-save-btn {
+    -fx-background-color: #C16738;
+    -fx-text-fill: white;
+    -fx-font-family: 'Inter';
+    -fx-font-weight: 800;
+    -fx-font-size: 14px;
+    -fx-background-radius: 10;
+    -fx-padding: 12 24;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(three-pass-box, rgba(193, 103, 56, 0.2), 12, 0, 0, 4);
+}
+
+.cn-dn-save-btn:hover {
+    -fx-background-color: #A8562D;
+    -fx-effect: dropshadow(three-pass-box, rgba(193, 103, 56, 0.3), 15, 0, 0, 6);
+}
+
+.cn-dn-save-btn:pressed {
+    -fx-background-color: #8E4826;
+    -fx-scale-x: 0.98;
+    -fx-scale-y: 0.98;
+}
+
+/* --- Breadcrumbs --- */
+.cn-dn-breadcrumb-container {
+    -fx-padding: 0 0 12 0;
+    -fx-spacing: 8;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.cn-dn-breadcrumb-label {
+    -fx-text-fill: #8E7A6B;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+}
+
+.cn-dn-breadcrumb-separator {
+    -fx-text-fill: #D6D1C9;
+    -fx-font-size: 11px;
+}
+
+.cn-dn-breadcrumb-current {
+    -fx-text-fill: #3E312D;
+    -fx-font-weight: 700;
+}

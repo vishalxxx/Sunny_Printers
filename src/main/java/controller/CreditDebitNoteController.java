@@ -25,6 +25,16 @@ public class CreditDebitNoteController {
     public static InvoiceMaster pendingPrefillInvoice;
 
     @FXML
+    private void handleBack(ActionEvent event) {
+        // Logic to go back, usually by asking MainController to switch view
+        // For now, if it's a standalone stage, close it. If it's a view, we'd use MainController.
+        // Assuming it's part of the MainView navigation:
+        if (MainController.getInstance() != null) {
+            MainController.getInstance().loadView("/fxml/view_invoices.fxml");
+        }
+    }
+
+    @FXML
     private ComboBox<String> noteTypeComboBox;
 
     @FXML
@@ -47,6 +57,16 @@ public class CreditDebitNoteController {
 
     @FXML
     public void initialize() {
+        // Fix for expanding width issue
+        noteTypeComboBox.setPrefWidth(350);
+        noteTypeComboBox.setMaxWidth(400);
+        clientComboBox.setPrefWidth(350);
+        clientComboBox.setMaxWidth(400);
+        invoiceComboBox.setPrefWidth(350);
+        invoiceComboBox.setMaxWidth(400);
+        datePicker.setPrefWidth(350);
+        datePicker.setMaxWidth(400);
+
         noteTypeComboBox.setItems(FXCollections.observableArrayList("Credit Note", "Debit Note"));
         noteTypeComboBox.getSelectionModel().selectFirst();
         
@@ -60,6 +80,13 @@ public class CreditDebitNoteController {
                 loadInvoicesForClient(newVal.getId());
             } else {
                 invoiceComboBox.getItems().clear();
+            }
+        });
+
+        // 📅 Update DatePicker constraints when invoice changes
+        invoiceComboBox.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                updateDatePickerConstraints(newVal.getInvoiceDate());
             }
         });
 
@@ -112,10 +139,21 @@ public class CreditDebitNoteController {
 
         // Revert value and warn if somehow selected
         dp.valueProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal != null && newVal.isAfter(LocalDate.now())) {
-                dp.setValue(oldVal);
-                if (dp.getScene() != null && dp.getScene().getWindow() != null) {
-                    Toast.show((Stage) dp.getScene().getWindow(), "Future dates are not allowed ❌");
+            if (newVal != null) {
+                // Check Future Date
+                if (newVal.isAfter(LocalDate.now())) {
+                    dp.setValue(oldVal);
+                    if (dp.getScene() != null && dp.getScene().getWindow() != null) {
+                        Toast.show((Stage) dp.getScene().getWindow(), "Future dates are not allowed ❌");
+                    }
+                }
+                // Check Invoice Date
+                InvoiceMaster selInv = invoiceComboBox.getValue();
+                if (selInv != null && selInv.getInvoiceDate() != null && newVal.isBefore(selInv.getInvoiceDate())) {
+                    dp.setValue(selInv.getInvoiceDate());
+                    if (dp.getScene() != null && dp.getScene().getWindow() != null) {
+                        Toast.show((Stage) dp.getScene().getWindow(), "Note date cannot be before Invoice date (#" + selInv.getInvoiceNo() + ") ❌");
+                    }
                 }
             }
         });
@@ -126,10 +164,65 @@ public class CreditDebitNoteController {
                 dp.show();
         });
 
+        // Right-align the popup below the icon
+        dp.showingProperty().addListener((obs, oldV, newV) -> {
+            if (newV) {
+                javafx.application.Platform.runLater(() -> {
+                    try {
+                        // Find the popup window for this date picker
+                        for (javafx.stage.Window w : javafx.stage.Window.getWindows()) {
+                            if (w instanceof javafx.stage.PopupWindow) {
+                                javafx.stage.PopupWindow popup = (javafx.stage.PopupWindow) w;
+                                // Only adjust if it's the right kind of popup and we haven't adjusted it yet
+                                // We check if it's roughly at the DP's X coordinate
+                                double dpX = dp.localToScreen(0, 0).getX();
+                                if (Math.abs(popup.getX() - dpX) < 5) {
+                                    double dpWidth = dp.getWidth();
+                                    double popupWidth = popup.getWidth();
+                                    if (popupWidth > 0 && dpWidth > popupWidth) {
+                                        popup.setX(dpX + dpWidth - popupWidth);
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception ex) {
+                        // Ignore layout edge cases
+                    }
+                });
+            }
+        });
+
         dp.focusedProperty().addListener((obs, oldV, newV) -> {
             if (newV && !dp.isShowing())
                 dp.show();
         });
+    }
+
+    private void updateDatePickerConstraints(LocalDate minDate) {
+        if (minDate == null) return;
+
+        // Force a refresh of the day cells
+        datePicker.setDayCellFactory(picker -> new javafx.scene.control.DateCell() {
+            @Override
+            public void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                if (empty || date == null) return;
+
+                // Disable if after today OR before invoice date
+                boolean isFuture = date.isAfter(LocalDate.now());
+                boolean isBeforeInvoice = date.isBefore(minDate);
+
+                if (isFuture || isBeforeInvoice) {
+                    setDisable(true);
+                    setStyle("-fx-opacity: 0.35;");
+                }
+            }
+        });
+
+        // If current date is invalid, reset to minDate
+        if (datePicker.getValue() != null && datePicker.getValue().isBefore(minDate)) {
+            datePicker.setValue(minDate);
+        }
     }
 
     private void loadClients() {
@@ -231,6 +324,13 @@ public class CreditDebitNoteController {
 
         if (reasonStr.isEmpty()) {
             Toast.show((Stage) amountField.getScene().getWindow(), "⚠ Reason is mandatory!");
+            return;
+        }
+
+        // Final Date Validation
+        LocalDate noteDate = datePicker.getValue();
+        if (noteDate != null && selectedInvoice.getInvoiceDate() != null && noteDate.isBefore(selectedInvoice.getInvoiceDate())) {
+            Toast.show((Stage) amountField.getScene().getWindow(), "❌ Note date cannot be before Invoice date!");
             return;
         }
 

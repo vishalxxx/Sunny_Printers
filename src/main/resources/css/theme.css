@@ -248,7 +248,7 @@
     -fx-text-fill: #3E312D;
     -fx-font-family: 'Manrope';
     -fx-font-weight: 800;
-    -fx-font-size: 13px;
+    -fx-font-size: 11px;
 }
 
 .date-picker-popup .calendar {
@@ -258,6 +258,11 @@
 .date-picker-popup .calendar-grid {
     -fx-background-color: transparent;
     -fx-padding: 0 10 10 10;
+}
+
+.date-picker-popup .month-year-pane {
+    -fx-background-color: transparent;
+    -fx-padding: 10 10 4 10;
 }
 
 .date-picker-popup .spinner .button {
@@ -278,11 +283,11 @@
 
 .date-picker-popup .day-name-cell {
     -fx-font-family: 'Inter';
-    -fx-font-size: 12px;
+    -fx-font-size: 10px;
     -fx-font-weight: 700;
     -fx-text-fill: #8E7A6B;
     -fx-background-color: transparent;
-    -fx-padding: 8 4;
+    -fx-padding: 4 2;
 }
 
 .date-picker-popup .day-cell {
@@ -290,9 +295,9 @@
     -fx-background-radius: 8;
     -fx-border-color: transparent;
     -fx-text-fill: #3E312D;
-    -fx-font-size: 13px;
+    -fx-font-size: 11px;
     -fx-font-weight: 600;
-    -fx-padding: 8;
+    -fx-padding: 4;
 }
 
 .date-picker-popup .day-cell:hover {
