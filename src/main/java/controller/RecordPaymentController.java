@@ -59,6 +59,8 @@ public class RecordPaymentController implements Initializable {
     @FXML
     private Label totalOutstandingLabel;
     @FXML
+    private HBox breadcrumbContainer;
+    @FXML
     private Label footerClientLabel;
 
     // Cheque details
@@ -147,6 +149,8 @@ public class RecordPaymentController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Record Payment",
+                () -> MainController.getInstance().handleBack(null));
         setupPaymentModeCombo();
         setupDefaults();
         loadClients();

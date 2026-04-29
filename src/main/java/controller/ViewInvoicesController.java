@@ -789,15 +789,15 @@ public class ViewInvoicesController {
                 return new InvoiceActionState(
                         false, false, false, false, false, false, false, "Send", "Cancel");
             }
-            String status = inv.getStatus() != null ? inv.getStatus().toUpperCase() : "";
-            String pStatus = inv.getPaymentStatus() != null ? inv.getPaymentStatus().toUpperCase() : "";
-            boolean isDraft = "DRAFT".equals(status);
-            boolean isFinal = "FINAL".equals(status);
-            boolean isSent = "SENT TO CLIENT".equals(status) || "SENT".equals(status);
-            boolean isPaid = "PAID".equals(pStatus);
-            boolean isPartialPaid = "PARTIAL PAID".equals(pStatus);
-            boolean hasPayments = inv.getPaidAmount() > 0;
-
+        String status = inv.getStatus() != null ? inv.getStatus().toUpperCase() : "";
+        String pStatus = inv.getPaymentStatus() != null ? inv.getPaymentStatus().toUpperCase() : "";
+        boolean isDraft = "DRAFT".equals(status);
+        boolean isFinal = "FINAL".equals(status);
+        boolean isSent = "SENT TO CLIENT".equals(status) || "SENT".equals(status);
+        boolean isPaid = "PAID".equals(pStatus);
+        boolean isPartialPaid = "PARTIAL PAID".equals(pStatus);
+        boolean hasPayments = inv.getPaidAmount() > 0;
+        
             boolean edit = "DRAFT".equals(status) || "FINAL".equals(status);
             boolean finalize = isDraft;
             boolean send = isFinal || isSent;
@@ -1033,9 +1033,9 @@ public class ViewInvoicesController {
                             for (int i = 0; i < fullInvoiceResults.size(); i++) {
                                 if (fullInvoiceResults.get(i).getId() == selectedId) {
                                     idx = i;
-                                    break;
-                                }
+                                break;
                             }
+                        }
                             if (idx >= 0) {
                                 currentPageIndex = idx / pageSize;
                                 repaginate();
@@ -1638,13 +1638,13 @@ public class ViewInvoicesController {
         TableView<PaymentRecord> table = new TableView<>();
         table.getStyleClass().add("jobs-table-premium");
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-
+        
         TableColumn<PaymentRecord, String> cType = new TableColumn<>("Mode");
         cType.setCellValueFactory(new PropertyValueFactory<>("type"));
-
+        
         TableColumn<PaymentRecord, String> cDate = new TableColumn<>("Date");
         cDate.setCellValueFactory(new PropertyValueFactory<>("date"));
-
+        
         TableColumn<PaymentRecord, Double> cAmt = new TableColumn<>("Allocated");
         cAmt.setCellValueFactory(new PropertyValueFactory<>("amount"));
         cAmt.setCellFactory(col -> new TableCell<PaymentRecord, Double>() {
@@ -1663,10 +1663,10 @@ public class ViewInvoicesController {
                 }
             }
         });
-
+        
         table.getColumns().addAll(cType, cDate, cAmt);
         List<PaymentRecord> records = new ArrayList<>();
-
+        
         try (java.sql.Connection con = utils.DBConnection.getConnection();
              java.sql.PreparedStatement ps = con.prepareStatement(
                      "SELECT p.type, p.payment_date, pa.allocated_amount "
@@ -1686,7 +1686,7 @@ public class ViewInvoicesController {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
+        
         table.setItems(FXCollections.observableArrayList(records));
         return table;
     }

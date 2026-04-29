@@ -6,10 +6,16 @@
 
 <VBox xmlns="http://javafx.com/javafx/23"
 	xmlns:fx="http://javafx.com/fxml/1"
-	fx:controller="controller.ViewInvoiceJobsController" spacing="20"
-	stylesheets="@../css/view_job.css" >
+	fx:controller="controller.ViewInvoiceJobsController" spacing="8"
+	alignment="TOP_LEFT" fillWidth="true"
+	styleClass="view-invoice-jobs-root, ui-compact, app-page-shell"
+	stylesheets="@../css/theme.css, @../css/view_job.css" >
 
-	<Label fx:id="lblPageHeading" text="View Invoice Jobs" styleClass="page-heading" />
+	<VBox spacing="4" styleClass="app-page-title-block page-header-container">
+		<Label fx:id="lblPageHeading" text="View Invoice Jobs" styleClass="page-heading" />
+		<Label text="Select a client and invoice to review or edit linked jobs." styleClass="page-subheading" wrapText="true" maxWidth="720"/>
+	</VBox>
+	<HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8"/>
 
 	<HBox fx:id="searchModeBox" spacing="12" alignment="CENTER_LEFT" styleClass="search-bar">
         <ComboBox fx:id="clientComboBox"

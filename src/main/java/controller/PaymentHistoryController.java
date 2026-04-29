@@ -46,6 +46,7 @@ public class PaymentHistoryController implements Initializable {
     @FXML private TableColumn<PaymentRow, String> colMethod;
     @FXML private TableColumn<PaymentRow, String> colAmount;
     @FXML private TableColumn<PaymentRow, String> colReference;
+    @FXML private HBox breadcrumbContainer;
 
     private ObservableList<PaymentRow> masterPaymentList = FXCollections.observableArrayList();
     private FilteredList<PaymentRow> filteredList;
@@ -54,6 +55,8 @@ public class PaymentHistoryController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Payment History",
+                () -> MainController.getInstance().handleBack(null));
         setupTableColumns();
         loadClients();
         loadInvoices(null);

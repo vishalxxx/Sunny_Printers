@@ -32,7 +32,31 @@
 
 .page-header-container {
     -fx-padding: 0 0 8 0;
+    -fx-alignment: TOP_LEFT;
+}
+
+/*
+ * Primary layout for center-loaded screens — matches client_edit_selection.fxml:
+ * VBox(app-page-shell) → breadcrumb row → title block / content (spacing 8).
+ * TOP_LEFT: headings and content align to the leading edge (same idea as edit_job job-header-bar).
+ */
+.app-page-shell {
+    -fx-spacing: 8;
+    -fx-alignment: TOP_LEFT;
+    -fx-fill-width: true;
+    -fx-padding: 0 24 8 24;
+}
+
+.app-page-shell .breadcrumb-container {
+    -fx-padding: 0 0 4 0;
+    -fx-spacing: 8;
     -fx-alignment: CENTER_LEFT;
+}
+
+.app-page-title-block {
+    -fx-spacing: 4;
+    -fx-alignment: TOP_LEFT;
+    -fx-max-width: Infinity;
 }
 
 /* ===================== TYPOGRAPHY & HEADINGS (SHARED) ===================== */

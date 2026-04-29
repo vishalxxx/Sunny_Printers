@@ -7,25 +7,15 @@
 
 <VBox xmlns="http://javafx.com/javafx/23"
     xmlns:fx="http://javafx.com/fxml/1"
-    fx:controller="controller.ViewClientsController" spacing="12"
-    stylesheets="@../css/view_client.css" styleClass="view-clients-root, ui-compact"
-    alignment="TOP_CENTER">
-    <padding>
-        <Insets top="8" right="24" bottom="8" left="24" />
-    </padding>
-
-    <!-- BREADCRUMBS -->
-    <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8">
-        <VBox.margin>
-            <Insets bottom="5"/>
-        </VBox.margin>
-    </HBox>
+    fx:controller="controller.ViewClientsController" spacing="8"
+    stylesheets="@../css/view_client.css" styleClass="view-clients-root, ui-compact, app-page-shell"
+    alignment="TOP_LEFT">
+    <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8"/>
 
     <!-- HEADER & KPIs ROW -->
-    <HBox spacing="20" alignment="CENTER_LEFT">
-        <!-- Titles -->
+    <HBox spacing="20" alignment="TOP_LEFT">
+        <!-- Intro (screen title lives in main header: centerHeaderTitle) -->
         <VBox spacing="4" HBox.hgrow="ALWAYS">
-            <Label text="Client Table" styleClass="page-heading" />
             <Label
                 text="Manage your global client relationships, track lifetime value, and oversee outstanding receivables in an editorial layout."
                 styleClass="page-subheading" wrapText="true" maxWidth="450" />
@@ -43,10 +33,6 @@
 
         <!-- KPIs (Stitch Aesthetic) -->
         <HBox spacing="12" alignment="TOP_RIGHT">
-            <VBox.margin>
-                <Insets top="15" />
-            </VBox.margin>
-            
             <VBox styleClass="kpi-card" minWidth="140">
                 <Label text="TOTAL CLIENTS" styleClass="kpi-label" />
                 <Label fx:id="lblTotalClients" text="--" styleClass="kpi-value-dark" />

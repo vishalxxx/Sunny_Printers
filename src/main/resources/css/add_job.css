@@ -13,6 +13,18 @@
     -fx-background-color: #FAF6F0;
 }
 
+.add-job-root.app-page-shell {
+    -fx-spacing: 0;
+}
+
+.add-job-root.app-page-shell .breadcrumb-container {
+    -fx-padding: 12 0 4 0;
+}
+
+.add-job-root .add-job-lead {
+    -fx-padding: 0 0 10 0;
+}
+
 /* Job module: no italic on UI copy (prompts, labels, combo text) */
 .add-job-root .label,
 .add-job-root .text,

@@ -12,6 +12,18 @@
     -fx-font-family: "Segoe UI", "Inter", system;
 }
 
+.view-jobs-root.app-page-shell {
+    -fx-spacing: 0;
+}
+
+.view-jobs-root.app-page-shell .breadcrumb-container {
+    -fx-padding: 12 0 4 0;
+}
+
+.view-jobs-root .view-jobs-lead {
+    -fx-padding: 0 0 10 0;
+}
+
 .view-jobs-root .label,
 .view-jobs-root .combo-box,
 .view-jobs-root .list-cell,

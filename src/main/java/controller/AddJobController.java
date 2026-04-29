@@ -1071,7 +1071,7 @@ public class AddJobController implements utils.DirtySupport {
 
 	@FXML
 	public void initialize() {
-		utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "New Job Wizard", () -> handleBack(null));
+		utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Add New Job", () -> handleBack(null));
 		setupJobDatePicker(jobDate);
 
 		filteredClients.setPredicate(c -> true);

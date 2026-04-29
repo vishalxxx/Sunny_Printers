@@ -5,11 +5,13 @@
 <?import javafx.scene.shape.*?>
 <?import javafx.geometry.Insets?>
 
-<ScrollPane fitToWidth="true" stylesheets="@../css/client_profile.css" styleClass="profile-root, ui-compact" xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.ClientProfileController">
-    <VBox spacing="15" styleClass="content-container">
-        <padding>
-            <Insets top="12" right="24" bottom="12" left="24"/>
-        </padding>
+<ScrollPane fitToWidth="true" stylesheets="@../css/theme.css, @../css/client_profile.css" styleClass="profile-root, ui-compact" xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.ClientProfileController">
+    <VBox spacing="15" alignment="TOP_LEFT" fillWidth="true" styleClass="content-container, app-page-shell">
+
+        <!-- PAGE TITLE (above breadcrumbs — match Edit Client layout) -->
+        <VBox spacing="4" styleClass="app-page-title-block page-header-container">
+            <Label text="Client Profile" styleClass="page-heading" />
+        </VBox>
 
         <!-- BREADCRUMBS -->
         <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8" />

@@ -17,7 +17,7 @@
       styleClass="invoice-page"
       fillWidth="true"
       maxWidth="1220"
-      alignment="TOP_CENTER">
+      alignment="TOP_LEFT">
 
     <padding>
         <Insets top="28" right="28" bottom="28" left="28"/>

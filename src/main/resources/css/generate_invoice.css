@@ -13,6 +13,18 @@
     -fx-background-color: transparent;
 }
 
+.generate-invoice-root .root-container.app-page-shell {
+    -fx-spacing: 24;
+}
+
+.generate-invoice-root .root-container.app-page-shell .breadcrumb-container {
+    -fx-padding: 12 0 4 0;
+}
+
+.generate-invoice-root .generate-invoice-lead {
+    -fx-padding: 0 0 8 0;
+}
+
 /* Match Add Job: neutral border + 10px radius; terracotta ring only when focused / open */
 .generate-invoice-root .client-combo,
 .generate-invoice-root .card-combo {

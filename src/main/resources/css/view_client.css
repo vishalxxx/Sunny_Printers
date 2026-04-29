@@ -7,6 +7,11 @@
     /* Soft warm beige background matching image */
 }
 
+/* Extra space below dashboard title row (centerHeaderTitle) before the trail */
+.view-clients-root.app-page-shell .breadcrumb-container {
+    -fx-padding: 12 0 4 0;
+}
+
 .view-clients-root .label,
 .view-clients-root .combo-box,
 .view-clients-root .list-cell,
@@ -15,8 +20,12 @@
 }
 
 
+.view-clients-root .page-subheading {
+    -fx-padding: 0 0 6 0;
+}
+
 .search-bar-container {
-    -fx-padding: 10 0 0 0;
+    -fx-padding: 6 0 0 0;
 }
 
 .search-field {

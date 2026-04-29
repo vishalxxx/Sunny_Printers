@@ -9,23 +9,15 @@
 <ScrollPane xmlns="http://javafx.com/javafx/23" 
             xmlns:fx="http://javafx.com/fxml/1"
             fitToWidth="true" 
-            styleClass="main-scroll-pane, taste-root"
+            styleClass="main-scroll-pane, taste-root, generate-invoice-root"
             stylesheets="@../css/theme.css, @../css/generate_invoice.css"
             fx:controller="controller.GenerateInvoiceController">
 
-    <VBox spacing="24" styleClass="root-container, generate-invoice-root, ui-compact">
-        <padding>
-            <Insets top="20" right="30" bottom="30" left="30" />
-        </padding>
+    <VBox spacing="24" alignment="TOP_LEFT" fillWidth="true" styleClass="root-container, generate-invoice-root, ui-compact, app-page-shell">
 
-        <!-- 1. HEADER SECTION -->
-        <VBox spacing="2">
-            <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8" />
-            <VBox spacing="2" styleClass="page-header-container">
-                <Label text="Generate Invoice" styleClass="page-heading" />
-                <Label text="Create professional invoices for your printing jobs" styleClass="page-subheading" />
-            </VBox>
-        </VBox>
+        <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8" />
+        <Label text="Create professional invoices for your printing jobs"
+               styleClass="page-subheading generate-invoice-lead" wrapText="true" maxWidth="720"/>
 
         <!-- 2. TABS SECTION -->
         <HBox spacing="32" styleClass="tab-header">

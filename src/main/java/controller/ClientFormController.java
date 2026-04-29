@@ -10,6 +10,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import model.Client;
 import repository.ClientRepository;
@@ -26,6 +27,10 @@ public class ClientFormController implements Initializable {
 	private Label lblClientId;
     @FXML
     private HBox breadcrumbContainer;
+    @FXML
+    private VBox formShell;
+    @FXML
+    private VBox pageTitleBlock;
     @FXML
     private Button btnSave;
 
@@ -72,7 +77,15 @@ public class ClientFormController implements Initializable {
 
         if (client == null) {
             // "ADD MODE"
-            if (lblTitleName != null) lblTitleName.setText("Register New Client");
+            if (formShell != null) {
+                if (!formShell.getStyleClass().contains("client-form--add")) {
+                    formShell.getStyleClass().add("client-form--add");
+                }
+            }
+            if (pageTitleBlock != null) {
+                pageTitleBlock.setVisible(false);
+                pageTitleBlock.setManaged(false);
+            }
             if (lblClientId != null) lblClientId.setText("#CL-NEW");
             utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Add Client", () -> handleBack(null));
             if (btnSave != null) btnSave.setText("Register Client");
@@ -82,7 +95,18 @@ public class ClientFormController implements Initializable {
         }
 
         // "EDIT MODE"
-        if (lblTitleName != null) lblTitleName.setText(client.getBusinessName());
+        if (formShell != null) {
+            formShell.getStyleClass().remove("client-form--add");
+        }
+        if (pageTitleBlock != null) {
+            pageTitleBlock.setVisible(true);
+            pageTitleBlock.setManaged(true);
+        }
+        if (lblTitleName != null) {
+            lblTitleName.setVisible(true);
+            lblTitleName.setManaged(true);
+            lblTitleName.setText(client.getBusinessName());
+        }
         if (lblClientId != null) lblClientId.setText("#CL-" + client.getId());
         utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Edit Client", () -> handleBack(null));
         if (btnSave != null) btnSave.setText("Update Profile");

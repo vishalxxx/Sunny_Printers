@@ -24,6 +24,18 @@
     -fx-background-color: transparent;
 }
 
+.record-payment-root .rp-page.app-page-shell {
+    -fx-spacing: 16;
+}
+
+.record-payment-root .rp-page.app-page-shell .breadcrumb-container {
+    -fx-padding: 12 0 4 0;
+}
+
+.record-payment-root .rp-lead {
+    -fx-padding: 0 0 8 0;
+}
+
 .record-payment-root .info-card-premium,
 .record-payment-root .content-card-premium {
     -fx-background-color: #FFFFFF;

@@ -50,6 +50,7 @@ public class ViewInvoiceJobsController {
     @FXML private TableColumn<Job, String> statusCol;
     @FXML private TableColumn<Job, String> remarksCol;
 
+    @FXML private javafx.scene.layout.HBox breadcrumbContainer;
     @FXML private javafx.scene.layout.HBox jobActionsBox;
     @FXML private Button btnJobView, btnJobEdit, btnJobCancel, btnJobUnlink;
     @FXML private Button btnSave, btnDiscard;
@@ -68,6 +69,8 @@ public class ViewInvoiceJobsController {
 
     @FXML
     private void initialize() {
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Invoice Jobs",
+                () -> MainController.getInstance().handleBack(null));
         setupTable();
         setupClientComboBox();
         setupInvoiceComboBox();

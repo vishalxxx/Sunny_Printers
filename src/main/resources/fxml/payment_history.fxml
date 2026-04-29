@@ -13,16 +13,11 @@
     <center>
         <ScrollPane fitToWidth="true" styleClass="ph-scroll" hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED">
             <content>
-                <VBox spacing="16" styleClass="ph-page, ui-compact" fillWidth="true">
-                    <padding>
-                        <Insets top="8" right="20" bottom="24" left="20"/>
-                    </padding>
+                <VBox spacing="16" alignment="TOP_LEFT" styleClass="ph-page, ui-compact, app-page-shell" fillWidth="true">
 
-                    <VBox spacing="4">
-                        <Label text="Payment History" styleClass="page-heading"/>
-                        <Label text="Search and filter recorded payments, refunds, banking references, and invoice allocations."
-                               styleClass="page-subheading" wrapText="true" maxWidth="720"/>
-                    </VBox>
+                    <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8"/>
+                    <Label text="Search and filter recorded payments, refunds, banking references, and invoice allocations."
+                               styleClass="page-subheading ph-lead" wrapText="true" maxWidth="720"/>
 
                     <!-- Filters: two cards (client/invoice/dates | search/reset) -->
                     <HBox spacing="16" alignment="TOP_LEFT">
@@ -56,6 +51,11 @@
                         </VBox>
 
                         <VBox spacing="16" styleClass="info-card-premium, ph-card" HBox.hgrow="ALWAYS" minWidth="280">
+                            <VBox styleClass="kpi-card, kpi-card-green" minWidth="0" maxWidth="Infinity" spacing="6"
+                                  alignment="CENTER_LEFT">
+                                <Label text="TOTAL RECEIVED" styleClass="kpi-label"/>
+                                <Label fx:id="totalAmountLabel" text="₹0.00" styleClass="kpi-value-green"/>
+                            </VBox>
                             <VBox spacing="8" VBox.vgrow="ALWAYS">
                                 <Label text="SEARCH PAYMENTS" styleClass="field-heading-sm"/>
                                 <TextField fx:id="searchField" promptText="Search amount, ref, method..."
@@ -104,16 +104,4 @@
         </ScrollPane>
     </center>
 
-    <bottom>
-        <HBox styleClass="ph-footer" alignment="CENTER_RIGHT" spacing="16">
-            <padding>
-                <Insets top="12" right="20" bottom="12" left="20"/>
-            </padding>
-            <Region HBox.hgrow="ALWAYS"/>
-            <HBox spacing="12" alignment="CENTER" styleClass="ph-totals-cluster">
-                <Label text="TOTAL RECEIVED:" styleClass="ph-footer-total-label"/>
-                <Label fx:id="totalAmountLabel" text="₹0.00" styleClass="ph-footer-total-value"/>
-            </HBox>
-        </HBox>
-    </bottom>
 </BorderPane>

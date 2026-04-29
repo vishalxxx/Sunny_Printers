@@ -10,27 +10,19 @@
     xmlns:fx="http://javafx.com/fxml/1"
     fx:controller="controller.ViewJobsController"
     fx:id="mainVBox"
-    styleClass="view-jobs-root, ui-compact"
+    styleClass="view-jobs-root, ui-compact, app-page-shell"
     stylesheets="@../css/theme.css, @../css/add_job.css, @../css/view_job.css"
     spacing="0"
+    alignment="TOP_LEFT"
     focusTraversable="true">
 
-    <padding><Insets top="6" left="16" right="16" bottom="12" /></padding>
+    <!-- Breadcrumbs below dashboard title (“Job Management”) -->
+    <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8" />
 
-    <!-- 0. BREADCRUMBS -->
-    <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8">
-        <padding>
-            <Insets bottom="6"/>
-        </padding>
-    </HBox>
+    <Label text="Track and manage all your printing jobs"
+           styleClass="page-subheading view-jobs-lead" wrapText="true" maxWidth="720"/>
 
-    <!-- 1. PAGE HEADER -->
-    <VBox spacing="2" styleClass="page-header-container">
-        <Label text="Job Management" styleClass="page-heading" />
-        <Label text="Track and manage all your printing jobs" styleClass="page-subheading" />
-    </VBox>
-
-    <!-- 2. TOOLBAR: SEARCH & FILTERS -->
+    <!-- TOOLBAR: SEARCH & FILTERS -->
     <VBox styleClass="header-bar" spacing="10">
         <padding><Insets top="12" right="14" bottom="12" left="14" /></padding>
         

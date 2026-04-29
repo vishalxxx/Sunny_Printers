@@ -10,28 +10,19 @@
             fitToWidth="true" fitToHeight="true"
             styleClass="cn-dn-scroll">
 
-    <VBox spacing="0" styleClass="cn-dn-root" fillWidth="true">
-        <padding>
-            <Insets top="16" right="28" bottom="28" left="28"/>
-        </padding>
+    <VBox spacing="8" alignment="TOP_LEFT" styleClass="cn-dn-root, app-page-shell" fillWidth="true">
 
-        <!-- BREADCRUMBS -->
-        <HBox styleClass="cn-dn-breadcrumb-container">
+        <!-- Breadcrumbs below dashboard title -->
+        <HBox styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8">
             <Button onAction="#handleBack" styleClass="breadcrumb-back-btn" focusTraversable="false">
                 <graphic><Region styleClass="back-icon"/></graphic>
             </Button>
-            <Label text="INVOICES" styleClass="cn-dn-breadcrumb-label" />
-            <Label text="›" styleClass="cn-dn-breadcrumb-separator" />
-            <Label text="CREDIT / DEBIT NOTE" styleClass="cn-dn-breadcrumb-current" />
+            <Label text="INVOICES" styleClass="breadcrumb-label" />
+            <Label text="›" styleClass="breadcrumb-separator" />
+            <Label text="CREDIT / DEBIT NOTE" styleClass="breadcrumb-label, breadcrumb-current" />
         </HBox>
 
-        <!-- HEADER -->
-        <VBox spacing="4" styleClass="cn-dn-header-container">
-            <Label text="Credit / Debit Note" styleClass="cn-dn-title"/>
-            <Label text="Generate a credit or debit note for a client." styleClass="cn-dn-subtitle"/>
-        </VBox>
-
-        <Region prefHeight="16" />
+        <Label text="Generate a credit or debit note for a client." styleClass="page-subheading cn-dn-lead"/>
 
         <!-- FORM CONTAINER -->
         <StackPane>

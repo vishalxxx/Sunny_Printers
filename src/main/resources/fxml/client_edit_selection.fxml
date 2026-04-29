@@ -3,28 +3,23 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.*?>
 
-<VBox spacing="0" styleClass="client-directory-root, ui-compact"
+<VBox spacing="8" styleClass="client-directory-root, ui-compact, app-page-shell"
       onMouseClicked="#handleRootClick"
       stylesheets="@../css/client_edit_selection.css"
       focusTraversable="true"
       xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="controller.ClientEditSelectionController"
-      minWidth="600">
+      minWidth="600"
+      alignment="TOP_LEFT">
 
-    <!-- BREADCRUMBS -->
     <HBox styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8">
-        <VBox.margin><Insets bottom="10"/></VBox.margin>
-        <Button fx:id="breadcrumbBackBtn" onAction="#handleBack" styleClass="breadcrumb-back-btn" focusTraversable="false">
-            <graphic><Region styleClass="back-icon"/></graphic>
-        </Button>
-        <Label text="CLIENTS" styleClass="breadcrumb-label" />
-        <Label text="›" styleClass="breadcrumb-separator" />
-        <Label text="EDIT SELECTION" styleClass="breadcrumb-label, breadcrumb-current" />
-    </HBox>
-
-    <Label text="Edit Client" styleClass="page-heading">
-        <VBox.margin><Insets bottom="12"/></VBox.margin>
-    </Label>
+            <Button fx:id="breadcrumbBackBtn" onAction="#handleBack" styleClass="breadcrumb-back-btn" focusTraversable="false">
+                <graphic><Region styleClass="back-icon"/></graphic>
+            </Button>
+            <Label text="CLIENTS" styleClass="breadcrumb-label" />
+            <Label text="›" styleClass="breadcrumb-separator" />
+            <Label text="EDIT SELECTION" styleClass="breadcrumb-label, breadcrumb-current" />
+        </HBox>
 
     <!-- SEARCH & FILTERS -->
     <HBox styleClass="search-filter-container" spacing="12">

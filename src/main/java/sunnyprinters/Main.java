@@ -42,6 +42,11 @@ public class Main extends Application {
 		// Global theme (uniform fonts + controls across screens)
 		scene.getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
 		scene.getStylesheets().add(getClass().getResource("/css/compact_screens.css").toExternalForm());
+		/* Client Ledger: rules are scoped to .client-ledger-root; loaded here so center content always picks them up */
+		java.net.URL cl = getClass().getResource("/css/client_ledger.css");
+		if (cl != null) {
+			scene.getStylesheets().add(cl.toExternalForm());
+		}
 
 		primaryStage.setScene(scene);
 		primaryStage.setTitle("Sunny Printers");

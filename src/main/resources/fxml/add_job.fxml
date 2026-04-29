@@ -13,24 +13,15 @@
             stylesheets="@../css/theme.css, @../css/add_job.css"
             fx:controller="controller.AddJobController">
 
-    <VBox spacing="0" alignment="TOP_CENTER" styleClass="add-job-root, ui-compact">
-        <padding>
-            <Insets top="8" right="24" bottom="16" left="24" />
-        </padding>
+    <VBox spacing="0" alignment="TOP_LEFT" styleClass="add-job-root, ui-compact, app-page-shell">
 
-        <!-- 0. BREADCRUMBS -->
-        <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8">
-            <padding>
-                <Insets bottom="10"/>
-            </padding>
-        </HBox>
+        <!-- Breadcrumbs below dashboard title (“Add New Job”) -->
+        <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8" />
+
+        <Label text="Complete the production blueprint by following the six-step wizard below."
+               styleClass="page-subheading add-job-lead" wrapText="true" maxWidth="720"/>
 
         <VBox spacing="10" styleClass="header-section">
-            <VBox spacing="4">
-                <Label text="Create New Job" styleClass="page-heading" />
-                <Label text="Complete the production blueprint by following the six-step wizard below." styleClass="page-subheading" />
-            </VBox>
-
             <GridPane hgap="12" vgap="0" styleClass="header-bar">
                 <padding>
                     <Insets top="10" right="14" bottom="10" left="14" />

@@ -14,6 +14,10 @@
     -fx-background-color: #FAF6F0;
 }
 
+.profile-root .content-container.app-page-shell {
+    -fx-spacing: 15;
+}
+
 .profile-root .label,
 .profile-root .combo-box,
 .profile-root .list-cell,

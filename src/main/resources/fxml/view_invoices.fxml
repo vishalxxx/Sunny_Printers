@@ -14,19 +14,11 @@
             stylesheets="@../css/theme.css, @../css/view_invoices.css"
             fx:controller="controller.ViewInvoicesController">
 
-    <VBox fx:id="viScreenRoot" spacing="14" styleClass="root-container, ui-compact, taste-root">
-        <padding>
-            <Insets top="8" right="16" bottom="20" left="16" />
-        </padding>
+    <VBox fx:id="viScreenRoot" spacing="14" alignment="TOP_LEFT" fillWidth="true" styleClass="root-container, ui-compact, taste-root, app-page-shell">
 
-        <!-- 1. HEADER SECTION -->
-        <VBox spacing="2">
-            <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8" />
-            <VBox spacing="2" styleClass="page-header-container">
-                <Label text="View Invoices" styleClass="page-heading" />
-                <Label text="Monitor payment status and manage invoice history" styleClass="page-subheading" />
-            </VBox>
-        </VBox>
+        <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8" />
+        <Label text="Monitor payment status and manage invoice history"
+               styleClass="page-subheading view-invoices-lead" wrapText="true" maxWidth="720"/>
 
         <!-- 2. ACTION TOOLBAR (hidden when no table row is selected) -->
         <HBox fx:id="viToolbarRow" spacing="10" alignment="CENTER_LEFT" styleClass="vi-toolbar-card">

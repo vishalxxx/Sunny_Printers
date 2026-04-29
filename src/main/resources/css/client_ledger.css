@@ -1,549 +1,377 @@
-/* =========================================================
-   IMPORTED FROM INVOICE GENERATION (Base Theme)
-   ========================================================= */
-.root {
-    -fx-background-color: #0f0f0f;
-    -fx-font-family: "Segoe UI", System;
-    -fx-font-size: 11px;
+/* =============================================================================
+   CLIENT LEDGER — warm theme (View Jobs / Payment History / Record Payment)
+   Root: .client-ledger-root (client_ledger.fxml)
+   All rules scoped under .client-ledger-root so we do not override global theme.
+   ============================================================================= */
+
+.client-ledger-root {
+    -fx-background-color: #FAF6F0;
 }
 
-.page {
-    -fx-padding: 1.8em;
-    -fx-spacing: 1.6em;
+/* —— Page shell —— */
+.client-ledger-root .cl-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
 }
 
-/* HEADER */
-.page-title {
-    -fx-text-fill: #ffffff;
-    -fx-font-size: 2.2em;
-    -fx-font-weight: 800;
+.client-ledger-root .cl-scroll > .viewport {
+    -fx-background-color: #FAF6F0;
 }
 
-.page-subtitle {
-    -fx-text-fill: #9ca3af;
-    -fx-font-size: 0.95em;
+.client-ledger-root .cl-page {
+    -fx-background-color: transparent;
 }
 
-/* LABELS */
-.field-label {
-    -fx-text-fill: #e5e7eb;
-    -fx-font-size: 0.9em;
-    -fx-font-weight: 600;
+.client-ledger-root .cl-page.app-page-shell {
+    -fx-spacing: 18;
 }
 
-.text-label-small {
-    -fx-text-fill: #e5e7eb;
-    -fx-font-size: 0.9em;
-    -fx-font-weight: 600;
+.client-ledger-root .cl-page.app-page-shell .breadcrumb-container {
+    -fx-padding: 12 0 4 0;
 }
 
-/* Radio Button Styling */
-.radio-button {
-    -fx-text-fill: #9ca3af;
+.client-ledger-root .cl-lead {
+    -fx-padding: 0 0 8 0;
+}
+
+/* Slightly tighter page chrome so the table gets more height */
+.client-ledger-root .page-heading {
+    -fx-font-size: 22px;
+    -fx-padding: 2 0 2 0;
+}
+
+.client-ledger-root .page-subheading {
+    -fx-padding: 0 0 6 0;
+}
+
+/* —— Cards (match payment_history / record_payment) —— */
+.client-ledger-root .info-card-premium,
+.client-ledger-root .content-card-premium {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 10;
+    -fx-border-color: #E5E7EB;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.04), 12, 0, 0, 4);
+}
+
+.client-ledger-root .cl-filter-card {
+    -fx-padding: 14 18;
+}
+
+.client-ledger-root .cl-summary-card {
+    -fx-padding: 14 20 14 20;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.06), 12, 0, 0, 4);
+}
+
+/* —— Radio filters —— */
+.client-ledger-root .radio-button {
+    -fx-text-fill: #5C4F48;
     -fx-font-size: 12px;
     -fx-font-weight: 700;
     -fx-cursor: hand;
-    -fx-padding: 4;
+    -fx-padding: 2 4 2 0;
 }
 
-.radio-button .radio {
-    -fx-background-color: #0b0b0c;
-    -fx-border-color: #3f3f46;
+.client-ledger-root .radio-button .radio {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #D6D1C9;
     -fx-border-radius: 10px;
     -fx-background-radius: 10px;
     -fx-padding: 2px;
 }
 
-.radio-button:selected .radio {
-    -fx-border-color: #3b82f6;
+.client-ledger-root .radio-button:selected .radio {
+    -fx-border-color: #CD7B4E;
 }
 
-.radio-button:selected .radio .dot {
-    -fx-background-color: #3b82f6;
+.client-ledger-root .radio-button:selected .radio .dot {
+    -fx-background-color: #CD7B4E;
     -fx-background-insets: 0;
     -fx-background-radius: 8px;
     -fx-padding: 3px;
 }
 
-.radio-button:hover .radio {
-    -fx-border-color: #d1d5db;
+.client-ledger-root .radio-button:hover .radio {
+    -fx-border-color: #CD7B4E;
 }
 
-/* INPUTS BASE (TextField) */
-.text-field {
-    -fx-background-color: #0b0b0c;
-    -fx-text-fill: #ffffff;
-    -fx-background-radius: 0.85em;
-    -fx-border-radius: 0.85em;
-    -fx-border-color: #3f3f46;
-    -fx-padding: 0.8em 1em;
-    -fx-font-size: 0.95em;
+/* ComboBox popup width is bound to the control in code; ellipsize long lines in the list */
+.client-ledger-root .combo-box-popup .list-cell {
+    -fx-text-overrun: ELLIPSIS;
 }
 
-.text-field:focused {
-    -fx-border-color: #ffffff;
-    -fx-effect: dropshadow(gaussian, rgba(255, 255, 255, 0.18), 14, 0.25, 0, 0);
-}
-
-.search-field {
-    -fx-background-radius: 20;
-    -fx-border-radius: 20;
-}
-
-/* COMBO BOX */
-.combo-box-base {
-    -fx-background-color: #0b0b0c;
-    -fx-background-radius: 0.85em;
-    -fx-border-radius: 0.85em;
-    -fx-border-color: #3f3f46;
-}
-
-.combo-box-base:focused {
-    -fx-border-color: #ffffff;
-    -fx-effect: dropshadow(gaussian, rgba(255, 255, 255, 0.18), 14, 0.25, 0, 0);
-}
-
-.combo-box-base>.list-cell {
-    -fx-background-color: transparent;
-    -fx-text-fill: #ffffff;
-    -fx-padding: 0.8em 1em;
-    -fx-font-size: 0.95em;
-    -fx-text-overrun: CLIP;
-}
-
-.combo-box-base .arrow-button {
-    -fx-background-color: transparent;
-    -fx-padding: 0.3em 0.85em;
-}
-
-.combo-box-base .arrow {
-    -fx-background-color: #9ca3af;
-}
-
-.combo-box-popup .list-view {
-    -fx-background-color: #18181b;
-    -fx-border-color: #27272a;
-    -fx-background-radius: 0.85em;
-    -fx-border-radius: 0.85em;
-}
-
-.combo-box-popup .list-cell {
-    -fx-background-color: transparent;
-    -fx-text-fill: #e5e7eb;
-    -fx-padding: 0.75em 1em;
-    -fx-font-size: 0.92em;
-}
-
-.combo-box-popup .list-cell:hover {
-    -fx-background-color: #27272a;
-}
-
-.combo-box-popup .list-cell:selected {
-    -fx-background-color: rgba(59, 130, 246, 0.25);
-    -fx-text-fill: #ffffff;
-}
-
-/* DATE PICKER */
-.date-picker {
-    -fx-background-color: #0b0b0c;
-    -fx-background-radius: 0.85em;
-    -fx-border-radius: 0.85em;
-    -fx-border-color: #3f3f46;
-}
-
-.date-picker:focused {
-    -fx-border-color: #ffffff;
-    -fx-effect: dropshadow(gaussian, rgba(255, 255, 255, 0.18), 14, 0.25, 0, 0);
-}
-
-.date-picker>.text-field {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
-    -fx-text-fill: #ffffff;
-    -fx-padding: 0.8em 1em;
-}
-
-.date-picker .arrow-button {
-    -fx-background-color: transparent;
+/* —— Reset (filters) —— */
+.client-ledger-root .button.cl-reset-btn {
+    -fx-background-color: #FFFFFF !important;
+    -fx-text-fill: #CD7B4E !important;
+    -fx-border-color: #EADFD4 !important;
+    -fx-border-width: 1 !important;
+    -fx-border-radius: 10 !important;
+    -fx-background-radius: 10 !important;
+    -fx-background-insets: 0 !important;
+    -fx-border-insets: 0 !important;
+    -fx-min-width: 40;
+    -fx-min-height: 38;
     -fx-padding: 0;
-}
-
-.date-picker .arrow-button .arrow {
-    -fx-background-color: transparent;
-}
-
-/* DATE PICKER POPUP */
-.date-picker-popup {
-    -fx-background-color: #18181b;
-    -fx-border-color: #27272a;
-    -fx-border-radius: 0.9em;
-    -fx-background-radius: 0.9em;
-}
-
-.date-picker-popup>.month-year-pane {
-    -fx-background-color: #111827;
-    -fx-border-color: #27272a;
-}
-
-.date-picker-popup>.month-year-pane .label {
-    -fx-text-fill: #ffffff;
-    -fx-font-weight: 700;
-}
-
-.date-picker-popup .day-name-cell {
-    -fx-background-color: #18181b;
-    -fx-text-fill: #e5e7eb;
-    -fx-font-weight: 700;
-}
-
-.date-picker-popup .calendar-grid {
-    -fx-background-color: #18181b;
-}
-
-.date-picker-popup .day-cell {
-    -fx-background-color: transparent;
-    -fx-text-fill: #ffffff;
-    -fx-font-weight: 600;
-    -fx-background-radius: 0.6em;
-}
-
-.date-picker-popup .day-cell:hover {
-    -fx-background-color: rgba(59, 130, 246, 0.25);
-}
-
-.date-picker-popup .day-cell:selected {
-    -fx-background-color: #3b82f6;
-    -fx-text-fill: white;
-}
-
-.date-picker-popup .day-cell:previous-month,
-.date-picker-popup .day-cell:next-month {
-    -fx-text-fill: rgba(255, 255, 255, 0.35);
-}
-
-/* BUTTONS */
-.button {
-    -fx-background-insets: 0;
-    -fx-background-radius: 0.85em;
-    -fx-border-radius: 0.85em;
-    -fx-padding: 0.85em 1.2em;
-    -fx-min-height: 2em;
-    -fx-font-size: 1em;
-    -fx-font-weight: 700;
-    -fx-text-fill: white;
     -fx-cursor: hand;
-    -fx-alignment: CENTER;
 }
 
-.action-btn {
-    -fx-background-color: #333;
-    -fx-text-fill: white;
+.client-ledger-root .button.cl-reset-btn:hover {
+    -fx-border-color: #CD7B4E !important;
+    -fx-background-color: #FFF7ED !important;
 }
 
-.action-btn:hover {
-    -fx-background-color: #444;
-}
-
-.btn-primary {
-    -fx-background-color: #3b82f6;
-}
-
-.btn-primary:hover {
-    -fx-background-color: #2563eb;
-    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.55), 18, 0.35, 0, 0);
-}
-
-/* =========================================================
-   TABLE VIEW (Unified with invoice generation)
-   ========================================================= */
-.table-view {
-    -fx-background-color: rgba(10, 10, 10, 0.65);
-    -fx-background-radius: 14;
-    -fx-border-radius: 14;
-    -fx-border-color: rgba(255, 255, 255, 0.07);
+.client-ledger-root .cl-reset-icon {
+    -fx-text-fill: #CD7B4E;
+    -fx-font-size: 18px;
+    -fx-font-weight: 700;
     -fx-padding: 0;
-    -fx-control-inner-background: transparent;
-    -fx-table-cell-border-color: transparent;
 }
 
-.table-view .virtual-flow,
-.table-view .corner {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
+/* —— Client summary —— */
+.client-ledger-root .cl-client-name {
+    -fx-font-family: 'Manrope';
+    -fx-font-size: 17px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #3E312D;
 }
 
-/* Header */
-.table-view .column-header-background {
-    -fx-background-color: rgba(35, 35, 35, 0.85);
-    -fx-background-radius: 14 14 0 0;
-    -fx-padding: 10 0 10 0;
-    -fx-border-color: transparent;
-}
-
-.table-view .column-header,
-.table-view .filler {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
-}
-
-.table-view .column-header {
-    -fx-alignment: CENTER;
-}
-
-.table-view .column-header .label {
-    -fx-text-fill: #cfcfcf;
+.client-ledger-root .cl-detail-block .field-heading-sm {
     -fx-font-size: 11px;
     -fx-font-weight: 800;
-    -fx-alignment: CENTER;
-    -fx-text-alignment: CENTER;
+    -fx-font-style: normal;
+    -fx-text-fill: #7A655C;
+    -fx-letter-spacing: 0.04em;
 }
 
-.table-view .table-column {
-    -fx-alignment: CENTER;
-}
-
-/* Rows */
-.table-view .table-row-cell {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
-}
-
-.table-view .table-row-cell:filled:odd {
-    -fx-background-color: rgba(255, 255, 255, 0.02);
-}
-
-.table-view .table-row-cell:filled:even {
-    -fx-background-color: rgba(255, 255, 255, 0.04);
-}
-
-.table-view .table-row-cell:filled:hover {
-    -fx-background-color: rgba(255, 255, 255, 0.08);
-}
-
-.table-view .table-row-cell:filled:selected {
-    -fx-background-color: rgba(77, 163, 255, 0.18);
-}
-
-/* Cells */
-.table-view .table-cell {
-    -fx-text-fill: #e8eefb;
+.client-ledger-root .cl-meta-text {
+    -fx-font-family: 'Inter';
     -fx-font-size: 12px;
     -fx-font-weight: 600;
-    -fx-padding: 10 12;
+    -fx-text-fill: #3E312D;
+}
+
+/* KPI row */
+.client-ledger-root .cl-summary-metrics {
+    -fx-padding: 0 0 0 12;
+    -fx-background-color: transparent;
+}
+
+.client-ledger-root .cl-metric-card {
+    -fx-padding: 10 12 12 12;
+    -fx-min-width: 112;
+    -fx-pref-width: 124;
+    -fx-max-width: 138;
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.07), 10, 0, 0, 3);
     -fx-alignment: CENTER;
-    -fx-text-alignment: CENTER;
-    -fx-border-color: transparent;
-    -fx-background-color: transparent;
+    -fx-spacing: 2;
 }
 
-/* Placeholder */
-.table-view .placeholder {
-    -fx-background-color: transparent;
+/* Warm, soft fills (less neon than before) */
+.client-ledger-root .cl-metric-card-due {
+    -fx-background-color: #FFF1F0;
+    -fx-border-color: #E8B4B4;
 }
 
-.table-view .placeholder .label {
-    -fx-text-fill: rgba(255, 255, 255, 0.35);
-    -fx-font-size: 12px;
-    -fx-font-weight: 600;
+.client-ledger-root .cl-metric-card-payment {
+    -fx-background-color: #F0FDF4;
+    -fx-border-color: #A7D7B5;
 }
 
-/* Scrollbar */
-.table-view .scroll-bar:vertical,
-.table-view .scroll-bar:horizontal {
-    -fx-background-color: transparent;
+.client-ledger-root .cl-metric-card-net {
+    -fx-background-color: #FFFBF5;
+    -fx-border-color: #D9BC9A;
 }
 
-.table-view .scroll-bar .track {
-    -fx-background-color: transparent;
+.client-ledger-root .cl-metric-card .cl-metric-label {
+    -fx-font-family: 'Inter';
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-font-style: normal;
+    -fx-letter-spacing: 0.08em;
+    -fx-padding: 0 0 2 0;
+    -fx-opacity: 1;
 }
 
-.table-view .scroll-bar .thumb {
-    -fx-background-color: rgba(255, 255, 255, 0.15);
-    -fx-background-radius: 10;
+.client-ledger-root .cl-metric-card-due .cl-metric-label {
+    -fx-text-fill: #9B1C1C !important;
 }
 
-.table-view .scroll-bar .thumb:hover {
-    -fx-background-color: rgba(255, 255, 255, 0.25);
+.client-ledger-root .cl-metric-card-due .cl-metric-value,
+.client-ledger-root .cl-metric-card-due .label.cl-kpi-due {
+    -fx-text-fill: #7F1D1D !important;
+    -fx-font-family: 'Manrope' !important;
+    -fx-font-size: 18px !important;
+    -fx-font-weight: 800 !important;
+    -fx-opacity: 1 !important;
 }
 
-.table-view .increment-button,
-.table-view .decrement-button {
+.client-ledger-root .cl-metric-card-payment .cl-metric-label {
+    -fx-text-fill: #166534 !important;
+}
+
+.client-ledger-root .cl-metric-card-payment .cl-metric-value,
+.client-ledger-root .cl-metric-card-payment .label.cl-kpi-payment {
+    -fx-text-fill: #14532D !important;
+    -fx-font-family: 'Manrope' !important;
+    -fx-font-size: 18px !important;
+    -fx-font-weight: 800 !important;
+    -fx-opacity: 1 !important;
+}
+
+.client-ledger-root .cl-metric-card-net .cl-metric-label {
+    -fx-text-fill: #9A3412 !important;
+}
+
+.client-ledger-root .cl-metric-card-net .cl-metric-value,
+.client-ledger-root .cl-metric-card-net .label.cl-kpi-net {
+    -fx-text-fill: #292524 !important;
+    -fx-font-family: 'Manrope' !important;
+    -fx-font-size: 18px !important;
+    -fx-font-weight: 800 !important;
+    -fx-opacity: 1 !important;
+}
+
+.client-ledger-root .cl-metric-value {
+    -fx-font-family: 'Manrope';
+    -fx-font-size: 18px;
+    -fx-font-weight: 800;
+}
+
+.client-ledger-root .cl-metric-value.cl-kpi-due {
+    -fx-text-fill: #7F1D1D !important;
+}
+
+.client-ledger-root .cl-metric-value.cl-kpi-payment {
+    -fx-text-fill: #14532D !important;
+}
+
+.client-ledger-root .cl-metric-value.cl-kpi-net {
+    -fx-text-fill: #292524 !important;
+}
+
+/* —— Ledger toolbar —— */
+.client-ledger-root .cl-ledger-wrap {
     -fx-padding: 0;
+}
+
+.client-ledger-root .cl-ledger-toolbar {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #EEECE8;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 10 16 10 16;
+}
+
+.client-ledger-root .cl-record-pill {
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #B45309;
+    -fx-padding: 4 10;
+    -fx-background-color: #FFEDD5;
+    -fx-background-radius: 999;
+    -fx-border-color: #FDBA74;
+    -fx-border-radius: 999;
+}
+
+/* —— Table —— */
+.client-ledger-root .cl-ledger-table {
+    -fx-background-color: #FFFFFF;
+    -fx-table-cell-border-color: transparent;
+    -fx-table-header-border-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.client-ledger-root .cl-ledger-table .table-row-cell,
+.client-ledger-root .cl-ledger-table .table-row-cell .table-cell {
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-background-insets: 0;
+}
+
+.client-ledger-root .cl-ledger-table .column-header-background {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #F1ECE6;
+    -fx-border-width: 0 0 1 0;
+}
+
+.client-ledger-root .cl-ledger-table .column-header,
+.client-ledger-root .cl-ledger-table .filler {
     -fx-background-color: transparent;
 }
 
-.table-view .increment-arrow,
-.table-view .decrement-arrow {
-    -fx-background-color: transparent;
+.client-ledger-root .cl-ledger-table .column-header .label {
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #4B5563;
+    -fx-padding: 6 8 8 8;
+    -fx-alignment: CENTER;
 }
 
-/* Remove focus border lines */
-.table-view:focused {
+.client-ledger-root .cl-ledger-table .table-row-cell {
+    -fx-background-color: #FFFFFF;
+}
+
+.client-ledger-root .cl-ledger-table .table-row-cell:even {
+    -fx-background-color: #FAFBFC;
+}
+
+.client-ledger-root .cl-ledger-table .table-row-cell:filled:hover {
+    -fx-background-color: #F3F4F6;
+}
+
+.client-ledger-root .cl-ledger-table .table-row-cell .table-cell {
+    -fx-padding: 8 10;
+    -fx-text-fill: #111827;
+    -fx-font-size: 11px;
+    -fx-alignment: CENTER;
+}
+
+.client-ledger-root .cl-ledger-table .table-row-cell:filled:selected,
+.client-ledger-root .cl-ledger-table .table-row-cell:filled:selected .table-cell {
+    -fx-background-color: #FFEDD5;
+}
+
+.client-ledger-root .cl-ledger-table:focused {
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
 }
 
-.increment-button,
-.decrement-button {
-    -fx-padding: 0;
-    -fx-background-color: transparent;
+/* Amount columns: CurrencyCell adds .text-red / .text-green on the TableCell */
+.client-ledger-root .cl-ledger-table .table-cell.text-red {
+    -fx-text-fill: #B91C1C;
+    -fx-font-weight: 700;
 }
 
-/* =========================================================
-   CLIENT LEDGER SPECIFIC
-   ========================================================= */
-
-.section-header {
-    -fx-text-fill: #ffffff;
-    -fx-font-size: 14px;
-    -fx-font-weight: bold;
+.client-ledger-root .cl-ledger-table .table-cell.text-green {
+    -fx-text-fill: #166534;
+    -fx-font-weight: 700;
 }
 
-.pill-label {
-    -fx-background-color: #222;
-    -fx-text-fill: #aaa;
-    -fx-background-radius: 10;
-    -fx-padding: 2 10;
-    -fx-font-size: 10px;
-}
-
-/* Summary Card */
-.summary-card {
-    -fx-background-color: #18181b;
-    /* Matches card bg in invoice gen */
-    -fx-background-radius: 1.2em;
-    -fx-border-radius: 1.2em;
-    -fx-border-color: #27272a;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.55), 22, 0.25, 0, 8);
-}
-
-.client-name-header {
-    -fx-text-fill: #ffffff;
-    -fx-font-size: 20px;
-    -fx-font-weight: 800;
-}
-
-.due-pill {
-    -fx-background-color: rgba(255, 77, 77, 0.15);
-    -fx-text-fill: #ff5252;
-    -fx-background-radius: 4;
-    -fx-padding: 2 8;
-    -fx-font-size: 10px;
-    -fx-font-weight: bold;
-}
-
-.total-due-box {
-    -fx-background-color: linear-gradient(to bottom right, #3a1c1c, #251010);
-    -fx-background-radius: 8;
-    -fx-padding: 15;
-    -fx-alignment: center-right;
-    -fx-border-color: #4a2020;
-    -fx-border-radius: 8;
-}
-
-.total-due-label {
-    -fx-text-fill: rgba(255, 255, 255, 0.6);
-    -fx-font-size: 10px;
-    -fx-font-weight: bold;
-}
-
-.total-due-amount {
-    -fx-text-fill: #ff5252;
-    -fx-font-size: 24px;
-    -fx-font-weight: bold;
-}
-
-.text-grey {
-    -fx-text-fill: #9ca3af;
-    -fx-font-weight: bold;
-}
-
-.text-primary {
-    -fx-text-fill: #3b82f6;
-}
-
-.text-red {
-    -fx-text-fill: #ef4444;
-}
-
-.text-green {
-    -fx-text-fill: #059669;
-}
-
-.amount-column {
+.client-ledger-root .amount-column {
     -fx-alignment: CENTER-RIGHT;
 }
 
-/* =========================================================
-   NEW FILTER BAR STYLES
-   ========================================================= */
-
-.filter-bar-container {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
-    -fx-padding: -2;
+.client-ledger-root .cl-ledger-table .table-column.amount-column,
+.client-ledger-root .cl-ledger-table .table-column.amount-column .label {
+    -fx-alignment: CENTER-RIGHT;
 }
 
-.filter-group .combo-box-base>.list-cell {
-    -fx-padding: 0 0 0 0;
-    -fx-font-size: 12px;
-    -fx-font-weight: bold;
-}
-
-/* New Summary Box Styles */
-.summary-box {
-    -fx-background-color: #0b0b0c;
-    -fx-background-radius: 12;
-    -fx-border-color: #27272a;
-    -fx-border-radius: 12;
-    -fx-padding: 10 25;
-}
-
-.summary-metric-box {
-    -fx-padding: 0 20;
-    -fx-alignment: center;
-}
-
-.summary-metric-label {
-    -fx-text-fill: #71717a;
-    -fx-font-size: 10px;
-    -fx-font-weight: 800;
-    -fx-padding: 0 0 4 0;
-}
-
-.summary-value-red {
-    -fx-text-fill: #ef4444;
-    -fx-font-size: 20px;
-    -fx-font-weight: 800;
-}
-
-.summary-value-green {
-    -fx-text-fill: #10b981;
-    -fx-font-size: 20px;
-    -fx-font-weight: 800;
-}
-
-.summary-value-white {
-    -fx-text-fill: #ffffff;
-    -fx-font-size: 20px;
-    -fx-font-weight: 800;
-}
-
-.summary-box .separator .line {
-    -fx-border-color: #27272a;
-    -fx-border-width: 0 0 0 1;
-    -fx-background-color: transparent;
-}
-
-/* =========================================================
-   STATUS PILL STYLES
-   ========================================================= */
-
-.center-align {
+.client-ledger-root .center-align {
     -fx-alignment: CENTER;
 }
 
-.status-pill {
+.client-ledger-root .cl-ledger-table .column-header.center-align .label {
+    -fx-alignment: CENTER;
+}
+
+/* Status pills (StatusCell) */
+.client-ledger-root .status-pill {
     -fx-padding: 4 10;
     -fx-background-radius: 12;
     -fx-font-size: 10px;
@@ -553,100 +381,226 @@
     -fx-max-width: 90px;
 }
 
-/* Success (Paid, Settled) */
-.status-pill-success {
-    -fx-background-color: rgba(16, 185, 129, 0.15);
-    -fx-text-fill: #10b981;
-    -fx-border-color: rgba(16, 185, 129, 0.3);
+.client-ledger-root .status-pill-success {
+    -fx-background-color: rgba(22, 101, 52, 0.12);
+    -fx-text-fill: #166534;
+    -fx-border-color: rgba(22, 101, 52, 0.35);
     -fx-border-radius: 12;
 }
 
-/* Danger (Unpaid, Overdue) */
-.status-pill-danger {
-    -fx-background-color: rgba(239, 68, 68, 0.15);
-    -fx-text-fill: #ef4444;
-    -fx-border-color: rgba(239, 68, 68, 0.3);
+.client-ledger-root .status-pill-danger {
+    -fx-background-color: rgba(185, 28, 28, 0.12);
+    -fx-text-fill: #B91C1C;
+    -fx-border-color: rgba(185, 28, 28, 0.3);
     -fx-border-radius: 12;
 }
 
-/* Info (Draft) */
-.status-pill-info {
-    -fx-background-color: rgba(59, 130, 246, 0.15);
-    -fx-text-fill: #3b82f6;
-    -fx-border-color: rgba(59, 130, 246, 0.3);
+.client-ledger-root .status-pill-info {
+    -fx-background-color: rgba(205, 123, 78, 0.15);
+    -fx-text-fill: #9A3412;
+    -fx-border-color: rgba(205, 123, 78, 0.35);
     -fx-border-radius: 12;
 }
 
-/* Default */
-.status-pill-default {
-    -fx-background-color: rgba(113, 113, 122, 0.15);
-    -fx-text-fill: #a1a1aa;
-    -fx-border-color: rgba(113, 113, 122, 0.3);
+.client-ledger-root .status-pill-default {
+    -fx-background-color: rgba(113, 113, 122, 0.12);
+    -fx-text-fill: #6B7280;
+    -fx-border-color: rgba(156, 163, 175, 0.45);
     -fx-border-radius: 12;
 }
 
-/* =========================================================
-   FOOTER STYLES
-   ========================================================= */
+/* —— Footer —— */
+.client-ledger-root .cl-ledger-footer {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #EEECE8;
+    -fx-border-width: 1 0 0 0;
+    -fx-padding: 12 16 14 16;
+}
 
-.footer-total-label {
-    -fx-text-fill: #71717a;
+.client-ledger-root .cl-footer-k {
+    -fx-text-fill: #8E7A6B;
     -fx-font-size: 10px;
     -fx-font-weight: 800;
+    -fx-letter-spacing: 0.04em;
 }
 
-.footer-total-value {
-    -fx-text-fill: #ffffff;
-    -fx-font-size: 14px;
+.client-ledger-root .cl-footer-v {
+    -fx-font-size: 13px;
     -fx-font-weight: 800;
 }
 
-.btn-ghost {
-    -fx-background-color: transparent;
-    -fx-border-color: #71717a;
-    /* Zinc 500 - Clearer grey */
-    -fx-border-radius: 6;
+/* Footer totals: taller boxes + tints aligned with KPI strip (.cl-metric-card-*) */
+.client-ledger-root .cl-footer-stat {
+    -fx-min-height: 48;
+    -fx-padding: 11 18 11 18;
+    -fx-background-radius: 11;
+    -fx-border-radius: 11;
     -fx-border-width: 1;
-    -fx-text-fill: #ffffff;
+    -fx-alignment: CENTER_LEFT;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.06), 8, 0, 0, 2);
+}
+
+.client-ledger-root .cl-footer-stat-debit {
+    -fx-background-color: #FFF1F0;
+    -fx-border-color: #E8B4B4;
+}
+
+.client-ledger-root .cl-footer-stat-debit .cl-footer-k {
+    -fx-text-fill: #9B1C1C;
+}
+
+.client-ledger-root .cl-footer-stat-debit .cl-footer-v {
+    -fx-text-fill: #7F1D1D;
+}
+
+.client-ledger-root .cl-footer-stat-credit {
+    -fx-background-color: #F0FDF4;
+    -fx-border-color: #A7D7B5;
+}
+
+.client-ledger-root .cl-footer-stat-credit .cl-footer-k {
+    -fx-text-fill: #166534;
+}
+
+.client-ledger-root .cl-footer-stat-credit .cl-footer-v {
+    -fx-text-fill: #14532D;
+}
+
+.client-ledger-root .cl-footer-stat-balance {
+    -fx-background-color: #FFFBF5;
+    -fx-border-color: #D9BC9A;
+}
+
+.client-ledger-root .cl-footer-stat-balance .cl-footer-k {
+    -fx-text-fill: #9A3412;
+}
+
+.client-ledger-root .cl-footer-stat-balance .cl-footer-v {
+    -fx-text-fill: #292524;
+}
+
+/* —— Buttons: match .rp-btn pattern; !important beats Modena’s multi-stop fills —— */
+.client-ledger-root .cl-btn {
+    -fx-background-insets: 0 !important;
+    -fx-border-insets: 0 !important;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-padding: 11 22;
     -fx-font-size: 12px;
     -fx-font-weight: 800;
+    -fx-font-family: 'Inter';
     -fx-cursor: hand;
-    -fx-padding: 8 16;
+    -fx-alignment: CENTER;
+    -fx-content-display: LEFT;
 }
 
-.btn-ghost:hover {
-    -fx-background-color: rgba(255, 255, 255, 0.1);
-    -fx-border-color: #ffffff;
+.client-ledger-root .cl-btn-icon {
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+    -fx-padding: 0 8 0 0;
 }
 
-.btn-ghost-icon {
+/* EXPORT */
+.client-ledger-root .cl-btn.cl-btn-soft {
+    -fx-background-color: #FFFFFF !important;
+    -fx-text-fill: #9A3412 !important;
+    -fx-border-color: #CD7B4E !important;
+    -fx-border-width: 1.4 !important;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.12), 8, 0, 0, 2);
+}
+
+.client-ledger-root .cl-btn.cl-btn-soft:hover {
+    -fx-background-color: #FFF7ED !important;
+    -fx-border-color: #B8693C !important;
+    -fx-text-fill: #7C2D12 !important;
+}
+
+.client-ledger-root .cl-btn.cl-btn-soft:pressed {
+    -fx-background-color: #FFEDD5 !important;
+}
+
+.client-ledger-root .cl-btn.cl-btn-soft .cl-btn-icon {
+    -fx-text-fill: #CD7B4E !important;
+}
+
+/* CREATE INVOICE */
+.client-ledger-root .cl-btn.cl-btn-outline {
+    -fx-background-color: #FFFFFF !important;
+    -fx-text-fill: #3E312D !important;
+    -fx-border-color: #CD7B4E !important;
+    -fx-border-width: 1.5 !important;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.06), 8, 0, 0, 2);
+}
+
+.client-ledger-root .cl-btn.cl-btn-outline:hover {
+    -fx-background-color: #FFF7ED !important;
+    -fx-border-color: #B8693C !important;
+}
+
+.client-ledger-root .cl-btn.cl-btn-outline:pressed {
+    -fx-background-color: #FFEDD5 !important;
+}
+
+.client-ledger-root .cl-btn.cl-btn-outline:focused,
+.client-ledger-root .cl-btn.cl-btn-soft:focused {
+    -fx-background-color: #FFFFFF !important;
+    -fx-border-color: #CD7B4E !important;
+}
+
+.client-ledger-root .cl-btn.cl-btn-outline:hover:focused,
+.client-ledger-root .cl-btn.cl-btn-soft:hover:focused {
+    -fx-background-color: #FFF7ED !important;
+}
+
+/* + RECORD PAYMENT */
+.client-ledger-root .cl-btn.cl-btn-primary {
+    -fx-background-color: #CD7B4E !important;
+    -fx-text-fill: #FFFFFF !important;
+    -fx-border-color: #B8693C !important;
+    -fx-border-width: 1 !important;
+    -fx-effect: dropshadow(three-pass-box, rgba(176, 105, 56, 0.45), 12, 0, 0, 4);
+}
+
+.client-ledger-root .cl-btn.cl-btn-primary:hover {
+    -fx-background-color: #B8693C !important;
+    -fx-border-color: #9A5830 !important;
+}
+
+.client-ledger-root .cl-btn.cl-btn-primary:pressed {
+    -fx-background-color: #9A5830 !important;
+}
+
+.client-ledger-root .cl-btn.cl-btn-primary:focused {
+    -fx-background-color: #CD7B4E !important;
+}
+
+/* —— Scrollbars (page + table) —— */
+.client-ledger-root .scroll-bar:vertical,
+.client-ledger-root .scroll-bar:horizontal {
     -fx-background-color: transparent;
-    -fx-border-color: #71717a;
-    /* Match btn-ghost */
-    -fx-border-radius: 6;
-    -fx-cursor: hand;
-    -fx-padding: 6 12;
 }
 
-.btn-ghost-icon:hover {
-    -fx-background-color: rgba(255, 255, 255, 0.1);
-    -fx-border-color: #ffffff;
+.client-ledger-root .scroll-bar .track {
+    -fx-background-color: transparent;
 }
 
-.btn-primary-large {
-    -fx-background-color: #3b82f6;
-    /* Blue */
-    -fx-text-fill: white;
+.client-ledger-root .scroll-bar .thumb {
+    -fx-background-color: rgba(62, 49, 45, 0.18);
     -fx-background-radius: 6;
-    -fx-font-size: 12px;
-    -fx-font-weight: 800;
-    -fx-padding: 8 20;
-    -fx-cursor: hand;
-    /* Soft shadow/glow */
-    -fx-effect: dropshadow(three-pass-box, rgba(59, 130, 246, 0.4), 8, 0, 0, 3);
 }
 
-.btn-primary-large:hover {
-    -fx-background-color: #2563eb;
-    -fx-effect: dropshadow(three-pass-box, rgba(59, 130, 246, 0.6), 12, 0, 0, 4);
+.client-ledger-root .scroll-bar .thumb:hover {
+    -fx-background-color: rgba(62, 49, 45, 0.28);
+}
+
+.client-ledger-root .scroll-bar .increment-button,
+.client-ledger-root .scroll-bar .decrement-button {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+
+.client-ledger-root .scroll-bar .increment-arrow,
+.client-ledger-root .scroll-bar .decrement-arrow {
+    -fx-shape: "";
+    -fx-padding: 0;
 }

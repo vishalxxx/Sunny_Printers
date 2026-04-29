@@ -29,11 +29,22 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.skin.ComboBoxListViewSkin;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
 import utils.DBConnection;
 
 public class ClientLedgerController implements Initializable {
+
+    /**
+     * TableView height math must match on-screen rows (padding/fonts in client_ledger.css, status pills).
+     * Underestimating clips the last row when pref height drives layout inside ScrollPane.
+     */
+    private static final double LEDGER_TABLE_HEADER_PX = 42.0;
+    private static final double LEDGER_TABLE_ROW_PX = 46.0;
+    private static final double LEDGER_TABLE_HEIGHT_FUDGE = 16.0;
+    private static final int LEDGER_TABLE_MAX_VISIBLE_ROWS = 18;
+    private static final int LEDGER_TABLE_EMPTY_VISIBLE_ROWS = 10;
 
     @FXML
     private ComboBox<ClientComboItem> clientCombo;
@@ -50,6 +61,9 @@ public class ClientLedgerController implements Initializable {
     private RadioButton rbInvoice;
     @FXML
     private RadioButton rbPayment;
+
+    @FXML
+    private javafx.scene.layout.HBox breadcrumbContainer;
 
     @FXML
     private Label clientNameLabel, gstLabel, addressLabel, phoneLabel, emailLabel;
@@ -98,6 +112,8 @@ public class ClientLedgerController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Client Ledger",
+                () -> MainController.getInstance().handleBack(null));
         setupTable();
         loadClients();
         clearClientDetails();
@@ -113,6 +129,29 @@ public class ClientLedgerController implements Initializable {
 
         if (typeGroup != null) {
             typeGroup.selectedToggleProperty().addListener((obs, oldVal, newVal) -> loadLedgerData());
+        }
+
+        setupClientComboPopupWidthMatch();
+    }
+
+    /** Keeps the dropdown list the same width as the combo field (default popup sizes to longest item). */
+    private void setupClientComboPopupWidthMatch() {
+        if (clientCombo == null) {
+            return;
+        }
+        Runnable bindPopup = () -> {
+            if (clientCombo.getSkin() instanceof ComboBoxListViewSkin<?> skinNode) {
+                javafx.scene.Node popup = skinNode.getPopupContent();
+                if (popup instanceof javafx.scene.layout.Region region) {
+                    region.minWidthProperty().bind(clientCombo.widthProperty());
+                    region.prefWidthProperty().bind(clientCombo.widthProperty());
+                    region.maxWidthProperty().bind(clientCombo.widthProperty());
+                }
+            }
+        };
+        clientCombo.skinProperty().addListener((obs, o, n) -> bindPopup.run());
+        if (clientCombo.getSkin() != null) {
+            bindPopup.run();
         }
     }
 
@@ -193,10 +232,10 @@ public class ClientLedgerController implements Initializable {
                 private final javafx.scene.text.Text textNode = new javafx.scene.text.Text();
                 {
                     textNode.wrappingWidthProperty().bind(widthProperty().subtract(24));
-                    textNode.setFill(javafx.scene.paint.Color.web("#e8eefb"));
+                    textNode.setFill(javafx.scene.paint.Color.web("#3E312D"));
                     textNode.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
                     textNode.setStyle(
-                            "-fx-font-size: 12px; -fx-font-family: 'Segoe UI', System; -fx-font-weight: 600;");
+                            "-fx-font-size: 12px; -fx-font-family: 'Inter', 'Segoe UI', System; -fx-font-weight: 600;");
                 }
 
                 @Override
@@ -335,22 +374,20 @@ public class ClientLedgerController implements Initializable {
 
     private void updateTableHeight() {
         int rowCount = ledgerData.size();
-        int maxRows = 10;
-
-        double rowHeight = 38.0;
-        double headerHeight = 40.0;
 
         double targetHeight;
         if (rowCount == 0) {
-            targetHeight = headerHeight + rowHeight;
+            targetHeight = LEDGER_TABLE_HEADER_PX + (LEDGER_TABLE_EMPTY_VISIBLE_ROWS * LEDGER_TABLE_ROW_PX)
+                    + LEDGER_TABLE_HEIGHT_FUDGE;
         } else {
-            int rowsToShow = Math.min(rowCount, maxRows);
-            targetHeight = headerHeight + (rowsToShow * rowHeight) + 2;
+            int rowsToShow = Math.min(rowCount, LEDGER_TABLE_MAX_VISIBLE_ROWS);
+            targetHeight = LEDGER_TABLE_HEADER_PX + (rowsToShow * LEDGER_TABLE_ROW_PX)
+                    + LEDGER_TABLE_HEIGHT_FUDGE;
         }
 
-        ledgerTable.setPrefHeight(targetHeight);
         ledgerTable.setMinHeight(targetHeight);
-        ledgerTable.setMaxHeight(targetHeight);
+        ledgerTable.setPrefHeight(targetHeight);
+        ledgerTable.setMaxHeight(Double.MAX_VALUE);
     }
 
     private void loadClients() {

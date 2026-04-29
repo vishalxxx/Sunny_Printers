@@ -22,6 +22,18 @@
     -fx-background-color: transparent;
 }
 
+.payment-history-root .ph-page.app-page-shell {
+    -fx-spacing: 16;
+}
+
+.payment-history-root .ph-page.app-page-shell .breadcrumb-container {
+    -fx-padding: 12 0 4 0;
+}
+
+.payment-history-root .ph-lead {
+    -fx-padding: 0 0 8 0;
+}
+
 /* Cards (match record_payment / view invoices) */
 .payment-history-root .info-card-premium,
 .payment-history-root .content-card-premium {
@@ -146,32 +158,43 @@
     -fx-padding: 0;
 }
 
-/* Footer */
-.payment-history-root .ph-footer {
-    -fx-background-color: #FFFFFF;
-    -fx-border-color: #EEECE8;
-    -fx-border-width: 1 0 0 0;
-    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.06), 12, 0, 0, -4);
+/* KPI — same family as view_client.fxml (green = money in) */
+.payment-history-root .kpi-card {
+    -fx-background-color: #F7EDE0;
+    -fx-border-color: #E6E0D5;
+    -fx-border-width: 1.2;
+    -fx-padding: 16 20;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-alignment: CENTER_LEFT;
+    -fx-spacing: 6;
+    -fx-cursor: hand;
 }
 
-.payment-history-root .ph-totals-cluster {
-    -fx-background-color: #FAF6F0;
-    -fx-border-color: #EADFD4;
-    -fx-border-radius: 10;
-    -fx-background-radius: 10;
-    -fx-padding: 10 18;
+.payment-history-root .kpi-card:hover {
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.03), 15, 0, 0, 5);
 }
 
-.payment-history-root .ph-footer-total-label {
-    -fx-font-size: 11px;
+.payment-history-root .kpi-label {
+    -fx-text-fill: #8E7A6B;
+    -fx-font-size: 10px;
     -fx-font-weight: 800;
-    -fx-text-fill: #6B7280;
+    -fx-letter-spacing: 0.05em;
 }
 
-.payment-history-root .ph-footer-total-value {
-    -fx-font-size: 18px;
+.payment-history-root .kpi-card-green {
+    -fx-background-color: #F0F7F2;
+    -fx-border-color: #DAE5DC;
+}
+
+.payment-history-root .kpi-card-green:hover {
+    -fx-border-color: #4A7C59;
+}
+
+.payment-history-root .kpi-value-green {
+    -fx-text-fill: #3E5B45;
+    -fx-font-size: 21px;
     -fx-font-weight: 800;
-    -fx-text-fill: #15803D;
     -fx-font-family: 'Manrope';
 }
 

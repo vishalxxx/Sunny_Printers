@@ -174,6 +174,7 @@ public class MainController implements Initializable {
 
 	public void setCenterContent(Parent view) {
 		centerContentHost.getChildren().setAll(view);
+		updateCenterHeaderTitle(null);
 	}
 
 	@FXML
@@ -273,6 +274,9 @@ public class MainController implements Initializable {
 	// Top title
 	@FXML
 	private Label pageTitle;
+	/** Title shown in the main content header row (left), e.g. View Clients */
+	@FXML
+	private Label centerHeaderTitle;
 
 	// Root layout container
 	@FXML
@@ -488,6 +492,8 @@ public class MainController implements Initializable {
 				pageTitle.setVisible(false);
 				pageTitle.setManaged(false);
 			}
+
+			updateCenterHeaderTitle(null);
 
 			// Only update if we are not already showing the dashboard or to ensure it's in
 			// the hierarchy
@@ -894,9 +900,10 @@ public class MainController implements Initializable {
 
 		if (pushToHistory) {
 			String sidebarId = (currentSidebar != null) ? currentSidebar.getId() : null;
-			System.out.println(
-					"DEBUG: Preparing to push to NavigationManager... Using lastValidTitle: " + lastValidTitle);
-			utils.NavigationManager.getInstance().push(fxmlPath, lastValidTitle, loaderSubtitle, sidebarId);
+			String navTitle = navigationTitleForFxml(fxmlPath);
+			System.out.println("DEBUG: Pushing NavigationManager state, navTitle: " + navTitle);
+			utils.NavigationManager.getInstance().push(fxmlPath, navTitle, loaderSubtitle, sidebarId);
+			lastValidTitle = navTitle;
 		}
 
 		if (dashboardView != null) {
@@ -916,12 +923,6 @@ public class MainController implements Initializable {
 			pageTitle.setManaged(false);
 		}
 
-		if (pageTitle != null) {
-			lastValidTitle = pageTitle.getText();
-		}
-		System.out
-				.println("DEBUG: loadCenterScreen finished pushing/setting. lastValidTitle is now: " + lastValidTitle);
-
 		// 1️⃣ Show loader
 		if (centerLoaderIncludeController != null) {
 			centerLoaderIncludeController.show(loaderTitle, loaderSubtitle);
@@ -932,10 +933,19 @@ public class MainController implements Initializable {
 				FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
 				Parent view = loader.load();
 				Object controller = loader.getController();
-				// ✅ Ensure global theme is always applied (before per-screen CSS)
-				String themeUrl = getClass().getResource("/css/theme.css").toExternalForm();
-				if (!view.getStylesheets().contains(themeUrl)) {
-					view.getStylesheets().add(0, themeUrl);
+				/* Client Ledger: reset leaf stylesheets so classpath URLs match scene (FXML @-URLs can differ). */
+				if ("/fxml/client_ledger.fxml".equals(fxmlPath)) {
+					java.net.URL t = getClass().getResource("/css/theme.css");
+					java.net.URL l = getClass().getResource("/css/client_ledger.css");
+					if (t != null && l != null) {
+						view.getStylesheets().clear();
+						view.getStylesheets().addAll(t.toExternalForm(), l.toExternalForm());
+					}
+				} else {
+					String themeUrl = getClass().getResource("/css/theme.css").toExternalForm();
+					if (!view.getStylesheets().contains(themeUrl)) {
+						view.getStylesheets().add(0, themeUrl);
+					}
 				}
 				// 🔑 Controller will be stored once loaded
 				this.currentController = controller;
@@ -961,6 +971,7 @@ public class MainController implements Initializable {
 
 					// 2️⃣ Replace center UI
 					centerContentHost.getChildren().setAll(view);
+					updateCenterHeaderTitle(fxmlPath);
 
 					if (controller instanceof GenerateInvoiceController genInv) {
 						genInv.onShownAfterNavigation();
@@ -993,6 +1004,43 @@ public class MainController implements Initializable {
 				});
 			}
 		}).start();
+	}
+
+	/**
+	 * Title stored in {@link utils.NavigationManager} for this FXML (breadcrumbs and back stack).
+	 * Keep in sync with screen copy passed to {@link utils.BreadcrumbUtil#populateBreadcrumbs}.
+	 */
+	private String navigationTitleForFxml(String fxmlPath) {
+		if (fxmlPath == null || fxmlPath.isBlank()) {
+			return "Dashboard";
+		}
+		return switch (fxmlPath) {
+			case "/fxml/add_job.fxml" -> "Add New Job";
+			case "/fxml/view_job.fxml" -> "Job Management";
+			case "/fxml/view_client.fxml" -> "Client Directory";
+			case "/fxml/client_edit_selection.fxml" -> "Edit Client";
+			case "/fxml/generate_invoice.fxml" -> "Generate Invoice";
+			case "/fxml/view_invoice_jobs.fxml" -> "Invoice Jobs";
+			case "/fxml/view_invoices.fxml" -> "View Invoices";
+			case "/fxml/credit_debit_note.fxml" -> "Credit / Debit Note";
+			case "/fxml/record_payment.fxml" -> "Record Payment";
+			case "/fxml/payment_history.fxml" -> "Payment History";
+			case "/fxml/client_ledger.fxml" -> "Client Ledger";
+			case "/fxml/general_settings.fxml" -> "General Settings";
+			case "/fxml/user_settings.fxml" -> "User Settings";
+			case "/fxml/invoice_settings.fxml" -> "Invoice Settings";
+			case "/fxml/profile_settings.fxml" -> "Profile Settings";
+			default -> fallbackNavigationTitleFromPath(fxmlPath);
+		};
+	}
+
+	private static String fallbackNavigationTitleFromPath(String fxmlPath) {
+		int slash = fxmlPath.lastIndexOf('/');
+		String base = slash >= 0 ? fxmlPath.substring(slash + 1) : fxmlPath;
+		if (base.endsWith(".fxml")) {
+			base = base.substring(0, base.length() - 5);
+		}
+		return base.replace('_', ' ').trim();
 	}
 
 	private void expandSidebar() {
@@ -1147,6 +1195,109 @@ public class MainController implements Initializable {
 		}
 	}
 
+	/**
+	 * Title in the main content header row (left of notifications). View / Edit client directory.
+	 */
+	private void updateCenterHeaderTitle(String fxmlPath) {
+		if (centerHeaderTitle == null) {
+			return;
+		}
+		if ("/fxml/view_client.fxml".equals(fxmlPath)) {
+			centerHeaderTitle.setText("Client Table");
+			centerHeaderTitle.setVisible(true);
+			centerHeaderTitle.setManaged(true);
+		} else if ("/fxml/client_edit_selection.fxml".equals(fxmlPath)) {
+			centerHeaderTitle.setText("Edit Client");
+			centerHeaderTitle.setVisible(true);
+			centerHeaderTitle.setManaged(true);
+		} else if ("/fxml/client_form.fxml".equals(fxmlPath)) {
+			utils.NavigationManager.NavState cur = utils.NavigationManager.getInstance().getCurrentState();
+			String header = "Add Client";
+			if (cur != null && cur.getTitle() != null && !cur.getTitle().isBlank()) {
+				header = cur.getTitle();
+			}
+			centerHeaderTitle.setText(header);
+			centerHeaderTitle.setVisible(true);
+			centerHeaderTitle.setManaged(true);
+		} else if ("/fxml/add_job.fxml".equals(fxmlPath)) {
+			utils.NavigationManager.NavState cur = utils.NavigationManager.getInstance().getCurrentState();
+			String header = "Add New Job";
+			if (cur != null && cur.getTitle() != null && !cur.getTitle().isBlank()) {
+				header = cur.getTitle();
+			}
+			centerHeaderTitle.setText(header);
+			centerHeaderTitle.setVisible(true);
+			centerHeaderTitle.setManaged(true);
+		} else if ("/fxml/view_job.fxml".equals(fxmlPath)) {
+			utils.NavigationManager.NavState cur = utils.NavigationManager.getInstance().getCurrentState();
+			String header = "Job Management";
+			if (cur != null && cur.getTitle() != null && !cur.getTitle().isBlank()) {
+				header = cur.getTitle();
+			}
+			centerHeaderTitle.setText(header);
+			centerHeaderTitle.setVisible(true);
+			centerHeaderTitle.setManaged(true);
+		} else if ("/fxml/generate_invoice.fxml".equals(fxmlPath)) {
+			utils.NavigationManager.NavState cur = utils.NavigationManager.getInstance().getCurrentState();
+			String header = "Generate Invoice";
+			if (cur != null && cur.getTitle() != null && !cur.getTitle().isBlank()) {
+				header = cur.getTitle();
+			}
+			centerHeaderTitle.setText(header);
+			centerHeaderTitle.setVisible(true);
+			centerHeaderTitle.setManaged(true);
+		} else if ("/fxml/view_invoices.fxml".equals(fxmlPath)) {
+			utils.NavigationManager.NavState cur = utils.NavigationManager.getInstance().getCurrentState();
+			String header = "View Invoices";
+			if (cur != null && cur.getTitle() != null && !cur.getTitle().isBlank()) {
+				header = cur.getTitle();
+			}
+			centerHeaderTitle.setText(header);
+			centerHeaderTitle.setVisible(true);
+			centerHeaderTitle.setManaged(true);
+		} else if ("/fxml/credit_debit_note.fxml".equals(fxmlPath)) {
+			utils.NavigationManager.NavState cur = utils.NavigationManager.getInstance().getCurrentState();
+			String header = "Credit / Debit Note";
+			if (cur != null && cur.getTitle() != null && !cur.getTitle().isBlank()) {
+				header = cur.getTitle();
+			}
+			centerHeaderTitle.setText(header);
+			centerHeaderTitle.setVisible(true);
+			centerHeaderTitle.setManaged(true);
+		} else if ("/fxml/record_payment.fxml".equals(fxmlPath)) {
+			utils.NavigationManager.NavState cur = utils.NavigationManager.getInstance().getCurrentState();
+			String header = "Record Payment";
+			if (cur != null && cur.getTitle() != null && !cur.getTitle().isBlank()) {
+				header = cur.getTitle();
+			}
+			centerHeaderTitle.setText(header);
+			centerHeaderTitle.setVisible(true);
+			centerHeaderTitle.setManaged(true);
+		} else if ("/fxml/payment_history.fxml".equals(fxmlPath)) {
+			utils.NavigationManager.NavState cur = utils.NavigationManager.getInstance().getCurrentState();
+			String header = "Payment History";
+			if (cur != null && cur.getTitle() != null && !cur.getTitle().isBlank()) {
+				header = cur.getTitle();
+			}
+			centerHeaderTitle.setText(header);
+			centerHeaderTitle.setVisible(true);
+			centerHeaderTitle.setManaged(true);
+		} else if ("/fxml/client_ledger.fxml".equals(fxmlPath)) {
+			utils.NavigationManager.NavState cur = utils.NavigationManager.getInstance().getCurrentState();
+			String header = "Client Ledger";
+			if (cur != null && cur.getTitle() != null && !cur.getTitle().isBlank()) {
+				header = cur.getTitle();
+			}
+			centerHeaderTitle.setText(header);
+			centerHeaderTitle.setVisible(true);
+			centerHeaderTitle.setManaged(true);
+		} else {
+			centerHeaderTitle.setText("");
+			centerHeaderTitle.setVisible(false);
+			centerHeaderTitle.setManaged(false);
+		}
+	}
+
 	@FXML
 	private void openDashboard(javafx.event.ActionEvent event) {
 		utils.NavigationManager.getInstance().clear();
@@ -1232,6 +1383,7 @@ public class MainController implements Initializable {
 					System.out.println("DEBUG: Restoring CACHED view from history: " + prevState.getFxmlPath());
 					this.currentController = prevState.getController(); // ⚡ RESTORE CONTROLLER
 					centerContentHost.getChildren().setAll(prevState.getView());
+					updateCenterHeaderTitle(prevState.getFxmlPath());
 				} else if (prevState.getFxmlPath() == null) {
 					// 🏠 Back to Dashboard
 					collapseAllSubmenus(true);
@@ -1280,12 +1432,13 @@ public class MainController implements Initializable {
 			if (pageTitle != null) {
 				pageTitle.setVisible(true);
 				pageTitle.setManaged(true);
-				setPageTitle("Register New Client");
+				setPageTitle("Add Client");
 			}
 
 			utils.NavigationManager.getInstance().push("/fxml/client_form.fxml", "Add Client", "New Registration",
 					clientsSubmenu.getId());
 			utils.NavigationManager.getInstance().updateCurrentState(view, controller);
+			updateCenterHeaderTitle("/fxml/client_form.fxml");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -1353,6 +1506,7 @@ public class MainController implements Initializable {
 
 				Platform.runLater(() -> {
 					centerContentHost.getChildren().setAll(view);
+					updateCenterHeaderTitle("/fxml/client_profile.fxml");
 					if (centerLoaderIncludeController != null) {
 						centerLoaderIncludeController.hide();
 					}
@@ -1396,6 +1550,7 @@ public class MainController implements Initializable {
 			utils.NavigationManager.getInstance().push("/fxml/client_form.fxml", "Edit Client",
 					client.getBusinessName(), clientsSubmenu.getId());
 			utils.NavigationManager.getInstance().updateCurrentState(view, controller);
+			updateCenterHeaderTitle("/fxml/client_form.fxml");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -1403,6 +1558,7 @@ public class MainController implements Initializable {
 
 	public void setCenterView(Parent view) {
 		centerContentHost.getChildren().setAll(view);
+		updateCenterHeaderTitle(null);
 	}
 
 	@FXML
@@ -1521,6 +1677,7 @@ public class MainController implements Initializable {
 
 				Platform.runLater(() -> {
 					centerContentHost.getChildren().setAll(view);
+					updateCenterHeaderTitle(fxmlPath);
 					centerLoaderIncludeController.hide();
 				});
 

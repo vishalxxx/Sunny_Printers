@@ -23,6 +23,19 @@
     -fx-background-color: transparent;
 }
 
+/* Preserve section rhythm; theme .app-page-shell defaults to 8px */
+.view-invoices-root .root-container.app-page-shell {
+    -fx-spacing: 14;
+}
+
+.view-invoices-root .root-container.app-page-shell .breadcrumb-container {
+    -fx-padding: 12 0 4 0;
+}
+
+.view-invoices-root .view-invoices-lead {
+    -fx-padding: 0 0 8 0;
+}
+
 .view-invoices-root .vi-main-row,
 .view-invoices-root .vi-left-stack,
 .view-invoices-root .vi-sidebar,
