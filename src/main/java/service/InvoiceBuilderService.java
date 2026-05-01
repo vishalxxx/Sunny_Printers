@@ -12,9 +12,11 @@ import java.util.Map;
 
 import javafx.concurrent.Task;
 import model.Invoice;
+import model.InvoiceMaster;
 import model.InvoiceJob;
 import model.InvoiceLine;
 import utils.AtomicDB;
+import utils.CompanyProfile;
 import utils.DBConnection;
 import service.SettingsService;
 
@@ -53,10 +55,7 @@ public class InvoiceBuilderService {
 
 			invoice.setInvoiceDate(invoiceDate != null ? invoiceDate : LocalDate.now());
 
-			invoice.setCompanyName("SUNNY PRINTERS");
-			invoice.setCompanyAddress("B-234, Naraina Industrial Area,\nPhase-1, New Delhi-110028");
-			invoice.setCompanyContact("9811269375 9999662547");
-			invoice.setEmail("sunny.printers@gmail.com");
+			CompanyProfile.applyToInvoice(invoice);
 
 			invoice.setClientName(businessName + " (" + clientName + ")");
 			invoice.setFromDate(fromDate);
@@ -99,10 +98,7 @@ public class InvoiceBuilderService {
 
 			invoice.setInvoiceDate(invoiceDate != null ? invoiceDate : LocalDate.now());
 
-			invoice.setCompanyName("SUNNY PRINTERS");
-			invoice.setCompanyAddress("B-234, Naraina Industrial Area,\nPhase-1, New Delhi-110028");
-			invoice.setCompanyContact("9811269375 9999662547");
-			invoice.setEmail("sunny.printers@gmail.com");
+			CompanyProfile.applyToInvoice(invoice);
 
 			invoice.setClientName(businessName + " (" + clientName + ")");
 			invoice.setClientId(clientId);
@@ -181,6 +177,115 @@ public class InvoiceBuilderService {
 		}
 	}
 
+	/**
+	 * Rebuild a printable {@link Invoice} from a saved {@code invoice_master} row (for PDF export).
+	 */
+	public Invoice buildInvoiceFromMasterForPdfExport(int invoiceMasterId) {
+		InvoiceMasterService invoiceMasterService = new InvoiceMasterService();
+		InvoiceMaster master = invoiceMasterService.getInvoiceById(invoiceMasterId);
+		if (master == null) {
+			throw new IllegalArgumentException("Invoice not found: id=" + invoiceMasterId);
+		}
+		return AtomicDB.run(con -> {
+			Invoice invoice = new Invoice();
+			CompanyProfile.applyToInvoice(invoice);
+			invoice.setInvoiceNo(master.getInvoiceNo());
+			invoice.setInvoiceDate(master.getInvoiceDate() != null ? master.getInvoiceDate() : LocalDate.now());
+			invoice.setClientName(master.getClientName());
+			invoice.setClientId(master.getClientId());
+			invoice.setFromDate(master.getPeriodFrom());
+			invoice.setToDate(master.getPeriodTo());
+			invoice.setInvoiceType(master.getType());
+			invoice.setStatus(master.getStatus());
+			invoice.setGrandTotal(0);
+
+			List<Integer> jobIds = loadJobIdsForSavedInvoice(con, master.getId());
+			loadJobLinesForSavedInvoice(con, invoice, master.getClientId(), jobIds);
+			if (invoice.getJobs().isEmpty()) {
+				invoice.setGrandTotal(master.getAmount());
+			}
+			return invoice;
+		});
+	}
+
+	private List<Integer> loadJobIdsForSavedInvoice(Connection con, int invoiceId) {
+		List<Integer> ids = new ArrayList<>();
+		try {
+			String sql = "SELECT job_id FROM invoice_job_mapping WHERE invoice_id = ? ORDER BY job_id";
+			try (PreparedStatement ps = con.prepareStatement(sql)) {
+				ps.setInt(1, invoiceId);
+				ResultSet rs = ps.executeQuery();
+				while (rs.next()) {
+					ids.add(rs.getInt(1));
+				}
+			}
+			if (!ids.isEmpty()) {
+				return ids;
+			}
+			String sql2 = "SELECT id FROM jobs WHERE invoice_id = ? ORDER BY id";
+			try (PreparedStatement ps = con.prepareStatement(sql2)) {
+				ps.setInt(1, invoiceId);
+				ResultSet rs = ps.executeQuery();
+				while (rs.next()) {
+					ids.add(rs.getInt(1));
+				}
+			}
+			return ids;
+		} catch (Exception e) {
+			throw new RuntimeException("Failed loading job ids for invoice " + invoiceId, e);
+		}
+	}
+
+	private void loadJobLinesForSavedInvoice(Connection con, Invoice invoice, int clientId, List<Integer> jobIds) {
+		if (jobIds == null || jobIds.isEmpty()) {
+			return;
+		}
+		String placeholders = String.join(",", jobIds.stream().map(x -> "?").toList());
+		String sql = """
+				SELECT j.id AS job_id,
+				       j.job_no,
+				       j.job_date,
+				       j.job_title,
+				       ji.description,
+				       ji.amount,
+				       ji.type,
+				       ji.sort_order
+				FROM jobs j
+				JOIN job_items ji ON ji.job_id = j.id
+				WHERE j.client_id = ?
+				  AND j.id IN (""" + placeholders + ") ORDER BY j.job_date, j.id, ji.sort_order";
+		try (PreparedStatement ps = con.prepareStatement(sql)) {
+			int index = 1;
+			ps.setInt(index++, clientId);
+			for (Integer id : jobIds) {
+				ps.setInt(index++, id);
+			}
+			ResultSet rs = ps.executeQuery();
+			Map<Integer, InvoiceJob> jobMap = new LinkedHashMap<>();
+			while (rs.next()) {
+				int jobId = rs.getInt("job_id");
+				InvoiceJob job = jobMap.get(jobId);
+				if (job == null) {
+					job = new InvoiceJob();
+					job.setJobId(jobId);
+					job.setJobNo(rs.getString("job_no"));
+					job.setJobName(rs.getString("job_title"));
+					job.setJobDate(LocalDate.parse(rs.getString("job_date")));
+					jobMap.put(jobId, job);
+					invoice.getJobs().add(job);
+				}
+				InvoiceLine line = new InvoiceLine();
+				line.setDescription(rs.getString("description"));
+				line.setAmount(rs.getDouble("amount"));
+				line.setType(rs.getString("type"));
+				line.setSortOrder(rs.getInt("sort_order"));
+				job.addLine(line);
+			}
+		} catch (Exception e) {
+			throw new RuntimeException("Failed loading saved invoice job lines", e);
+		}
+	}
+
 	// =========================================================
 	// ✅ BUILD MONTHLY INVOICES FOR ALL CLIENTS (BY ID)
 	// =========================================================
@@ -224,10 +329,7 @@ public class InvoiceBuilderService {
                 // 🔹 Build invoice using SAME field structure as single invoice
                 Invoice invoice = new Invoice();
 
-                invoice.setCompanyName("SUNNY PRINTERS");
-                invoice.setCompanyAddress("B-234, Naraina Industrial Area,\nPhase-1, New Delhi-110028");
-                invoice.setCompanyContact("9811269375 9999662547");
-                invoice.setEmail("sunny.printers@gmail.com");
+                CompanyProfile.applyToInvoice(invoice);
 
                 invoice.setClientId(clientId);
                 invoice.setClientName(businessName + " (" + clientName + ")");

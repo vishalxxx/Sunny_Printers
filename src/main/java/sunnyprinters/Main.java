@@ -39,14 +39,7 @@ public class Main extends Application {
 		// Parent root = loginLoader.load(); // Login root is AnchorPane
 
 		Scene scene = new Scene(root);
-		// Global theme (uniform fonts + controls across screens)
-		scene.getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
-		scene.getStylesheets().add(getClass().getResource("/css/compact_screens.css").toExternalForm());
-		/* Client Ledger: rules are scoped to .client-ledger-root; loaded here so center content always picks them up */
-		java.net.URL cl = getClass().getResource("/css/client_ledger.css");
-		if (cl != null) {
-			scene.getStylesheets().add(cl.toExternalForm());
-		}
+		applyAppSceneStylesheets(scene);
 
 		primaryStage.setScene(scene);
 		primaryStage.setTitle("Sunny Printers");
@@ -73,4 +66,20 @@ public class Main extends Application {
 		}
 	}
 
+	/** Same ordering as the primary stage: required when dashboard is shown after login. */
+	public static void applyAppSceneStylesheets(Scene scene) {
+		java.util.ArrayList<String> urls = new java.util.ArrayList<>();
+		addSceneStyle(urls, "/css/theme.css");
+		addSceneStyle(urls, "/css/compact_screens.css");
+		addSceneStyle(urls, "/css/client_ledger.css");
+		addSceneStyle(urls, "/css/settings_screens.css");
+		scene.getStylesheets().setAll(urls);
+	}
+
+	private static void addSceneStyle(java.util.List<String> list, String classpath) {
+		java.net.URL u = Main.class.getResource(classpath);
+		if (u != null) {
+			list.add(u.toExternalForm());
+		}
+	}
 }

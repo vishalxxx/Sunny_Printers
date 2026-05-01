@@ -8,6 +8,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import model.Client;
 import model.InvoiceMaster;
@@ -25,14 +26,7 @@ public class CreditDebitNoteController {
     public static InvoiceMaster pendingPrefillInvoice;
 
     @FXML
-    private void handleBack(ActionEvent event) {
-        // Logic to go back, usually by asking MainController to switch view
-        // For now, if it's a standalone stage, close it. If it's a view, we'd use MainController.
-        // Assuming it's part of the MainView navigation:
-        if (MainController.getInstance() != null) {
-            MainController.getInstance().loadView("/fxml/view_invoices.fxml");
-        }
-    }
+    private HBox breadcrumbContainer;
 
     @FXML
     private ComboBox<String> noteTypeComboBox;
@@ -57,6 +51,8 @@ public class CreditDebitNoteController {
 
     @FXML
     public void initialize() {
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null,
+                () -> MainController.getInstance().handleBack(null));
         // Fix for expanding width issue
         noteTypeComboBox.setPrefWidth(350);
         noteTypeComboBox.setMaxWidth(400);
@@ -152,7 +148,7 @@ public class CreditDebitNoteController {
                 if (selInv != null && selInv.getInvoiceDate() != null && newVal.isBefore(selInv.getInvoiceDate())) {
                     dp.setValue(selInv.getInvoiceDate());
                     if (dp.getScene() != null && dp.getScene().getWindow() != null) {
-                        Toast.show((Stage) dp.getScene().getWindow(), "Note date cannot be before Invoice date (#" + selInv.getInvoiceNo() + ") ❌");
+                        Toast.show((Stage) dp.getScene().getWindow(), "Note date cannot be before Invoice date (" + selInv.getInvoiceNo() + ") ❌");
                     }
                 }
             }
@@ -264,7 +260,7 @@ public class CreditDebitNoteController {
             javafx.util.StringConverter<InvoiceMaster> converter = new javafx.util.StringConverter<InvoiceMaster>() {
                 @Override
                 public String toString(InvoiceMaster inv) {
-                    return inv != null ? "#" + inv.getInvoiceNo() + " - ₹" + inv.getAmount() : "Select an invoice...";
+                    return inv != null ? inv.getInvoiceNo() + " - ₹" + inv.getAmount() : "Select an invoice...";
                 }
 
                 @Override
@@ -283,7 +279,7 @@ public class CreditDebitNoteController {
                     if (empty || item == null) {
                         setText(null);
                     } else {
-                        setText("#" + item.getInvoiceNo() + " - ₹" + item.getAmount());
+                        setText(item.getInvoiceNo() + " - ₹" + item.getAmount());
                     }
                 }
             });
@@ -296,7 +292,7 @@ public class CreditDebitNoteController {
                     if (empty || item == null) {
                         setText("Select an invoice...");
                     } else {
-                        setText("#" + item.getInvoiceNo() + " - ₹" + item.getAmount());
+                        setText(item.getInvoiceNo() + " - ₹" + item.getAmount());
                     }
                 }
             });
@@ -354,10 +350,13 @@ public class CreditDebitNoteController {
         final double amount = rawAmount;
 
         try {
+            LocalDate noteDateEffective = noteDate != null ? noteDate : LocalDate.now();
             utils.AtomicDB.runVoid(con -> {
-                // 1. Generate Note Number (CN-xxx or DN-xxx)
-                String prefix = noteType.startsWith("Credit") ? "CN-" : "DN-";
-                String noteNo = generateNoteNumber(con, prefix);
+                service.SettingsService settingsService = new service.SettingsService();
+                model.MasterDocumentSeries series = noteType.startsWith("Credit")
+                        ? model.MasterDocumentSeries.CREDIT_NOTE
+                        : model.MasterDocumentSeries.DEBIT_NOTE;
+                String noteNo = settingsService.allocateNextMasterNumber(con, series, noteDateEffective);
 
                 // 2. Save to invoice_adjustments
                 String sqlInsert = "INSERT INTO invoice_adjustments (invoice_id, type, note_no, amount, reason, date) VALUES (?, ?, ?, ?, ?, ?)";
@@ -418,30 +417,4 @@ public class CreditDebitNoteController {
         }
     }
 
-    /**
-     * Next CN-#### / DN-#### using the highest numeric suffix for this prefix.
-     * The old logic used {@code ORDER BY id DESC}, which could pick a row whose suffix was
-     * not the max (e.g. id=100 → CN-0003 while CN-0004 exists) and violate UNIQUE on {@code note_no}.
-     */
-    private String generateNoteNumber(Connection con, String prefix) throws java.sql.SQLException {
-        int start = prefix.length() + 1; // 1-based substr: digits start after "CN-" / "DN-"
-        String sql = """
-                SELECT COALESCE(MAX(CAST(substr(note_no, ?) AS INTEGER)), 0)
-                FROM invoice_adjustments
-                WHERE note_no LIKE ?
-                AND length(note_no) > ?
-                """;
-        try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, start);
-            ps.setString(2, prefix + "%");
-            ps.setInt(3, prefix.length());
-            try (java.sql.ResultSet rs = ps.executeQuery()) {
-                int max = 0;
-                if (rs.next()) {
-                    max = rs.getInt(1);
-                }
-                return prefix + String.format("%04d", max + 1);
-            }
-        }
-    }
 }

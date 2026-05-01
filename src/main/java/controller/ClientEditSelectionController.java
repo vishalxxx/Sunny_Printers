@@ -29,14 +29,13 @@ import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import model.Client;
 import repository.ClientRepository;
-import utils.NavigationManager;
 
 public class ClientEditSelectionController implements Initializable {
 
     @FXML private TextField searchField;
     @FXML private ComboBox<String> statusCombo;
     @FXML private ComboBox<String> riskCombo;
-    @FXML private Button breadcrumbBackBtn;
+    @FXML private HBox breadcrumbContainer;
     @FXML private VBox clientListContainer;
     @FXML private Label lblShowingCount;
     @FXML private HBox paginationContainer;
@@ -57,10 +56,7 @@ public class ClientEditSelectionController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        if (breadcrumbBackBtn != null) {
-            breadcrumbBackBtn.visibleProperty().bind(NavigationManager.getInstance().canGoBackProperty());
-            breadcrumbBackBtn.managedProperty().bind(breadcrumbBackBtn.visibleProperty());
-        }
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null, () -> handleBack(null));
         setupComboBoxes();
         ensurePageInputField();
         loadInitialData();

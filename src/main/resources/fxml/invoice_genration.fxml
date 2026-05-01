@@ -29,8 +29,6 @@
     <!-- LEFT SIDE -->
     <VBox spacing="6">
         <Label text="Invoice Generation" styleClass="page-title"/>
-        <Label text="Select a method below to generate invoices for your clients."
-               styleClass="page-subtitle"/>
     </VBox>
 
     <!-- SPACER pushes right content to edge -->
@@ -43,6 +41,17 @@
     </VBox>
 
 </HBox>
+
+    <!-- Document type: drives separate GST (INV) vs Proforma (PI) numbering on finalize -->
+    <VBox spacing="8" styleClass="card" maxWidth="Infinity">
+        <Label text="Client &amp; invoice document type" styleClass="card-title"/>
+        <Label text="Choose before generating drafts. Final numbers use the matching sequence from Invoice Settings."
+               wrapText="true" styleClass="hint"/>
+        <HBox spacing="20" alignment="CENTER_LEFT">
+            <RadioButton fx:id="radioGstInvoice" text="GST invoice" selected="true"/>
+            <RadioButton fx:id="radioProformaInvoice" text="Proforma invoice"/>
+        </HBox>
+    </VBox>
 
 
     <!-- CARDS GRID -->
@@ -243,7 +252,7 @@
 
         <TableView fx:id="recentInvoicesTable" prefHeight="210" styleClass="history-table">
             <columns>
-                <TableColumn fx:id="colInvNo" text="INVOICE #" prefWidth="150"/>
+                <TableColumn fx:id="colInvNo" text="INVOICE NO" prefWidth="150"/>
                 <TableColumn fx:id="colClient" text="CLIENT" prefWidth="160"/>
                 <TableColumn fx:id="colDate" text="DATE" prefWidth="120"/>
                 <TableColumn fx:id="colAmount" text="AMOUNT" prefWidth="120"/>

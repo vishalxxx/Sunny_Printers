@@ -11,10 +11,6 @@
     -fx-spacing: 8;
 }
 
-.cn-dn-root.app-page-shell .breadcrumb-container {
-    -fx-padding: 12 0 4 0;
-}
-
 .cn-dn-root .cn-dn-lead {
     -fx-padding: 0 0 8 0;
 }

@@ -21,11 +21,6 @@
     -fx-padding: 0 24 8 24;
 }
 
-/* Add Client: title row hidden; gap above breadcrumb = Edit Client (directory) */
-.content-container.client-form--add.app-page-shell .breadcrumb-container {
-    -fx-padding: 12 0 4 0;
-}
-
 .content-container.client-form--add .client-form-body {
     -fx-padding: 8 0 0 0;
 }

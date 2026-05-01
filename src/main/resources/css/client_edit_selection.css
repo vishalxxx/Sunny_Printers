@@ -34,11 +34,6 @@
     -fx-background-color: #FAF6F0;
 }
 
-/* Space below dashboard title (“Edit Client”) before breadcrumb trail */
-.client-directory-root.app-page-shell .breadcrumb-container {
-    -fx-padding: 12 0 4 0;
-}
-
 .client-directory-root .label,
 .client-directory-root .combo-box,
 .client-directory-root .list-cell,

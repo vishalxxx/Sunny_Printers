@@ -18,9 +18,6 @@
         <!-- Breadcrumbs below dashboard title (“Add New Job”) -->
         <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8" />
 
-        <Label text="Complete the production blueprint by following the six-step wizard below."
-               styleClass="page-subheading add-job-lead" wrapText="true" maxWidth="720"/>
-
         <VBox spacing="10" styleClass="header-section">
             <GridPane hgap="12" vgap="0" styleClass="header-bar">
                 <padding>

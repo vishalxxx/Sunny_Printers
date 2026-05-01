@@ -25,6 +25,9 @@ public class InvoiceMaster {
     private String type;
     private String status;
 
+    /** {@link MasterDocumentSeries#name()} stored for finalize (GST vs Proforma sequence). */
+    private String documentSeries;
+
     private Double cnAmount;
     private Double dnAmount;
     private int cnCount;
@@ -137,6 +140,26 @@ public class InvoiceMaster {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public String getDocumentSeries() {
+        return documentSeries;
+    }
+
+    public void setDocumentSeries(String documentSeries) {
+        this.documentSeries = documentSeries;
+    }
+
+    /** Series used when allocating the final invoice number. */
+    public MasterDocumentSeries resolveDocumentSeries() {
+        if (documentSeries == null || documentSeries.isBlank()) {
+            return MasterDocumentSeries.GST_INVOICE;
+        }
+        try {
+            return MasterDocumentSeries.valueOf(documentSeries);
+        } catch (IllegalArgumentException e) {
+            return MasterDocumentSeries.GST_INVOICE;
+        }
+    }
 
     public Double getCnAmount() { return cnAmount; }
     public void setCnAmount(Double cnAmount) { this.cnAmount = cnAmount; }

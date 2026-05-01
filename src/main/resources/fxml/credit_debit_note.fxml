@@ -13,16 +13,7 @@
     <VBox spacing="8" alignment="TOP_LEFT" styleClass="cn-dn-root, app-page-shell" fillWidth="true">
 
         <!-- Breadcrumbs below dashboard title -->
-        <HBox styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8">
-            <Button onAction="#handleBack" styleClass="breadcrumb-back-btn" focusTraversable="false">
-                <graphic><Region styleClass="back-icon"/></graphic>
-            </Button>
-            <Label text="INVOICES" styleClass="breadcrumb-label" />
-            <Label text="›" styleClass="breadcrumb-separator" />
-            <Label text="CREDIT / DEBIT NOTE" styleClass="breadcrumb-label, breadcrumb-current" />
-        </HBox>
-
-        <Label text="Generate a credit or debit note for a client." styleClass="page-subheading cn-dn-lead"/>
+        <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8"/>
 
         <!-- FORM CONTAINER -->
         <StackPane>

@@ -1,0 +1,361 @@
+.settings-theme-root { -fx-background-color: #FAF6F0; }
+.settings-master-scroll { -fx-background-color: transparent; -fx-border-color: transparent; }
+.settings-master-scroll > .viewport { -fx-background-color: #FAF6F0; }
+.settings-page.app-page-shell { -fx-spacing: 16; -fx-padding: 0 24 24 24; }
+.settings-form-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 12;
+    -fx-border-color: #E5E7EB;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-padding: 20;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.04), 12, 0, 0, 4);
+}
+.settings-section-kicker {
+    -fx-text-fill: #8E7A6B;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-letter-spacing: 0.06em;
+}
+.settings-hero-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #3E312D;
+}
+.settings-theme-root .label,
+.settings-theme-root .combo-box,
+.settings-theme-root .list-cell { -fx-font-style: normal; }
+.settings-theme-root .header-box {
+    -fx-background-color: #FFFFFF;
+    -fx-padding: 14 18;
+    -fx-spacing: 10;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(three-pass-box, rgba(62,49,45,0.04), 14, 0, 0, 4);
+}
+.settings-theme-root .title { -fx-text-fill: #3E312D; -fx-font-size: 17px; -fx-font-weight: 800; }
+.settings-theme-root .page-title { -fx-text-fill: #3E312D; -fx-font-size: 15px; -fx-font-weight: 800; }
+.settings-theme-root .section-title { -fx-text-fill: #3E312D; -fx-font-size: 13px; -fx-font-weight: 800; }
+.settings-theme-root .section-label,
+.settings-theme-root .field-label,
+.settings-theme-root .form-label {
+    -fx-text-fill: #8E7A6B;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-letter-spacing: 0.05em;
+}
+.settings-theme-root .settings-scroll { -fx-background-color: #FAF6F0; }
+.settings-theme-root .settings-scroll > .viewport { -fx-background-color: #FAF6F0; }
+.settings-theme-root .content-wrapper { -fx-max-width: 1100; }
+.settings-theme-root .card {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #EADFD4;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 18;
+    -fx-effect: dropshadow(three-pass-box, rgba(62,49,45,0.04), 12, 0, 0, 4);
+}
+.settings-theme-root .text-field,
+.settings-theme-root .password-field {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #EADFD4;
+    -fx-border-radius: 10;
+    -fx-padding: 10 12;
+    -fx-text-fill: #3E312D;
+}
+.settings-theme-root .text-field:focused,
+.settings-theme-root .password-field:focused {
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.4;
+    -fx-background-color: #FFFFFF;
+}
+.settings-theme-root .search-field {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #EADFD4;
+    -fx-border-radius: 10;
+    -fx-padding: 8 12;
+}
+/* Buttons: override Modena layered backgrounds (needs .button + !important when scene merge order varies) */
+.settings-theme-root .button.btn-primary,
+.settings-master-scroll .button.btn-primary {
+    -fx-background-color: #CD7B4E !important;
+    -fx-text-fill: #FFFFFF !important;
+    -fx-font-weight: 800;
+    -fx-background-radius: 8;
+    -fx-background-insets: 0;
+    -fx-padding: 8 18;
+    -fx-min-height: 32;
+    -fx-cursor: hand;
+    -fx-effect: null;
+}
+.settings-theme-root .button.btn-primary:hover,
+.settings-master-scroll .button.btn-primary:hover,
+.settings-theme-root .button.btn-primary:focused,
+.settings-master-scroll .button.btn-primary:focused {
+    -fx-background-color: #B06938 !important;
+    -fx-text-fill: #FFFFFF !important;
+}
+.settings-theme-root .button.btn-primary:pressed,
+.settings-master-scroll .button.btn-primary:pressed {
+    -fx-background-color: #9A5A30 !important;
+}
+.settings-theme-root .button.btn-primary:default,
+.settings-master-scroll .button.btn-primary:default {
+    -fx-background-color: #CD7B4E !important;
+    -fx-text-fill: #FFFFFF !important;
+}
+.settings-theme-root .button.btn-secondary,
+.settings-master-scroll .button.btn-secondary {
+    -fx-background-color: #FFFFFF !important;
+    -fx-border-color: #E9E2DB;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-background-insets: 0;
+    -fx-text-fill: #2B2320 !important;
+    -fx-font-weight: 800;
+    -fx-padding: 8 18;
+    -fx-min-height: 32;
+    -fx-cursor: hand;
+    -fx-effect: null;
+}
+.settings-theme-root .button.btn-secondary:hover,
+.settings-master-scroll .button.btn-secondary:hover,
+.settings-theme-root .button.btn-secondary:focused,
+.settings-master-scroll .button.btn-secondary:focused {
+    -fx-background-color: #FBF4EE !important;
+}
+.settings-theme-root .button.btn-secondary:pressed,
+.settings-master-scroll .button.btn-secondary:pressed {
+    -fx-background-color: #F0E8DF !important;
+}
+.settings-theme-root .link-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #CD7B4E;
+    -fx-font-weight: 800;
+    -fx-cursor: hand;
+}
+.settings-theme-root .live-badge {
+    -fx-background-color: #E8F3EE;
+    -fx-text-fill: #1B6B4A;
+    -fx-padding: 6 12;
+    -fx-background-radius: 999;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+}
+.settings-theme-root .preview-badge {
+    -fx-background-color: #FDF4ED;
+    -fx-text-fill: #B25D3B;
+    -fx-border-color: #EFE0D4;
+    -fx-padding: 6 14;
+    -fx-background-radius: 999;
+    -fx-font-weight: 800;
+}
+.settings-theme-root .sequence-box {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #EADFD4;
+    -fx-border-radius: 12;
+    -fx-padding: 14;
+}
+.settings-theme-root .sequence-label { -fx-text-fill: #8E7A6B; -fx-font-size: 10px; -fx-font-weight: 800; }
+.settings-theme-root .sequence-value { -fx-text-fill: #3E312D; -fx-font-size: 15px; -fx-font-weight: 800; }
+.settings-theme-root .profile-name { -fx-text-fill: #3E312D; -fx-font-weight: 800; }
+.settings-theme-root .profile-plan { -fx-text-fill: #8E7B71; }
+.settings-theme-root .avatar-small {
+    -fx-background-color: #EEECE8;
+    -fx-border-color: #EADFD4;
+    -fx-background-radius: 100;
+}
+.settings-theme-root .avatar-large {
+    -fx-background-color: #F5F0EA;
+    -fx-border-color: #EADFD4;
+    -fx-background-radius: 14;
+}
+.settings-theme-root .card-title { -fx-text-fill: #3E312D; -fx-font-weight: 800; }
+.settings-theme-root .card-subtitle { -fx-text-fill: #8E7B71; }
+.settings-theme-root .info-label { -fx-text-fill: #8E7A6B; -fx-font-size: 10px; -fx-font-weight: 800; }
+.settings-theme-root .info-value { -fx-text-fill: #3E312D; }
+.settings-theme-root .badge-verified {
+    -fx-background-color: #E8F3EE;
+    -fx-text-fill: #1B6B4A;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+}
+.settings-theme-root .badge-enabled { -fx-text-fill: #2E7D32; -fx-font-weight: 800; }
+.settings-theme-root .list-title { -fx-text-fill: #3E312D; -fx-font-weight: 700; }
+.settings-theme-root .list-subtitle { -fx-text-fill: #8E7B71; -fx-font-size: 11px; }
+.settings-theme-root .arrow { -fx-text-fill: #C9C1BA; -fx-font-weight: 800; }
+.settings-theme-root .icon-circle {
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+    -fx-background-color: #FAF6F0;
+    -fx-background-radius: 999;
+    -fx-border-color: #EADFD4;
+    -fx-border-radius: 999;
+}
+.settings-theme-root .btn-primary-large {
+    -fx-background-color: #CD7B4E;
+    -fx-text-fill: white;
+    -fx-font-weight: 800;
+    -fx-background-radius: 10;
+    -fx-padding: 12 28;
+    -fx-cursor: hand;
+}
+.settings-theme-root .btn-ghost-small {
+    -fx-background-color: transparent;
+    -fx-text-fill: #8E7A6B;
+    -fx-font-weight: 800;
+    -fx-cursor: hand;
+}
+.settings-numbering-row { -fx-spacing: 20; }
+
+/* Invoice numbering: match General Settings weight; FY is read-only taste-field */
+.settings-theme-root.invoice-settings-root .field-heading-sm {
+    -fx-font-weight: 800;
+    -fx-text-fill: #6B5E58;
+}
+.settings-theme-root.invoice-settings-root .card-title-sm {
+    -fx-font-weight: 800;
+}
+.settings-theme-root.invoice-settings-root .settings-section-kicker {
+    -fx-font-weight: 600;
+}
+.settings-theme-root.invoice-settings-root TextField.taste-field:readonly {
+    -fx-opacity: 1;
+}
+
+/* KPI strip: live preview driven by focused field */
+.settings-theme-root.invoice-settings-root .invoice-numbering-kpi-strip {
+    -fx-padding: 0 0 8 0;
+}
+.settings-theme-root.invoice-settings-root .invoice-kpi-card {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #EADFD4;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 14 16;
+}
+.settings-theme-root.invoice-settings-root .invoice-kpi-preview-card {
+    -fx-border-color: #D4C4B8;
+}
+.settings-theme-root.invoice-settings-root .invoice-kpi-card-kicker {
+    -fx-font-size: 11px;
+    -fx-text-fill: #8E7A6B;
+    -fx-font-weight: 800;
+    -fx-letter-spacing: 0.04em;
+}
+.settings-theme-root.invoice-settings-root .invoice-kpi-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #3E312D;
+}
+.settings-theme-root.invoice-settings-root .invoice-kpi-hint {
+    -fx-font-size: 12px;
+    -fx-text-fill: #6B5E58;
+    -fx-font-weight: 600;
+    -fx-wrap-text: true;
+}
+.settings-theme-root.invoice-settings-root .invoice-kpi-preview-mono {
+    -fx-font-family: "Consolas", "DejaVu Sans Mono", monospace;
+    -fx-font-size: 16px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #2C241F;
+    -fx-padding: 10 12;
+    -fx-background-color: #FFFDFB;
+    -fx-background-radius: 8;
+    -fx-border-color: #EADFD4;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+}
+
+/* Taller inputs on invoice numbering (FY, digit width, series spinners) */
+.settings-theme-root.invoice-settings-root TextField.taste-field {
+    -fx-min-height: 44;
+    -fx-pref-height: 44;
+    -fx-padding: 0 12;
+}
+.settings-theme-root.invoice-settings-root ComboBox.taste-combo {
+    -fx-min-height: 44;
+    -fx-pref-height: 44;
+}
+.settings-theme-root.invoice-settings-root ComboBox.taste-combo .list-cell {
+    -fx-padding: 8 12;
+}
+.settings-theme-root.invoice-settings-root .settings-series-spinner .text-field {
+    -fx-min-height: 44;
+    -fx-pref-height: 44;
+    -fx-padding: 0 12;
+}
+
+/* Use styleClass settings-warm-dialog on DialogPane when loading this sheet (see SystemSettingsController). */
+.dialog-pane.settings-warm-dialog { -fx-background-color: #FAF6F0; -fx-border-color: #EADFD4; }
+.dialog-pane.settings-warm-dialog .button:default {
+    -fx-background-color: #CD7B4E !important;
+    -fx-text-fill: white !important;
+}
+
+/* Master numbering spinners (underline default; invoice screen overrides to taste-field below) */
+.settings-master-scroll .settings-series-spinner {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+}
+.settings-master-scroll .settings-series-spinner .text-field {
+    -fx-background-color: transparent !important;
+    -fx-border-color: transparent transparent #EADFD4 transparent !important;
+    -fx-border-width: 0 0 1 0 !important;
+    -fx-border-radius: 0 !important;
+    -fx-background-radius: 0 !important;
+    -fx-background-insets: 0;
+    -fx-padding: 6 8 6 4;
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+/* Invoice numbering: spinners match taste-field (same as General Settings inputs) */
+.settings-theme-root.invoice-settings-root .settings-series-spinner .text-field {
+    -fx-background-color: #FAF6F0 !important;
+    -fx-border-color: #EADFD4 !important;
+    -fx-border-width: 1 !important;
+    -fx-border-radius: 8 !important;
+    -fx-background-radius: 8 !important;
+    -fx-padding: 0 10;
+    -fx-font-weight: 800;
+}
+.settings-theme-root.invoice-settings-root .settings-series-spinner:focused .text-field,
+.settings-theme-root.invoice-settings-root .settings-series-spinner .text-field:focused {
+    -fx-border-color: #CD7B4E !important;
+    -fx-border-width: 1.4 !important;
+    -fx-background-color: #FAF6F0 !important;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.16), 14, 0, 0, 5) !important;
+}
+.settings-master-scroll .settings-series-spinner:focused .text-field,
+.settings-master-scroll .settings-series-spinner .text-field:focused {
+    -fx-border-color: transparent transparent #CD7B4E transparent !important;
+    -fx-border-width: 0 0 2 0 !important;
+    -fx-background-color: transparent !important;
+}
+.settings-master-scroll .settings-series-spinner .increment-arrow-button,
+.settings-master-scroll .settings-series-spinner .decrement-arrow-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8;
+    -fx-border-color: transparent;
+    -fx-padding: 2 4;
+    -fx-cursor: hand;
+}
+.settings-master-scroll .settings-series-spinner .increment-arrow-button:hover,
+.settings-master-scroll .settings-series-spinner .decrement-arrow-button:hover {
+    -fx-background-color: #F0E8DF;
+}
+.settings-master-scroll .settings-series-spinner .increment-arrow-button:pressed,
+.settings-master-scroll .settings-series-spinner .decrement-arrow-button:pressed {
+    -fx-background-color: #EADFD4;
+}
+.settings-master-scroll .settings-series-spinner .increment-arrow {
+    -fx-background-color: #CD7B4E;
+    -fx-shape: "M7 6l5-5 5 5z";
+}
+.settings-master-scroll .settings-series-spinner .decrement-arrow {
+    -fx-background-color: #CD7B4E;
+    -fx-shape: "M7 10l5 5 5-5z";
+}

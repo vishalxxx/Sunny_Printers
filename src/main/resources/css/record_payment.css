@@ -28,10 +28,6 @@
     -fx-spacing: 16;
 }
 
-.record-payment-root .rp-page.app-page-shell .breadcrumb-container {
-    -fx-padding: 12 0 4 0;
-}
-
 .record-payment-root .rp-lead {
     -fx-padding: 0 0 8 0;
 }
@@ -48,6 +44,19 @@
 
 .record-payment-root .rp-card {
     -fx-padding: 20;
+}
+
+/* Client row + total outstanding KPI inside payment card */
+.record-payment-root .rp-client-kpi-row {
+    -fx-alignment: CENTER_LEFT;
+}
+
+.record-payment-root .rp-client-kpi-row .kpi-card {
+    -fx-cursor: default;
+}
+
+.record-payment-root .rp-client-kpi-row .kpi-card:hover {
+    -fx-effect: null;
 }
 
 /* KPI cards — match view_client.fxml / view_client.css (TOTAL RECEIVABLES style) */

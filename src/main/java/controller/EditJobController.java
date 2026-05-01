@@ -583,6 +583,7 @@ public class EditJobController implements utils.DirtySupport {
     private void handleUploadFile() {
         try {
             FileChooser chooser = new FileChooser();
+            utils.UniversalDownloadPath.prepareFileChooser(chooser);
             chooser.setTitle("Select Image");
             chooser.getExtensionFilters().addAll(
                     new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg")

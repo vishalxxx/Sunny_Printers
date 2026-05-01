@@ -8,12 +8,24 @@ import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.Cursor;
 import javafx.application.Platform;
+import javafx.stage.Stage;
 import model.Client;
 import model.Invoice;
+import model.InvoiceMaster;
 import model.Job;
+import utils.CompanyDataLayout;
 import utils.DBConnection;
-import utils.NavigationManager;
+import utils.DocumentNumbering;
+import repository.SystemSettingsRepository;
+import service.InvoiceBuilderService;
+import service.InvoiceMasterService;
+import service.PdfInvoiceService;
+import utils.InvoiceSummaryDialogUtil;
+import utils.PaymentDetailsDialogUtil;
+import utils.Toast;
+
 import java.net.URL;
+import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.time.LocalDate;
@@ -36,6 +48,7 @@ public class ClientProfileController implements Initializable {
     @FXML private Label lblNextDue;
     @FXML private Label lblActiveJobs;
     @FXML private Label lblTurnaround;
+    @FXML private Label lblPipelineMore;
     
     @FXML private VBox cardBalance;
 
@@ -133,8 +146,17 @@ public class ClientProfileController implements Initializable {
 
     private void loadActivePipeline() {
         List<Job> activeJobs = new ArrayList<>();
+        int totalActive = 0;
         try (Connection con = DBConnection.getConnection()) {
-            String sql = "SELECT job_title, status, job_no FROM jobs WHERE client_id = ? AND status != 'Completed' ORDER BY id DESC LIMIT 2";
+            String countSql = "SELECT COUNT(*) FROM jobs WHERE client_id = ? AND (status IS NULL OR LOWER(TRIM(status)) != 'completed')";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(countSql)) {
+                ps.setInt(1, currentClient.getId());
+                ResultSet rs = ps.executeQuery();
+                if (rs.next()) {
+                    totalActive = rs.getInt(1);
+                }
+            }
+            String sql = "SELECT job_title, status, job_no FROM jobs WHERE client_id = ? AND (status IS NULL OR LOWER(TRIM(status)) != 'completed') ORDER BY id DESC LIMIT 2";
             try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
                 ps.setInt(1, currentClient.getId());
                 ResultSet rs = ps.executeQuery();
@@ -150,6 +172,7 @@ public class ClientProfileController implements Initializable {
             e.printStackTrace();
         }
 
+        final int totalForUi = totalActive;
         Platform.runLater(() -> {
             if (pipelineContainer == null) return;
             pipelineContainer.getChildren().clear();
@@ -162,7 +185,19 @@ public class ClientProfileController implements Initializable {
                     pipelineContainer.getChildren().add(createJobPipelineCard(job));
                 }
             }
-            if (lblActiveJobs != null) lblActiveJobs.setText(String.valueOf(activeJobs.size()));
+            if (lblPipelineMore != null) {
+                int extra = totalForUi - 2;
+                if (totalForUi > 2 && extra > 0) {
+                    lblPipelineMore.setText("+" + extra + " more");
+                    lblPipelineMore.setVisible(true);
+                    lblPipelineMore.setManaged(true);
+                } else {
+                    lblPipelineMore.setText("");
+                    lblPipelineMore.setVisible(false);
+                    lblPipelineMore.setManaged(false);
+                }
+            }
+            if (lblActiveJobs != null) lblActiveJobs.setText(String.valueOf(totalForUi));
             if (lblNextDue != null) lblNextDue.setText(activeJobs.isEmpty() ? "No pending jobs" : "Next due in " + (int)(Math.random()*5+1) + " days");
             if (lblTurnaround != null) lblTurnaround.setText("4.2 days");
         });
@@ -179,7 +214,7 @@ public class ClientProfileController implements Initializable {
         HBox.setHgrow(nameBox, Priority.ALWAYS);
         Label title = new Label(job.getJobTitle() != null ? job.getJobTitle() : "Untitled Job");
         title.getStyleClass().add("job-card-title");
-        Label specs = new Label("Job #" + (job.getJobNo() != null ? job.getJobNo() : "---"));
+        Label specs = new Label("Job " + (job.getJobNo() != null ? job.getJobNo() : "---"));
         specs.getStyleClass().add("job-card-specs");
         nameBox.getChildren().addAll(title, specs);
         
@@ -236,16 +271,40 @@ public class ClientProfileController implements Initializable {
         return r;
     }
 
+    /** Same folder key as invoice PDFs: {@code businessName (clientName)} when both exist. */
+    private String clientFolderDisplayName() {
+        if (currentClient == null) {
+            return "Unknown_Client";
+        }
+        String businessName = currentClient.getBusinessName();
+        String clientName = currentClient.getClientName();
+        if (businessName != null && !businessName.isBlank()
+                && clientName != null && !clientName.isBlank()) {
+            return businessName + " (" + clientName + ")";
+        }
+        if (businessName != null && !businessName.isBlank()) {
+            return businessName;
+        }
+        if (clientName != null && !clientName.isBlank()) {
+            return clientName;
+        }
+        return "Unknown_Client";
+    }
+
     private void loadInvoiceHistory() {
         if (historyContainer == null) return;
         
         List<Invoice> history = new ArrayList<>();
+        int pad = 4;
+        try (Connection conPad = DBConnection.getConnection()) {
+            pad = Math.max(1, new SystemSettingsRepository().load(conPad).getInvoicePadding());
+        } catch (Exception ignored) {
+        }
         try (Connection con = DBConnection.getConnection()) {
-            // Unified Financial History Query (Invoices + Standalone Payments)
-            String sql = "SELECT invoice_no, invoice_date, amount, status, payment_status, 'INVOICE' as row_type FROM invoice_master WHERE client_id = ? AND is_void = 0 " +
-                         "UNION ALL " +
-                         "SELECT 'PYMT-' || id, payment_date, amount, 'PAID', 'PAID', 'PAYMENT' as row_type FROM payments WHERE client_id = ? " +
-                         "ORDER BY invoice_date DESC LIMIT 8";
+            String sql = "SELECT invoice_no, invoice_date, amount, status, payment_status, 'INVOICE' as row_type, CAST(NULL AS INTEGER) as payment_id FROM invoice_master WHERE client_id = ? AND is_void = 0 "
+                         + "UNION ALL "
+                         + "SELECT '', payment_date, amount, 'PAID', 'PAID', 'PAYMENT' as row_type, id as payment_id FROM payments WHERE client_id = ? "
+                         + "ORDER BY invoice_date DESC LIMIT 10";
                          
             try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
                 ps.setInt(1, currentClient.getId());
@@ -253,10 +312,16 @@ public class ClientProfileController implements Initializable {
                 ResultSet rs = ps.executeQuery();
                 while (rs.next()) {
                     Invoice inv = new Invoice();
-                    inv.setInvoiceNo(rs.getString(1));
+                    Integer payId = rs.getObject(7) != null ? rs.getInt(7) : null;
                     String dateStr = rs.getString(2);
                     if (dateStr != null && !dateStr.isEmpty()) {
-                        try { inv.setInvoiceDate(LocalDate.parse(dateStr)); } catch (Exception e) {}
+                        try { inv.setInvoiceDate(LocalDate.parse(dateStr.contains(" ") ? dateStr.split(" ")[0] : dateStr)); } catch (Exception e) {}
+                    }
+                    if (payId != null) {
+                        inv.setStandalonePaymentId(payId);
+                        inv.setInvoiceNo(DocumentNumbering.formatPaymentReceiptNo(inv.getInvoiceDate(), payId, pad));
+                    } else {
+                        inv.setInvoiceNo(rs.getString(1));
                     }
                     inv.setGrandTotal(rs.getDouble(3));
                     
@@ -300,9 +365,11 @@ public class ClientProfileController implements Initializable {
         row.getStyleClass().add("history-row");
         row.setAlignment(Pos.CENTER_LEFT);
 
-        Label idLabel = new Label("#" + inv.getInvoiceNo());
+        Label idLabel = new Label(inv.getInvoiceNo());
         idLabel.getStyleClass().add("invoice-id-label");
-        idLabel.setPrefWidth(120);
+        idLabel.setMinWidth(200);
+        idLabel.setPrefWidth(200);
+        idLabel.setMaxWidth(200);
         idLabel.setAlignment(Pos.CENTER);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy");
@@ -333,15 +400,64 @@ public class ClientProfileController implements Initializable {
         actionDots.setAlignment(Pos.CENTER);
         actionDots.setCursor(Cursor.HAND);
 
+        final String rowKey = inv.getInvoiceNo();
+        final Integer paymentId = inv.getStandalonePaymentId();
+
         // Action Menu
         ContextMenu contextMenu = new ContextMenu();
         MenuItem viewItem = new MenuItem("View Details");
-        MenuItem downloadItem = new MenuItem("Download Receipt");
+        boolean isPaymentRow = paymentId != null;
+        MenuItem downloadItem = new MenuItem(isPaymentRow ? "Download Receipt" : "Download Invoice");
         contextMenu.getItems().addAll(viewItem, downloadItem);
 
         viewItem.setOnAction(e -> {
-            System.out.println("Viewing details for invoice: " + inv.getInvoiceNo());
-            // Future: MainController.getInstance().loadInvoiceDetails(inv.getInvoiceNo());
+            javafx.stage.Window w = historyContainer.getScene() != null ? historyContainer.getScene().getWindow() : null;
+            if (w == null) {
+                return;
+            }
+            if (paymentId != null) {
+                PaymentDetailsDialogUtil.show(w, paymentId);
+            } else if (rowKey != null && !rowKey.isBlank()) {
+                InvoiceSummaryDialogUtil.showForInvoiceNo(w, rowKey);
+            }
+        });
+
+        downloadItem.setOnAction(e -> {
+            javafx.stage.Window w = historyContainer.getScene() != null ? historyContainer.getScene().getWindow() : null;
+            Stage stage = w instanceof Stage ? (Stage) w : null;
+            if (paymentId != null) {
+                try {
+                    LocalDate payDate = inv.getInvoiceDate() != null ? inv.getInvoiceDate() : LocalDate.now();
+                    File out = CompanyDataLayout.paymentReceiptPdfPath(clientFolderDisplayName(), payDate, rowKey);
+                    new PdfInvoiceService().writePaymentReceiptPdf(paymentId, out);
+                    if (stage != null) {
+                        Toast.show(stage, "Receipt saved:\n" + out.getAbsolutePath());
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    new Alert(Alert.AlertType.ERROR, "Could not save PDF: " + ex.getMessage(), ButtonType.OK)
+                            .showAndWait();
+                }
+            } else if (rowKey != null && !rowKey.isBlank()) {
+                try {
+                    InvoiceMasterService ims = new InvoiceMasterService();
+                    InvoiceMaster master = ims.getInvoiceByInvoiceNo(rowKey);
+                    if (master == null) {
+                        new Alert(Alert.AlertType.INFORMATION, "Invoice not found.", ButtonType.OK).showAndWait();
+                        return;
+                    }
+                    InvoiceBuilderService builder = new InvoiceBuilderService();
+                    Invoice full = builder.buildInvoiceFromMasterForPdfExport(master.getId());
+                    File created = new PdfInvoiceService().generateSingleInvoicePDF(full);
+                    if (stage != null) {
+                        Toast.show(stage, "Invoice PDF saved:\n" + created.getAbsolutePath());
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    new Alert(Alert.AlertType.ERROR, "Could not save PDF: " + ex.getMessage(), ButtonType.OK)
+                            .showAndWait();
+                }
+            }
         });
 
         actionDots.setOnMouseClicked(e -> {

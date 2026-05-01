@@ -418,6 +418,17 @@
     -fx-text-fill: rgba(255,255,255,0.35);
 }
 
+.date-picker-popup .day-cell.job-date-future-day:disabled {
+    -fx-opacity: 1;
+    -fx-text-fill: rgba(255, 255, 255, 0.72);
+    -fx-font-weight: 600;
+}
+
+.date-picker-popup .day-cell.job-date-future-day:disabled:hover {
+    -fx-background-color: transparent;
+    -fx-text-fill: rgba(255, 255, 255, 0.85);
+}
+
 /* =========================================================
    TOP HEADER FIELDS (Matched with DatePicker)
    ========================================================= */

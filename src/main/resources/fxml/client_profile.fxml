@@ -8,13 +8,8 @@
 <ScrollPane fitToWidth="true" stylesheets="@../css/theme.css, @../css/client_profile.css" styleClass="profile-root, ui-compact" xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.ClientProfileController">
     <VBox spacing="15" alignment="TOP_LEFT" fillWidth="true" styleClass="content-container, app-page-shell">
 
-        <!-- PAGE TITLE (above breadcrumbs — match Edit Client layout) -->
-        <VBox spacing="4" styleClass="app-page-title-block page-header-container">
-            <Label text="Client Profile" styleClass="page-heading" />
-        </VBox>
-
-        <!-- BREADCRUMBS -->
-        <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8" />
+        <!-- BREADCRUMBS (page title lives in dashboard top bar: centerHeaderTitle) -->
+        <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container profile-breadcrumb-row" alignment="CENTER_LEFT" spacing="8" />
 
         <!-- HEADER SECTION -->
         <HBox alignment="CENTER_LEFT" spacing="20">
@@ -102,8 +97,9 @@
             <VBox spacing="20" HBox.hgrow="ALWAYS">
                 <!-- ACTIVE PIPELINE -->
                 <VBox spacing="15">
-                    <HBox alignment="CENTER_LEFT">
+                    <HBox alignment="CENTER_LEFT" spacing="10">
                         <Label text="Active Pipeline" styleClass="section-title"/>
+                        <Label fx:id="lblPipelineMore" text="" styleClass="pipeline-more-tag" visible="false" managed="false"/>
                         <Region HBox.hgrow="ALWAYS"/>
                         <Button text="View All Jobs" styleClass="btn-text-link"/>
                     </HBox>
@@ -126,16 +122,16 @@
                     <VBox styleClass="history-container">
                         <!-- Header Row -->
                         <HBox styleClass="history-header" spacing="0">
-                            <Label text="INVOICE ID" prefWidth="120" alignment="CENTER" styleClass="header-label"/>
+                            <Label text="ID" prefWidth="200" alignment="CENTER" styleClass="header-label"/>
                             <Label text="ISSUE DATE" prefWidth="150" alignment="CENTER" styleClass="header-label"/>
                             <Label text="AMOUNT" prefWidth="120" alignment="CENTER" styleClass="header-label"/>
                             <Label text="STATUS" HBox.hgrow="ALWAYS" maxWidth="Infinity" alignment="CENTER" styleClass="header-label"/>
                             <Label text="ACTION" prefWidth="60" alignment="CENTER" styleClass="header-label"/>
                         </HBox>
                         
-                        <VBox fx:id="historyContainer" spacing="0">
-                            <!-- Dynamic history rows injected here -->
-                        </VBox>
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" maxHeight="280" minHeight="280" prefHeight="280" styleClass="history-rows-scroll">
+                            <VBox fx:id="historyContainer" spacing="0"/>
+                        </ScrollPane>
                     </VBox>
                 </VBox>
             </VBox>

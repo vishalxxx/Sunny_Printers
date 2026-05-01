@@ -14,12 +14,7 @@
 
     <!-- HEADER & KPIs ROW -->
     <HBox spacing="20" alignment="TOP_LEFT">
-        <!-- Intro (screen title lives in main header: centerHeaderTitle) -->
         <VBox spacing="4" HBox.hgrow="ALWAYS">
-            <Label
-                text="Manage your global client relationships, track lifetime value, and oversee outstanding receivables in an editorial layout."
-                styleClass="page-subheading" wrapText="true" maxWidth="450" />
-
             <HBox spacing="10" alignment="CENTER_LEFT" styleClass="search-bar-container">
                 <TextField fx:id="searchField"
                     promptText="Search accounts..."
@@ -28,6 +23,9 @@
                     prefWidth="170" styleClass="sort-combo" />
                 <ComboBox fx:id="sortComboBox" promptText="Sort By" prefWidth="150"
                     styleClass="sort-combo" />
+            </HBox>
+            <HBox alignment="CENTER_LEFT" spacing="10" styleClass="view-clients-actions">
+                <Button text="Add Client" onAction="#handleAddClient" styleClass="view-clients-add-btn"/>
             </HBox>
         </VBox>
 

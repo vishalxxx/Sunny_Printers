@@ -13,6 +13,8 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import model.Invoice;
 import model.InvoiceJob;
 import model.InvoiceLine;
+import model.MasterDocumentSeries;
+import utils.CompanyProfile;
 import utils.ExcelRegionUtil;
 import utils.InvoiceExcelStyles;
 
@@ -72,7 +74,7 @@ public class InvoiceGenerationService {
 			// ✅ Save into base/year/month folder
 			// Use any invoice just for date folder
 			Invoice dummy = new Invoice();
-			dummy.setCompanyName("SUNNY_PRINTERS");
+			CompanyProfile.applyToInvoice(dummy);
 			dummy.setClientName("MONTHLY_BULK");
 			dummy.setInvoiceNo("BULK-" + month);
 			dummy.setInvoiceDate(month.atEndOfMonth());
@@ -111,7 +113,7 @@ public class InvoiceGenerationService {
 		 */
 		Row header = sheet.createRow(rowIndex++);
 
-		mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 0, 0, "#", is.columnHeader);
+		mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 0, 0, "Sr.", is.columnHeader);
 		mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 1, 1, "DATE", is.columnHeader);
 		mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 2, 2, "Description", is.columnHeader);
 		mergeAndStyle(sheet, header.getRowNum(), header.getRowNum(), 3, 3, "Amount",is.columnHeader);
@@ -224,7 +226,9 @@ public class InvoiceGenerationService {
 
 		mergeAndStyle(sheet, 5, 5, 2, 3, "Client: " + invoice.getClientName(), is.clientText);
 
-		mergeAndStyle(sheet, 6, 6, 0, 3, "Performa No: " + invoice.getInvoiceNo(), is.performaNo);
+		String noLabel = invoice.getMasterDocumentSeries() == MasterDocumentSeries.PROFORMA_INVOICE ? "Proforma No: "
+				: "Tax invoice No: ";
+		mergeAndStyle(sheet, 6, 6, 0, 3, noLabel + invoice.getInvoiceNo(), is.performaNo);
 
 		return BODY_START_ROW;
 	}

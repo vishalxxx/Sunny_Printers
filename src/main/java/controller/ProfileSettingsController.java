@@ -6,6 +6,7 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 import model.User;
 import utils.SessionManager;
@@ -13,6 +14,9 @@ import utils.SessionManager;
 import java.io.File;
 
 public class ProfileSettingsController {
+
+    @FXML
+    private HBox breadcrumbContainer;
 
     @FXML
     private ImageView profileImageView;
@@ -33,6 +37,8 @@ public class ProfileSettingsController {
 
     @FXML
     public void initialize() {
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null,
+                () -> MainController.getInstance().handleBack(null));
         loadUserData();
     }
 
@@ -50,6 +56,7 @@ public class ProfileSettingsController {
     @FXML
     private void handleChangePhoto() {
         FileChooser fileChooser = new FileChooser();
+        utils.UniversalDownloadPath.prepareFileChooser(fileChooser);
         fileChooser.setTitle("Select Profile Image");
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg"));

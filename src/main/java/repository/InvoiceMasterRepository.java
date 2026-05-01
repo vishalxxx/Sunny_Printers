@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Optional;
 import java.time.LocalDate;
 
+import utils.DocumentNumbering;
+
 public class InvoiceMasterRepository {
 
     public InvoiceMasterRepository() {
@@ -28,13 +30,16 @@ public class InvoiceMasterRepository {
                         amount, paid_amount, due_amount, payment_status,
                         last_payment_date, type, status,
                         is_void, void_reason, void_date,
-                        replaced_by_invoice_id, parent_invoice_id, status_updated_by, file_path
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        replaced_by_invoice_id, parent_invoice_id, status_updated_by, file_path,
+                        document_series
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """;
 
         try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            ps.setString(1, inv.getInvoiceNo());
+            String invNo = DocumentNumbering.stripLeadingHash(inv.getInvoiceNo());
+            ps.setString(1, invNo);
+            inv.setInvoiceNo(invNo);
             ps.setInt(2, inv.getClientId());
             ps.setString(3, inv.getClientName());
             ps.setString(4, toIso(inv.getInvoiceDate())); // CHECK requires YYYY-MM-DD
@@ -68,6 +73,7 @@ public class InvoiceMasterRepository {
 
             ps.setString(19, inv.getStatusUpdatedBy());
             ps.setString(20, inv.getFilePath());
+            ps.setString(21, inv.getDocumentSeries());
 
             ps.executeUpdate();
 
@@ -320,8 +326,11 @@ public class InvoiceMasterRepository {
             params.add(status.trim().toUpperCase());
         }
         if (invoiceNo != null && !invoiceNo.trim().isEmpty()) {
-            sql.append(" AND invoice_no LIKE ?");
-            params.add("%" + invoiceNo.trim() + "%");
+            String needle = DocumentNumbering.stripLeadingHash(invoiceNo.trim());
+            if (needle != null && !needle.isEmpty()) {
+                sql.append(" AND invoice_no LIKE ?");
+                params.add("%" + needle + "%");
+            }
         }
         if (start != null) {
             sql.append(" AND DATE(invoice_date) >= ?");
@@ -358,9 +367,11 @@ public class InvoiceMasterRepository {
      * =========================================================
      */    public InvoiceMaster findByInvoiceNo(Connection con, String invoiceNo) throws Exception {
         if (invoiceNo == null) return null;
+        String key = DocumentNumbering.stripLeadingHash(invoiceNo);
+        if (key == null || key.isEmpty()) return null;
         String sql = "SELECT * FROM invoice_master WHERE invoice_no = ? LIMIT 1";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, invoiceNo);
+            ps.setString(1, key);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return mapRowPublic(rs);
@@ -379,7 +390,7 @@ public class InvoiceMasterRepository {
     private InvoiceMaster mapInvoiceRowBase(ResultSet rs) throws Exception {
         InvoiceMaster inv = new InvoiceMaster();
         inv.setId(rs.getInt("id"));
-        inv.setInvoiceNo(rs.getString("invoice_no"));
+        inv.setInvoiceNo(DocumentNumbering.stripLeadingHash(rs.getString("invoice_no")));
         inv.setClientId(rs.getInt("client_id"));
         inv.setClientName(rs.getString("client_name"));
         inv.setInvoiceDate(parseDate(rs.getString("invoice_date")));
@@ -389,6 +400,7 @@ public class InvoiceMasterRepository {
         inv.setPaymentStatus(rs.getString("payment_status"));
         inv.setType(rs.getString("type"));
         inv.setStatus(rs.getString("status"));
+        inv.setDocumentSeries(readOptionalString(rs, "document_series"));
         inv.setPeriodFrom(parseDate(rs.getString("period_from")));
         inv.setPeriodTo(parseDate(rs.getString("period_to")));
 
@@ -457,6 +469,15 @@ public class InvoiceMasterRepository {
         } catch (Exception e) {}
     }
 
+    private static String readOptionalString(ResultSet rs, String column) {
+        try {
+            String s = rs.getString(column);
+            return rs.wasNull() ? null : s;
+        } catch (SQLException e) {
+            return null;
+        }
+    }
+
     private LocalDate parseDate(String value) {
 
         if (value == null || value.isBlank())
@@ -501,13 +522,16 @@ public class InvoiceMasterRepository {
                         parent_invoice_id = ?,
                         is_void      = ?,
                         void_reason  = ?,
-                        void_date    = ?
+                        void_date    = ?,
+                        document_series = ?
                     WHERE id = ?
                 """;
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
 
-            ps.setString(1, inv.getInvoiceNo());
+            String invNo = DocumentNumbering.stripLeadingHash(inv.getInvoiceNo());
+            ps.setString(1, invNo);
+            inv.setInvoiceNo(invNo);
             ps.setInt(2, inv.getClientId());
             ps.setString(3, inv.getClientName());
             ps.setString(4, toIso(inv.getInvoiceDate()));
@@ -536,8 +560,9 @@ public class InvoiceMasterRepository {
             ps.setInt(16, inv.isVoid() ? 1 : 0);
             ps.setString(17, inv.getVoidReason());
             ps.setString(18, toIso(inv.getVoidDate()));
+            ps.setString(19, inv.getDocumentSeries());
             
-            ps.setInt(19, inv.getId());
+            ps.setInt(20, inv.getId());
 
             ps.executeUpdate();
         }

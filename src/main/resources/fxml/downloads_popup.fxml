@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1"
+      fx:id="downloadsRoot"
+      fx:controller="controller.DownloadsPopupController"
+      stylesheets="@../css/modern_dashboard.css"
+      styleClass="downloads-popup-card" spacing="0">
+
+    <!-- HEADER -->
+    <HBox styleClass="downloads-header" alignment="CENTER_LEFT">
+        <Label fx:id="lblTitle" text="Downloads (5)" styleClass="downloads-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label text="View All" styleClass="view-all-link" onMouseClicked="#handleViewAll"/>
+    </HBox>
+
+    <Separator style="-fx-opacity: 0.1;"/>
+
+    <!-- ITEMS LIST -->
+    <ScrollPane fx:id="itemsScroll" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" 
+                style="-fx-background-color: transparent; -fx-background: transparent; -fx-max-height: 220;">
+        <VBox fx:id="itemsContainer" spacing="0"/>
+    </ScrollPane>
+
+    <Separator style="-fx-opacity: 0.1;"/>
+
+    <!-- FOOTER -->
+    <VBox styleClass="downloads-footer">
+        <Button text="Open Folder Location" styleClass="open-location-btn" onAction="#handleOpenFolder">
+            <graphic>
+                <HBox spacing="10" alignment="CENTER">
+                    <Region styleClass="open-location-icon"/>
+                </HBox>
+            </graphic>
+        </Button>
+    </VBox>
+
+</VBox>

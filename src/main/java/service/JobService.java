@@ -7,6 +7,7 @@ import java.util.List;
 
 import model.Job;
 import model.JobSummary;
+import model.MasterDocumentSeries;
 import repository.JobRepository;
 import utils.DBConnection;
 
@@ -37,24 +38,10 @@ public class JobService {
 		}
 	}
 
-	public class JobNumberGenerator {
+	public static class JobNumberGenerator {
 
 		public static String generate(Connection con) throws Exception {
-			repository.SystemSettingsRepository settingsRepo = new repository.SystemSettingsRepository();
-			model.SystemSettings settings = settingsRepo.load(con);
-
-			int nextNo = settings.getLastJobNo() + 1;
-			if (nextNo < settings.getJobStartNo()) {
-			    nextNo = settings.getJobStartNo();
-			}
-
-			String formattedJobNo = String.format("%s%0" + settings.getJobPadding() + "d",
-					(settings.getJobPrefix() == null ? "" : settings.getJobPrefix()), nextNo);
-
-			settings.setLastJobNo(nextNo);
-			settingsRepo.save(con, settings);
-
-			return formattedJobNo;
+			return new SettingsService().allocateNextMasterNumber(con, MasterDocumentSeries.JOB, LocalDate.now());
 		}
 	}
 

@@ -17,8 +17,6 @@
     <VBox fx:id="viScreenRoot" spacing="14" alignment="TOP_LEFT" fillWidth="true" styleClass="root-container, ui-compact, taste-root, app-page-shell">
 
         <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8" />
-        <Label text="Monitor payment status and manage invoice history"
-               styleClass="page-subheading view-invoices-lead" wrapText="true" maxWidth="720"/>
 
         <!-- 2. ACTION TOOLBAR (hidden when no table row is selected) -->
         <HBox fx:id="viToolbarRow" spacing="10" alignment="CENTER_LEFT" styleClass="vi-toolbar-card">

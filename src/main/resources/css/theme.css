@@ -48,7 +48,7 @@
 }
 
 .app-page-shell .breadcrumb-container {
-    -fx-padding: 0 0 4 0;
+    -fx-padding: 4 0 8 0;
     -fx-spacing: 8;
     -fx-alignment: CENTER_LEFT;
 }
@@ -99,68 +99,43 @@
     -fx-text-fill: #3E312D;
 }
 
-/* ===================== BREADCRUMBS (SHARED) ===================== */
+/* ===================== BREADCRUMBS (sidebar hierarchy — smaller & lighter than .page-heading) ===================== */
 .breadcrumb-container {
-    -fx-padding: 0 0 12 0;
-    -fx-spacing: 12;
+    -fx-padding: 4 0 8 0;
+    -fx-spacing: 8;
     -fx-alignment: CENTER_LEFT;
 }
 
 .breadcrumb-label {
-    -fx-text-fill: #8E7A6B;
-    -fx-font-size: 11px;
-    -fx-font-weight: 600;
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-text-fill: #A39890;
+    -fx-font-size: 9.5px;
+    -fx-font-weight: 500;
+    -fx-letter-spacing: 0.02em;
 }
 
 .breadcrumb-separator {
-    -fx-text-fill: #D6D1C9;
-    -fx-font-size: 11px;
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-text-fill: #CEC6BE;
+    -fx-font-size: 9px;
+    -fx-font-weight: 400;
+    -fx-padding: 0 2 0 2;
 }
 
 .breadcrumb-current {
     -fx-text-fill: #3E312D;
     -fx-font-weight: 700;
+    -fx-font-size: 10px;
+    -fx-font-style: normal;
 }
 
 .breadcrumb-mini {
-    -fx-opacity: 0.8;
+    -fx-opacity: 0.92;
 }
 
 .breadcrumb-mini .breadcrumb-label,
 .breadcrumb-mini .breadcrumb-current {
-    -fx-font-size: 10px;
-}
-
-/* ===================== BREADCRUMBS (SHARED) ===================== */
-.breadcrumb-container {
-    -fx-padding: 0 0 12 0;
-    -fx-spacing: 12;
-    -fx-alignment: CENTER_LEFT;
-}
-
-.breadcrumb-label {
-    -fx-text-fill: #8E7A6B;
-    -fx-font-size: 11px;
-    -fx-font-weight: 600;
-}
-
-.breadcrumb-separator {
-    -fx-text-fill: #D6D1C9;
-    -fx-font-size: 11px;
-}
-
-.breadcrumb-current {
-    -fx-text-fill: #3E312D;
-    -fx-font-weight: 700;
-}
-
-.breadcrumb-mini {
-    -fx-opacity: 0.8;
-}
-
-.breadcrumb-mini .breadcrumb-label,
-.breadcrumb-mini .breadcrumb-current {
-    -fx-font-size: 10px;
+    -fx-font-size: 9.5px;
 }
 
 /* ===================== SEARCH BOX (SHARED) ===================== */
@@ -344,6 +319,18 @@
 .date-picker-popup .day-cell:disabled {
     -fx-opacity: 0.3;
     -fx-text-fill: #B5ACA3;
+}
+
+/* Future dates on job date picker: not selectable, but clearly readable */
+.date-picker-popup .day-cell.job-date-future-day:disabled {
+    -fx-opacity: 1;
+    -fx-text-fill: #6B5D4F;
+    -fx-font-weight: 600;
+}
+
+.date-picker-popup .day-cell.job-date-future-day:disabled:hover {
+    -fx-background-color: transparent;
+    -fx-text-fill: #5A4D42;
 }
 
 /* Only display one month calendar at a time - hide leading/trailing days */

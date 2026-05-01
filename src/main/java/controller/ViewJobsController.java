@@ -198,7 +198,7 @@ public class ViewJobsController {
             return row;
         });
         
-        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Job Management", () -> handleBack(null));
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null, () -> handleBack(null));
     }
 
     private void ensureGoToPageField() {
@@ -811,7 +811,7 @@ public class ViewJobsController {
         header.setAlignment(Pos.TOP_LEFT);
         
         VBox titleBox = new VBox(4);
-        Label idLbl = new Label("#" + job.getJobNo().toUpperCase());
+        Label idLbl = new Label(job.getJobNo().toUpperCase());
         idLbl.setStyle("-fx-text-fill: #CD7B4E; -fx-font-weight: 800; -fx-font-size: 11px; -fx-letter-spacing: 0.1em;");
         
         Label titleLbl = new Label(job.getJobTitle());

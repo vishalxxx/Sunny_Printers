@@ -221,6 +221,16 @@
                             <StackPane styleClass="header-icon-btn">
                                 <Region styleClass="sidebar-icon, icon-help" style="-fx-background-color: #716D68; -fx-min-width: 18; -fx-min-height: 18;"/>
                             </StackPane>
+
+                            <!-- Download Icon -->
+                            <StackPane fx:id="btnDownloads" styleClass="download-btn" onMouseClicked="#toggleDownloadsPopup">
+                                <Region styleClass="sidebar-icon, download-icon-region" style="-fx-shape: 'M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z'; -fx-min-width: 18; -fx-min-height: 18;"/>
+                                <StackPane fx:id="downloadBadge" alignment="TOP_RIGHT" visible="false" style="-fx-padding: -5 -5 0 0;">
+                                    <StackPane styleClass="download-badge-container">
+                                        <Label fx:id="lblDownloadCount" text="0" styleClass="download-badge-text"/>
+                                    </StackPane>
+                                </StackPane>
+                            </StackPane>
                             
                             <Separator orientation="VERTICAL" prefHeight="24" style="-fx-opacity: 0.1; -fx-padding: 0 5;"/>
                             
@@ -486,7 +496,7 @@
                                                         <Label text="Payment Received from" style="-fx-font-weight: 700; -fx-text-fill: -fx-text-dark;"/>
                                                         <Label text="Artisanal Breads Co." style="-fx-font-weight: 800; -fx-text-fill: #A66E4E;"/>
                                                     </HBox>
-                                                    <Label text="Invoice #INV-2024-081 • ₹1,250.00" style="-fx-text-fill: -fx-text-muted; -fx-font-size: 12;"/>
+                                                    <Label text="Invoice INV-2024-081 • ₹1,250.00" style="-fx-text-fill: -fx-text-muted; -fx-font-size: 12;"/>
                                                 </VBox>
                                                 <Region HBox.hgrow="ALWAYS"/>
                                                 <Label text="2 MINS AGO" style="-fx-font-size: 10; -fx-font-weight: 900; -fx-text-fill: #B0ADA1;"/>
@@ -519,7 +529,7 @@
                                                         <Label text="New Invoice Created for" style="-fx-font-weight: 700; -fx-text-fill: -fx-text-dark;"/>
                                                         <Label text="Metro Gallery" style="-fx-font-weight: 800; -fx-text-fill: #A66E4E;"/>
                                                     </HBox>
-                                                    <Label text="Invoice #INV-2024-085 • ₹4,500.00" style="-fx-text-fill: -fx-text-muted; -fx-font-size: 12;"/>
+                                                    <Label text="Invoice INV-2024-085 • ₹4,500.00" style="-fx-text-fill: -fx-text-muted; -fx-font-size: 12;"/>
                                                 </VBox>
                                                 <Region HBox.hgrow="ALWAYS"/>
                                                 <Label text="3 HOURS AGO" style="-fx-font-size: 10; -fx-font-weight: 900; -fx-text-fill: #B0ADA1;"/>

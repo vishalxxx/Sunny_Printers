@@ -76,6 +76,7 @@ public class LoginController {
             // But usually just setting the scene is enough.
 
             javafx.scene.Scene scene = new javafx.scene.Scene(dashboardRoot);
+            sunnyprinters.Main.applyAppSceneStylesheets(scene);
             stage.setScene(scene);
             stage.centerOnScreen();
             stage.setMaximized(true); // Dashboard is usually maximized

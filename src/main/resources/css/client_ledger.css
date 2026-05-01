@@ -28,10 +28,6 @@
     -fx-spacing: 18;
 }
 
-.client-ledger-root .cl-page.app-page-shell .breadcrumb-container {
-    -fx-padding: 12 0 4 0;
-}
-
 .client-ledger-root .cl-lead {
     -fx-padding: 0 0 8 0;
 }

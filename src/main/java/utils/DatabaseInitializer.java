@@ -229,6 +229,10 @@ public class DatabaseInitializer {
             try {
                 stmt.execute("ALTER TABLE invoice_master ADD COLUMN replaced_by_invoice_id INTEGER REFERENCES invoice_master(id);");
             } catch (Exception e) { }
+
+            try {
+                stmt.execute("ALTER TABLE invoice_master ADD COLUMN document_series TEXT;");
+            } catch (Exception e) { }
             
             // 🔥 Fix for Invoice Revisions: Relax uniqueness to allow "REVISED" invoices to coexist with the new DRAFT
             // We drop all possible variations of the restrictive index
@@ -520,6 +524,26 @@ public class DatabaseInitializer {
             try { stmt.execute("ALTER TABLE jobs ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP;"); } catch (Exception e) {}
             try { stmt.execute("ALTER TABLE jobs ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP;"); } catch (Exception e) {}
             try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_temp_invoice_no INTEGER DEFAULT 0;"); } catch (Exception e) {}
+            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN numbering_fy TEXT DEFAULT '';"); } catch (Exception e) {}
+            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_inv INTEGER DEFAULT 0;"); } catch (Exception e) {}
+            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_pi INTEGER DEFAULT 0;"); } catch (Exception e) {}
+            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_cn INTEGER DEFAULT 0;"); } catch (Exception e) {}
+            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_dn INTEGER DEFAULT 0;"); } catch (Exception e) {}
+            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_qtn INTEGER DEFAULT 0;"); } catch (Exception e) {}
+            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_po INTEGER DEFAULT 0;"); } catch (Exception e) {}
+            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_job INTEGER DEFAULT 0;"); } catch (Exception e) {}
+            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_tkt INTEGER DEFAULT 0;"); } catch (Exception e) {}
+            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_dc INTEGER DEFAULT 0;"); } catch (Exception e) {}
+            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_ewb INTEGER DEFAULT 0;"); } catch (Exception e) {}
+            try {
+                stmt.execute("""
+                        UPDATE system_settings SET
+                          numbering_fy = CASE WHEN numbering_fy IS NULL OR numbering_fy = '' THEN '' ELSE numbering_fy END,
+                          last_seq_inv = CASE WHEN last_seq_inv IS NULL OR last_seq_inv = 0 THEN COALESCE(last_invoice_no, 0) ELSE last_seq_inv END,
+                          last_seq_job = CASE WHEN last_seq_job IS NULL OR last_seq_job = 0 THEN COALESCE(last_job_no, 0) ELSE last_seq_job END
+                        WHERE id = 1
+                        """);
+            } catch (Exception e) { }
 
             // ================== INVOICE JOB MAPPING TABLE (NEW) ==================
             stmt.execute("""
@@ -537,6 +561,36 @@ public class DatabaseInitializer {
             // Migration: Populate mapping from existing jobs.invoice_id (one-time fix)
             try {
                 stmt.execute("INSERT OR IGNORE INTO invoice_job_mapping (invoice_id, job_id) SELECT invoice_id, id FROM jobs WHERE invoice_id IS NOT NULL;");
+            } catch (Exception e) {}
+
+            // Strip legacy leading '#' from stored reference numbers
+            try {
+                stmt.execute("""
+                        UPDATE invoice_master
+                        SET invoice_no = TRIM(SUBSTR(invoice_no, 2))
+                        WHERE invoice_no LIKE '#%' AND LENGTH(invoice_no) > 1
+                        """);
+            } catch (Exception e) {}
+            try {
+                stmt.execute("""
+                        UPDATE invoice_history
+                        SET invoice_no = TRIM(SUBSTR(invoice_no, 2))
+                        WHERE invoice_no LIKE '#%' AND LENGTH(invoice_no) > 1
+                        """);
+            } catch (Exception e) {}
+            try {
+                stmt.execute("""
+                        UPDATE invoice_adjustments
+                        SET note_no = TRIM(SUBSTR(note_no, 2))
+                        WHERE note_no LIKE '#%' AND LENGTH(note_no) > 1
+                        """);
+            } catch (Exception e) {}
+            try {
+                stmt.execute("""
+                        UPDATE jobs
+                        SET job_no = TRIM(SUBSTR(job_no, 2))
+                        WHERE job_no LIKE '#%' AND LENGTH(job_no) > 1
+                        """);
             } catch (Exception e) {}
 
             System.out.println("✔ All tables are created and ready!");

@@ -25,13 +25,18 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.SVGPath;
 import javafx.stage.Stage;
 import model.Client;
+import model.Invoice;
 import model.InvoiceMaster;
 import model.InvoiceAdjustment;
 import service.ClientService;
+import service.InvoiceBuilderService;
 import service.InvoiceMasterService;
+import service.PdfInvoiceService;
+import utils.DocumentNumbering;
 import utils.Toast;
 
 import java.net.URL;
+import java.io.File;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -124,7 +129,7 @@ public class ViewInvoicesController {
             loadClients();
             loadStatuses();
             
-            utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "View Invoices", () -> handleBack(null));
+            utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null, () -> handleBack(null));
             
             setupAutoPopupDatePicker(startDatePicker);
             setupAutoPopupDatePicker(endDatePicker);
@@ -636,14 +641,8 @@ public class ViewInvoicesController {
     }
 
     private static String formatInvoiceId(String no) {
-        if (no == null) {
-            return "";
-        }
-        String t = no.trim();
-        if (t.startsWith("#")) {
-            return t;
-        }
-        return "#" + t;
+        String s = DocumentNumbering.stripLeadingHash(no);
+        return s != null ? s : "";
     }
 
     private static LocalDate effectiveDueDate(InvoiceMaster inv) {
@@ -906,6 +905,28 @@ public class ViewInvoicesController {
         runWithSelection(inv, () -> handleCancelAction(null));
     }
 
+    private void handleDownloadInvoiceFromRow(InvoiceMaster inv) {
+        if (inv == null || inv.getId() <= 0) {
+            return;
+        }
+        runWithSelection(inv, null);
+        Stage stage = invoiceTable != null && invoiceTable.getScene() != null
+                && invoiceTable.getScene().getWindow() instanceof Stage
+                ? (Stage) invoiceTable.getScene().getWindow() : null;
+        try {
+            InvoiceBuilderService builder = new InvoiceBuilderService();
+            Invoice full = builder.buildInvoiceFromMasterForPdfExport(inv.getId());
+            File created = new PdfInvoiceService().generateSingleInvoicePDF(full);
+            if (stage != null) {
+                Toast.show(stage, "Invoice PDF saved:\n" + created.getAbsolutePath());
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            new Alert(Alert.AlertType.ERROR, "Could not save PDF: " + ex.getMessage(), ButtonType.OK)
+                    .showAndWait();
+        }
+    }
+
     /**
      * ContextMenu popups are not child nodes of the FXML node; their CSS must be on
      * the window {@link Scene} so .vi-invoice-actions-menu rules apply.
@@ -932,6 +953,10 @@ public class ViewInvoicesController {
         MenuItem view = new MenuItem("View details");
         view.setOnAction(e -> handleViewOnlyAction(inv));
         m.getItems().add(view);
+
+        MenuItem downloadInv = new MenuItem("Download Invoice");
+        downloadInv.setOnAction(e -> handleDownloadInvoiceFromRow(inv));
+        m.getItems().add(downloadInv);
         
         boolean addedSeparator = false;
 
@@ -1166,7 +1191,10 @@ public class ViewInvoicesController {
     }
 
     private void toast(String msg) {
-        utils.Toast.show(viScreenRoot.getScene(), msg);
+        var w = viScreenRoot.getScene() != null ? viScreenRoot.getScene().getWindow() : null;
+        if (w instanceof javafx.stage.Stage stage) {
+            utils.Toast.show(stage, msg);
+        }
     }
 
     /** Selected table row if it still exists in {@link #fullInvoiceResults}; otherwise null. */

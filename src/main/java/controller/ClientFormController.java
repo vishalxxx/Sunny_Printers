@@ -9,12 +9,12 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import model.Client;
 import repository.ClientRepository;
-import utils.NavigationManager;
 import utils.Toast;
 
 public class ClientFormController implements Initializable {
@@ -57,13 +57,16 @@ public class ClientFormController implements Initializable {
 	private TextArea shippingAddressField;
 	@FXML
 	private TextArea notesField;
+	@FXML
+	private ToggleButton syncAddressToggle;
 
 	private final ClientRepository repo = new ClientRepository();
 
 	@Override
 	public void initialize(URL url, ResourceBundle resourceBundle) {
         // Initial population
-        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Client Form", () -> handleBack(null));
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null, () -> handleBack(null));
+		setupAddressSyncToggle();
 	}
 
     @FXML
@@ -87,7 +90,7 @@ public class ClientFormController implements Initializable {
                 pageTitleBlock.setManaged(false);
             }
             if (lblClientId != null) lblClientId.setText("#CL-NEW");
-            utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Add Client", () -> handleBack(null));
+            utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null, () -> handleBack(null));
             if (btnSave != null) btnSave.setText("Register Client");
             
             clearFields();
@@ -123,6 +126,43 @@ public class ClientFormController implements Initializable {
 		billingAddressField.setText(client.getBillingAddress());
 		shippingAddressField.setText(client.getShippingAddress());
 		notesField.setText(client.getNotes());
+
+		applyAddressSyncUiFromLoadedAddresses();
+	}
+
+	private static String normalizeAddress(String s) {
+		return s == null ? "" : s.trim();
+	}
+
+	/** After billing/shipping fields are filled, turn sync on when they match (edit profile). */
+	private void applyAddressSyncUiFromLoadedAddresses() {
+		if (syncAddressToggle == null || billingAddressField == null || shippingAddressField == null) {
+			return;
+		}
+		String bill = normalizeAddress(billingAddressField.getText());
+		String ship = normalizeAddress(shippingAddressField.getText());
+		boolean same = bill.equals(ship);
+		syncAddressToggle.setSelected(same);
+		shippingAddressField.setDisable(same);
+	}
+
+	private void setupAddressSyncToggle() {
+		if (syncAddressToggle == null || billingAddressField == null || shippingAddressField == null) {
+			return;
+		}
+		syncAddressToggle.selectedProperty().addListener((obs, wasOn, on) -> {
+			if (Boolean.TRUE.equals(on)) {
+				shippingAddressField.setText(billingAddressField.getText());
+				shippingAddressField.setDisable(true);
+			} else {
+				shippingAddressField.setDisable(false);
+			}
+		});
+		billingAddressField.textProperty().addListener((obs, oldV, newV) -> {
+			if (syncAddressToggle.isSelected()) {
+				shippingAddressField.setText(newV == null ? "" : newV);
+			}
+		});
 	}
 
     private void clearFields() {
@@ -137,6 +177,12 @@ public class ClientFormController implements Initializable {
         billingAddressField.clear();
         shippingAddressField.clear();
         notesField.clear();
+        if (syncAddressToggle != null) {
+            syncAddressToggle.setSelected(false);
+        }
+        if (shippingAddressField != null) {
+            shippingAddressField.setDisable(false);
+        }
     }
 
 	@FXML
@@ -156,8 +202,14 @@ public class ClientFormController implements Initializable {
 		selectedClient.emailProperty().set(emailField.getText());
 		selectedClient.gstProperty().set(gstField.getText());
 		selectedClient.panProperty().set(panField.getText());
-		selectedClient.billingAddressProperty().set(billingAddressField.getText());
-		selectedClient.shippingAddressProperty().set(shippingAddressField.getText());
+		String billing = billingAddressField.getText() == null ? "" : billingAddressField.getText();
+		selectedClient.billingAddressProperty().set(billing);
+		if (syncAddressToggle != null && syncAddressToggle.isSelected()) {
+			selectedClient.shippingAddressProperty().set(billing);
+			shippingAddressField.setText(billing);
+		} else {
+			selectedClient.shippingAddressProperty().set(shippingAddressField.getText());
+		}
 		selectedClient.notesProperty().set(notesField.getText());
 
         boolean success = false;

@@ -9,16 +9,12 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.VBox;
 import model.Client;
 import model.InvoiceMaster;
 import repository.ClientRepository;
 import service.InvoiceMasterService;
 import utils.DBConnection;
-import javafx.geometry.Insets;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.Connection;
@@ -55,7 +51,7 @@ public class PaymentHistoryController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Payment History",
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null,
                 () -> MainController.getInstance().handleBack(null));
         setupTableColumns();
         loadClients();
@@ -199,7 +195,7 @@ public class PaymentHistoryController implements Initializable {
                 if (event.getClickCount() == 2 && (!row.isEmpty())) {
                     PaymentRow rowData = row.getItem();
                     if (rowData != null) {
-                        showPaymentDetailsDialog(rowData);
+                        utils.PaymentDetailsDialogUtil.show(paymentsTable.getScene().getWindow(), rowData.getId());
                     }
                 }
             });
@@ -207,81 +203,6 @@ public class PaymentHistoryController implements Initializable {
         });
     }
 
-    private void showPaymentDetailsDialog(PaymentRow payment) {
-        Dialog<Void> dialog = new Dialog<>();
-        dialog.initOwner(paymentsTable.getScene().getWindow());
-        dialog.setTitle("Payment Details - " + payment.getDate());
-        dialog.getDialogPane().getStyleClass().add("record-payment-root"); // Reuse styles
-        
-        VBox content = new VBox(20);
-        content.setPadding(new Insets(20));
-        content.setPrefWidth(500);
-        
-        Label title = new Label("PAYMENT RECEIPT DETAILS");
-        title.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #3b82f6;");
-        
-        GridPane grid = new GridPane();
-        grid.setHgap(20);
-        grid.setVgap(12);
-        
-        int r = 0;
-        addDetailRow(grid, r++, "Date", payment.getDate());
-        addDetailRow(grid, r++, "Client", payment.getClient());
-        addDetailRow(grid, r++, "Type", payment.getType());
-        addDetailRow(grid, r++, "Method", payment.getMethod());
-        addDetailRow(grid, r++, "Amount", payment.getAmount());
-        
-        // Fetch details from DB
-        try (Connection con = DBConnection.getConnection()) {
-            String sql = "SELECT field_key, field_value FROM payment_details WHERE payment_id = ?";
-            try (PreparedStatement ps = con.prepareStatement(sql)) {
-                ps.setInt(1, payment.getId());
-                ResultSet rs = ps.executeQuery();
-                while (rs.next()) {
-                    String key = rs.getString("field_key").replace("_", " ").toUpperCase();
-                    addDetailRow(grid, r++, key, rs.getString("field_value"));
-                }
-            }
-            
-            // Also show allocated invoices
-            String allocSql = "SELECT i.invoice_no, a.allocated_amount FROM payment_allocations a JOIN invoice_master i ON a.invoice_id = i.id WHERE a.payment_id = ?";
-            try (PreparedStatement ps = con.prepareStatement(allocSql)) {
-                ps.setInt(1, payment.getId());
-                ResultSet rs = ps.executeQuery();
-                StringBuilder sb = new StringBuilder();
-                while (rs.next()) {
-                    sb.append(rs.getString("invoice_no")).append(" (₹").append(String.format("%.2f", rs.getDouble("allocated_amount"))).append(")\n");
-                }
-                if (sb.length() > 0) {
-                    addDetailRow(grid, r++, "ALLOCATIONS", sb.toString());
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        
-        content.getChildren().addAll(title, new Separator(), grid);
-        dialog.getDialogPane().setContent(content);
-        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
-        
-        // Add stylesheet explicitly to dialog
-        try {
-            dialog.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
-            dialog.getDialogPane().getStylesheets().add(getClass().getResource("/css/record_payment.css").toExternalForm());
-        } catch (Exception e) {}
-        
-        dialog.showAndWait();
-    }
-
-    private void addDetailRow(GridPane grid, int row, String label, String value) {
-        Label lbl = new Label(label + ":");
-        lbl.setStyle("-fx-font-weight: bold; -fx-text-fill: #64748b;");
-        Label val = new Label(value);
-        val.setStyle("-fx-text-fill: #1e293b;");
-        val.setWrapText(true);
-        grid.add(lbl, 0, row);
-        grid.add(val, 1, row);
-    }
 
     private void loadPaymentData() {
         masterPaymentList.clear();

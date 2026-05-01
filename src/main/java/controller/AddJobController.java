@@ -98,11 +98,19 @@ public class AddJobController implements utils.DirtySupport {
 			@Override
 			public void updateItem(java.time.LocalDate date, boolean empty) {
 				super.updateItem(date, empty);
-
-				if (empty || date == null) return;
-
-				if (date.isAfter(java.time.LocalDate.now())) {
+				getStyleClass().remove("job-date-future-day");
+				if (empty || date == null) {
+					setOpacity(1.0);
+					return;
+				}
+				java.time.LocalDate today = java.time.LocalDate.now();
+				if (date.isAfter(today)) {
 					setDisable(true);
+					setOpacity(1.0);
+					getStyleClass().add("job-date-future-day");
+				} else {
+					setDisable(false);
+					setOpacity(1.0);
 				}
 			}
 		});
@@ -501,6 +509,7 @@ public class AddJobController implements utils.DirtySupport {
 	private void handleUploadFile() {
 		try {
 			FileChooser chooser = new FileChooser();
+			utils.UniversalDownloadPath.prepareFileChooser(chooser);
 			chooser.setTitle("Select Image or PDF");
 
 			chooser.getExtensionFilters().addAll(
@@ -1071,7 +1080,7 @@ public class AddJobController implements utils.DirtySupport {
 
 	@FXML
 	public void initialize() {
-		utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Add New Job", () -> handleBack(null));
+		utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null, () -> handleBack(null));
 		setupJobDatePicker(jobDate);
 
 		filteredClients.setPredicate(c -> true);

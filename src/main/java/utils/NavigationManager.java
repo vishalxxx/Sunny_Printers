@@ -4,7 +4,6 @@ import java.util.Stack;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.scene.Parent;
-import javafx.scene.layout.VBox;
 
 public class NavigationManager {
 
@@ -45,6 +44,27 @@ public class NavigationManager {
             return currentState;
         }
         return null;
+    }
+
+    /** Top of the history stack (next target of {@link #pop()}), or null. */
+    public NavState peekHistory() {
+        if (history.isEmpty()) {
+            return null;
+        }
+        return history.peek();
+    }
+
+    /**
+     * Removes the top history entry without changing the current screen.
+     * Used to skip entries from another sidebar parent when going back.
+     */
+    public NavState discardTopHistoryEntry() {
+        if (history.isEmpty()) {
+            return null;
+        }
+        NavState removed = history.pop();
+        canGoBack.set(!history.isEmpty());
+        return removed;
     }
 
     public boolean hasHistory() {

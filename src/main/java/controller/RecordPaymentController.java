@@ -149,7 +149,7 @@ public class RecordPaymentController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Record Payment",
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null,
                 () -> MainController.getInstance().handleBack(null));
         setupPaymentModeCombo();
         setupDefaults();

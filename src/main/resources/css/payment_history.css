@@ -26,10 +26,6 @@
     -fx-spacing: 16;
 }
 
-.payment-history-root .ph-page.app-page-shell .breadcrumb-container {
-    -fx-padding: 12 0 4 0;
-}
-
 .payment-history-root .ph-lead {
     -fx-padding: 0 0 8 0;
 }

@@ -25,7 +25,6 @@
         <!-- LEFT SIDE -->
         <VBox spacing="6">
             <Label text="Debit Note" styleClass="page-title"/>
-            <Label text="Generate a debit note for a specific client." styleClass="page-subtitle"/>
         </VBox>
     </HBox>
 

@@ -188,6 +188,99 @@ public class MainController implements Initializable {
 
 	private Button activeParent;
 
+    @FXML private StackPane btnDownloads;
+    @FXML private StackPane downloadBadge;
+    @FXML private Label lblDownloadCount;
+
+    private ObservableList<model.DownloadItem> recentDownloads = FXCollections.observableArrayList();
+    private javafx.stage.Popup downloadsPopup;
+    private DownloadsPopupController popupController;
+
+    public void addDownload(String fileName, String type, String size, String path) {
+        model.DownloadItem item = new model.DownloadItem(fileName, type, size, java.time.LocalDateTime.now(), path);
+        recentDownloads.add(0, item); // Add to top
+        if (recentDownloads.size() > 50) recentDownloads.remove(50);
+        
+        updateDownloadBadge();
+    }
+
+    private void updateDownloadBadge() {
+        int count = recentDownloads.size();
+        if (count > 0) {
+            lblDownloadCount.setText(String.valueOf(count));
+            downloadBadge.setVisible(true);
+            // Highlight the button
+            if (!btnDownloads.getStyleClass().contains("download-btn-active")) {
+                btnDownloads.getStyleClass().add("download-btn-active");
+            }
+        } else {
+            downloadBadge.setVisible(false);
+            btnDownloads.getStyleClass().remove("download-btn-active");
+        }
+        
+        if (popupController != null) {
+            popupController.setDownloads(recentDownloads);
+        }
+    }
+
+    @FXML
+    private void toggleDownloadsPopup(MouseEvent event) {
+        if (downloadsPopup == null) {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/downloads_popup.fxml"));
+                Parent root = loader.load();
+                popupController = loader.getController();
+                popupController.setDownloads(recentDownloads);
+                
+                downloadsPopup = new javafx.stage.Popup();
+                downloadsPopup.getContent().add(root);
+                downloadsPopup.setAutoHide(true);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return;
+            }
+        }
+
+        if (downloadsPopup.isShowing()) {
+            downloadsPopup.hide();
+        } else {
+            Parent root = (Parent) downloadsPopup.getContent().get(0);
+            root.applyCss();
+            root.layout();
+            double popupW = root.prefWidth(-1);
+            if (popupW <= 0 || Double.isNaN(popupW)) {
+                popupW = 268;
+            }
+            double gap = 6;
+
+            javafx.geometry.Bounds iconBounds = btnDownloads.localToScreen(btnDownloads.getBoundsInLocal());
+            javafx.stage.Window hostWindow = btnDownloads.getScene() != null ? btnDownloads.getScene().getWindow() : null;
+
+            double screenX = iconBounds.getMaxX() - popupW;
+            double screenY = iconBounds.getMaxY() + gap;
+
+            if (hostWindow != null) {
+                double wx = hostWindow.getX();
+                double ww = hostWindow.getWidth();
+                double pad = 8;
+                if (screenX < wx + pad) {
+                    screenX = wx + pad;
+                }
+                if (screenX + popupW > wx + ww - pad) {
+                    screenX = wx + ww - popupW - pad;
+                }
+            }
+
+            if (hostWindow != null) {
+                downloadsPopup.show(hostWindow, screenX, screenY);
+            } else {
+                double localX = btnDownloads.getWidth() - popupW;
+                double localY = btnDownloads.getHeight() + gap;
+                downloadsPopup.show(btnDownloads, localX, localY);
+            }
+        }
+    }
+
 	public void showGlobalLoader(String title, String subtitle) {
 		loaderTitle.setText(title);
 		loaderSubtitle.setText(subtitle);
@@ -446,6 +539,7 @@ public class MainController implements Initializable {
 				if (lblDashboardGreeting != null)
 					lblDashboardGreeting.setText("Welcome");
 			}
+
 		});
 	}
 
@@ -839,7 +933,7 @@ public class MainController implements Initializable {
 			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
 				while (rs.next()) {
 					jobs.add(new DashboardJobDTO(
-							"#" + rs.getString(1) + " / " + rs.getString(2),
+							rs.getString(1) + " / " + rs.getString(2),
 							rs.getString(1),
 							rs.getString(3),
 							rs.getString(4),
@@ -933,20 +1027,7 @@ public class MainController implements Initializable {
 				FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
 				Parent view = loader.load();
 				Object controller = loader.getController();
-				/* Client Ledger: reset leaf stylesheets so classpath URLs match scene (FXML @-URLs can differ). */
-				if ("/fxml/client_ledger.fxml".equals(fxmlPath)) {
-					java.net.URL t = getClass().getResource("/css/theme.css");
-					java.net.URL l = getClass().getResource("/css/client_ledger.css");
-					if (t != null && l != null) {
-						view.getStylesheets().clear();
-						view.getStylesheets().addAll(t.toExternalForm(), l.toExternalForm());
-					}
-				} else {
-					String themeUrl = getClass().getResource("/css/theme.css").toExternalForm();
-					if (!view.getStylesheets().contains(themeUrl)) {
-						view.getStylesheets().add(0, themeUrl);
-					}
-				}
+				ensureLeafStylesheets(view, fxmlPath);
 				// 🔑 Controller will be stored once loaded
 				this.currentController = controller;
 
@@ -1007,8 +1088,8 @@ public class MainController implements Initializable {
 	}
 
 	/**
-	 * Title stored in {@link utils.NavigationManager} for this FXML (breadcrumbs and back stack).
-	 * Keep in sync with screen copy passed to {@link utils.BreadcrumbUtil#populateBreadcrumbs}.
+	 * Title stored in {@link utils.NavigationManager} for this FXML (back stack / headers).
+	 * Breadcrumbs use {@link utils.BreadcrumbUtil} sidebar map; optional leaf overrides in controllers.
 	 */
 	private String navigationTitleForFxml(String fxmlPath) {
 		if (fxmlPath == null || fxmlPath.isBlank()) {
@@ -1017,7 +1098,7 @@ public class MainController implements Initializable {
 		return switch (fxmlPath) {
 			case "/fxml/add_job.fxml" -> "Add New Job";
 			case "/fxml/view_job.fxml" -> "Job Management";
-			case "/fxml/view_client.fxml" -> "Client Directory";
+			case "/fxml/view_client.fxml" -> "Client Table";
 			case "/fxml/client_edit_selection.fxml" -> "Edit Client";
 			case "/fxml/generate_invoice.fxml" -> "Generate Invoice";
 			case "/fxml/view_invoice_jobs.fxml" -> "Invoice Jobs";
@@ -1282,9 +1363,30 @@ public class MainController implements Initializable {
 			centerHeaderTitle.setText(header);
 			centerHeaderTitle.setVisible(true);
 			centerHeaderTitle.setManaged(true);
+		} else if ("/fxml/client_profile.fxml".equals(fxmlPath)) {
+			utils.NavigationManager.NavState cur = utils.NavigationManager.getInstance().getCurrentState();
+			String header = "Client Profile";
+			if (cur != null && cur.getTitle() != null && !cur.getTitle().isBlank()) {
+				header = cur.getTitle();
+			}
+			centerHeaderTitle.setText(header);
+			centerHeaderTitle.setVisible(true);
+			centerHeaderTitle.setManaged(true);
 		} else if ("/fxml/client_ledger.fxml".equals(fxmlPath)) {
 			utils.NavigationManager.NavState cur = utils.NavigationManager.getInstance().getCurrentState();
 			String header = "Client Ledger";
+			if (cur != null && cur.getTitle() != null && !cur.getTitle().isBlank()) {
+				header = cur.getTitle();
+			}
+			centerHeaderTitle.setText(header);
+			centerHeaderTitle.setVisible(true);
+			centerHeaderTitle.setManaged(true);
+		} else if ("/fxml/general_settings.fxml".equals(fxmlPath)
+				|| "/fxml/user_settings.fxml".equals(fxmlPath)
+				|| "/fxml/invoice_settings.fxml".equals(fxmlPath)
+				|| "/fxml/profile_settings.fxml".equals(fxmlPath)) {
+			utils.NavigationManager.NavState cur = utils.NavigationManager.getInstance().getCurrentState();
+			String header = navigationTitleForFxml(fxmlPath);
 			if (cur != null && cur.getTitle() != null && !cur.getTitle().isBlank()) {
 				header = cur.getTitle();
 			}
@@ -1360,12 +1462,27 @@ public class MainController implements Initializable {
 			}
 
 			currentLoadTaskId++; // Cancel any pending background loads
-			utils.NavigationManager.NavState prevState = utils.NavigationManager.getInstance().pop();
+			utils.NavigationManager nav = utils.NavigationManager.getInstance();
+			utils.NavigationManager.NavState curNav = nav.getCurrentState();
+			String curPath = curNav != null ? curNav.getFxmlPath() : null;
+			utils.BreadcrumbUtil.discardForeignParentHistory(nav, curPath);
+
+			if (!nav.hasHistory()) {
+				if (event != null) {
+					event.consume();
+				}
+				openDashboard(null);
+				return;
+			}
+
+			utils.NavigationManager.NavState prevState = nav.pop();
 			if (prevState != null) {
 				VBox restoredSidebar = findSidebarById(prevState.getActiveSidebarId());
 				showOnly(restoredSidebar);
 				lastValidTitle = prevState.getTitle();
-				event.consume();
+				if (event != null) {
+					event.consume();
+				}
 
 				// RESTORE VISIBILITY ON BACK
 				boolean isDetailView = prevState.getFxmlPath() != null &&
@@ -1413,7 +1530,7 @@ public class MainController implements Initializable {
 	}
 
 	@FXML
-	private void loadAddClient() {
+	public void loadAddClient() {
 		highlightActiveMenu(clientsBtn);
 		highlightSubmenu(addClientSubBtn);
 		try {
@@ -1464,7 +1581,7 @@ public class MainController implements Initializable {
 		highlightActiveMenu(clientsBtn);
 		highlightSubmenu(viewClientsSubBtn);
 		loadCenterScreen("/fxml/view_client.fxml",
-				"Loading Client Directory...",
+				"Loading Client Table...",
 				"Please wait");
 	}
 
@@ -1713,5 +1830,55 @@ public class MainController implements Initializable {
 		loadCenterScreen("/fxml/profile_settings.fxml",
 				"Loading Profile...",
 				"Please wait");
+	}
+
+	/**
+	 * FXML {@code stylesheets="@..."} resolution can differ from classpath URLs; rebuild the leaf list from
+	 * {@code getResource} for screens that depend on it (same idea as client ledger).
+	 */
+	private void ensureLeafStylesheets(Parent view, String fxmlPath) {
+		URL theme = getClass().getResource("/css/theme.css");
+		if (theme == null) {
+			return;
+		}
+		String themeUrl = theme.toExternalForm();
+		if ("/fxml/client_ledger.fxml".equals(fxmlPath)) {
+			URL ledger = getClass().getResource("/css/client_ledger.css");
+			view.getStylesheets().clear();
+			view.getStylesheets().add(themeUrl);
+			if (ledger != null) {
+				view.getStylesheets().add(ledger.toExternalForm());
+			}
+			return;
+		}
+		if (isSettingsCenterView(fxmlPath)) {
+			view.getStylesheets().clear();
+			view.getStylesheets().add(themeUrl);
+			addLeafStylesheet(view, "/css/add_job.css");
+			addLeafStylesheet(view, "/css/view_job.css");
+			addLeafStylesheet(view, "/css/client_edit_selection.css");
+			if ("/fxml/profile_settings.fxml".equals(fxmlPath)) {
+				addLeafStylesheet(view, "/css/user_profile.css");
+			}
+			addLeafStylesheet(view, "/css/settings_screens.css");
+			return;
+		}
+		if (!view.getStylesheets().contains(themeUrl)) {
+			view.getStylesheets().add(0, themeUrl);
+		}
+	}
+
+	private static boolean isSettingsCenterView(String fxmlPath) {
+		return "/fxml/general_settings.fxml".equals(fxmlPath)
+				|| "/fxml/user_settings.fxml".equals(fxmlPath)
+				|| "/fxml/invoice_settings.fxml".equals(fxmlPath)
+				|| "/fxml/profile_settings.fxml".equals(fxmlPath);
+	}
+
+	private void addLeafStylesheet(Parent view, String classpath) {
+		URL u = getClass().getResource(classpath);
+		if (u != null) {
+			view.getStylesheets().add(u.toExternalForm());
+		}
 	}
 }

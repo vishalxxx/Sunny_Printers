@@ -34,6 +34,7 @@ import model.Invoice;
 import model.InvoiceHistoryRow;
 import model.JobSummary;
 import model.InvoiceMaster;
+import model.MasterDocumentSeries;
 import service.ClientService;
 import service.InvoiceBuilderService;
 import service.InvoiceGenerationService;
@@ -175,7 +176,23 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 	private String format;
 
 	@FXML
+	private RadioButton radioGstInvoice;
+	@FXML
+	private RadioButton radioProformaInvoice;
+
+	@FXML
 	private void initialize() {
+
+		ToggleGroup invoiceDocTypeGroup = new ToggleGroup();
+		if (radioGstInvoice != null) {
+			radioGstInvoice.setToggleGroup(invoiceDocTypeGroup);
+		}
+		if (radioProformaInvoice != null) {
+			radioProformaInvoice.setToggleGroup(invoiceDocTypeGroup);
+		}
+		if (radioGstInvoice != null) {
+			radioGstInvoice.setSelected(true);
+		}
 
 		formatComboBox.getItems().addAll("EXCEL", "PDF");
 		formatComboBox.setValue("EXCEL");
@@ -459,6 +476,7 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 					LocalDate customDate = dateRangeInvoiceDate.getValue();
 					Invoice invoice = invoicebuilder.buildInvoiceForClient(client.getId(), client.getClientName(),
 							client.getBusinessName(), startDatePicker.getValue(), endDatePicker.getValue(), customDate);
+					invoice.setMasterDocumentSeries(selectedDocumentSeriesForGeneration());
 
 					if (isCancelled()) throw new CancellationException();
 
@@ -552,6 +570,11 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 					if (invoiceMap == null || invoiceMap.isEmpty())
 						throw new RuntimeException("No completed jobs found for the selected month");
 
+					MasterDocumentSeries series = selectedDocumentSeriesForGeneration();
+					for (Invoice inv : invoiceMap.values()) {
+						inv.setMasterDocumentSeries(series);
+					}
+
 					if (isCancelled()) throw new CancellationException();
 
 					LocalDate fromDate = ym.atDay(1);
@@ -640,6 +663,7 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 					LocalDate customDate = jobInvoiceDate.getValue();
 					Invoice invoice = invoicebuilder.buildInvoiceForClientByJobs(client.getId(), client.getClientName(),
 							client.getBusinessName(), jobIds, customDate);
+					invoice.setMasterDocumentSeries(selectedDocumentSeriesForGeneration());
 
 					if (isCancelled()) throw new CancellationException();
 
@@ -795,6 +819,13 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 	private void toast(String message) {
 		Stage stage = (Stage) ((Node) clientComboBox).getScene().getWindow();
 		Toast.show(stage, message);
+	}
+
+	private MasterDocumentSeries selectedDocumentSeriesForGeneration() {
+		if (radioProformaInvoice != null && radioProformaInvoice.isSelected()) {
+			return MasterDocumentSeries.PROFORMA_INVOICE;
+		}
+		return MasterDocumentSeries.GST_INVOICE;
 	}
 
 }

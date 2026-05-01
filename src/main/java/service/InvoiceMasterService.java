@@ -2,6 +2,7 @@ package service;
 
 import model.Invoice;
 import model.InvoiceMaster;
+import model.MasterDocumentSeries;
 import repository.InvoiceMasterRepository;
 import utils.AtomicDB;
 
@@ -53,6 +54,7 @@ public class InvoiceMasterService {
             inv.setFilePath(filePath);
             inv.setPeriodFrom(invoice.getFromDate());
             inv.setPeriodTo(invoice.getToDate());
+            inv.setDocumentSeries(invoice.getMasterDocumentSeries().name());
 
             repo.insert(con, inv);
             return new CreateOrGetResult(inv, true);
@@ -93,6 +95,8 @@ public class InvoiceMasterService {
                 status);
 
         inv.setFilePath(filePath);
+
+        inv.setDocumentSeries(invoice.getMasterDocumentSeries().name());
 
         if (invoice.getJobs() == null || invoice.getJobs().isEmpty()) {
             throw new RuntimeException("Cannot save an empty invoice.");
@@ -146,6 +150,7 @@ public class InvoiceMasterService {
             inv.setPeriodFrom(from);
             inv.setPeriodTo(to);
             inv.setFilePath(filePath);
+            inv.setDocumentSeries(invoice.getMasterDocumentSeries().name());
 
             repo.insert(con, inv);
             linkJobsToInvoice(con, inv.getId(), invoice);
@@ -303,6 +308,7 @@ public class InvoiceMasterService {
                 inv.setPeriodFrom(from);
                 inv.setPeriodTo(to);
                 inv.setFilePath(filePath);
+                inv.setDocumentSeries(invoice.getMasterDocumentSeries().name());
 
                 repo.insert(con, inv);
                 linkJobsToInvoice(con, inv.getId(), invoice);
@@ -336,6 +342,19 @@ public class InvoiceMasterService {
 
     public InvoiceMaster getInvoiceById(int invoiceId) {
         return AtomicDB.run(con -> repo.findById(con, invoiceId));
+    }
+
+    public InvoiceMaster getInvoiceByInvoiceNo(String invoiceNo) {
+        if (invoiceNo == null || invoiceNo.isBlank()) {
+            return null;
+        }
+        return AtomicDB.run(con -> {
+            try {
+                return repo.findByInvoiceNo(con, invoiceNo.trim());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     /*
@@ -392,7 +411,8 @@ public class InvoiceMasterService {
                 finalNo = currentNo;
             } else {
                 // 1. Generate permanent number for TEMP or original DRAFTs
-                finalNo = settingsService.generateNextInvoiceNumber(con);
+                finalNo = settingsService.generateNextInvoiceNumber(con, inv.getInvoiceDate(),
+                        inv.resolveDocumentSeries());
             }
             
             // 2. Update Invoice Master
@@ -469,6 +489,7 @@ public class InvoiceMasterService {
             newInv.setPaidAmount(0);
             newInv.setDueAmount(old.getAmount());
             newInv.setParentInvoiceId(rootId);
+            newInv.setDocumentSeries(old.getDocumentSeries());
 
             // 2. Mark OLD as REVISED in DB first to clear unique constraint for the new DRAFT
             // 🔥 Requirement: Revised status turning payment status to CLOSED and Dues/Amount to 0

@@ -1,150 +1,69 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<?import javafx.geometry.*?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<StackPane xmlns:fx="http://javafx.com/fxml/1"
-           stylesheets="@../css/invoice_settings.css"
-            fx:controller="controller.SystemSettingsController"
-           styleClass="root">
+<ScrollPane xmlns:fx="http://javafx.com/fxml/1"
+            fitToWidth="true"
+            hbarPolicy="NEVER"
+            vbarPolicy="AS_NEEDED"
+            styleClass="settings-master-scroll, settings-theme-root, ui-compact, invoice-settings-root"
+            stylesheets="@../css/theme.css, @../css/add_job.css, @../css/view_job.css, @../css/client_edit_selection.css, @../css/settings_screens.css"
+            fx:controller="controller.SystemSettingsController">
 
-    <BorderPane>
+    <VBox styleClass="settings-page, app-page-shell" alignment="TOP_LEFT" fillWidth="true">
 
-        <!-- ================= HEADER ================= -->
-        <top>
-            <VBox spacing="6" styleClass="header-box">
-                <HBox alignment="CENTER_LEFT" spacing="10">
-                    <Label text="Invoice Generation Settings" styleClass="title"/>
-                    <Pane HBox.hgrow="ALWAYS"/>
-                    <Label text="LIVE SYSTEM" styleClass="live-badge"/>
-                </HBox>
+        <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8"/>
 
-                <Label text="Configure sequence rules and manual numbering patterns."
-                       styleClass="subtitle"/>
-                       
-                 <!-- Buttons -->
-                            <HBox alignment="CENTER_RIGHT" spacing="12">
-                                <Button text="Reset Defaults" fx:id="resetBtn" styleClass="btn-secondary"/>
-                                <Button text="Save Settings" fx:id="saveBtn" styleClass="btn-primary"/>
-                            </HBox>
+        <HBox styleClass="invoice-numbering-kpi-strip" alignment="CENTER_LEFT" spacing="12" fillHeight="true">
+            <VBox styleClass="invoice-kpi-card" spacing="6" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                <Label text="Focused field" styleClass="invoice-kpi-card-kicker"/>
+                <Label fx:id="kpiFocusTitle" styleClass="invoice-kpi-title" wrapText="true"/>
+                <Label fx:id="kpiFocusHint" styleClass="invoice-kpi-hint" wrapText="true"/>
             </VBox>
-        </top>
+            <VBox styleClass="invoice-kpi-card, invoice-kpi-preview-card" spacing="6" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                <Label text="How the number will look" styleClass="invoice-kpi-card-kicker"/>
+                <Label fx:id="kpiPreviewValue" styleClass="invoice-kpi-preview-mono" wrapText="true"/>
+                <Label fx:id="kpiPreviewCaption" styleClass="invoice-kpi-hint" wrapText="true"/>
+            </VBox>
+        </HBox>
 
+        <HBox alignment="CENTER_RIGHT" spacing="16">
+            <padding><Insets bottom="8"/></padding>
+            <Button text="Save Configuration" fx:id="saveBtn" styleClass="button, btn-primary"/>
+        </HBox>
 
-        <!-- ================= MAIN ================= -->
-        <center>
-            <ScrollPane fitToWidth="true" styleClass="settings-scroll">
-                <VBox spacing="24" styleClass="content-wrapper">
-                    <padding>
-                        <Insets top="24" right="32" bottom="32" left="32"/>
-                    </padding>
-
-                    <!-- Page Title -->
-                    <VBox spacing="6">
-                        <Label text="Document Numbering Settings" styleClass="page-title"/>
-                        <Label text="Manage your Job Card and Invoice numbering preferences."
-                               styleClass="page-subtitle"/>
-                    </VBox>
-
-                    <HBox spacing="20">
-
-                        <!-- ================= LEFT CARD (INVOICE) ================= -->
-                        <VBox fx:id="manualCard"
-                              spacing="18"
-                              styleClass="card"
-                              HBox.hgrow="ALWAYS">
-
-                            <HBox alignment="CENTER_LEFT">
-                                <Label text="INVOICE CONFIGURATION" styleClass="section-label"/>
-                                <Pane HBox.hgrow="ALWAYS"/>
-                                <Label fx:id="previewBadge"
-                                       text="INV-001"
-                                       styleClass="preview-badge"/>
-                            </HBox>
-
-                            <!-- Prefix -->
-                            <VBox spacing="6">
-                                <Label text="DOCUMENT PREFIX" styleClass="field-label"/>
-                                <TextField fx:id="prefixField" promptText="INV-"/>
-                            </VBox>
-
-                            <!-- Start + Padding -->
-                            <HBox spacing="14">
-
-                                <VBox spacing="6" HBox.hgrow="ALWAYS">
-                                    <Label text="STARTING NO." styleClass="field-label"/>
-                                    <TextField fx:id="startField" promptText="001"/>
-                                </VBox>
-
-                                <VBox spacing="6" HBox.hgrow="ALWAYS">
-                                    <Label text="PADDING" styleClass="field-label"/>
-                                    <ComboBox fx:id="paddingCombo"/>
-                                </VBox>
-
-                            </HBox>
-
-                            <!-- Sequence Preview -->
-                            <VBox spacing="6" styleClass="sequence-box">
-                                <Label text="SEQUENCE EXAMPLE" styleClass="sequence-label"/>
-                                <Label fx:id="sequencePreview"
-                                       text="INV-002, INV-003..."
-                                       styleClass="sequence-value"/>
-                            </VBox>
-
-                            <Pane VBox.vgrow="ALWAYS"/>
-                        </VBox>
-                        
-                        <!-- ================= RIGHT CARD (JOB NUMBER) ================= -->
-                        <VBox fx:id="jobCard"
-                              spacing="18"
-                              styleClass="card"
-                              HBox.hgrow="ALWAYS">
-
-                            <HBox alignment="CENTER_LEFT">
-                                <Label text="JOB CONFIGURATION" styleClass="section-label"/>
-                                <Pane HBox.hgrow="ALWAYS"/>
-                                <Label fx:id="jobPreviewBadge"
-                                       text="SUN-0001"
-                                       styleClass="preview-badge"/>
-                            </HBox>
-
-                            <!-- Prefix -->
-                            <VBox spacing="6">
-                                <Label text="DOCUMENT PREFIX" styleClass="field-label"/>
-                                <TextField fx:id="jobPrefixField" promptText="SUN-"/>
-                            </VBox>
-
-                            <!-- Start + Padding -->
-                            <HBox spacing="14">
-
-                                <VBox spacing="6" HBox.hgrow="ALWAYS">
-                                    <Label text="STARTING NO." styleClass="field-label"/>
-                                    <TextField fx:id="jobStartField" promptText="1"/>
-                                </VBox>
-
-                                <VBox spacing="6" HBox.hgrow="ALWAYS">
-                                    <Label text="PADDING" styleClass="field-label"/>
-                                    <ComboBox fx:id="jobPaddingCombo"/>
-                                </VBox>
-
-                            </HBox>
-
-                            <!-- Sequence Preview -->
-                            <VBox spacing="6" styleClass="sequence-box">
-                                <Label text="SEQUENCE EXAMPLE" styleClass="sequence-label"/>
-                                <Label fx:id="jobSequencePreview"
-                                       text="SUN-0002, SUN-0003..."
-                                       styleClass="sequence-value"/>
-                            </VBox>
-
-                            <Pane VBox.vgrow="ALWAYS"/>
-                        </VBox>
-
-                    </HBox>
+        <!-- Same pattern as General Settings: card + kicker + GridPane (50/50) -->
+        <VBox styleClass="settings-form-card" spacing="16" fillWidth="true">
+            <Label text="Document numbering" styleClass="card-title-sm"/>
+            <Label text="Prefix comes from company name in General Settings. FY is April–March. Payment receipts use the payment id in the number (no separate counter)."
+                   wrapText="true" styleClass="settings-section-kicker"/>
+            <GridPane hgap="16" vgap="16">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                </columnConstraints>
+                <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label text="Current financial year" styleClass="field-heading-sm"/>
+                    <TextField fx:id="fyField" editable="false" styleClass="taste-field" maxWidth="Infinity"/>
                 </VBox>
-            </ScrollPane>
-        </center>
+                <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label text="Digit width" styleClass="field-heading-sm"/>
+                    <ComboBox fx:id="paddingCombo" styleClass="taste-combo" maxWidth="Infinity"/>
+                </VBox>
+            </GridPane>
+        </VBox>
 
-    </BorderPane>
-</StackPane>
+        <VBox styleClass="settings-form-card" spacing="16" fillWidth="true">
+            <Label text="Next number to assign" styleClass="card-title-sm"/>
+            <Label text="Next value issued for each document type (shared format PREFIX/TYPE/FY/####)."
+                   wrapText="true" styleClass="settings-section-kicker"/>
+            <GridPane fx:id="seriesGrid" hgap="16" vgap="16">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                </columnConstraints>
+            </GridPane>
+        </VBox>
+    </VBox>
+</ScrollPane>

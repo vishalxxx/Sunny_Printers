@@ -8,10 +8,6 @@
 }
 
 /* Extra space below dashboard title row (centerHeaderTitle) before the trail */
-.view-clients-root.app-page-shell .breadcrumb-container {
-    -fx-padding: 12 0 4 0;
-}
-
 .view-clients-root .label,
 .view-clients-root .combo-box,
 .view-clients-root .list-cell,
@@ -28,6 +24,45 @@
     -fx-padding: 6 0 0 0;
 }
 
+.view-clients-actions {
+    -fx-padding: 16 0 0 0;
+    -fx-alignment: CENTER_LEFT;
+}
+
+/* Primary CTA — matches warm terracotta filters / ERP accent (theme not loaded on this screen) */
+.view-clients-root .view-clients-add-btn {
+    -fx-background-color: #C87941;
+    -fx-text-fill: white;
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-letter-spacing: 0.02em;
+    -fx-background-radius: 22;
+    -fx-border-radius: 22;
+    -fx-border-color: #B86A35;
+    -fx-border-width: 1;
+    -fx-padding: 9px 22px;
+    -fx-cursor: hand;
+    -fx-background-insets: 0;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.12), 10, 0, 0, 3);
+}
+
+.view-clients-root .view-clients-add-btn:hover {
+    -fx-background-color: #D0884F;
+    -fx-border-color: #C87941;
+}
+
+.view-clients-root .view-clients-add-btn:pressed {
+    -fx-background-color: #A86A38;
+    -fx-border-color: #8F5A2E;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.08), 4, 0, 0, 1);
+}
+
+.view-clients-root .view-clients-add-btn:focused {
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.5;
+}
+
 .search-field {
     -fx-background-color: #FAF6F0;
     -fx-border-color: #CD7B4E;
@@ -38,6 +73,7 @@
     -fx-text-fill: #3E312D;
     -fx-font-family: 'Inter';
     -fx-font-size: 12px;
+    -fx-min-width: 200;
 }
 
 /* .sort-combo, compact-combo, client-combo, card-combo: shared in theme.css */

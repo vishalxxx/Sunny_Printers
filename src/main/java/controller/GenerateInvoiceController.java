@@ -41,11 +41,16 @@ import javafx.stage.Stage;
 
 import model.Client;
 import model.Invoice;
+import model.MasterDocumentSeries;
 import service.ClientService;
 import service.InvoiceBuilderService;
 import service.InvoiceMasterService;
 import service.PdfInvoiceService;
+import service.SettingsService;
+import utils.DBConnection;
 import utils.Toast;
+
+import java.sql.Connection;
 
 public class GenerateInvoiceController {
 
@@ -82,6 +87,11 @@ public class GenerateInvoiceController {
     private DatePicker dueDatePicker;
     @FXML
     private TextArea notesArea;
+
+    @FXML
+    private RadioButton radioGstInvoice;
+    @FXML
+    private RadioButton radioProformaInvoice;
 
     @FXML
     private Label itemCountLabel;
@@ -152,6 +162,7 @@ public class GenerateInvoiceController {
             return;
         }
         applyTabContent();
+        refreshInvoiceNoPreview();
     }
 
     @FXML
@@ -166,9 +177,54 @@ public class GenerateInvoiceController {
         setupJobSearch();
         setupDateRangeTab();
         setupMonthlyTab();
+        setupInvoiceDocumentTypeRadios();
         refreshTabVisuals();
         applyTabContent();
-        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Generate Invoice", this::handleBack);
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null, this::handleBack);
+    }
+
+    private void setupInvoiceDocumentTypeRadios() {
+        ToggleGroup group = new ToggleGroup();
+        if (radioGstInvoice != null) {
+            radioGstInvoice.setToggleGroup(group);
+        }
+        if (radioProformaInvoice != null) {
+            radioProformaInvoice.setToggleGroup(group);
+        }
+        if (radioGstInvoice != null) {
+            radioGstInvoice.setSelected(true);
+        }
+        if (group != null) {
+            group.selectedToggleProperty().addListener((obs, prev, sel) -> refreshInvoiceNoPreview());
+        }
+    }
+
+    /** Updates the client box invoice number to the next value for the selected GST vs Proforma sequence. */
+    private void refreshInvoiceNoPreview() {
+        if (invoiceNoField == null) {
+            return;
+        }
+        LocalDate refDate = invoiceDatePicker != null ? invoiceDatePicker.getValue() : LocalDate.now();
+        if (refDate == null) {
+            refDate = LocalDate.now();
+        }
+        final LocalDate d = refDate;
+        final MasterDocumentSeries series = selectedDocumentSeriesForGeneration();
+        new Thread(() -> {
+            try (Connection con = DBConnection.getConnection()) {
+                String preview = settingsService.peekNextMasterNumberDisplay(con, series, d);
+                Platform.runLater(() -> invoiceNoField.setText(preview));
+            } catch (Exception e) {
+                Platform.runLater(() -> invoiceNoField.setText("--"));
+            }
+        }, "invoice-no-preview").start();
+    }
+
+    private MasterDocumentSeries selectedDocumentSeriesForGeneration() {
+        if (radioProformaInvoice != null && radioProformaInvoice.isSelected()) {
+            return MasterDocumentSeries.PROFORMA_INVOICE;
+        }
+        return MasterDocumentSeries.GST_INVOICE;
     }
 
     private final ClientService clientService = new ClientService();
@@ -176,6 +232,7 @@ public class GenerateInvoiceController {
     private final InvoiceBuilderService invoiceBuilder = new InvoiceBuilderService();
     private final InvoiceMasterService invoiceMasterService = new InvoiceMasterService();
     private final PdfInvoiceService pdfInvoiceService = new PdfInvoiceService();
+    private final SettingsService settingsService = new SettingsService();
 
     private StackPane rootStackPane;
     private final ObservableList<Client> masterClients = FXCollections.observableArrayList();
@@ -610,9 +667,11 @@ public class GenerateInvoiceController {
             if (isAutoDueDateTerms(termsCombo.getValue())) {
                 applyTermsToDueDate();
             }
+            refreshInvoiceNoPreview();
         });
 
         applyTermsToDueDate();
+        refreshInvoiceNoPreview();
     }
 
     /**
@@ -930,6 +989,8 @@ public class GenerateInvoiceController {
             invoiceNoField.setDisable(activeTab == BillingTab.DATE_RANGE || monthlyTab);
         }
 
+        refreshInvoiceNoPreview();
+
         updateJobsTablePlaceholderText();
 
         if (jobsTable != null) {
@@ -1147,6 +1208,7 @@ public class GenerateInvoiceController {
                                 client.getClientName(), client.getBusinessName(),
                                 previewJobIds, invoiceDate, false);
                     }
+                    invoice.setMasterDocumentSeries(selectedDocumentSeriesForGeneration());
 
                     if (isCancelled()) {
                         throw new CancellationException();
@@ -1276,6 +1338,7 @@ public class GenerateInvoiceController {
                         invoice = invoiceBuilder.buildInvoiceForClientByJobs(client.getId(),
                                 client.getClientName(), client.getBusinessName(), generateJobIds, invoiceDate);
                     }
+                    invoice.setMasterDocumentSeries(selectedDocumentSeriesForGeneration());
 
                     if (isCancelled()) {
                         throw new CancellationException();

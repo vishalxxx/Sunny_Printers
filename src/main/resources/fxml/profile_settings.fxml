@@ -6,11 +6,13 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.shape.Circle?>
 
-<ScrollPane fitToWidth="true" styleClass="profile-root" stylesheets="@../css/user_profile.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.ProfileSettingsController">
-    <VBox spacing="40" styleClass="content-container">
+<ScrollPane fitToWidth="true" styleClass="profile-root settings-theme-root settings-profile ui-compact" stylesheets="@../css/theme.css, @../css/add_job.css, @../css/view_job.css, @../css/user_profile.css, @../css/settings_screens.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.ProfileSettingsController">
+    <VBox spacing="40" styleClass="content-container, app-page-shell">
         <padding>
             <Insets bottom="40" left="60" right="60" top="40" />
         </padding>
+
+        <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8"/>
 
         <!-- HEADER / AVATAR ROW -->
         <HBox alignment="CENTER_LEFT" spacing="35">
@@ -74,7 +76,7 @@
                 </GridPane>
 
                 <HBox alignment="CENTER_RIGHT" style="-fx-padding: 10 0 0 0;">
-                    <Button onAction="#handleSave" styleClass="btn-primary-large" text="Save Preferences" />
+                    <Button onAction="#handleSave" styleClass="button, btn-primary-large" text="Save Preferences" />
                 </HBox>
             </VBox>
 

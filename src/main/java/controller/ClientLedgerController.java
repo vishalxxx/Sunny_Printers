@@ -112,7 +112,7 @@ public class ClientLedgerController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Client Ledger",
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null,
                 () -> MainController.getInstance().handleBack(null));
         setupTable();
         loadClients();

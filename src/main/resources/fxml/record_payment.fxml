@@ -16,24 +16,20 @@
                 <VBox spacing="16" alignment="TOP_LEFT" styleClass="rp-page, ui-compact, app-page-shell" fillWidth="true">
 
                     <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8"/>
-                    <Label text="Allocate receipts against outstanding invoices for the selected client."
-                               styleClass="page-subheading rp-lead" wrapText="true" maxWidth="720"/>
-                    <HBox alignment="TOP_LEFT" spacing="20">
-                        <Region HBox.hgrow="ALWAYS" minWidth="0"/>
-                        <VBox styleClass="kpi-card, kpi-card-orange" minWidth="168" maxWidth="220" spacing="6"
-                              alignment="CENTER_LEFT">
-                            <Label text="TOTAL OUTSTANDING" styleClass="kpi-label"/>
-                            <Label fx:id="totalOutstandingLabel" text="₹ 0.00" styleClass="kpi-value-orange"/>
-                        </VBox>
-                    </HBox>
-
                     <!-- PAYMENT CARD -->
                     <VBox spacing="16" styleClass="info-card-premium, rp-card">
-                        <VBox spacing="8">
-                            <Label text="Select client" styleClass="field-heading-sm"/>
-                            <ComboBox fx:id="clientCombo" promptText="Select client" maxWidth="Infinity"
-                                      styleClass="taste-combo" editable="false"/>
-                        </VBox>
+                        <HBox alignment="CENTER_LEFT" spacing="16" styleClass="rp-client-kpi-row">
+                            <VBox spacing="8" HBox.hgrow="ALWAYS" minWidth="0">
+                                <Label text="Select client" styleClass="field-heading-sm"/>
+                                <ComboBox fx:id="clientCombo" promptText="Select client" maxWidth="Infinity"
+                                          styleClass="taste-combo" editable="false"/>
+                            </VBox>
+                            <VBox styleClass="kpi-card, kpi-card-orange" minWidth="168" maxWidth="220" spacing="6"
+                                  alignment="CENTER_LEFT">
+                                <Label text="TOTAL OUTSTANDING" styleClass="kpi-label"/>
+                                <Label fx:id="totalOutstandingLabel" text="₹ 0.00" styleClass="kpi-value-orange"/>
+                            </VBox>
+                        </HBox>
 
                         <GridPane hgap="16" vgap="16">
                             <columnConstraints>

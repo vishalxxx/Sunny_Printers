@@ -17,10 +17,6 @@
     -fx-spacing: 0;
 }
 
-.add-job-root.app-page-shell .breadcrumb-container {
-    -fx-padding: 12 0 4 0;
-}
-
 .add-job-root .add-job-lead {
     -fx-padding: 0 0 10 0;
 }
@@ -38,7 +34,8 @@
 
 /* --- BREADCRUMBS --- */
 .breadcrumb-container {
-    -fx-spacing: 8;
+    -fx-spacing: 6;
+    -fx-padding: 6 0 10 0;
     -fx-alignment: CENTER_LEFT;
 }
 
@@ -454,4 +451,16 @@
 
 .main-scroll-pane .scroll-bar:vertical .track {
     -fx-background-color: #FAF6F0;
+}
+
+/* DatePicker popup is not under .add-job-root; repeat after theme so future days stay legible on cream */
+.date-picker-popup .day-cell.job-date-future-day:disabled {
+    -fx-opacity: 1;
+    -fx-text-fill: #5C4E42;
+    -fx-font-weight: 600;
+}
+
+.date-picker-popup .day-cell.job-date-future-day:disabled:hover {
+    -fx-background-color: transparent;
+    -fx-text-fill: #4A3F36;
 }

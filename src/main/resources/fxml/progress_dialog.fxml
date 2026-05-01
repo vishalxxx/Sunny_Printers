@@ -4,37 +4,37 @@
 <?import javafx.scene.layout.*?>
 
 <StackPane xmlns="http://javafx.com/javafx/23"
-           xmlns:fx="http://javafx.com/fxml/1"
-           fx:id="root"
-           fx:controller="controller.ProgressDialogController"
-           stylesheets="@../css/progress_dialog.css"
-           styleClass="progress-overlay">
+       xmlns:fx="http://javafx.com/fxml/1"
+       fx:id="root"
+       fx:controller="controller.ProgressDialogController"
+       stylesheets="@../css/progress_dialog.css"
+       styleClass="progress-overlay">
 
-    <!-- Center floating card -->
-    <VBox spacing="16"
-          alignment="CENTER"
-          styleClass="progress-card">
+       <!-- Center floating card -->
+       <VBox spacing="16"
+              alignment="CENTER"
+              styleClass="progress-card">
 
-        <Label fx:id="titleLabel"
-               text="Processing..."
-               styleClass="progress-title"/>
+              <Label fx:id="titleLabel"
+                     text="Processing..."
+                     styleClass="progress-title" />
 
-        <Label fx:id="statusLabel"
-               text="Starting..."
-               styleClass="progress-subtitle"/>
+              <Label fx:id="statusLabel"
+                     text="Starting..."
+                     styleClass="progress-subtitle" />
 
-        <ProgressBar fx:id="progressBar"
+              <ProgressBar fx:id="progressBar"
                      prefWidth="260"
-                     progress="0"/>
+                     progress="0" />
 
-        <Label fx:id="percentLabel"
-               text="0 %"
-               styleClass="progress-percent"/>
+              <Label fx:id="percentLabel"
+                     text="0 %"
+                     styleClass="progress-percent" />
 
-        <Button fx:id="cancelButton"
+              <Button fx:id="cancelButton"
                 text="Cancel"
                 onAction="#onCancelClicked"
                 styleClass="progress-cancel"/>
-    </VBox>
+       </VBox>
 
 </StackPane>

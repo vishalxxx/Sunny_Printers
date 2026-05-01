@@ -69,7 +69,7 @@ public class ViewInvoiceJobsController {
 
     @FXML
     private void initialize() {
-        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Invoice Jobs",
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null,
                 () -> MainController.getInstance().handleBack(null));
         setupTable();
         setupClientComboBox();

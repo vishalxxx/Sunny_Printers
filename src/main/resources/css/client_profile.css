@@ -26,27 +26,11 @@
     -fx-font-style: normal;
 }
 
-/* --- BREADCRUMBS --- */
-.breadcrumb-container {
+/* Breadcrumbs: space below main shell header title row */
+.profile-root .breadcrumb-container.profile-breadcrumb-row {
     -fx-spacing: 8;
+    -fx-padding: 16 0 10 0;
     -fx-alignment: CENTER_LEFT;
-}
-
-.breadcrumb-label {
-    -fx-text-fill: #A0836D;
-    -fx-font-size: 10px;
-    -fx-font-weight: 800;
-    -fx-letter-spacing: 0.1em;
-}
-
-.breadcrumb-separator {
-    -fx-text-fill: #C87941;
-    -fx-font-size: 10px;
-    -fx-font-weight: 800;
-}
-
-.breadcrumb-current {
-    -fx-text-fill: #C87941;
 }
 
 /* --- HEADER --- */
@@ -281,6 +265,31 @@
     -fx-background-radius: 24;
     -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.04), 20, 0, 0, 8);
     -fx-overflow: hidden;
+    -fx-padding: 0 0 20 0;
+}
+
+.pipeline-more-tag {
+    -fx-text-fill: #8E857C;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-font-family: 'Manrope';
+    -fx-padding: 4 10;
+    -fx-background-color: #F3F1EB;
+    -fx-background-radius: 999;
+    -fx-border-color: #EFE9DB;
+    -fx-border-radius: 999;
+    -fx-border-width: 1;
+}
+
+.history-rows-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+
+.history-rows-scroll > .viewport {
+    -fx-background-color: transparent;
 }
 
 .history-header {
@@ -312,10 +321,11 @@
 }
 
 .invoice-id-label {
-    -fx-font-size: 14px;
-    -fx-font-weight: 900;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
     -fx-text-fill: #3E312D;
     -fx-font-family: 'Manrope';
+    -fx-wrap-text: false;
 }
 
 .invoice-date-label {
@@ -325,7 +335,7 @@
 }
 
 .invoice-amount-label {
-    -fx-font-size: 14px;
+    -fx-font-size: 12px;
     -fx-font-weight: 800;
     -fx-text-fill: #3E312D;
 }

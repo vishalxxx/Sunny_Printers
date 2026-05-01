@@ -299,11 +299,19 @@
     -fx-max-width: 34;
     -fx-min-height: 34;
     -fx-max-height: 34;
-    -fx-padding: 0 0 0 10; /* Locked offset */
+    -fx-padding: 0;
     -fx-background-radius: 50;
-    -fx-alignment: CENTER_LEFT;
+    -fx-alignment: CENTER;
     -fx-content-display: GRAPHIC_ONLY;
     -fx-graphic-text-gap: 0;
+}
+
+/* Center the FAB icon in the circle (graphic uses CENTER_LEFT .header-box from nav buttons) */
+.sidebar-collapsed .new-job-btn .header-box {
+    -fx-alignment: CENTER;
+    -fx-pref-width: 34;
+    -fx-min-width: 34;
+    -fx-padding: 0;
 }
 
 .new-job-btn {
@@ -695,4 +703,206 @@
 .modern-combo .list-view .list-cell:selected {
     -fx-background-color: -fx-primary;
     -fx-text-fill: white;
+}
+/* DOWNLOADS BUTTON & BADGE */
+.download-btn {
+    -fx-padding: 6;
+    -fx-background-color: transparent;
+    -fx-alignment: CENTER;
+    -fx-cursor: hand;
+    -fx-min-width: 34;
+    -fx-max-width: 34;
+    -fx-min-height: 34;
+    -fx-max-height: 34;
+    -fx-background-radius: 100;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.download-icon-region {
+    -fx-background-color: #8E857C; /* Muted stone color */
+}
+
+.download-btn:hover {
+    -fx-background-color: white;
+    -fx-border-color: #D6D1C9;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 8, 0, 0, 2);
+}
+
+.download-btn-active {
+    -fx-background-color: #FEF6F2; /* Very subtle warm tint */
+}
+
+.download-btn-active .download-icon-region {
+    -fx-background-color: #C16738 !important;
+}
+
+.download-btn-active:hover {
+    -fx-background-color: white;
+    -fx-effect: dropshadow(three-pass-box, rgba(193, 103, 56, 0.2), 15, 0, 0, 6);
+}
+
+.download-badge-container {
+    -fx-background-color: #C16738;
+    -fx-background-radius: 100;
+    -fx-min-width: 16;
+    -fx-max-width: 16;
+    -fx-min-height: 16;
+    -fx-max-height: 16;
+    -fx-alignment: CENTER;
+}
+
+.download-badge-text {
+    -fx-text-fill: white;
+    -fx-font-size: 9px;
+    -fx-font-weight: 900;
+}
+
+/* DOWNLOADS POPUP — compact; avoid nested shadows on rows (reduces fuzzy text on HiDPI) */
+.downloads-popup-card {
+    -fx-background-color: #FAF9F6;
+    -fx-background-radius: 14;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.10), 14, 0, 0, 6);
+    -fx-border-color: #EFE9DB;
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-min-width: 268;
+    -fx-pref-width: 268;
+    -fx-max-width: 268;
+    -fx-font-smoothing-type: gray;
+}
+
+.downloads-header {
+    -fx-padding: 12 16 10 16;
+}
+
+.downloads-title {
+    -fx-font-family: 'Manrope';
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #3E362E;
+    -fx-letter-spacing: -0.2;
+    -fx-font-smoothing-type: gray;
+}
+
+.view-all-link {
+    -fx-text-fill: #C16738;
+    -fx-font-size: 10px;
+    -fx-font-weight: 900;
+    -fx-cursor: hand;
+    -fx-letter-spacing: 0.4;
+}
+
+.download-item-row {
+    -fx-padding: 6 14;
+    -fx-spacing: 8;
+    -fx-alignment: CENTER_LEFT;
+    -fx-cursor: hand;
+    -fx-background-color: transparent;
+    -fx-transition: 0.2s;
+}
+
+.download-item-row:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.95);
+    -fx-effect: null;
+}
+
+.file-icon-container {
+    -fx-min-width: 26;
+    -fx-max-width: 26;
+    -fx-min-height: 26;
+    -fx-max-height: 26;
+    -fx-background-radius: 7;
+    -fx-alignment: CENTER;
+}
+
+.file-icon-pdf { -fx-background-color: #FFF1F1; }
+.file-icon-excel { -fx-background-color: #F0FDF4; }
+
+.file-icon-pdf Region {
+    -fx-shape: "M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z";
+    -fx-background-color: #EF4444;
+    -fx-min-width: 10;
+    -fx-min-height: 10;
+    -fx-max-width: 10;
+    -fx-max-height: 10;
+}
+
+.file-icon-excel Region {
+    -fx-shape: "M21.17 3.25Q21.5 3.25 21.76 3.5 22 3.74 22 4.08V19.92Q22 20.26 21.76 20.5 21.5 20.75 21.17 20.75H7.5Q7.16 20.75 6.91 20.5 6.67 20.26 6.67 19.92V17.17H2.5Q2.16 17.17 1.91 16.92 1.67 16.67 1.67 16.33V7.67Q1.67 7.33 1.91 7.08 2.16 6.83 2.5 6.83H6.67V4.08Q6.67 3.74 6.91 3.5 7.16 3.25 7.5 3.25H21.17M20.33 18.58V14.75H16.83V18.58H20.33M20.33 13.08V9.25H16.83V13.08H20.33M20.33 7.58V5.42H16.83V7.58H20.33M15.17 18.58V14.75H11.67V18.58H15.17M15.17 13.08V9.25H11.67V13.08H15.17M15.17 7.58V5.42H11.67V7.58H15.17M10 18.58V14.75H8.33V18.58H10M10 13.08V9.25H8.33V13.08H10M10 7.58V5.42H8.33V7.58H10M5 15.33V8.67H3.33V15.33H5";
+    -fx-background-color: #22C55E;
+    -fx-min-width: 10;
+    -fx-min-height: 10;
+    -fx-max-width: 10;
+    -fx-max-height: 10;
+}
+
+.file-name {
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #3E362E;
+    -fx-font-smoothing-type: gray;
+}
+
+.file-meta {
+    -fx-font-size: 9px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #8E857C;
+    -fx-font-smoothing-type: gray;
+}
+
+.row-action-btn {
+    -fx-background-color: #F3F1EB;
+    -fx-padding: 4;
+    -fx-cursor: hand;
+    -fx-background-radius: 8;
+}
+
+.row-action-btn:hover {
+    -fx-background-color: #EFE9DB;
+    -fx-effect: none;
+}
+
+.row-action-icon {
+    -fx-shape: "M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z";
+    -fx-background-color: #8E857C;
+    -fx-min-width: 11;
+    -fx-min-height: 11;
+    -fx-max-width: 11;
+    -fx-max-height: 11;
+}
+
+.downloads-footer {
+    -fx-padding: 10 16 14 16;
+    -fx-alignment: CENTER;
+}
+
+.open-location-btn {
+    -fx-background-color: #C16738;
+    -fx-background-radius: 10;
+    -fx-padding: 8 14;
+    -fx-text-fill: white;
+    -fx-font-size: 10px;
+    -fx-font-weight: 900;
+    -fx-cursor: hand;
+    -fx-min-width: 0;
+    -fx-max-width: Infinity;
+    -fx-effect: dropshadow(three-pass-box, rgba(193, 103, 56, 0.2), 8, 0, 0, 3);
+}
+
+.open-location-btn:hover {
+    -fx-background-color: #D27357;
+    -fx-effect: dropshadow(three-pass-box, rgba(193, 103, 56, 0.35), 14, 0, 0, 6);
+}
+
+.open-location-icon {
+    -fx-shape: "M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z";
+    -fx-background-color: white;
+    -fx-min-width: 12;
+    -fx-min-height: 12;
+    -fx-max-width: 12;
+    -fx-max-height: 12;
 }

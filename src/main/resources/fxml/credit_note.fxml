@@ -25,7 +25,6 @@
         <!-- LEFT SIDE -->
         <VBox spacing="6">
             <Label text="Credit Note" styleClass="page-title"/>
-            <Label text="Generate a credit note for a specific client." styleClass="page-subtitle"/>
         </VBox>
     </HBox>
 

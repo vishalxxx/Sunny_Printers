@@ -17,10 +17,6 @@
     -fx-spacing: 24;
 }
 
-.generate-invoice-root .root-container.app-page-shell .breadcrumb-container {
-    -fx-padding: 12 0 4 0;
-}
-
 .generate-invoice-root .generate-invoice-lead {
     -fx-padding: 0 0 8 0;
 }
@@ -747,4 +743,40 @@
     -fx-fill: #1C1917;
     -fx-font-size: 12px;
     -fx-font-weight: 800;
+}
+
+/* Document type (GST vs Proforma) — visible on cream cards */
+.generate-invoice-root .invoice-doc-type-row {
+    -fx-padding: 2 0 0 0;
+}
+
+.generate-invoice-root .invoice-doc-type-radio {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.generate-invoice-root .invoice-doc-type-radio .radio {
+    -fx-background-color: transparent;
+    -fx-border-color: #C4B8AE;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 2;
+}
+
+.generate-invoice-root .invoice-doc-type-radio:selected .radio {
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 2;
+}
+
+.generate-invoice-root .invoice-doc-type-radio .dot {
+    -fx-mark-color: #CD7B4E;
+    -fx-padding: 4;
+}
+
+.generate-invoice-root .invoice-doc-type-hint {
+    -fx-text-fill: #8E7A6B;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-wrap-text: true;
 }

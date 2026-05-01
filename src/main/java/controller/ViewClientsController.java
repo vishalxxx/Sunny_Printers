@@ -7,6 +7,10 @@ import java.util.ResourceBundle;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.animation.Interpolator;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
@@ -22,9 +26,9 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Insets;
+import javafx.util.Duration;
 import model.Client;
 import repository.ClientRepository;
-import utils.NavigationManager;
 
 public class ViewClientsController implements Initializable {
 
@@ -47,9 +51,13 @@ public class ViewClientsController implements Initializable {
     private int currentPage = 1;
     private final int itemsPerPage = 15;
 
+    private static final double SEARCH_W_NORMAL = 250;
+    private static final double SEARCH_W_FOCUS = 345;
+    private Timeline searchWidthAnim;
+
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
-        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Client Directory", () -> handleBack(null));
+        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null, () -> handleBack(null));
 
 		// Load DB data
 		masterList.setAll(repo.findAllSortedById());
@@ -63,6 +71,7 @@ public class ViewClientsController implements Initializable {
         clientListView.setItems(sortedList); // We'll manage pagination manually on this later
 
 		searchField.textProperty().addListener((obs, oldVal, newVal) -> applyFilters());
+        setupSearchFieldExpandAnimation();
 
         // Sorting Logic
         sortComboBox.setItems(FXCollections.observableArrayList("Sort By", "Highest Balance", "Highest LTV", "Most Active"));
@@ -90,6 +99,14 @@ public class ViewClientsController implements Initializable {
     @FXML
     private void handleBack(javafx.event.Event e) {
         MainController.getInstance().handleBack(e);
+    }
+
+    @FXML
+    private void handleAddClient() {
+        MainController mc = MainController.getInstance();
+        if (mc != null) {
+            mc.loadAddClient();
+        }
     }
 
     // --- Simple Normal Cell for Dropdown List ---
@@ -157,27 +174,93 @@ public class ViewClientsController implements Initializable {
         }
     }
 
+    private void setupSearchFieldExpandAnimation() {
+        if (searchField == null) {
+            return;
+        }
+        searchField.setMinWidth(SEARCH_W_NORMAL);
+        searchField.setMaxWidth(SEARCH_W_FOCUS);
+        searchField.setPrefWidth(SEARCH_W_NORMAL);
+        searchField.focusedProperty().addListener((obs, wasFocused, focused) -> {
+            if (searchWidthAnim != null) {
+                searchWidthAnim.stop();
+            }
+            double target = Boolean.TRUE.equals(focused) ? SEARCH_W_FOCUS : SEARCH_W_NORMAL;
+            KeyValue kv = new KeyValue(searchField.prefWidthProperty(), target, Interpolator.EASE_BOTH);
+            KeyFrame kf = new KeyFrame(Duration.millis(220), kv);
+            searchWidthAnim = new Timeline(kf);
+            searchWidthAnim.play();
+        });
+    }
+
     private void applyFilters() {
         String keyword = searchField.getText() == null ? "" : searchField.getText().toLowerCase().trim();
         String insight = insightFilterComboBox.getValue();
 
         filteredList.setPredicate(client -> {
-            // 1. Keyword check
-            boolean matchesSearch = keyword.isBlank() || 
-                    client.getBusinessName().toLowerCase().contains(keyword) || 
-                    client.getClientName().toLowerCase().contains(keyword) ||
-                    String.valueOf(client.getId()).contains(keyword);
+            if (client == null) {
+                return false;
+            }
+            String biz = client.getBusinessName();
+            String name = client.getClientName();
+            boolean matchesSearch = keyword.isBlank()
+                    || (biz != null && biz.toLowerCase().contains(keyword))
+                    || (name != null && name.toLowerCase().contains(keyword))
+                    || String.valueOf(client.getId()).contains(keyword);
 
-            // 2. Insight check
-            boolean matchesInsight = insight == null || insight.equals("All Insights") || 
-                                     client.getInsight().equals(insight);
+            boolean matchesInsight = insight == null
+                    || "All Insights".equals(insight)
+                    || insight.isBlank()
+                    || java.util.Objects.equals(client.getInsight(), insight);
 
             return matchesSearch && matchesInsight;
         });
 
+        // Keep SortedList in sync with FilteredList when both insight + sort are active
+        applySortComparatorFromUi();
+
         currentPage = 1;
         updatePagination();
         updateMetrics();
+    }
+
+    private void applySort() {
+        applySortComparatorFromUi();
+        updatePagination();
+        updateMetrics();
+    }
+
+    /** Applies sort order from the combo; call after filter changes too so sort + filter stack correctly. */
+    private void applySortComparatorFromUi() {
+        if (sortedList == null || sortComboBox == null) {
+            return;
+        }
+        String criteria = sortComboBox.getValue();
+        if (criteria == null) {
+            criteria = "Sort By";
+        }
+        final String sortKey = criteria;
+        sortedList.setComparator((c1, c2) -> {
+            if (c1 == null && c2 == null) {
+                return 0;
+            }
+            if (c1 == null) {
+                return 1;
+            }
+            if (c2 == null) {
+                return -1;
+            }
+            switch (sortKey) {
+                case "Highest Balance":
+                    return Double.compare(c2.getBalance(), c1.getBalance());
+                case "Highest LTV":
+                    return Double.compare(c2.getLtv(), c1.getLtv());
+                case "Most Active":
+                    return Integer.compare(c2.getActivityScore(), c1.getActivityScore());
+                default:
+                    return Integer.compare(c1.getId(), c2.getId());
+            }
+        });
     }
 
     private void calculateAnalytics() {
@@ -261,25 +344,6 @@ public class ViewClientsController implements Initializable {
         }
     }
 
-    private void applySort() {
-        String criteria = sortComboBox.getValue();
-        if (criteria == null) return;
-
-        sortedList.setComparator((c1, c2) -> {
-            switch (criteria) {
-                case "Highest Balance":
-                    return Double.compare(c2.getBalance(), c1.getBalance());
-                case "Highest LTV":
-                    return Double.compare(c2.getLtv(), c1.getLtv());
-                case "Most Active":
-                    return Integer.compare(c2.getActivityScore(), c1.getActivityScore());
-                default:
-                    return Integer.compare(c1.getId(), c2.getId());
-            }
-        });
-        updatePagination();
-    }
-
     private void updatePagination() {
         int totalItems = filteredList.size();
         final int totalPages = Math.max(1, (int) Math.ceil((double) totalItems / itemsPerPage));
@@ -351,7 +415,8 @@ public class ViewClientsController implements Initializable {
         }
         
         if (lblShowingCount != null) {
-            lblShowingCount.setText(totalItems == 0 ? "0 of 0" : (startIndex + 1) + "-" + endIndex + " of " + masterList.size());
+            lblShowingCount.setText(totalItems == 0 ? "0 of 0"
+                    : (startIndex + 1) + "-" + endIndex + " of " + totalItems);
         }
     }
 

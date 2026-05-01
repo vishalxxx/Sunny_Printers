@@ -16,8 +16,6 @@
     <VBox spacing="24" alignment="TOP_LEFT" fillWidth="true" styleClass="root-container, generate-invoice-root, ui-compact, app-page-shell">
 
         <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8" />
-        <Label text="Create professional invoices for your printing jobs"
-               styleClass="page-subheading generate-invoice-lead" wrapText="true" maxWidth="720"/>
 
         <!-- 2. TABS SECTION -->
         <HBox spacing="32" styleClass="tab-header">
@@ -170,10 +168,19 @@
                         <ComboBox fx:id="clientComboBox" promptText="Select client name." styleClass="client-combo" maxWidth="Infinity" editable="false" />
                     </VBox>
 
+                    <VBox spacing="8">
+                        <Label text="DOCUMENT TYPE" styleClass="field-label-xs"/>
+                        <HBox spacing="16" alignment="CENTER_LEFT" styleClass="invoice-doc-type-row">
+                            <RadioButton fx:id="radioGstInvoice" text="GST invoice" styleClass="invoice-doc-type-radio" selected="true"/>
+                            <RadioButton fx:id="radioProformaInvoice" text="Proforma invoice" styleClass="invoice-doc-type-radio"/>
+                        </HBox>
+                        <Label text="Sets which numbering sequence is used when you finalize (Invoice Settings: INV vs PI)." wrapText="true" styleClass="invoice-doc-type-hint"/>
+                    </VBox>
+
                     <HBox spacing="12">
                         <VBox spacing="6" HBox.hgrow="ALWAYS">
                             <Label text="INVOICE NO." styleClass="field-label-xs"/>
-                            <TextField fx:id="invoiceNoField" text="INV-2023-892" styleClass="compact-field, invoice-no-input" editable="false" focusTraversable="true"/>
+                            <TextField fx:id="invoiceNoField" promptText="Next number in sequence…" styleClass="compact-field, invoice-no-input" editable="false" focusTraversable="true"/>
                         </VBox>
                         <VBox spacing="6" HBox.hgrow="ALWAYS">
                             <Label text="TERMS" styleClass="field-label-xs"/>

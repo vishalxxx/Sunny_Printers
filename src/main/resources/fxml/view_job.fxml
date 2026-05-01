@@ -19,9 +19,6 @@
     <!-- Breadcrumbs below dashboard title (“Job Management”) -->
     <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8" />
 
-    <Label text="Track and manage all your printing jobs"
-           styleClass="page-subheading view-jobs-lead" wrapText="true" maxWidth="720"/>
-
     <!-- TOOLBAR: SEARCH & FILTERS -->
     <VBox styleClass="header-bar" spacing="10">
         <padding><Insets top="12" right="14" bottom="12" left="14" /></padding>
