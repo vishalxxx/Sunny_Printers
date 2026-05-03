@@ -7,9 +7,17 @@
    Avoid remote font downloads at runtime (can stall screen load on slow/no network).
    If you want Manrope/Inter, bundle .ttf/.otf in resources and load via Font.loadFont(). */
 
+/* --- Job Management type scale (px): 11 meta · 12 body/headers · 13 status child line · 14 title/amount --- */
 .view-jobs-root {
-    -fx-background-color: #FAF6F0; 
+    -fx-background-color: #FAF6F0;
     -fx-font-family: "Segoe UI", "Inter", system;
+    -fx-font-size: 12px;
+}
+
+.jobs-table-empty-hint {
+    -fx-text-fill: #8B7E74;
+    -fx-font-size: 11px;
+    -fx-font-weight: 400;
 }
 
 .view-jobs-root.app-page-shell {
@@ -49,13 +57,14 @@
     -fx-background-radius: 8;
     -fx-padding: 0 12;
     -fx-text-fill: #2B2320;
-    -fx-font-weight: 800;
-    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-font-size: 12px;
     -fx-min-height: 30;
     -fx-cursor: hand;
 }
 .view-jobs-root .view-clear-btn .label {
-    -fx-font-size: 11px;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
 }
 .view-clear-btn:hover { -fx-background-color: #FBF4EE; }
 
@@ -74,6 +83,8 @@
     -fx-table-cell-border-color: transparent;
     -fx-table-header-border-color: transparent;
     -fx-border-color: #EEECE8; -fx-border-width: 1 0 1 0;
+    /* One knob for row height vs. status block (stepper + child panel) */
+    -fx-fixed-cell-size: 106;
 }
 
 .jobs-table-premium .column-header-background { -fx-background-color: #FAF6F0; -fx-border-color: #EEECE8; -fx-border-width: 0 0 1 0; }
@@ -82,17 +93,68 @@
     -fx-border-color: #F1ECE6;
     -fx-border-width: 0 0 1 0;
 }
-.jobs-table-premium .column-header { -fx-background-color: transparent; -fx-padding: 8 0; -fx-border-color: transparent; }
-.jobs-table-premium .column-header .label { -fx-font-weight: 800; -fx-text-fill: #1A1311; -fx-font-size: 11px; }
+.jobs-table-premium .column-header { -fx-background-color: transparent; -fx-padding: 4 0; -fx-border-color: transparent; }
+.jobs-table-premium .column-header .label { -fx-font-weight: 700; -fx-text-fill: #1A1311; -fx-font-size: 11px; }
+
+/* Tight workflow links (FlowPane + default Hyperlink min-height can inflate table row) */
+.jobs-table-premium .workflow-step-link {
+    -fx-min-height: 0;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+    -fx-font-size: 10px;
+    -fx-font-weight: 600;
+}
 
 .jobs-table-premium .table-row-cell {
     -fx-background-color: white;
     -fx-border-color: #F1ECE6;
     -fx-border-width: 0 0 1 0;
+    -fx-padding: 0;
 }
 .jobs-table-premium .table-row-cell:selected { -fx-background-color: #FFF9F3; }
 
-.jobs-table-premium .table-cell { -fx-padding: 6 10; -fx-alignment: CENTER_LEFT; -fx-border-color: transparent; }
+.jobs-table-premium .table-cell { -fx-padding: 0 4 0 4; -fx-alignment: center; -fx-border-color: transparent;
+    -fx-graphic-text-gap: 0;
+    -fx-content-display: graphic-only;
+}
+
+/* Status & Progress: symmetric vertical insets; center graphic so slack is top + bottom, not bottom-only */
+.jobs-table-premium .table-cell.table-cell-status-progress {
+    -fx-padding: 0 8 0 6;
+    -fx-alignment: center;
+}
+
+.jobs-table-premium .table-cell.table-cell-job-select {
+    -fx-alignment: center;
+    -fx-padding: 0 4 0 4;
+}
+
+/* Extra right padding: visual gap before Amount column */
+.jobs-table-premium .table-cell.table-cell-job-date {
+    -fx-alignment: center;
+    -fx-padding: 0 16 0 4;
+}
+
+/* Icon + text: left-aligned in column so every row shares the same vertical axis */
+.jobs-table-premium .table-cell.table-cell-job-details {
+    -fx-padding: 0 6 0 6;
+    -fx-alignment: center-left;
+}
+
+/* Extra left padding: pairs with Job Date right inset for a clear column gap */
+.jobs-table-premium .table-cell.table-cell-job-amount {
+    -fx-padding: 0 6 0 14;
+    -fx-alignment: center-left;
+}
+
+.jobs-table-premium .table-cell.table-cell-status-progress .workflow-cancelled-note {
+    -fx-font-size: 10px;
+}
+
+.jobs-table-premium .table-cell.table-cell-job-actions {
+    -fx-alignment: center;
+    -fx-padding: 0 8 0 8;
+}
 
 /* --- Scrollbars (TableView + VirtualFlow) --- */
 .jobs-table-premium .scroll-bar:vertical,
@@ -141,12 +203,27 @@
 }
 
 /* Row Content Components */
-.job-title-row { -fx-font-family: 'Manrope'; -fx-font-weight: 800; -fx-font-size: 12px; -fx-text-fill: #1A1311; }
-.job-client-row { -fx-font-size: 11px; -fx-text-fill: #8B7E74; -fx-font-weight: 600; }
-.job-id-row { -fx-font-size: 9px; -fx-text-fill: #B5ACA3; -fx-font-weight: 700; }
+.job-title-row { -fx-font-family: "Segoe UI", "Inter", system; -fx-font-weight: 700; -fx-font-size: 14px; -fx-text-fill: #1A1311; }
+.job-client-row { -fx-font-size: 12px; -fx-text-fill: #8B7E74; -fx-font-weight: 400; }
+.job-id-row { -fx-font-size: 11px; -fx-text-fill: #B5ACA3; -fx-font-weight: 400; }
 
+.jobs-table-premium .job-date-text {
+    -fx-text-fill: #1A1311;
+    -fx-font-weight: 600;
+    -fx-font-size: 11px;
+}
+
+/* Slightly smaller type inside the jobs grid only (toolbar/footer keep root scale) */
+.jobs-table-premium .job-title-row { -fx-font-size: 13px; }
+.jobs-table-premium .job-client-row { -fx-font-size: 11px; }
+.jobs-table-premium .job-id-row { -fx-font-size: 10px; }
+.jobs-table-premium .amount-row { -fx-font-size: 13px; }
+.jobs-table-premium .meta-row { -fx-font-size: 10px; }
+.jobs-table-premium .meta-link-link { -fx-font-size: 10px; }
+
+/* Width/height match ViewJobsController JOB_DETAILS_ICON_COL */
 .icon-box {
-    -fx-background-radius: 6; -fx-padding: 6; -fx-min-width: 32; -fx-max-width: 32; -fx-min-height: 32; -fx-max-height: 32;
+    -fx-background-radius: 6; -fx-padding: 4; -fx-min-width: 32; -fx-max-width: 32; -fx-min-height: 32; -fx-max-height: 32;
 }
 .icon-box-orange { -fx-background-color: #FFF1E6; }
 .icon-box-blue   { -fx-background-color: #E6F7FF; }
@@ -154,8 +231,18 @@
 .icon-box-purple { -fx-background-color: #F9F0FF; }
 .icon-box-red    { -fx-background-color: #FFF1F0; }
 
-.amount-row { -fx-font-weight: 800; -fx-font-size: 12px; -fx-text-fill: #C26A2D; }
-.meta-row { -fx-font-size: 9px; -fx-text-fill: #8B7E74; -fx-font-weight: 600; }
+.amount-row { -fx-font-weight: 700; -fx-font-size: 14px; -fx-text-fill: #B37038; }
+.meta-row { -fx-font-size: 11px; -fx-text-fill: #8B7E74; -fx-font-weight: 400; }
+
+.jobs-table-premium .meta-link-link {
+    -fx-font-size: 11px;
+    -fx-font-weight: 400;
+    -fx-text-fill: #4A90A4;
+}
+.jobs-table-premium .meta-link-link:hover {
+    -fx-text-fill: #3A7A8C;
+    -fx-underline: true;
+}
 
 /* ACTION SUITE: BULK (TOP DECK) */
 .bulk-bar-integrated {
@@ -165,8 +252,8 @@
     -fx-border-color: #F1ECE6;
     -fx-border-width: 0 0 1 0;
 }
-.bulk-count-label { -fx-font-size: 13px; -fx-font-weight: 900; -fx-text-fill: #1A1311; }
-.bulk-subtext { -fx-font-size: 10px; -fx-text-fill: #8B7E74; -fx-font-weight: 600; }
+.bulk-count-label { -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: #1A1311; }
+.bulk-subtext { -fx-font-size: 11px; -fx-text-fill: #8B7E74; -fx-font-weight: 400; }
 
 .bulk-btn {
     -fx-background-color: white;
@@ -174,7 +261,7 @@
     -fx-border-radius: 8;
     -fx-background-radius: 8;
     -fx-padding: 6 12;
-    -fx-font-weight: 800;
+    -fx-font-weight: 700;
     -fx-font-size: 11px;
     -fx-cursor: hand;
 }
@@ -216,23 +303,40 @@
 }
 
 .status-badge {
-    -fx-background-radius: 60; -fx-padding: 4 10; -fx-font-size: 9px; -fx-font-weight: 800;
+    -fx-background-radius: 60; -fx-padding: 2 7; -fx-font-size: 8px; -fx-font-weight: 800;
 }
-.status-badge-draft      { -fx-background-color: #F0EDE9; -fx-text-fill: #5B4F47; }
-.status-badge-processing { -fx-background-color: #E6F7FF; -fx-text-fill: #1890FF; }
-.status-badge-completed  { -fx-background-color: #F6FFED; -fx-text-fill: #52C41A; }
+.status-badge-draft      { -fx-background-color: #F7F2F0; -fx-text-fill: #5D4037; }
+.status-badge-processing { -fx-background-color: #F0F5FF; -fx-text-fill: #0044CC; }
+.status-badge-completed  { -fx-background-color: #F0F9F0; -fx-text-fill: #228B22; }
 .status-badge-cancelled  { -fx-background-color: #FFF1F0; -fx-text-fill: #F5222D; }
 
 /* In-Row Actions: TARGET PARITY */
 .row-action-btn-primary {
-    -fx-background-radius: 6; -fx-padding: 5 12; -fx-font-weight: 800; -fx-text-fill: white; -fx-font-size: 11px;
-    -fx-cursor: hand; -fx-background-color: #1890FF; 
+    -fx-background-radius: 5; -fx-padding: 2 8; -fx-font-weight: 700; -fx-text-fill: white; -fx-font-size: 10px;
+    -fx-cursor: hand; -fx-background-color: #1890FF;
+    -fx-min-height: 24; -fx-max-height: 24;
 }
 .row-action-btn-primary:hover { -fx-background-color: #007BD4; }
 
+.row-action-btn-primary.row-action-green {
+    -fx-background-color: #52C41A;
+}
+.row-action-btn-primary.row-action-green:hover { -fx-background-color: #43A047; }
+
+.row-action-btn-primary.row-action-purple {
+    -fx-background-color: #722ED1;
+}
+.row-action-btn-primary.row-action-purple:hover { -fx-background-color: #5B21A8; }
+
+.row-action-btn-primary.row-action-muted {
+    -fx-background-color: #F5F5F5;
+    -fx-text-fill: #B5ACA3;
+}
+.row-action-btn-primary.row-action-muted:hover { -fx-background-color: #EEEEEE; }
+
 .row-action-btn {
-    -fx-background-color: white; -fx-border-color: #E2DDD8; -fx-border-radius: 6; -fx-background-radius: 6;
-    -fx-min-width: 28; -fx-min-height: 28; -fx-max-width: 28; -fx-max-height: 28;
+    -fx-background-color: white; -fx-border-color: #E2DDD8; -fx-border-radius: 5; -fx-background-radius: 5;
+    -fx-min-width: 24; -fx-min-height: 24; -fx-max-width: 24; -fx-max-height: 24;
     -fx-padding: 0; -fx-cursor: hand; -fx-alignment: CENTER;
 }
 .row-btn-blue:hover   { -fx-background-color: #E6F7FF; -fx-border-color: #1890FF; }
@@ -295,8 +399,42 @@
 
 .page-subtitle {
     -fx-text-fill: #A79F99;
-}.stepper-label { -fx-font-size: 9px; -fx-font-weight: 700; -fx-text-fill: #B5ACA3; -fx-padding: 2 0 0 0; }
-.stepper-label-active { -fx-text-fill: #1A1311; -fx-font-weight: 800; }
+}
+
+/* Status & Progress column — tight vertical stack */
+.status-progress-cell {
+    -fx-spacing: 0;
+}
+
+.job-major-stepper {
+    -fx-padding: 0;
+}
+
+/* Label row: same width as dot track so labels align with dots */
+.job-major-stepper-label-row {
+    -fx-padding: 0;
+    -fx-spacing: 0;
+    -fx-alignment: top-left;
+}
+.job-major-stepper-label-track {
+    -fx-padding: 0;
+}
+
+/* Center stage text on each dot; avoid asymmetric padding that shifts glyphs vs. dot centers. */
+.job-major-stepper-label-track .stepper-label {
+    -fx-padding: 0 2;
+    -fx-text-alignment: center;
+    -fx-alignment: center;
+}
+
+.workflow-pill-flow {
+    -fx-pref-wrap-length: 360;
+    -fx-max-width: 400;
+}
+
+/* Stage labels: base 12 / 400 / #666; past/active colors set in controller */
+.stepper-label { -fx-font-size: 11px; -fx-font-weight: 400; -fx-text-fill: #666666; -fx-padding: 0; }
+.stepper-label-active { -fx-text-fill: #1A1311; -fx-font-weight: 700; }
 
 .stepper-dot {
     -fx-min-width: 10; -fx-max-width: 10; -fx-min-height: 10; -fx-max-height: 10;
@@ -310,6 +448,125 @@
 
 .stepper-line { -fx-background-color: #EEECE8; -fx-min-height: 2; -fx-max-height: 2; }
 .stepper-line-active { -fx-background-color: #5B4F47; }
-.stepper-line-blue { -fx-background-color: #1890FF; }
-.stepper-line-green { -fx-background-color: #52C41A; }
-.stepper-line-purple { -fx-background-color: #722ED1; }
+.stepper-line-blue { -fx-background-color: #0044CC; }
+.stepper-line-green { -fx-background-color: #228B22; }
+.stepper-line-purple { -fx-background-color: #6A0DAD; }
+
+/* ----- Child workflow (status column) ----- */
+.workflow-cancelled-note {
+    -fx-text-fill: #F5222D;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+
+.workflow-detail-box {
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 10 12;
+    -fx-spacing: 6;
+    -fx-max-width: 500;
+}
+
+.workflow-detail-draft {
+    -fx-background-color: #FBF6F1;
+    -fx-border-color: #E8D5C4;
+}
+.workflow-detail-processing {
+    -fx-background-color: #F0F9FF;
+    -fx-border-color: #C8E6FF;
+}
+.workflow-detail-completed {
+    -fx-background-color: #F6FFF4;
+    -fx-border-color: #D4EFC4;
+}
+.workflow-detail-invoice {
+    -fx-background-color: #FAF5FF;
+    -fx-border-color: #E4D4F5;
+}
+
+.workflow-stage-emoji {
+    -fx-font-size: 16px;
+    -fx-min-width: 28;
+    -fx-alignment: CENTER;
+}
+
+.workflow-child-head {
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-wrap-text: true;
+}
+.workflow-detail-draft .workflow-child-head { -fx-text-fill: #5B4F47; }
+.workflow-detail-processing .workflow-child-head { -fx-text-fill: #1890FF; }
+.workflow-detail-completed .workflow-child-head { -fx-text-fill: #389E0D; }
+.workflow-detail-invoice .workflow-child-head { -fx-text-fill: #722ED1; }
+
+.workflow-sub-label {
+    -fx-font-size: 9px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #8B7E74;
+}
+
+.workflow-chevron {
+    -fx-font-size: 12px;
+    -fx-text-fill: #C4B8AF;
+    -fx-padding: 0 2 0 0;
+}
+
+.workflow-pill {
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-padding: 4 10;
+    -fx-font-size: 9px;
+    -fx-font-weight: 700;
+    -fx-cursor: hand;
+    -fx-background-insets: 0;
+}
+
+.workflow-pill-done {
+    -fx-background-color: white;
+    -fx-border-color: #C5D9C8;
+    -fx-text-fill: #389E0D;
+    -fx-border-width: 1;
+}
+
+.workflow-pill-pending {
+    -fx-background-color: white;
+    -fx-border-color: #E0D8D2;
+    -fx-text-fill: #A79F99;
+    -fx-border-width: 1;
+}
+
+.workflow-detail-draft .workflow-pill-active {
+    -fx-background-color: #5B4F47;
+    -fx-text-fill: white;
+    -fx-border-color: transparent;
+}
+.workflow-detail-processing .workflow-pill-active {
+    -fx-background-color: #1890FF;
+    -fx-text-fill: white;
+    -fx-border-color: transparent;
+}
+.workflow-detail-completed .workflow-pill-active {
+    -fx-background-color: #52C41A;
+    -fx-text-fill: white;
+    -fx-border-color: transparent;
+}
+.workflow-detail-invoice .workflow-pill-active {
+    -fx-background-color: #722ED1;
+    -fx-text-fill: white;
+    -fx-border-color: transparent;
+}
+
+.workflow-pill:hover {
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 4, 0, 0, 1);
+}
+
+.status-badge-unknown {
+    -fx-background-color: #F0EDE9;
+    -fx-text-fill: #8B7E74;
+}
+.status-badge-created { -fx-background-color: #F7F2F0; -fx-text-fill: #5D4037; }
+.status-badge-in-progress { -fx-background-color: #F0F5FF; -fx-text-fill: #0044CC; }
+.status-badge-invoice-drafted { -fx-background-color: #F6F0FA; -fx-text-fill: #6A0DAD; }
+.status-badge-invoiced { -fx-background-color: #F6F0FA; -fx-text-fill: #6A0DAD; }

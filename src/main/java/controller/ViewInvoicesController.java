@@ -918,7 +918,7 @@ public class ViewInvoicesController {
             Invoice full = builder.buildInvoiceFromMasterForPdfExport(inv.getId());
             File created = new PdfInvoiceService().generateSingleInvoicePDF(full);
             if (stage != null) {
-                Toast.show(stage, "Invoice PDF saved:\n" + created.getAbsolutePath());
+                Toast.showSmall(stage, "Invoice PDF saved");
             }
         } catch (Exception ex) {
             ex.printStackTrace();

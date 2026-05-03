@@ -12,6 +12,7 @@ public class Job {
     private LocalDate jobDate;
 
     private String status;
+    private String childStatus;
     private String remarks;
 
     private Integer invoiceId;
@@ -43,6 +44,9 @@ public class Job {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public String getChildStatus() { return childStatus; }
+    public void setChildStatus(String childStatus) { this.childStatus = childStatus; }
 
     public String getRemarks() { return remarks; }
     public void setRemarks(String remarks) { this.remarks = remarks; }

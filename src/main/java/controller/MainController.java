@@ -336,6 +336,8 @@ public class MainController implements Initializable {
 	@FXML
 	private Button addJobSubBtn;
 	@FXML
+	private Button viewJobsSubBtn;
+	@FXML
 	private Button genInvoiceSubBtn;
 	@FXML
 	private Button recPaymentSubBtn;
@@ -1570,7 +1572,14 @@ public class MainController implements Initializable {
 
 	@FXML
 	public void loadViewJob() {
+		loadViewJobFiltered(null);
+	}
+
+	/** Open View Jobs; when {@code clientId} is non-null, the client filter is selected after data loads. */
+	public void loadViewJobFiltered(Integer clientId) {
+		ViewJobsController.pendingFilterClientId = clientId;
 		highlightActiveMenu(jobsBtn);
+		highlightSubmenu(viewJobsSubBtn);
 		loadCenterScreen("/fxml/view_job.fxml",
 				"Loading Dashboard...",
 				"Please wait");

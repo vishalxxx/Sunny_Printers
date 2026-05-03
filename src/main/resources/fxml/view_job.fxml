@@ -80,18 +80,20 @@
 
     <!-- 4. PREMIUM TABLE GRID -->
     <StackPane VBox.vgrow="ALWAYS" style="-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #EEECE8; -fx-border-radius: 12;">
+        <!-- Row height from view_job.css (.jobs-table-premium -fx-fixed-cell-size) for uniform scaling with type scale -->
         <TableView fx:id="jobsTable" styleClass="jobs-table-premium" VBox.vgrow="ALWAYS">
             <columns>
-                <TableColumn fx:id="selectCol" text="" minWidth="44" prefWidth="44" resizable="false" />
-                <TableColumn fx:id="jobDetailsCol" text="Job Details" minWidth="240" prefWidth="280" />
-                <TableColumn fx:id="dateCol" text="Job Date" minWidth="120" prefWidth="130" />
-                <TableColumn fx:id="amountCol" text="Amount" minWidth="160" prefWidth="180" />
-                <TableColumn fx:id="statusProgressCol" text="Status &amp; Progress" minWidth="260" prefWidth="280" />
-                <TableColumn fx:id="actionsCol" text="Actions" minWidth="280" prefWidth="300" />
+                <TableColumn fx:id="selectCol" text="" minWidth="40" prefWidth="40" resizable="false" />
+                <TableColumn fx:id="jobDetailsCol" text="Job Details" minWidth="168" prefWidth="196" />
+                <TableColumn fx:id="dateCol" text="Job Date" minWidth="84" prefWidth="94" />
+                <TableColumn fx:id="amountCol" text="Amount" minWidth="140" prefWidth="158" />
+                <!-- Major stepper width matches statusContentWidth in ViewJobsController -->
+                <TableColumn fx:id="statusProgressCol" text="Status &amp; Progress" minWidth="300" prefWidth="352" />
+                <TableColumn fx:id="actionsCol" text="Actions" minWidth="232" prefWidth="252" />
             </columns>
             <placeholder>
                 <VBox alignment="CENTER" spacing="8">
-                    <Label text="No jobs found matching your filters." style="-fx-text-fill: #8B7E74; -fx-font-size: 13px;" />
+                    <Label text="No jobs found matching your filters." styleClass="jobs-table-empty-hint" />
                 </VBox>
             </placeholder>
         </TableView>

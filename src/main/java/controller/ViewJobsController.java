@@ -18,6 +18,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import java.io.File;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -36,6 +37,7 @@ import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.geometry.Pos;
@@ -44,11 +46,28 @@ import model.Client;
 import model.Job;
 import service.ClientService;
 import service.JobService;
+import utils.JobWorkflow;
 import utils.Toast;
+import javafx.scene.Group;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
+import javafx.scene.shape.SVGPath;
+import javafx.scene.shape.StrokeLineCap;
+import javafx.scene.shape.StrokeLineJoin;
 import javafx.scene.control.cell.CheckBoxTableCell;
+import javafx.scene.text.TextAlignment;
 
 public class ViewJobsController {
+
+    /** Minimal vertical insets for checkbox / date / amount / actions. */
+    private static final Insets TABLE_LEAD_COL_PADDING = new Insets(0, 0, 0, 0);
+
+    /** Job Details column: fixed icon column + gap so text maxWidth matches layout (must match CSS .icon-box width + root HBox spacing). */
+    private static final double JOB_DETAILS_ICON_COL = 32;
+    private static final double JOB_DETAILS_ICON_GAP = 8;
+
+    /** When set before opening View Jobs, client filter selects this client id once clients load. */
+    public static volatile Integer pendingFilterClientId;
 
     private final ClientService clientService = new ClientService();
     private final JobService jobService = new JobService();
@@ -177,7 +196,8 @@ public class ViewJobsController {
 
         // Bind table to paged items instead of sortedData directly
         jobsTable.setItems(pagedItems);
-        jobsTable.setFixedCellSize(78);
+        // Variable row height (setFixedCellSize(0)) breaks TableView: rows can inflate to viewport height.
+        // Row height is set on the table in view_job.fxml (-fx-fixed-cell-size).
 
         // Listen to changes in sorted data to refresh pagination
         sortedData.addListener((javafx.collections.ListChangeListener<Job>) c -> {
@@ -327,6 +347,7 @@ public class ViewJobsController {
         for (Job job : selected) {
             jobService.updateJobStatus(job.getId(), status);
             job.setStatus(status);
+            applyDefaultChildForNewMajor(job, status);
         }
         jobsTable.refresh();
         toast(successMsg);
@@ -402,6 +423,22 @@ public class ViewJobsController {
         }
         // Refresh visible rows that display client names.
         if (jobsTable != null) jobsTable.refresh();
+        applyPendingClientFilter();
+    }
+
+    private void applyPendingClientFilter() {
+        Integer id = pendingFilterClientId;
+        if (id == null || clientComboBox == null || clientComboBox.getItems().isEmpty()) {
+            return;
+        }
+        pendingFilterClientId = null;
+        autoSelectClient(id);
+    }
+
+    private static void useGraphicOnlyCell(TableCell<?, ?> cell) {
+        cell.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        cell.setGraphicTextGap(0);
+        cell.setText(null);
     }
 
     // =========================================================
@@ -415,38 +452,110 @@ public class ViewJobsController {
             prop.addListener((obs, old, val) -> updateBulkActionBar());
             return prop;
         });
-        selectCol.setCellFactory(CheckBoxTableCell.forTableColumn(selectCol));
+        selectCol.setCellFactory(col -> new TableCell<Job, Boolean>() {
+            private final javafx.scene.control.CheckBox checkBox = new javafx.scene.control.CheckBox();
+            private final HBox box = new HBox(checkBox);
+            {
+                getStyleClass().add("table-cell-job-select");
+                box.setAlignment(Pos.CENTER);
+                box.setFillHeight(false);
+                box.setPadding(TABLE_LEAD_COL_PADDING);
+                setAlignment(Pos.CENTER);
+            }
+            @Override
+            protected void updateItem(Boolean item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                    setGraphic(null);
+                    setText(null);
+                } else {
+                    Job job = (Job) getTableRow().getItem();
+                    checkBox.selectedProperty().unbindBidirectional(job.selectedProperty());
+                    checkBox.selectedProperty().bindBidirectional(job.selectedProperty());
+                    useGraphicOnlyCell(this);
+                    setGraphic(box);
+                }
+            }
+        });
         jobsTable.setEditable(true);
 
         // 2. JOB DETAILS COLUMN (Target Vision Alignment)
         jobDetailsCol.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<Job>(cellData.getValue()));
         jobDetailsCol.setCellFactory(col -> new TableCell<Job, Job>() {
-            private final VBox box = new VBox(1);
+            private final VBox box = new VBox(0);
             private final Label title = new Label();
             private final Label clientLabel = new Label();
             private final Label idLabel = new Label();
-            private final HBox root = new HBox(8);
+            private final HBox root = new HBox(JOB_DETAILS_ICON_GAP);
+            private final StackPane detailsShell = new StackPane();
             private final StackPane iconBox = new StackPane();
             private final Region icon = new Region();
-            
+            private final Runnable syncTextColumnWidth = () -> {
+                double cw = getWidth();
+                if (cw <= 0) {
+                    return;
+                }
+                double pad = getPadding().getLeft() + getPadding().getRight();
+                double textW = cw - pad - JOB_DETAILS_ICON_COL - JOB_DETAILS_ICON_GAP;
+                if (textW < 48) {
+                    textW = 48;
+                }
+                title.setMaxWidth(textW);
+                clientLabel.setMaxWidth(textW);
+                idLabel.setMaxWidth(textW);
+            };
+
             {
+                getStyleClass().add("table-cell-job-details");
+                setAlignment(Pos.CENTER_LEFT);
                 title.getStyleClass().add("job-title-row");
                 clientLabel.getStyleClass().add("job-client-row");
                 idLabel.getStyleClass().add("job-id-row");
+                title.setWrapText(true);
+                clientLabel.setWrapText(true);
+                title.setAlignment(Pos.TOP_LEFT);
+                title.setTextAlignment(TextAlignment.LEFT);
+                clientLabel.setAlignment(Pos.TOP_LEFT);
+                clientLabel.setTextAlignment(TextAlignment.LEFT);
+                idLabel.setAlignment(Pos.TOP_LEFT);
+                idLabel.setTextAlignment(TextAlignment.LEFT);
+                box.setAlignment(Pos.TOP_LEFT);
+                box.setFillWidth(true);
+                box.setMaxWidth(Double.MAX_VALUE);
                 box.getChildren().addAll(title, clientLabel, idLabel);
+                widthProperty().addListener((obs, ov, nv) -> syncTextColumnWidth.run());
+                paddingProperty().addListener((obs, ov, nv) -> syncTextColumnWidth.run());
                 root.setAlignment(Pos.CENTER_LEFT);
-                iconBox.setMinWidth(36); iconBox.setMaxWidth(36);
-                iconBox.setMinHeight(36); iconBox.setMaxHeight(36);
+                root.setFillHeight(false);
+                root.setPadding(Insets.EMPTY);
+                root.setMaxWidth(Double.MAX_VALUE);
+                root.setMinWidth(0);
+                iconBox.setMinWidth(JOB_DETAILS_ICON_COL);
+                iconBox.setPrefWidth(JOB_DETAILS_ICON_COL);
+                iconBox.setMaxWidth(JOB_DETAILS_ICON_COL);
+                iconBox.setMinHeight(JOB_DETAILS_ICON_COL);
+                iconBox.setPrefHeight(JOB_DETAILS_ICON_COL);
+                iconBox.setMaxHeight(JOB_DETAILS_ICON_COL);
+                iconBox.setAlignment(Pos.CENTER);
                 iconBox.getStyleClass().add("icon-box");
                 icon.getStyleClass().add("inner-icon");
                 iconBox.getChildren().add(icon);
                 root.getChildren().addAll(iconBox, box);
+                HBox.setHgrow(box, Priority.ALWAYS);
+                detailsShell.getChildren().add(root);
+                StackPane.setAlignment(root, Pos.CENTER_LEFT);
+                detailsShell.setMaxWidth(Double.MAX_VALUE);
+                detailsShell.setMaxHeight(Double.MAX_VALUE);
             }
 
             @Override
             protected void updateItem(Job job, boolean empty) {
                 super.updateItem(job, empty);
-                if (empty || job == null) { setGraphic(null); return; }
+                if (empty || job == null) {
+                    setGraphic(null);
+                    setText(null);
+                    return;
+                }
                 title.setText(job.getJobTitle() != null ? job.getJobTitle() : "No Title");
                 clientLabel.setText(clientNameMap.getOrDefault(job.getClientId(), "Unknown Client"));
                 idLabel.setText(job.getJobNo());
@@ -466,29 +575,40 @@ public class ViewJobsController {
                 
                 iconBox.getStyleClass().add("icon-box-" + type);
                 String colorHex = type.equals("orange") ? "#FA8C16" : type.equals("blue") ? "#1890FF" : type.equals("green") ? "#52C41A" : type.equals("purple") ? "#722ED1" : "#F5222D";
-                icon.setStyle("-fx-shape: '" + shape + "'; -fx-background-color: " + colorHex + "; -fx-min-width: 18; -fx-min-height: 18; -fx-max-width: 18; -fx-max-height: 18;");
+                icon.setStyle("-fx-shape: '" + shape + "'; -fx-background-color: " + colorHex + "; -fx-min-width: 15; -fx-min-height: 15; -fx-max-width: 15; -fx-max-height: 15;");
 
-                setGraphic(root);
+                useGraphicOnlyCell(this);
+                setGraphic(detailsShell);
+                Platform.runLater(syncTextColumnWidth);
             }
         });
 
         // 3. DATE COLUMN (Target Icons)
         dateCol.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<LocalDate>(cellData.getValue().getJobDate()));
         dateCol.setCellFactory(col -> new TableCell<Job, LocalDate>() {
-            private final HBox root = new HBox(6);
+            private final HBox root = new HBox(3);
             private final Region icon = new Region();
             private final Label label = new Label();
             {
-                root.setAlignment(Pos.CENTER_LEFT);
-                icon.setStyle("-fx-shape: 'M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z'; -fx-background-color: #A0836D; -fx-min-width: 12; -fx-min-height: 12; -fx-max-width: 12; -fx-max-height: 12;");
-                label.setStyle("-fx-text-fill: #1A1311; -fx-font-weight: 600; -fx-font-size: 10px;");
+                getStyleClass().add("table-cell-job-date");
+                setAlignment(Pos.CENTER);
+                root.setAlignment(Pos.CENTER);
+                root.setFillHeight(false);
+                root.setPadding(TABLE_LEAD_COL_PADDING);
+                icon.setStyle("-fx-shape: 'M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z'; -fx-background-color: #A0836D; -fx-min-width: 11; -fx-min-height: 11; -fx-max-width: 11; -fx-max-height: 11;");
+                label.getStyleClass().add("job-date-text");
                 root.getChildren().addAll(icon, label);
             }
             @Override
             protected void updateItem(LocalDate date, boolean empty) {
                 super.updateItem(date, empty);
-                if (empty || date == null) { setGraphic(null); return; }
+                if (empty || date == null) {
+                    setGraphic(null);
+                    setText(null);
+                    return;
+                }
                 label.setText(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy").format(date));
+                useGraphicOnlyCell(this);
                 setGraphic(root);
             }
         });
@@ -496,7 +616,8 @@ public class ViewJobsController {
         // 4. AMOUNT COLUMN (Metadata Synthesis with Clickable Links)
         amountCol.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<Job>(cellData.getValue()));
         amountCol.setCellFactory(col -> new TableCell<Job, Job>() {
-            private final VBox box = new VBox(1);
+            private final VBox box = new VBox(0);
+            private final StackPane amountShell = new StackPane();
             private final Label amount = new Label();
             private final HBox metaBox = new HBox(4);
             private final Label invPrefix = new Label("Invoice:");
@@ -506,7 +627,11 @@ public class ViewJobsController {
             private final Hyperlink imgLink = new Hyperlink();
             
             {
+                getStyleClass().add("table-cell-job-amount");
+                setAlignment(Pos.CENTER_LEFT);
                 amount.getStyleClass().add("amount-row");
+                amount.setAlignment(Pos.TOP_LEFT);
+                amount.setTextAlignment(TextAlignment.LEFT);
                 invPrefix.getStyleClass().add("meta-row");
                 invLink.getStyleClass().add("meta-link-link");
                 separator.getStyleClass().add("meta-row");
@@ -528,14 +653,29 @@ public class ViewJobsController {
                 
                 metaBox.getChildren().addAll(invPrefix, invLink, separator, imgPrefix, imgLink);
                 metaBox.setAlignment(Pos.CENTER_LEFT);
+                metaBox.setFillHeight(false);
+                metaBox.setMaxWidth(Region.USE_PREF_SIZE);
                 box.getChildren().addAll(amount, metaBox);
+                /* CENTER_LEFT: left-align ₹ + invoice row; vertically center that stack in the cell when row is tall */
                 box.setAlignment(Pos.CENTER_LEFT);
+                box.setFillWidth(false);
+                box.setMaxWidth(Region.USE_PREF_SIZE);
+                box.setMaxHeight(Double.MAX_VALUE);
+                box.setPadding(TABLE_LEAD_COL_PADDING);
+                amountShell.getChildren().add(box);
+                StackPane.setAlignment(box, Pos.CENTER_LEFT);
+                amountShell.setMaxWidth(Double.MAX_VALUE);
+                amountShell.setMaxHeight(Double.MAX_VALUE);
             }
             
             @Override
             protected void updateItem(Job job, boolean empty) {
                 super.updateItem(job, empty);
-                if (empty || job == null) { setGraphic(null); return; }
+                if (empty || job == null) {
+                    setGraphic(null);
+                    setText(null);
+                    return;
+                }
                 
                 amount.setText("₹ " + String.format("%.2f", job.getJobTotal() != null ? job.getJobTotal() : 0.0));
                 
@@ -565,64 +705,107 @@ public class ViewJobsController {
                     imgLink.getStyleClass().remove("active-link");
                 }
                 
-                setGraphic(box);
+                useGraphicOnlyCell(this);
+                setGraphic(amountShell);
             }
         });
 
-        // 5. STATUS & PROGRESS COLUMN (Target Stepper)
+        // 5. STATUS & PROGRESS COLUMN (major stepper + child workflow pills)
         statusProgressCol.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<Job>(cellData.getValue()));
         statusProgressCol.setCellFactory(col -> new TableCell<Job, Job>() {
+            private final StackPane statusShell = new StackPane();
+
+            {
+                getStyleClass().add("table-cell-status-progress");
+                statusShell.setMaxWidth(Double.MAX_VALUE);
+                statusShell.setMaxHeight(Double.MAX_VALUE);
+            }
             @Override
             protected void updateItem(Job job, boolean empty) {
                 super.updateItem(job, empty);
-                if (empty || job == null) { setGraphic(null); return; }
-                VBox box = new VBox(4);
-                box.setAlignment(Pos.CENTER_LEFT);
-                
-                String status = job.getStatus() != null ? job.getStatus() : "";
-                Label statusBadge = new Label(status.toUpperCase());
-                statusBadge.getStyleClass().addAll("status-badge", "status-badge-" + status.toLowerCase().replace(" ", "-"));
-                
-                box.getChildren().addAll(statusBadge, createStepper(status));
-                setGraphic(box);
+                if (empty || job == null) {
+                    statusShell.getChildren().clear();
+                    setGraphic(null);
+                    setText(null);
+                    setAlignment(Pos.CENTER);
+                    return;
+                }
+                setAlignment(Pos.CENTER);
+                VBox block = new VBox(0);
+                block.setAlignment(Pos.TOP_LEFT);
+                block.getStyleClass().add("status-progress-cell");
+                block.setPadding(new Insets(0, 2, 0, 2));
+                block.setSpacing(0);
+                block.setMaxWidth(Region.USE_PREF_SIZE);
+                block.setMinHeight(Region.USE_PREF_SIZE);
+                block.setMaxHeight(Region.USE_PREF_SIZE);
+
+                final double statusContentWidth = 328;
+                VBox parentTop = buildMajorStepperSection(job, statusContentWidth);
+                parentTop.setMinWidth(statusContentWidth);
+                parentTop.setPrefWidth(statusContentWidth);
+                parentTop.setMaxWidth(statusContentWidth);
+
+                VBox childPanel = buildChildWorkflowPanel(job);
+                VBox.setMargin(childPanel, new Insets(0, 0, 0, 0));
+
+                block.getChildren().addAll(parentTop, childPanel);
+                statusShell.getChildren().setAll(block);
+                StackPane.setAlignment(block, Pos.CENTER);
+                useGraphicOnlyCell(this);
+                setGraphic(statusShell);
             }
         });
 
         // 6. ACTIONS COLUMN (Triad Suite)
         actionsCol.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<Job>(cellData.getValue()));
         actionsCol.setCellFactory(col -> new TableCell<Job, Job>() {
-            private final HBox root = new HBox(6);
-            { root.setAlignment(Pos.CENTER_LEFT); }
+            private final HBox root = new HBox(4);
+            { 
+                getStyleClass().add("table-cell-job-actions");
+                root.setAlignment(Pos.CENTER);
+                root.setFillHeight(false);
+                root.setMaxWidth(Region.USE_PREF_SIZE);
+                root.setPadding(TABLE_LEAD_COL_PADDING);
+                setAlignment(Pos.CENTER);
+            }
 
             @Override
             protected void updateItem(Job job, boolean empty) {
                 super.updateItem(job, empty);
-                if (empty || job == null) { setGraphic(null); return; }
+                if (empty || job == null) {
+                    setGraphic(null);
+                    setText(null);
+                    return;
+                }
                 root.getChildren().clear();
                 
                 String statusMsg = job.getStatus() != null ? job.getStatus().toLowerCase() : "";
                 Button primaryBtn = new Button();
-                primaryBtn.setPadding(new Insets(4, 12, 4, 12));
+                primaryBtn.setMinHeight(24);
+                primaryBtn.setMaxHeight(24);
+                primaryBtn.setPrefHeight(24);
+                primaryBtn.setPadding(new Insets(2, 8, 2, 8));
                 
                 if (statusMsg.contains("draft") || statusMsg.contains("created")) {
                     primaryBtn.setText("Start Processing");
-                    primaryBtn.getStyleClass().add("row-action-btn-primary");
+                    primaryBtn.getStyleClass().setAll("row-action-btn-primary");
                     primaryBtn.setGraphic(createIcon("M8 5v14l11-7z", "white"));
                     primaryBtn.setOnAction(e -> handleStartActionForJob(job));
                 } else if (statusMsg.contains("progress")) {
                     primaryBtn.setText("Mark Completed");
-                    primaryBtn.setStyle("-fx-background-color: #52C41A; -fx-text-fill: white; -fx-background-radius: 6; -fx-font-weight: 800; -fx-font-size: 10px;");
+                    primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-green");
                     primaryBtn.setGraphic(createIcon("M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z", "white"));
                     primaryBtn.setOnAction(e -> handleCompleteActionForJob(job));
                 } else if (statusMsg.contains("completed")) {
                     primaryBtn.setText("Generate Invoice");
-                    primaryBtn.setStyle("-fx-background-color: #722ED1; -fx-text-fill: white; -fx-background-radius: 6; -fx-font-weight: 800; -fx-font-size: 10px;");
+                    primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-purple");
                     primaryBtn.setGraphic(createIcon("M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z", "white"));
                     primaryBtn.setOnAction(e -> handleInvoicedRequest(job));
                 } else {
                     primaryBtn.setText("No Actions");
                     primaryBtn.setDisable(true);
-                    primaryBtn.setStyle("-fx-background-color: #F5F5F5; -fx-text-fill: #B5ACA3; -fx-opacity: 1.0; -fx-background-radius: 6; -fx-font-weight: 800; -fx-font-size: 10px;");
+                    primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-muted");
                 }
                 
                 Button vBtn = new Button(); vBtn.getStyleClass().addAll("row-action-btn", "row-btn-blue");
@@ -642,6 +825,7 @@ public class ViewJobsController {
                     root.getChildren().add(eBtn);
                 }
                 root.getChildren().add(mBtn);
+                useGraphicOnlyCell(this);
                 setGraphic(root);
             }
         });
@@ -649,107 +833,322 @@ public class ViewJobsController {
 
     private void handleStartActionForJob(Job job) {
         jobService.updateJobStatus(job.getId(), "In Progress");
-        job.setStatus("In Progress"); jobsTable.refresh(); toast("Job started!");
+        job.setStatus("In Progress");
+        applyDefaultChildForNewMajor(job, "In Progress");
+        jobsTable.refresh();
+        toast("Job started!");
     }
 
     private void handleCompleteActionForJob(Job job) {
         jobService.updateJobStatus(job.getId(), "Completed");
-        job.setStatus("Completed"); jobsTable.refresh(); toast("Job completed!");
+        job.setStatus("Completed");
+        applyDefaultChildForNewMajor(job, "Completed");
+        jobsTable.refresh();
+        toast("Job completed!");
     }
 
     private void handleCancelActionForJob(Job job) {
         jobService.updateJobStatus(job.getId(), "Cancelled");
-        job.setStatus("Cancelled"); jobsTable.refresh(); toast("Job cancelled.");
+        job.setStatus("Cancelled");
+        applyDefaultChildForNewMajor(job, "Cancelled");
+        jobsTable.refresh();
+        toast("Job cancelled.");
     }
 
-    private javafx.scene.Node createStepper(String currentStatus) {
-        String s = currentStatus != null ? currentStatus.toLowerCase() : "";
-        javafx.scene.layout.Pane pane = new javafx.scene.layout.Pane();
-        pane.setMinHeight(26);
-        pane.setPrefHeight(26);
+    /** Theme primary, tinted child panel background, and 24dp-style icon path (stroke-drawn in UI). */
+    private record MajorStatusPaint(String primary, String panelBg, String iconSvg) {}
 
-        String[] stages = {"Draft", "Processing", "Completed", "Invoice"};
-        int activeIdx = 0;
-        String color = "#E2DDD8"; 
-        
-        if (s.contains("draft")) { activeIdx = 0; color = "#5B4F47"; }
-        else if (s.contains("progress")) { activeIdx = 1; color = "#1890FF"; }
-        else if (s.contains("completed")) { activeIdx = 2; color = "#52C41A"; }
-        else if (s.contains("invoiced") || s.contains("final")) { activeIdx = 3; color = "#722ED1"; }
-        else if (s.contains("cancel") || s.contains("cancelled")) { activeIdx = 0; color = "#F5222D"; }
+    private static MajorStatusPaint majorStatusPaint(JobWorkflow.Major major) {
+        return switch (major) {
+            case PROCESSING -> new MajorStatusPaint(
+                    "#0044CC",
+                    "#F0F5FF",
+                    "M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H8v4h10V3z");
+            case COMPLETED -> new MajorStatusPaint(
+                    "#228B22",
+                    "#F0F9F0",
+                    "M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.16.12-.36.18-.57.18-.21 0-.41-.06-.57-.18l-7.9-4.44A.991.991 0 0 1 3 16.5v-9c0-.38.21-.71.53-.88l7.9-4.44c.16-.12.36-.18.57-.18.21 0 .41.06.57.18l7.9 4.44c.32.17.53.5.53.88v9zM12 4.15L6.04 7.5 12 10.85l5.96-3.35L12 4.15zM5 15.91l6 3.38v-6.71L5 9.19v6.72zm14 0v-6.72l-6 3.39v6.71l6-3.38z");
+            case INVOICE -> new MajorStatusPaint(
+                    "#6A0DAD",
+                    "#F6F0FA",
+                    "M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z");
+            case CANCELLED -> new MajorStatusPaint("#F5222D", "#FFF1F0", "");
+            case DRAFT -> new MajorStatusPaint(
+                    "#5D4037",
+                    "#F7F2F0",
+                    "M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z");
+        };
+    }
 
-        int dotSpacing = 52; // Distance between dot centers
-        int dotRadius = 5;
-        int dotDiameter = 10;
+    /** Line-art style icon: transparent fill, theme stroke (reference: ~24–28px stroke icons). */
+    private static Node createStrokeWorkflowIcon(String svgContent, String colorWeb, double targetPx) {
+        SVGPath svg = new SVGPath();
+        svg.setContent(svgContent);
+        Paint p = Color.web(colorWeb);
+        svg.setFill(Color.TRANSPARENT);
+        svg.setStroke(p);
+        svg.setStrokeWidth(1.2);
+        svg.setStrokeLineCap(StrokeLineCap.ROUND);
+        svg.setStrokeLineJoin(StrokeLineJoin.ROUND);
+        Group g = new Group(svg);
+        double s = targetPx / 24.0;
+        g.setScaleX(s);
+        g.setScaleY(s);
+        StackPane pane = new StackPane(g);
+        pane.setAlignment(Pos.CENTER);
+        pane.setMinSize(targetPx, targetPx);
+        pane.setPrefSize(targetPx, targetPx);
+        pane.setMaxSize(targetPx, targetPx);
+        return pane;
+    }
 
-        // Draw Lines first so they are behind dots
-        for (int i = 0; i < stages.length - 1; i++) {
+    private VBox buildChildWorkflowPanel(Job job) {
+        JobWorkflow.Major major = JobWorkflow.majorFromJobStatus(job.getStatus());
+        VBox wrap = new VBox(0);
+        wrap.setAlignment(Pos.TOP_LEFT);
+        wrap.setMaxWidth(Region.USE_PREF_SIZE);
+        if (major == JobWorkflow.Major.CANCELLED) {
+            Label l = new Label("Workflow paused (cancelled)");
+            l.getStyleClass().add("workflow-cancelled-note");
+            wrap.getChildren().add(l);
+            return wrap;
+        }
+        String effective = JobWorkflow.resolveEffectiveChild(job.getStatus(), job.getChildStatus(), major);
+        java.util.List<String> steps = JobWorkflow.childSteps(major);
+        if (steps.isEmpty()) {
+            return wrap;
+        }
+
+        HBox panel = new HBox(6);
+        panel.setAlignment(Pos.CENTER_LEFT);
+        panel.setFillHeight(false);
+        MajorStatusPaint paint = majorStatusPaint(major);
+        String colorHex = paint.primary();
+        panel.setPadding(new Insets(4, 10, 4, 10));
+        panel.setMinHeight(34);
+        panel.setMaxWidth(Double.MAX_VALUE);
+
+        panel.setStyle("-fx-background-color: " + paint.panelBg() + "; -fx-background-radius: 8;");
+
+        Node iconNode = createStrokeWorkflowIcon(paint.iconSvg(), colorHex, 20);
+
+        VBox rightBox = new VBox(0);
+        rightBox.setAlignment(Pos.TOP_LEFT);
+        rightBox.setFillWidth(true);
+        rightBox.setMaxWidth(Double.MAX_VALUE);
+        rightBox.setMaxHeight(Region.USE_PREF_SIZE);
+
+        HBox headRow = new HBox(4);
+        headRow.setAlignment(Pos.TOP_LEFT);
+        Label headPrefix = new Label("Current Child Status:");
+        headPrefix.setStyle("-fx-font-weight: 700; -fx-text-fill: " + colorHex + "; -fx-font-size: 12px;");
+        Label headVal = new Label(effective);
+        headVal.setStyle("-fx-font-weight: 700; -fx-text-fill: " + colorHex + "; -fx-font-size: 12px;");
+        headRow.getChildren().addAll(headPrefix, headVal);
+
+        /* HBox keeps the full child trail on one row; FlowPane wrapped long draft trails. */
+        HBox breadcrumbPane = new HBox(4);
+        breadcrumbPane.setAlignment(Pos.CENTER_LEFT);
+        breadcrumbPane.setFillHeight(false);
+        breadcrumbPane.setMaxWidth(Double.MAX_VALUE);
+        int curIdx = JobWorkflow.indexOfChild(major, effective);
+        if (curIdx < 0) curIdx = 0;
+
+        for (int i = 0; i < steps.size(); i++) {
+            if (i > 0) {
+                Label chev = new Label(">");
+                chev.setStyle("-fx-text-fill: #AAAAAA; -fx-font-size: 10px; -fx-font-weight: 400; -fx-padding: 0 3 0 3;");
+                breadcrumbPane.getChildren().add(chev);
+            }
+            String step = steps.get(i);
+            
+            Hyperlink stepLink = new Hyperlink(step);
+            stepLink.getStyleClass().add("workflow-step-link");
+            stepLink.setPadding(new Insets(0, 2, 0, 2));
+            stepLink.setUnderline(false);
+            
+            if (i < curIdx) {
+                stepLink.setStyle("-fx-text-fill: #888888; -fx-font-size: 10px; -fx-font-weight: 600;");
+            } else if (i == curIdx) {
+                stepLink.setStyle("-fx-text-fill: " + colorHex + "; -fx-font-size: 10px; -fx-font-weight: 700;");
+            } else {
+                stepLink.setStyle("-fx-text-fill: #888888; -fx-font-size: 10px; -fx-font-weight: 600;");
+            }
+            final String stepFin = step;
+            stepLink.setOnAction(e -> onChildWorkflowPillClicked(job, stepFin));
+            breadcrumbPane.getChildren().add(stepLink);
+        }
+
+        rightBox.getChildren().addAll(headRow, breadcrumbPane);
+        VBox.setVgrow(breadcrumbPane, Priority.NEVER);
+        panel.setMaxHeight(Region.USE_PREF_SIZE);
+        wrap.setMaxHeight(Region.USE_PREF_SIZE);
+        panel.getChildren().addAll(iconNode, rightBox);
+        HBox.setHgrow(rightBox, Priority.ALWAYS);
+        wrap.getChildren().add(panel);
+        return wrap;
+    }
+
+    private void onChildWorkflowPillClicked(Job job, String childLabel) {
+        if (job == null || childLabel == null) {
+            return;
+        }
+        JobWorkflow.Major major = JobWorkflow.majorFromJobStatus(job.getStatus());
+        if (major == JobWorkflow.Major.CANCELLED) {
+            return;
+        }
+        if (!JobWorkflow.isValidChildForMajor(major, childLabel)) {
+            return;
+        }
+        String canon = JobWorkflow.canonicalChildLabel(major, childLabel);
+        jobService.updateJobChildStatus(job.getId(), canon);
+        job.setChildStatus(canon);
+        jobsTable.refresh();
+    }
+
+    private void applyDefaultChildForNewMajor(Job job, String newStatus) {
+        if (job == null) {
+            return;
+        }
+        JobWorkflow.Major m = JobWorkflow.majorFromJobStatus(newStatus);
+        if (m == JobWorkflow.Major.CANCELLED) {
+            jobService.updateJobChildStatus(job.getId(), null);
+            job.setChildStatus(null);
+            return;
+        }
+        String def = JobWorkflow.defaultChildForMajor(m);
+        if (def != null && !def.isEmpty()) {
+            jobService.updateJobChildStatus(job.getId(), def);
+            job.setChildStatus(def);
+        }
+    }
+
+    /**
+     * Major stepper: dot/rail row and a label row aligned so label X matches dot centers.
+     */
+    private VBox buildMajorStepperSection(Job job, double contentWidth) {
+        String currentStatus = job != null && job.getStatus() != null ? job.getStatus() : "";
+        JobWorkflow.Major major = JobWorkflow.majorFromJobStatus(currentStatus);
+
+        final double trackRowH = 8;
+
+        final int dotRadius = 3;
+        final int dotDiameter = 6;
+        final int offsetX = 2;
+        String[] stages = { "Draft", "Processing", "Completed", "Invoice" };
+        final int n = stages.length;
+
+        double trackWidth = Math.max(220, contentWidth - 8);
+        Pane trackPane = new Pane();
+        trackPane.getStyleClass().add("job-major-stepper");
+        trackPane.setMinHeight(trackRowH);
+        trackPane.setPrefHeight(trackRowH);
+        trackPane.setMaxHeight(trackRowH);
+        trackPane.setMinWidth(trackWidth);
+        trackPane.setPrefWidth(trackWidth);
+        trackPane.setMaxWidth(trackWidth);
+
+        double step = (trackWidth - 2.0 * offsetX - 2.0 * dotRadius) / (n - 1);
+
+        int activeIdx;
+        String colorHex = majorStatusPaint(major).primary();
+        switch (major) {
+            case PROCESSING: activeIdx = 1; break;
+            case COMPLETED: activeIdx = 2; break;
+            case INVOICE: activeIdx = 3; break;
+            case CANCELLED: activeIdx = 0; break;
+            case DRAFT:
+            default: activeIdx = 0; break;
+        }
+
+        for (int i = 0; i < n - 1; i++) {
             Region rail = new Region();
             rail.getStyleClass().add("stepper-line");
             rail.setPrefHeight(2);
             rail.setMinHeight(2);
-            
-            // Line spans from center of current dot to center of next dot
-            rail.setPrefWidth(dotSpacing);
-            rail.setLayoutX(i * dotSpacing + dotRadius);
+            rail.setPrefWidth(step);
+            rail.setLayoutX(offsetX + dotRadius + i * step);
             rail.setLayoutY(dotRadius - 1);
-            
-            if (i < activeIdx) {
-                if (color.contains("1890")) rail.getStyleClass().add("stepper-line-blue");
-                else if (color.contains("52C4")) rail.getStyleClass().add("stepper-line-green");
-                else if (color.contains("722E")) rail.getStyleClass().add("stepper-line-purple");
-                else rail.getStyleClass().add("stepper-line-active");
+
+            if (major == JobWorkflow.Major.CANCELLED) {
+                rail.setStyle("-fx-background-color: #EEECE8;");
+            } else if (i < activeIdx) {
+                rail.setStyle("-fx-background-color: " + colorHex + ";");
+            } else {
+                rail.setStyle("-fx-background-color: #EEECE8;");
             }
-            pane.getChildren().add(rail);
+            trackPane.getChildren().add(rail);
         }
 
-        // Draw Dots and Labels
-        for (int i = 0; i < stages.length; i++) {
-            double centerX = i * dotSpacing + dotRadius;
-            
+        /* Same width as trackPane; coords match dots (Pane padding does not shift children). */
+        Pane labelTrackPane = new Pane();
+        labelTrackPane.getStyleClass().add("job-major-stepper-label-track");
+        labelTrackPane.setMinWidth(trackWidth);
+        labelTrackPane.setPrefWidth(trackWidth);
+        labelTrackPane.setMaxWidth(trackWidth);
+        labelTrackPane.setMinHeight(15);
+        labelTrackPane.setPrefHeight(15);
+
+        final double labelSlotW = Math.min(56, Math.max(38, step + 3));
+
+        for (int i = 0; i < n; i++) {
+            double centerX = offsetX + dotRadius + i * step;
+
             StackPane node = new StackPane();
-            node.getStyleClass().add("stepper-dot");
             node.setPrefSize(dotDiameter, dotDiameter);
             node.setLayoutX(centerX - dotRadius);
-            node.setLayoutY(0);
-            
-            if (i == activeIdx) {
-                if (color.contains("1890")) node.getStyleClass().add("stepper-dot-blue");
-                else if (color.contains("52C4")) node.getStyleClass().add("stepper-dot-green");
-                else if (color.contains("F522")) node.getStyleClass().add("stepper-dot-red");
-                else if (color.contains("722E")) node.getStyleClass().add("stepper-dot-purple");
-                else node.getStyleClass().add("stepper-dot-active");
-            } else if (i < activeIdx) {
-                if (color.contains("1890")) node.getStyleClass().add("stepper-dot-past-blue");
-                else if (color.contains("52C4")) node.getStyleClass().add("stepper-dot-past-green");
-                else if (color.contains("722E")) node.getStyleClass().add("stepper-dot-past-purple");
-                else node.getStyleClass().add("stepper-dot-active");
+            node.setLayoutY(1);
+
+            boolean past = major != JobWorkflow.Major.CANCELLED && i < activeIdx;
+            boolean active = i == activeIdx || (major == JobWorkflow.Major.CANCELLED && i == 0);
+
+            if (major == JobWorkflow.Major.CANCELLED) {
+                node.setStyle("-fx-background-color: white; -fx-border-color: #F5222D; -fx-border-width: 2; -fx-background-radius: 50; -fx-border-radius: 50;");
+            } else if (past) {
+                node.setStyle("-fx-background-color: white; -fx-border-color: " + colorHex + "; -fx-border-width: 2; -fx-background-radius: 50; -fx-border-radius: 50;");
+            } else if (active) {
+                node.setStyle("-fx-background-color: " + colorHex + "; -fx-border-color: " + colorHex + "; -fx-border-width: 2; -fx-background-radius: 50; -fx-border-radius: 50;");
+            } else {
+                node.setStyle("-fx-background-color: white; -fx-border-color: #CCCCCC; -fx-border-width: 2; -fx-background-radius: 50; -fx-border-radius: 50;");
             }
-            
+            trackPane.getChildren().add(node);
+
             Label lbl = new Label(stages[i]);
             lbl.getStyleClass().add("stepper-label");
-            if (i == activeIdx) {
-                lbl.getStyleClass().add("stepper-label-active");
-                if (color.contains("1890")) lbl.setStyle("-fx-text-fill: #1890FF;");
-                else if (color.contains("52C4")) lbl.setStyle("-fx-text-fill: #52C41A;");
-                else if (color.contains("F522")) lbl.setStyle("-fx-text-fill: #F5222D;");
-                else if (color.contains("722E")) lbl.setStyle("-fx-text-fill: #722ED1;");
-            }
-            
-            if (i == 0) {
-                // Perfectly left align the first label with the left edge of the dot
-                lbl.setLayoutX(centerX - dotRadius);
+            if (active) {
+                lbl.setStyle("-fx-text-fill: " + colorHex + "; -fx-font-weight: 700; -fx-font-size: 11px;");
+            } else if (past) {
+                lbl.setStyle("-fx-text-fill: " + colorHex + "; -fx-font-weight: 600; -fx-font-size: 11px;");
             } else {
-                // Estimate width to center other labels under their dots
-                double estWidth = stages[i].length() * 4.8;
-                lbl.setLayoutX(centerX - estWidth / 2);
+                lbl.setStyle("-fx-text-fill: #666666; -fx-font-weight: 400; -fx-font-size: 11px;");
             }
-            lbl.setLayoutY(12);
-            
-            pane.getChildren().addAll(node, lbl);
+
+            HBox lblWrapper = new HBox(lbl);
+            lblWrapper.setAlignment(Pos.CENTER);
+            lblWrapper.setPrefWidth(labelSlotW);
+            lblWrapper.setLayoutX(centerX - labelSlotW / 2.0);
+            lblWrapper.setLayoutY(0);
+            labelTrackPane.getChildren().add(lblWrapper);
         }
-        
-        return pane;
+
+        HBox trackRow = new HBox(0);
+        trackRow.setAlignment(Pos.CENTER_LEFT);
+        trackRow.setMinWidth(contentWidth);
+        trackRow.setPrefWidth(contentWidth);
+        trackRow.setMaxWidth(contentWidth);
+        trackRow.getChildren().add(trackPane);
+
+        HBox labelRow = new HBox(0);
+        labelRow.getStyleClass().add("job-major-stepper-label-row");
+        labelRow.setAlignment(Pos.TOP_LEFT);
+        labelRow.setMinWidth(contentWidth);
+        labelRow.setPrefWidth(contentWidth);
+        labelRow.setMaxWidth(contentWidth);
+        labelRow.getChildren().add(labelTrackPane);
+
+        VBox wrap = new VBox(0);
+        wrap.getChildren().addAll(trackRow, labelRow);
+        return wrap;
     }
 
     private javafx.scene.Node createIcon(String pathStr, String color) {
@@ -758,8 +1157,8 @@ public class ViewJobsController {
         svg.setFill(javafx.scene.paint.Color.web(color));
         javafx.scene.layout.StackPane pane = new javafx.scene.layout.StackPane(svg);
         pane.setAlignment(Pos.CENTER);
-        pane.setMinWidth(14); pane.setMaxWidth(14);
-        pane.setMinHeight(14); pane.setMaxHeight(14);
+        pane.setMinWidth(12); pane.setMaxWidth(12);
+        pane.setMinHeight(12); pane.setMaxHeight(12);
         return pane;
     }
 

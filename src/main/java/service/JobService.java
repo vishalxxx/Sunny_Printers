@@ -7,7 +7,6 @@ import java.util.List;
 
 import model.Job;
 import model.JobSummary;
-import model.MasterDocumentSeries;
 import repository.JobRepository;
 import utils.DBConnection;
 
@@ -25,23 +24,14 @@ public class JobService {
 			}
 
 			con.setAutoCommit(false);
-			
-			String jobNo = JobNumberGenerator.generate(con);
 
-			Job job = repo.insertDraftJob(con, jobNo);
+			Job job = repo.insertDraftJob(con);
 
 			con.commit();
 			return job;
 
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to create draft job", e);
-		}
-	}
-
-	public static class JobNumberGenerator {
-
-		public static String generate(Connection con) throws Exception {
-			return new SettingsService().allocateNextMasterNumber(con, MasterDocumentSeries.JOB, LocalDate.now());
 		}
 	}
 
@@ -169,6 +159,19 @@ public class JobService {
 			con.commit();
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to update job status", e);
+		}
+	}
+
+	public void updateJobChildStatus(int jobId, String childStatus) {
+		if (jobId <= 0) {
+			throw new IllegalArgumentException("Invalid job id");
+		}
+		try (Connection con = DBConnection.getConnection()) {
+			con.setAutoCommit(false);
+			repo.updateChildStatus(con, jobId, childStatus);
+			con.commit();
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to update job child status", e);
 		}
 	}
 	

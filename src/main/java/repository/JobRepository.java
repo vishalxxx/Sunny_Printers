@@ -14,13 +14,21 @@ import utils.DBConnection;
 
 public class JobRepository {
 
+    private static String tempJobRowKey() {
+        return "TMP" + System.nanoTime();
+    }
+
+    private static String canonicalJobNo(int id) {
+        return "JOB-" + id;
+    }
+
     /*
      * =====================================================
      * INSERT DRAFT JOB
      * =====================================================
      */
 
-    public Job insertDraftJob(Connection con, String jobNo) throws SQLException {
+    public Job insertDraftJob(Connection con) throws SQLException {
 
         String sql = """
                     INSERT INTO jobs (job_no, status)
@@ -29,7 +37,7 @@ public class JobRepository {
 
         try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            ps.setString(1, jobNo);
+            ps.setString(1, tempJobRowKey());
             ps.executeUpdate();
 
             ResultSet rs = ps.getGeneratedKeys();
@@ -37,8 +45,16 @@ public class JobRepository {
                 throw new SQLException("Failed to create draft job");
             }
 
+            int id = rs.getInt(1);
+            String jobNo = canonicalJobNo(id);
+            try (PreparedStatement up = con.prepareStatement("UPDATE jobs SET job_no = ? WHERE id = ?")) {
+                up.setString(1, jobNo);
+                up.setInt(2, id);
+                up.executeUpdate();
+            }
+
             Job job = new Job();
-            job.setId(rs.getInt(1));
+            job.setId(id);
             job.setJobNo(jobNo);
             job.setStatus("DRAFT");
 
@@ -52,7 +68,7 @@ public class JobRepository {
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 """;
         try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, job.getJobNo());
+            ps.setString(1, tempJobRowKey());
             ps.setObject(2, job.getClientId());
             ps.setString(3, job.getJobTitle());
             if (job.getJobDate() != null) {
@@ -67,9 +83,18 @@ public class JobRepository {
             ps.executeUpdate();
             
             ResultSet rs = ps.getGeneratedKeys();
-            if (rs.next()) {
-                job.setId(rs.getInt(1));
+            if (!rs.next()) {
+                throw new SQLException("Failed to insert job");
             }
+            int id = rs.getInt(1);
+            String jobNo = canonicalJobNo(id);
+            try (PreparedStatement up = con.prepareStatement("UPDATE jobs SET job_no = ? WHERE id = ?")) {
+                up.setString(1, jobNo);
+                up.setInt(2, id);
+                up.executeUpdate();
+            }
+            job.setId(id);
+            job.setJobNo(jobNo);
             return job;
         }
     }
@@ -116,7 +141,7 @@ public class JobRepository {
 
         String sql = """
                     SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
-                           j.status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
+                           j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
                            (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
                            (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
                            (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
@@ -153,7 +178,7 @@ public class JobRepository {
 
         String sql = """
                     SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
-                           j.status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
+                           j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
                            (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
                            (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
                            (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
@@ -188,7 +213,7 @@ public class JobRepository {
 
         String sql = """
                     SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
-                           j.status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
+                           j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
                            (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
                            (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
                            (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
@@ -282,6 +307,9 @@ public class JobRepository {
         job.setJobDate(parseJobDateFlexible(rs.getString("job_date")));
 
         job.setStatus(rs.getString("status"));
+        try {
+            job.setChildStatus(rs.getString("child_status"));
+        } catch (SQLException ignore) {}
         job.setRemarks(rs.getString("remarks"));
 
         // ✅ Keep created_at as String (your current model)
@@ -349,7 +377,7 @@ public class JobRepository {
 
         String sql = """
                     SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
-                           j.status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
+                           j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
                            (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
                            (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
                            (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
@@ -418,7 +446,7 @@ public class JobRepository {
         List<Job> list = new ArrayList<>();
         String sql = """
                     SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
-                           j.status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
+                           j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
                            (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
                            (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
                            (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
@@ -543,7 +571,7 @@ public class JobRepository {
 
         String sql = """
                     SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
-                           j.status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
+                           j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
                            (SELECT invoice_no FROM invoice_master invM WHERE invM.id = m.invoice_id) as invoice_no,
                            (SELECT status FROM invoice_master invM WHERE invM.id = m.invoice_id) as invoice_status,
                            (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
@@ -577,7 +605,7 @@ public class JobRepository {
         List<Job> list = new ArrayList<>();
         String sql = """
                     SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
-                           j.status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
+                           j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
                            (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
                            (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
                            (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
@@ -613,7 +641,7 @@ public class JobRepository {
         List<Job> list = new ArrayList<>();
         String sql = """
                     SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
-                           j.status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
+                           j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
                            (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
                            (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
                            (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total,
@@ -726,6 +754,19 @@ public class JobRepository {
             throw new RuntimeException("Failed to sum printing qty for jobs", e);
         }
         return 0L;
+    }
+
+    public void updateChildStatus(Connection con, int jobId, String childStatus) throws SQLException {
+        String sql = "UPDATE jobs SET child_status = ? WHERE id = ?";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            if (childStatus == null || childStatus.isBlank()) {
+                ps.setNull(1, Types.VARCHAR);
+            } else {
+                ps.setString(1, childStatus);
+            }
+            ps.setInt(2, jobId);
+            ps.executeUpdate();
+        }
     }
 
 }

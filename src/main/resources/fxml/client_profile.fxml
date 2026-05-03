@@ -96,15 +96,15 @@
             <!-- LEFT CONTENT -->
             <VBox spacing="20" HBox.hgrow="ALWAYS">
                 <!-- ACTIVE PIPELINE -->
-                <VBox spacing="15">
+                <VBox spacing="10">
                     <HBox alignment="CENTER_LEFT" spacing="10">
                         <Label text="Active Pipeline" styleClass="section-title"/>
                         <Label fx:id="lblPipelineMore" text="" styleClass="pipeline-more-tag" visible="false" managed="false"/>
                         <Region HBox.hgrow="ALWAYS"/>
-                        <Button text="View All Jobs" styleClass="btn-text-link"/>
+                        <Button text="View All Jobs" styleClass="btn-text-link" onAction="#handleViewAllJobs"/>
                     </HBox>
                     
-                    <VBox fx:id="pipelineContainer" spacing="12">
+                    <VBox fx:id="pipelineContainer" spacing="8">
                         <!-- Dynamic job cards will be injected here -->
                     </VBox>
                 </VBox>

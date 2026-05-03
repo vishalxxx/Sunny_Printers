@@ -183,26 +183,28 @@
 /* --- PIPELINE --- */
 .pipeline-card {
     -fx-background-color: #FFFFFF;
-    -fx-padding: 12;
-    -fx-background-radius: 20;
+    -fx-padding: 8 10;
+    -fx-background-radius: 16;
     -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.03), 10, 0, 0, 3);
 }
 
 .job-card-title {
-    -fx-font-size: 14px;
+    -fx-font-size: 13px;
     -fx-font-weight: 800;
     -fx-text-fill: #3E312D;
     -fx-font-family: 'Manrope';
 }
 
 .job-card-specs {
-    -fx-font-size: 11px;
+    -fx-font-size: 10px;
     -fx-text-fill: #A09892;
     -fx-font-weight: 400;
 }
 
 .pipeline-progress {
-    -fx-pref-height: 8;
+    -fx-pref-height: 5;
+    -fx-max-height: 5;
+    -fx-min-height: 5;
     -fx-background-color: transparent;
     -fx-padding: 0;
     -fx-alignment: center-left;
@@ -226,12 +228,35 @@
     -fx-background-insets: 0;
 }
 
+.pipeline-card .status-pill-subtle,
+.pipeline-card .status-pill-green {
+    -fx-padding: 2 8;
+    -fx-font-size: 8px;
+}
+
+/* Active pipeline: distinct from global pills — warm accent vs sage complete */
+.pipeline-card .status-pill-subtle {
+    -fx-background-color: #FDEEE5;
+    -fx-text-fill: #B85A24;
+    -fx-border-color: rgba(193, 103, 56, 0.35);
+    -fx-border-width: 1;
+    -fx-border-radius: 20;
+}
+
+.pipeline-card .status-pill-green {
+    -fx-background-color: #E8F2EB;
+    -fx-text-fill: #2D5A40;
+    -fx-border-color: rgba(45, 90, 64, 0.22);
+    -fx-border-width: 1;
+    -fx-border-radius: 20;
+}
+
 .progress-step {
-    -fx-font-size: 9px;
+    -fx-font-size: 8px;
     -fx-font-weight: 800;
     -fx-text-fill: #D1CDC8;
     
-    -fx-padding: 6 0 0 0;
+    -fx-padding: 2 0 0 0;
 }
 
 .progress-step-active {

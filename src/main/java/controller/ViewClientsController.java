@@ -11,9 +11,13 @@ import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -55,6 +59,8 @@ public class ViewClientsController implements Initializable {
     private static final double SEARCH_W_FOCUS = 345;
     private Timeline searchWidthAnim;
 
+    private EventHandler<MouseEvent> searchBlurOnOutsideClick;
+
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
         utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null, () -> handleBack(null));
@@ -72,6 +78,7 @@ public class ViewClientsController implements Initializable {
 
 		searchField.textProperty().addListener((obs, oldVal, newVal) -> applyFilters());
         setupSearchFieldExpandAnimation();
+        attachSearchFieldBlurOnOutsideClick();
 
         // Sorting Logic
         sortComboBox.setItems(FXCollections.observableArrayList("Sort By", "Highest Balance", "Highest LTV", "Most Active"));
@@ -179,18 +186,68 @@ public class ViewClientsController implements Initializable {
             return;
         }
         searchField.setMinWidth(SEARCH_W_NORMAL);
-        searchField.setMaxWidth(SEARCH_W_FOCUS);
+        searchField.setMaxWidth(SEARCH_W_NORMAL);
         searchField.setPrefWidth(SEARCH_W_NORMAL);
         searchField.focusedProperty().addListener((obs, wasFocused, focused) -> {
             if (searchWidthAnim != null) {
                 searchWidthAnim.stop();
             }
-            double target = Boolean.TRUE.equals(focused) ? SEARCH_W_FOCUS : SEARCH_W_NORMAL;
+            boolean isFocused = Boolean.TRUE.equals(focused);
+            if (isFocused) {
+                searchField.setMinWidth(SEARCH_W_NORMAL);
+                searchField.setMaxWidth(SEARCH_W_FOCUS);
+            } else {
+                searchField.setMinWidth(SEARCH_W_NORMAL);
+                searchField.setMaxWidth(SEARCH_W_NORMAL);
+            }
+            double target = isFocused ? SEARCH_W_FOCUS : SEARCH_W_NORMAL;
             KeyValue kv = new KeyValue(searchField.prefWidthProperty(), target, Interpolator.EASE_BOTH);
             KeyFrame kf = new KeyFrame(Duration.millis(220), kv);
             searchWidthAnim = new Timeline(kf);
             searchWidthAnim.play();
         });
+    }
+
+    /** Click outside the search box (e.g. empty page background) returns to normal width. */
+    private void attachSearchFieldBlurOnOutsideClick() {
+        if (searchField == null) {
+            return;
+        }
+        searchBlurOnOutsideClick = event -> {
+            if (!searchField.isFocused()) {
+                return;
+            }
+            Node target = event.getTarget() instanceof Node n ? n : null;
+            if (target == null || isDescendantOf(searchField, target)) {
+                return;
+            }
+            if (clientListView != null) {
+                clientListView.requestFocus();
+            } else {
+                searchField.getScene().getRoot().requestFocus();
+            }
+        };
+        searchField.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (oldScene != null && searchBlurOnOutsideClick != null) {
+                oldScene.removeEventFilter(MouseEvent.MOUSE_PRESSED, searchBlurOnOutsideClick);
+            }
+            if (newScene != null && searchBlurOnOutsideClick != null) {
+                newScene.addEventFilter(MouseEvent.MOUSE_PRESSED, searchBlurOnOutsideClick);
+            }
+        });
+        Scene initial = searchField.getScene();
+        if (initial != null && searchBlurOnOutsideClick != null) {
+            initial.addEventFilter(MouseEvent.MOUSE_PRESSED, searchBlurOnOutsideClick);
+        }
+    }
+
+    private static boolean isDescendantOf(Node ancestor, Node node) {
+        for (Node n = node; n != null; n = n.getParent()) {
+            if (n == ancestor) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void applyFilters() {
@@ -394,10 +451,11 @@ public class ViewClientsController implements Initializable {
             jumpLabel.setStyle("-fx-text-fill: #A79F99; -fx-font-size: 11px; -fx-padding: 0 0 0 10;");
             
             TextField txtJump = new TextField();
-            txtJump.getStyleClass().add("search-field");
-            txtJump.setStyle("-fx-padding: 4 8; -fx-font-size: 11px; -fx-background-radius: 8; -fx-border-radius: 8;");
-            txtJump.setPrefWidth(45);
-            txtJump.setPromptText("Pg");
+            txtJump.getStyleClass().add("goto-page-field");
+            txtJump.setPrefColumnCount(3);
+            txtJump.setMinWidth(32);
+            txtJump.setPrefWidth(40);
+            txtJump.setMaxWidth(44);
             txtJump.setOnAction(e -> {
                 try {
                     int p = Integer.parseInt(txtJump.getText().trim());

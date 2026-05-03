@@ -122,10 +122,35 @@ public final class CompanyDataLayout {
 		if (nu.contains("-R") || st.contains("REVISED")) {
 			return InvoiceBucket.Revised;
 		}
-		if (invoice.getMasterDocumentSeries() == MasterDocumentSeries.PROFORMA_INVOICE) {
+		if (isProformaDocument(invoice)) {
 			return InvoiceBucket.Proforma;
 		}
 		return InvoiceBucket.GST;
+	}
+
+	/**
+	 * Proforma folder/label: explicit series on the invoice, or invoice numbers from the PI sequence
+	 * (fallback when {@code document_series} was missing on legacy rows).
+	 */
+	public static boolean isProformaDocument(Invoice invoice) {
+		if (invoice == null) {
+			return false;
+		}
+		if (invoice.getMasterDocumentSeries() == MasterDocumentSeries.PROFORMA_INVOICE) {
+			return true;
+		}
+		return looksLikeProformaInvoiceNumber(invoice.getInvoiceNo());
+	}
+
+	private static boolean looksLikeProformaInvoiceNumber(String invoiceNo) {
+		if (invoiceNo == null || invoiceNo.isBlank()) {
+			return false;
+		}
+		String u = invoiceNo.strip().toUpperCase(Locale.ROOT);
+		if (u.startsWith("#")) {
+			u = u.substring(1).strip();
+		}
+		return u.startsWith("PI-") || u.startsWith("PI/");
 	}
 
 	public static File clientInvoicesSubdir(File dataRoot, LocalDate refDate, String clientName, InvoiceBucket bucket) {

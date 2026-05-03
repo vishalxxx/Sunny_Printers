@@ -623,8 +623,6 @@ public class AddJobController implements utils.DirtySupport {
 			int jobId = currentJob.getId();
 			if (jobId == 0) {
 				// Create NEW job
-				String jobNo = JobService.JobNumberGenerator.generate(con);
-				currentJob.setJobNo(jobNo);
 				currentJob.setClientId(selectedClient.getId());
 				currentJob.setJobTitle(title);
 				currentJob.setJobDate(date);

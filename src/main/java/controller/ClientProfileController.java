@@ -77,6 +77,19 @@ public class ClientProfileController implements Initializable {
     }
 
     @FXML
+    private void handleViewAllJobs() {
+        MainController mc = MainController.getInstance();
+        if (mc == null) {
+            return;
+        }
+        if (currentClient != null) {
+            mc.loadViewJobFiltered(currentClient.getId());
+        } else {
+            mc.loadViewJob();
+        }
+    }
+
+    @FXML
     private void handleBack(javafx.event.Event e) {
         MainController.getInstance().handleBack(e);
     }
@@ -207,10 +220,10 @@ public class ClientProfileController implements Initializable {
         VBox card = new VBox();
         card.getStyleClass().add("pipeline-card");
         
-        HBox header = new HBox(15);
+        HBox header = new HBox(10);
         header.setAlignment(Pos.CENTER_LEFT);
         
-        VBox nameBox = new VBox(2);
+        VBox nameBox = new VBox(1);
         HBox.setHgrow(nameBox, Priority.ALWAYS);
         Label title = new Label(job.getJobTitle() != null ? job.getJobTitle() : "Untitled Job");
         title.getStyleClass().add("job-card-title");
@@ -226,8 +239,8 @@ public class ClientProfileController implements Initializable {
         
         header.getChildren().addAll(nameBox, statusTag);
         
-        VBox progressSection = new VBox(8);
-        progressSection.setStyle("-fx-padding: 15 0 0 0;");
+        VBox progressSection = new VBox(4);
+        progressSection.setStyle("-fx-padding: 8 0 0 0;");
         
         double progress = 0.25;
         int activeStep = 0;
@@ -431,7 +444,7 @@ public class ClientProfileController implements Initializable {
                     File out = CompanyDataLayout.paymentReceiptPdfPath(clientFolderDisplayName(), payDate, rowKey);
                     new PdfInvoiceService().writePaymentReceiptPdf(paymentId, out);
                     if (stage != null) {
-                        Toast.show(stage, "Receipt saved:\n" + out.getAbsolutePath());
+                        Toast.showSmall(stage, "Receipt saved");
                     }
                 } catch (Exception ex) {
                     ex.printStackTrace();
@@ -450,7 +463,7 @@ public class ClientProfileController implements Initializable {
                     Invoice full = builder.buildInvoiceFromMasterForPdfExport(master.getId());
                     File created = new PdfInvoiceService().generateSingleInvoicePDF(full);
                     if (stage != null) {
-                        Toast.show(stage, "Invoice PDF saved:\n" + created.getAbsolutePath());
+                        Toast.showSmall(stage, "Invoice PDF saved");
                     }
                 } catch (Exception ex) {
                     ex.printStackTrace();

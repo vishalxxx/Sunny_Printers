@@ -521,6 +521,7 @@ public class DatabaseInitializer {
             try { stmt.execute("ALTER TABLE jobs ADD COLUMN remarks TEXT;"); } catch (Exception e) {}
             try { stmt.execute("ALTER TABLE jobs ADD COLUMN job_number_mode TEXT;"); } catch (Exception e) {}
             try { stmt.execute("ALTER TABLE jobs ADD COLUMN image_path TEXT;"); } catch (Exception e) {}
+            try { stmt.execute("ALTER TABLE jobs ADD COLUMN child_status TEXT;"); } catch (Exception e) {}
             try { stmt.execute("ALTER TABLE jobs ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP;"); } catch (Exception e) {}
             try { stmt.execute("ALTER TABLE jobs ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP;"); } catch (Exception e) {}
             try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_temp_invoice_no INTEGER DEFAULT 0;"); } catch (Exception e) {}
@@ -591,6 +592,19 @@ public class DatabaseInitializer {
                         SET job_no = TRIM(SUBSTR(job_no, 2))
                         WHERE job_no LIKE '#%' AND LENGTH(job_no) > 1
                         """);
+            } catch (Exception e) {}
+            // Legacy: some DBs still have job_name; copy into job_title when title is empty
+            try {
+                stmt.execute("""
+                        UPDATE jobs
+                        SET job_title = job_name
+                        WHERE job_name IS NOT NULL AND TRIM(job_name) != ''
+                          AND (job_title IS NULL OR TRIM(job_title) = '')
+                        """);
+            } catch (Exception e) {}
+            // Canonical job display no.: JOB-<primary key id>
+            try {
+                stmt.execute("UPDATE jobs SET job_no = 'JOB-' || id WHERE id IS NOT NULL");
             } catch (Exception e) {}
 
             System.out.println("✔ All tables are created and ready!");

@@ -2,7 +2,6 @@ package utils;
 
 import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
-import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -19,6 +18,16 @@ import javafx.util.Duration;
 
 public class Toast {
 
+	private static StackPane resolveToastStackRoot(Stage stage) {
+		var originalRoot = stage.getScene().getRoot();
+		if (originalRoot instanceof StackPane sp) {
+			return sp;
+		}
+		StackPane stackRoot = new StackPane(originalRoot);
+		stage.getScene().setRoot(stackRoot);
+		return stackRoot;
+	}
+
 	public static void show(Stage stage, String message) {
 
 		Platform.runLater(() -> {
@@ -29,18 +38,7 @@ public class Toast {
 			label.setStyle("-fx-background-color: rgba(0,0,0,0.85);" + "-fx-text-fill: white;" + "-fx-padding: 12 24;"
 					+ "-fx-background-radius: 8;" + "-fx-font-size: 1.1em;" + "-fx-text-alignment: center;");
 
-			// The original root (BorderPane in your case)
-			var originalRoot = stage.getScene().getRoot();
-
-			// If root is already a StackPane → use it
-			StackPane stackRoot;
-			if (originalRoot instanceof StackPane sp) {
-				stackRoot = sp;
-			} else {
-				// Wrap BorderPane or other layouts inside StackPane
-				stackRoot = new StackPane(originalRoot);
-				stage.getScene().setRoot(stackRoot);
-			}
+			StackPane stackRoot = resolveToastStackRoot(stage);
 
 			StackPane toastPane = new StackPane(label);
 			toastPane.setMouseTransparent(true);
@@ -67,6 +65,39 @@ public class Toast {
 		});
 	}
 
+	/** Compact toast for short confirmations (e.g. file saved), without long paths. */
+	public static void showSmall(Stage stage, String message) {
+		Platform.runLater(() -> {
+			Label label = new Label(message);
+			label.setWrapText(false);
+			label.setMaxWidth(260);
+			label.setStyle("-fx-background-color: rgba(0,0,0,0.88); -fx-text-fill: white; -fx-padding: 6 14;"
+					+ "-fx-background-radius: 6; -fx-font-size: 12px; -fx-text-alignment: center;");
+
+			StackPane stackRoot = resolveToastStackRoot(stage);
+
+			StackPane toastPane = new StackPane(label);
+			toastPane.setMouseTransparent(true);
+			StackPane.setAlignment(label, Pos.CENTER);
+			stackRoot.getChildren().add(toastPane);
+			StackPane.setAlignment(toastPane, Pos.CENTER);
+
+			toastPane.setScaleX(0.95);
+			toastPane.setScaleY(0.95);
+			javafx.animation.ScaleTransition scale = new javafx.animation.ScaleTransition(Duration.millis(220), toastPane);
+			scale.setToX(1.0);
+			scale.setToY(1.0);
+			scale.play();
+
+			FadeTransition fade = new FadeTransition(Duration.seconds(2), toastPane);
+			fade.setFromValue(1.0);
+			fade.setToValue(0.0);
+			fade.setDelay(Duration.seconds(0.9));
+			fade.setOnFinished(e -> stackRoot.getChildren().remove(toastPane));
+			fade.play();
+		});
+	}
+
 	public static void showUndo(Stage stage, String message, Runnable undoAction) {
 
 		Platform.runLater(() -> {
@@ -83,16 +114,7 @@ public class Toast {
 			layout.setStyle(
 					"-fx-background-color: rgba(0,0,0,0.85);" + "-fx-padding: 12 20;" + "-fx-background-radius: 10;");
 
-			// Get original root of stage
-			var originalRoot = stage.getScene().getRoot();
-
-			StackPane stackRoot;
-			if (originalRoot instanceof StackPane sp) {
-				stackRoot = sp;
-			} else {
-				stackRoot = new StackPane(originalRoot);
-				stage.getScene().setRoot(stackRoot);
-			}
+			StackPane stackRoot = resolveToastStackRoot(stage);
 
 			StackPane toastPane = new StackPane(layout);
 			toastPane.setMouseTransparent(true);

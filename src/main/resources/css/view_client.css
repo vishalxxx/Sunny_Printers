@@ -63,7 +63,8 @@
     -fx-border-width: 1.5;
 }
 
-.search-field {
+/* Main toolbar search only — avoid forcing min-width on other fields (e.g. goto page). */
+.view-clients-root .search-bar-container .search-field {
     -fx-background-color: #FAF6F0;
     -fx-border-color: #CD7B4E;
     -fx-border-width: 1.5;
@@ -76,10 +77,25 @@
     -fx-min-width: 200;
 }
 
-/* .sort-combo, compact-combo, client-combo, card-combo: shared in theme.css */
-
-.search-field:focused {
+.view-clients-root .search-bar-container .search-field:focused {
     -fx-border-color: #CD7B4E;
+}
+
+/* Compact "Go to page" field in footer pagination */
+.view-clients-root .goto-page-field {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #D4C4BC;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 3 6;
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-font-size: 11px;
+    -fx-min-width: 32;
+    -fx-pref-width: 40;
+    -fx-max-width: 44;
+    -fx-alignment: CENTER;
 }
 
 .kpi-card {

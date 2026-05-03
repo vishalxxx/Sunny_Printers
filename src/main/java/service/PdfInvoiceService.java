@@ -37,6 +37,7 @@ import model.SystemSettings;
 import repository.SystemSettingsRepository;
 
 import utils.CompanyProfile;
+import utils.CompanyDataLayout;
 import utils.DBConnection;
 import utils.DocumentNumbering;
 import utils.DownloadTracker;
@@ -70,7 +71,8 @@ public class PdfInvoiceService {
 
             doc.add(new Paragraph(" "));
 
-            doc.add(new Paragraph("Invoice No: " + invoice.getInvoiceNo(), boldFont));
+            String noLabel = CompanyDataLayout.isProformaDocument(invoice) ? "Proforma No: " : "Invoice No: ";
+            doc.add(new Paragraph(noLabel + invoice.getInvoiceNo(), boldFont));
             doc.add(new Paragraph("Date: " + invoice.getInvoiceDate().format(fmt), normalFont));
             doc.add(new Paragraph("Client: " + invoice.getClientName(), normalFont));
 
@@ -273,7 +275,8 @@ public class PdfInvoiceService {
 
         doc.add(new Paragraph(" "));
 
-        doc.add(new Paragraph("Invoice No: " + invoice.getInvoiceNo(), boldFont));
+        String noLabel = CompanyDataLayout.isProformaDocument(invoice) ? "Proforma No: " : "Invoice No: ";
+        doc.add(new Paragraph(noLabel + invoice.getInvoiceNo(), boldFont));
         doc.add(new Paragraph("Date: " + invoice.getInvoiceDate().format(fmt), normalFont));
         doc.add(new Paragraph("Client: " + invoice.getClientName(), normalFont));
 

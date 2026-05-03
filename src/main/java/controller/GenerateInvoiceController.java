@@ -1228,7 +1228,7 @@ public class GenerateInvoiceController {
                             if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
                                 Desktop.getDesktop().open(pdf);
                             } else {
-                                toast("PDF saved to:\n" + pdf.getAbsolutePath());
+                                toastSmall("PDF saved");
                             }
                         } catch (Exception e) {
                             toast("Could not open PDF: " + e.getMessage());
@@ -1435,6 +1435,15 @@ public class GenerateInvoiceController {
         }
         Stage stage = (Stage) anchor.getScene().getWindow();
         Toast.show(stage, message);
+    }
+
+    private void toastSmall(String message) {
+        Node anchor = clientComboBox != null ? clientComboBox : jobsTable;
+        if (anchor == null || anchor.getScene() == null) {
+            return;
+        }
+        Stage stage = (Stage) anchor.getScene().getWindow();
+        Toast.showSmall(stage, message);
     }
 
     // Helper class for TableView

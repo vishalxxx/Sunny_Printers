@@ -3,8 +3,11 @@ package service;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -197,10 +200,11 @@ public class InvoiceBuilderService {
 			invoice.setToDate(master.getPeriodTo());
 			invoice.setInvoiceType(master.getType());
 			invoice.setStatus(master.getStatus());
+			invoice.setMasterDocumentSeries(master.resolveDocumentSeries());
 			invoice.setGrandTotal(0);
 
 			List<Integer> jobIds = loadJobIdsForSavedInvoice(con, master.getId());
-			loadJobLinesForSavedInvoice(con, invoice, master.getClientId(), jobIds);
+			loadJobLinesForSavedInvoice(con, invoice, jobIds);
 			if (invoice.getJobs().isEmpty()) {
 				invoice.setGrandTotal(master.getAmount());
 			}
@@ -236,7 +240,7 @@ public class InvoiceBuilderService {
 		}
 	}
 
-	private void loadJobLinesForSavedInvoice(Connection con, Invoice invoice, int clientId, List<Integer> jobIds) {
+	private void loadJobLinesForSavedInvoice(Connection con, Invoice invoice, List<Integer> jobIds) {
 		if (jobIds == null || jobIds.isEmpty()) {
 			return;
 		}
@@ -252,11 +256,9 @@ public class InvoiceBuilderService {
 				       ji.sort_order
 				FROM jobs j
 				JOIN job_items ji ON ji.job_id = j.id
-				WHERE j.client_id = ?
-				  AND j.id IN (""" + placeholders + ") ORDER BY j.job_date, j.id, ji.sort_order";
+				WHERE j.id IN (""" + placeholders + ") ORDER BY j.job_date, j.id, ji.sort_order";
 		try (PreparedStatement ps = con.prepareStatement(sql)) {
 			int index = 1;
-			ps.setInt(index++, clientId);
 			for (Integer id : jobIds) {
 				ps.setInt(index++, id);
 			}
@@ -268,9 +270,11 @@ public class InvoiceBuilderService {
 				if (job == null) {
 					job = new InvoiceJob();
 					job.setJobId(jobId);
-					job.setJobNo(rs.getString("job_no"));
-					job.setJobName(rs.getString("job_title"));
-					job.setJobDate(LocalDate.parse(rs.getString("job_date")));
+					String jobNo = rs.getString("job_no");
+					job.setJobNo(jobNo);
+					job.setJobName(jobDisplayTitle(rs, jobId, jobNo));
+					LocalDate jd = parseJobDateFlexible(rs.getString("job_date"));
+					job.setJobDate(jd != null ? jd : invoice.getInvoiceDate());
 					jobMap.put(jobId, job);
 					invoice.getJobs().add(job);
 				}
@@ -432,6 +436,43 @@ public class InvoiceBuilderService {
 
 	private void log(String msg) {
 		System.out.println("[InvoiceBuilder] " + msg);
+	}
+
+	private static String jobDisplayTitle(ResultSet rs, int jobId, String jobNo) throws SQLException {
+		String t = rs.getString("job_title");
+		if (t != null && !t.isBlank()) {
+			return t.trim();
+		}
+		if (jobNo != null && !jobNo.isBlank()) {
+			return jobNo.trim();
+		}
+		return "Job " + jobId;
+	}
+
+	private static LocalDate parseJobDateFlexible(String dateStr) {
+		if (dateStr == null || dateStr.isBlank()) {
+			return null;
+		}
+		String s = dateStr.trim();
+		try {
+			return LocalDate.parse(s);
+		} catch (DateTimeParseException e1) {
+			if (s.length() >= 10 && s.charAt(4) == '-' && s.charAt(7) == '-') {
+				try {
+					return LocalDate.parse(s.substring(0, 10));
+				} catch (DateTimeParseException ignored) {
+				}
+			}
+			try {
+				return LocalDate.parse(s, DateTimeFormatter.ofPattern("d/M/uuuu"));
+			} catch (DateTimeParseException ignored) {
+			}
+			try {
+				return LocalDate.parse(s, DateTimeFormatter.ofPattern("dd/MM/uuuu"));
+			} catch (DateTimeParseException ignored) {
+			}
+		}
+		return null;
 	}
 
 }
