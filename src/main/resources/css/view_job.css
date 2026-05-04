@@ -191,14 +191,14 @@
 }
 
 /* THEMATIC ORANGE CHECKBOX */
-.jobs-table-premium .check-box { -fx-cursor: hand; }
-.jobs-table-premium .check-box .box {
+.jobs-table-premium .check-box, .invoice-jobs-table-premium .check-box { -fx-cursor: hand; }
+.jobs-table-premium .check-box .box, .invoice-jobs-table-premium .check-box .box {
     -fx-background-color: white; -fx-border-color: #CD7B4E; -fx-border-radius: 4; -fx-background-radius: 4;
 }
-.jobs-table-premium .check-box:selected .box {
+.jobs-table-premium .check-box:selected .box, .invoice-jobs-table-premium .check-box:selected .box {
     -fx-background-color: #FA8C16; -fx-border-color: #FA8C16;
 }
-.jobs-table-premium .check-box:selected .mark {
+.jobs-table-premium .check-box:selected .mark, .invoice-jobs-table-premium .check-box:selected .mark {
     -fx-background-color: white; -fx-shape: "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z";
 }
 
@@ -570,3 +570,286 @@
 .status-badge-in-progress { -fx-background-color: #F0F5FF; -fx-text-fill: #0044CC; }
 .status-badge-invoice-drafted { -fx-background-color: #F6F0FA; -fx-text-fill: #6A0DAD; }
 .status-badge-invoiced { -fx-background-color: #F6F0FA; -fx-text-fill: #6A0DAD; }
+
+.jobs-table-premium .table-row-cell:empty {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+.jobs-table-premium .table-row-cell:empty .table-cell {
+    -fx-border-color: transparent;
+}
+
+/* Premium Field Containers for Header */
+.header-field-container {
+    -fx-background-color: #FAF6F0;
+    -fx-background-radius: 8;
+    -fx-padding: 0 12;
+    -fx-min-height: 44;
+    -fx-border-color: #EEECE8;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+}
+
+.header-field-container:hover {
+    -fx-background-color: #F6F1E9;
+    -fx-border-color: #E6DED5;
+}
+
+.header-field-container:focused-within {
+    -fx-background-color: white;
+    -fx-border-color: #CD7B4E;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.1), 10, 0, 0, 0);
+}
+
+.status-container {
+    -fx-background-color: #FFF2E8;
+    -fx-border-color: #FFE7BA;
+}
+
+.status-container:hover {
+    -fx-background-color: #FFF7E6;
+}
+
+/* Action Buttons for Job Rows */
+.action-btn-premium {
+    -fx-background-color: #00B4D8;
+    -fx-text-fill: white;
+    -fx-background-radius: 6;
+    -fx-font-weight: 800;
+    -fx-font-size: 12px;
+    -fx-padding: 8 18;
+    -fx-cursor: hand;
+    -fx-border-width: 0;
+}
+
+.action-btn-premium:hover {
+    -fx-opacity: 0.9;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.1), 8, 0, 0, 3);
+}
+
+/* Premium Finish Button */
+.finish-btn-premium {
+    -fx-background-color: #CD7B4E;
+    -fx-text-fill: white;
+    -fx-font-weight: 800;
+    -fx-font-size: 13px;
+    -fx-padding: 10 24;
+    -fx-background-radius: 100;
+    -fx-cursor: hand;
+}
+
+.finish-btn-premium:hover {
+    -fx-background-color: #B06938;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.2), 12, 0, 0, 5);
+}
+
+/* Premium Add Item Button */
+.add-item-btn {
+    -fx-background-color: #C26A2D;
+    -fx-text-fill: white;
+    -fx-font-weight: 800;
+    -fx-padding: 10 22;
+    -fx-background-radius: 100;
+    -fx-cursor: hand;
+    -fx-min-height: 40;
+}
+
+.add-item-btn:hover {
+    -fx-background-color: #A65925;
+    -fx-effect: dropshadow(three-pass-box, rgba(194, 106, 45, 0.2), 10, 0, 0, 4);
+}
+
+/* Cancel Button */
+.cancel-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #7A726D;
+    -fx-font-weight: 700;
+    -fx-font-size: 12px;
+    -fx-cursor: hand;
+}
+
+.cancel-btn:hover {
+    -fx-text-fill: #3E312D;
+    -fx-underline: true;
+}
+
+/* Premium ComboBox for Header */
+.header-combo-premium {
+    -fx-background-color: transparent !important;
+    -fx-background-insets: 0 !important;
+    -fx-background-radius: 0 !important;
+    -fx-border-width: 0 !important;
+    -fx-cursor: hand;
+}
+
+.header-combo-premium .list-cell {
+    -fx-background-color: transparent !important;
+    -fx-text-fill: #3E312D !important;
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-padding: 0;
+}
+
+/* Aggressively remove black/dark backgrounds from ComboBox sub-components */
+.header-combo-premium .combo-box-base,
+.header-combo-premium .combo-box-display-node,
+.header-combo-premium .list-cell:filled,
+.header-combo-premium .list-cell:selected,
+.header-combo-premium .cell,
+.header-combo-premium .label {
+    -fx-background-color: transparent !important;
+    -fx-text-fill: #3E312D !important;
+}
+
+/* Premium Header Bar (White Card) */
+.view-invoice-jobs-root .header-bar {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.05), 20, 0, 0, 5);
+    -fx-border-color: #F1ECE6;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+}
+
+/* Taste Dropdowns & DatePickers in Invoice Jobs */
+.view-invoice-jobs-root .taste-combo,
+.view-invoice-jobs-root .taste-datepicker {
+    -fx-background-color: #FAF6F0; 
+    -fx-border-color: #EADFD4;
+}
+
+/* Fix: Ensure selected text is visible (not faint/white) */
+.view-invoice-jobs-root .taste-combo .list-cell,
+.view-invoice-jobs-root .taste-combo .label,
+.view-invoice-jobs-root .taste-combo .text,
+.view-invoice-jobs-root .taste-datepicker .text-field,
+.view-invoice-jobs-root .taste-datepicker .label {
+    -fx-text-fill: #3E312D !important;
+    -fx-opacity: 1 !important;
+}
+
+/* Ensure Popups match the Taste beige theme (#FAF6F0) instead of White */
+.view-invoice-jobs-root .combo-box-popup > .list-view,
+.view-invoice-jobs-root .date-picker-popup {
+    -fx-background-color: #FAF6F0 !important;
+    -fx-background-radius: 12;
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 12;
+    -fx-padding: 4;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 15, 0, 0, 8);
+}
+
+.view-invoice-jobs-root .combo-box-popup > .list-view .list-cell,
+.view-invoice-jobs-root .date-picker-popup .day-cell {
+    -fx-background-color: transparent !important;
+    -fx-text-fill: #3E312D !important;
+    -fx-padding: 8 12;
+    -fx-background-radius: 8;
+}
+
+.view-invoice-jobs-root .combo-box-popup > .list-view .list-cell:hover,
+.view-invoice-jobs-root .date-picker-popup .day-cell:hover {
+    -fx-background-color: #F4EAE0 !important;
+    -fx-text-fill: #3E312D !important;
+}
+
+.view-invoice-jobs-root .combo-box-popup > .list-view .list-cell:selected,
+.view-invoice-jobs-root .date-picker-popup .day-cell:selected {
+    -fx-background-color: #EADFD4 !important;
+    -fx-text-fill: #3E312D !important;
+    -fx-font-weight: 700;
+}
+
+/* Calendar month/year headers */
+.view-invoice-jobs-root .date-picker-popup > .month-year-pane {
+    -fx-background-color: #FAF6F0 !important;
+}
+
+.header-combo-premium:focused, .header-combo-premium:hover {
+    -fx-background-color: transparent !important;
+}
+
+/* Enhancements for Field Headings */
+.field-heading-sm {
+    -fx-font-size: 10px;
+    -fx-font-family: "Segoe UI", "Inter", system;
+    -fx-text-transform: uppercase;
+}
+
+/* Taste Card Animation */
+.taste-card {
+    -fx-transition: all 0.3s ease;
+}
+.taste-card:hover {
+    -fx-border-color: #CD7B4E;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.1), 25, 0, 0, 8);
+}
+
+/* Header Field Components Styling */
+.taste-card .date-picker,
+.taste-card .date-picker .text-field {
+    -fx-background-color: transparent;
+    -fx-text-fill: #3E312D;
+    -fx-font-weight: 600;
+}
+
+.taste-card .text-field {
+    -fx-prompt-text-fill: #B5ACA3;
+}
+
+/* Ensure prompt text is visible in combo boxes too */
+.header-combo-premium .list-cell:empty {
+    -fx-text-fill: #B5ACA3;
+}
+
+/* --- INVOICE JOBS TABLE (Compact 60px rows with Text) --- */
+.invoice-jobs-table-premium {
+    -fx-background-color: transparent;
+    -fx-table-cell-border-color: transparent;
+    -fx-table-header-border-color: transparent;
+    -fx-border-color: transparent;
+    -fx-fixed-cell-size: 60;
+}
+
+.invoice-jobs-table-premium .column-header-background {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #F1ECE6;
+    -fx-border-width: 0 0 1 0;
+}
+.invoice-jobs-table-premium .column-header { -fx-background-color: transparent; -fx-padding: 4 0; -fx-border-color: transparent; }
+.invoice-jobs-table-premium .column-header .label { -fx-font-weight: 700; -fx-text-fill: #1A1311; -fx-font-size: 11px; }
+
+.invoice-jobs-table-premium .table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: #F1ECE6;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 0;
+}
+.invoice-jobs-table-premium .table-row-cell:selected { -fx-background-color: #FFF9F3; }
+
+.invoice-jobs-table-premium .table-cell {
+    -fx-padding: 0 8;
+    -fx-alignment: center;
+    -fx-border-color: transparent;
+    -fx-font-size: 12px;
+    -fx-text-fill: #1A1311;
+    -fx-font-weight: 600;
+}
+
+/* Scrollbars */
+.invoice-jobs-table-premium .scroll-bar:vertical,
+.invoice-jobs-table-premium .scroll-bar:horizontal { -fx-background-color: transparent; -fx-padding: 2; }
+.invoice-jobs-table-premium .scroll-bar:vertical .track,
+.invoice-jobs-table-premium .scroll-bar:horizontal .track { -fx-background-color: #F3F1EF; -fx-background-radius: 999; -fx-border-color: transparent; }
+.invoice-jobs-table-premium .scroll-bar:vertical .thumb,
+.invoice-jobs-table-premium .scroll-bar:horizontal .thumb { -fx-background-color: #D8D2CC; -fx-background-radius: 999; }
+
+/* Hide empty rows */
+.invoice-jobs-table-premium .table-row-cell:empty {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+.invoice-jobs-table-premium .table-row-cell:empty .table-cell {
+    -fx-border-color: transparent;
+}

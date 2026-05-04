@@ -81,12 +81,7 @@ public class ViewInvoiceJobsController {
         clientComboBox.valueProperty().addListener((obs, oldV, newV) -> onClientSelected(newV));
         invoiceComboBox.valueProperty().addListener((obs, oldV, newV) -> onInvoiceSelected(newV));
 
-        try {
-            var cssUrl = getClass().getResource("/css/invoice_genration.css");
-            if (cssUrl != null) {
-                editModeBox.getStylesheets().add(cssUrl.toExternalForm());
-            }
-        } catch (Exception e) {}
+        // Stylesheet dynamically added was removed to prevent conflicts with Taste design
 
         setupJobActionBarStyles();
 
