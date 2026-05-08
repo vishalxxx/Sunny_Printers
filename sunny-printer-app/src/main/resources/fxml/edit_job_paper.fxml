@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<HBox xmlns="http://javafx.com/javafx/23"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="controller.PaperTabController"
+      spacing="16"
+      styleClass="tab-container">
+
+            <!-- ================= LEFT : TABLE ================= -->
+            <VBox styleClass="table-wrapper"
+                  HBox.hgrow="ALWAYS"
+                  prefWidth="650">
+
+         
+
+                        <TableView fx:id="paperTable"
+                                   styleClass="data-table"
+                                   >
+
+                            <columns>
+                                <TableColumn fx:id="statusCol"  text="Status" prefWidth="110"/>
+
+                                <TableColumn fx:id="qtyCol" text="Qty" prefWidth="80"/>
+                                <TableColumn fx:id="unitsCol" text="Units" prefWidth="110"/>
+                                <TableColumn fx:id="sizeCol" text="Size" prefWidth="110"/>
+                                <TableColumn fx:id="gsmCol" text="GSM" prefWidth="90"/>
+                                <TableColumn fx:id="typeCol" text="Type" prefWidth="140"/>
+                                <TableColumn fx:id="sourceCol" text="Source" prefWidth="100"/>
+                                <TableColumn fx:id="notesCol" text="Notes" prefWidth="120"/>
+                                <TableColumn fx:id="amountCol" text="Amount" prefWidth="120"/>
+
+                            </columns>
+
+                            <placeholder>
+                                <VBox alignment="CENTER" spacing="10" styleClass="tab-empty-state">
+                                    <Region styleClass="tab-empty-icon"/>
+                                    <Label text="No Content to show" styleClass="tab-empty-title"/>
+                                </VBox>
+                            </placeholder>
+
+                        </TableView>
+
+            </VBox>
+
+            <!-- ================= RIGHT : PAPER EDITOR ================= -->
+            <VBox styleClass="editor-panel"
+                  spacing="18"
+                  fx:id="rightPane"
+                  prefWidth="350">
+
+                <ScrollPane fitToWidth="true"
+                            hbarPolicy="NEVER"
+                            vbarPolicy="AS_NEEDED"
+                            styleClass="editor-panel-scroll"
+                            VBox.vgrow="ALWAYS">
+                    <content>
+                        <VBox spacing="18" styleClass="editor-panel-content" fillWidth="true">
+                            <Label text="Paper Editor"
+                                   styleClass="card-title"/>
+
+                            <!-- MAIN GRID -->
+                            <FlowPane hgap="14"
+                                      vgap="14"
+                                      prefWrapLength="350">
+
+                                <VBox spacing="6">
+                                    <Label text="Quantity"/>
+                                    <TextField fx:id="qtyField"/>
+                                </VBox>
+
+                                <VBox spacing="6">
+                                    <Label text="Units"/>
+                                    <ComboBox fx:id="unitsField"/>
+                                </VBox>
+
+                                <VBox spacing="6">
+                                    <Label text="Size"/>
+                                    <ComboBox fx:id="sizeField"/>
+                                </VBox>
+
+                                <VBox spacing="6">
+                                    <Label text="GSM"/>
+                                    <ComboBox fx:id="gsmField"/>
+                                </VBox>
+
+                                <VBox spacing="6">
+                                    <Label text="Type"/>
+                                    <ComboBox fx:id="typeField"/>
+                                </VBox>
+
+                                <VBox spacing="8">
+                                    <Label text="Paper Source"/>
+                                    <HBox spacing="14">
+                                        <RadioButton fx:id="ourRadio" text="Our"/>
+                                        <RadioButton fx:id="clientRadio" text="Client"/>
+                                    </HBox>
+                                </VBox>
+
+                            </FlowPane>
+
+                            <VBox spacing="6">
+                                <Label text="Notes"/>
+                                <TextArea fx:id="notesField"
+                                          prefRowCount="3"/>
+                            </VBox>
+
+                            <VBox spacing="6">
+                                <Label text="Amount (₹)"/>
+                                <TextField fx:id="amountField"/>
+                            </VBox>
+
+                            <HBox spacing="10" HBox.hgrow="ALWAYS">
+
+                                <Button fx:id="addUpdateBtn"
+                                        text="Add Paper"
+                                        maxWidth="Infinity"
+                                        HBox.hgrow="ALWAYS"
+                                        styleClass="btn-primary"
+                                        onAction="#handleAddOrUpdate"/>
+
+                                <Button fx:id="deleteBtn"
+                                        text="Delete"
+                                        maxWidth="Infinity"
+                                        HBox.hgrow="ALWAYS"
+                                        onAction="#handleDelete"
+                                        visible="false"
+                                        managed="false"
+                                        styleClass="btn-danger"/>
+
+                            </HBox>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+
+
+            </VBox>
+            
+
+</HBox>

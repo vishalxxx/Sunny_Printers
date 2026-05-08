@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+
+<HBox xmlns="http://javafx.com/javafx/23"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="controller.LaminationTabController"
+      spacing="16"
+      styleClass="tab-container">
+
+
+    <!-- ========= LEFT : TABLE ========= -->
+    <VBox styleClass="table-wrapper" HBox.hgrow="ALWAYS" prefWidth="650">
+
+        <TableView fx:id="laminationTable"
+                   styleClass="data-table">
+
+            <columns>
+                 <TableColumn fx:id="statusCol"  text="Status" prefWidth="110"/>
+
+                <TableColumn fx:id="qtyCol" text="Qty"/>
+                <TableColumn fx:id="unitCol" text="Unit"/>
+                <TableColumn fx:id="typeCol" text="Type"/>
+                <TableColumn fx:id="sideCol" text="Side"/>
+                <TableColumn fx:id="sizeCol" text="Size"/>
+                <TableColumn fx:id="notesCol" text="Notes"/>
+				<TableColumn fx:id="amountCol" text="Amount"/>
+            </columns>
+
+            <placeholder>
+                <VBox alignment="CENTER" spacing="10" styleClass="tab-empty-state">
+                    <Region styleClass="tab-empty-icon"/>
+                    <Label text="No Content to show" styleClass="tab-empty-title"/>
+                </VBox>
+            </placeholder>
+
+        </TableView>
+
+    </VBox>
+
+    <!-- ========= RIGHT : EDIT PANEL ========= -->
+  <!-- ========= RIGHT : LAMINATION EDITOR ========= -->
+<VBox fx:id="rightPane"
+                  styleClass="editor-panel"
+                  spacing="14"
+                  prefWidth="350">
+
+                <ScrollPane fitToWidth="true"
+                            hbarPolicy="NEVER"
+                            vbarPolicy="AS_NEEDED"
+                            styleClass="editor-panel-scroll"
+                            VBox.vgrow="ALWAYS">
+                    <content>
+                        <VBox spacing="14" styleClass="editor-panel-content" fillWidth="true">
+                            <Label text="Lamination Editor"
+                                   styleClass="card-title"/>
+
+                            <GridPane hgap="12" vgap="12">
+                                <columnConstraints>
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50"/>
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50"/>
+                                </columnConstraints>
+
+                                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                    <Label text="Quantity"/>
+                                    <TextField fx:id="qtyField" maxWidth="Infinity"/>
+                                </VBox>
+
+                                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                    <Label text="Unit"/>
+                                    <ComboBox fx:id="unitField" maxWidth="Infinity"/>
+                                </VBox>
+
+                                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                                    <Label text="Type"/>
+                                    <ComboBox fx:id="typeField" maxWidth="Infinity"/>
+                                </VBox>
+
+                                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                    <Label text="Side"/>
+                                    <ComboBox fx:id="sideField" maxWidth="Infinity"/>
+                                </VBox>
+
+                                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                                    <Label text="Size"/>
+                                    <ComboBox fx:id="sizeField" maxWidth="Infinity"/>
+                                </VBox>
+
+                                <Region GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                            </GridPane>
+
+                            <VBox spacing="4">
+                                <Label text="Notes"/>
+                                <TextArea fx:id="notesField"
+                                          prefRowCount="3"/>
+                            </VBox>
+
+                            <VBox spacing="4">
+                                <Label text="Amount (₹)"/>
+                                <TextField fx:id="amountField"/>
+                            </VBox>
+
+                            <HBox spacing="10" HBox.hgrow="ALWAYS">
+                                <Button fx:id="addUpdateBtn"
+                                        text="Add Lamination"
+                                        maxWidth="Infinity"
+                                        HBox.hgrow="ALWAYS"
+                                        styleClass="btn-primary"
+                                        onAction="#handleAddOrUpdate"/>
+
+                                <Button fx:id="deleteBtn"
+                                        text="Delete"
+                                        maxWidth="Infinity"
+                                        HBox.hgrow="ALWAYS"
+                                        onAction="#handleDelete"
+                                        visible="false"
+                                        managed="false"
+                                        styleClass="btn-danger"/>
+                            </HBox>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+
+              
+
+
+            </VBox>
+
+
+</HBox>

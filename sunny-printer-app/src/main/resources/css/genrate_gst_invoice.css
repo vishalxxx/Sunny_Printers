@@ -1,0 +1,298 @@
+/* ============================================================
+   SUNNY PRINTERS — Generate GST Invoice (Screenshot Match)
+   ============================================================ */
+
+.gst-scroll-root {
+    -fx-background-color: #FAF6F0;
+    -fx-background: #FAF6F0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.gst-scroll-root:focused,
+.gst-scroll-root .viewport,
+.gst-scroll-root .content,
+.gst-scroll-root .corner {
+    -fx-background-color: transparent;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.gst-scroll-root .scroll-pane,
+.gst-scroll-root .scroll-pane:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.gst-root { -fx-background-color: transparent; }
+
+.gst-scroll-root .compact-field,
+.gst-scroll-root .compact-datepicker,
+.gst-scroll-root .card-combo {
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-min-height: 32;
+}
+
+.gst-scroll-root .compact-field { -fx-padding: 0 12; -fx-font-size: 12px; -fx-font-weight: 600; }
+.gst-scroll-root .compact-datepicker { -fx-padding: 0 10; -fx-font-size: 12px; -fx-font-weight: 600; }
+.gst-scroll-root .card-combo > .list-cell { -fx-padding: 2 10 2 12; -fx-font-size: 12px; -fx-font-weight: 600; }
+
+.gst-card, .gst-subcard {
+    -fx-background-color: #FFFDF9;
+    -fx-background-radius: 8;
+    -fx-border-color: #F0E6DD;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-padding: 12 10;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.02), 10, 0, 0, 4);
+}
+.gst-subcard { -fx-padding: 10 8; }
+
+.gst-card-title { -fx-text-fill: #3E312D; -fx-font-size: 12px; -fx-font-weight: 800; }
+.gst-subtitle { -fx-text-fill: #3E312D; -fx-font-size: 11px; -fx-font-weight: 800; }
+.gst-label-xs { -fx-text-fill: #8E7A6B; -fx-font-size: 10px; -fx-font-weight: 800; -fx-padding: 0 0 4 0; }
+.gst-muted { -fx-text-fill: #8E7A6B; -fx-font-size: 11px; -fx-font-weight: 600; }
+.gst-strong { -fx-text-fill: #3E312D; -fx-font-size: 11px; -fx-font-weight: 800; }
+.gst-input { -fx-padding: 0; }
+
+.gst-btn-chip {
+    -fx-background-color: #FFF7ED;
+    -fx-border-color: #F3DEC8;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 6 12;
+    -fx-text-fill: #CD7B4E;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-cursor: hand;
+}
+.gst-btn-chip:hover { -fx-background-color: #F3DEC8; }
+
+.gst-mini-btn {
+    -fx-background-color: #F1EBE5;
+    -fx-text-fill: #433934;
+    -fx-font-weight: 700;
+    -fx-font-size: 10px;
+    -fx-background-radius: 50;
+    -fx-border-radius: 50;
+    -fx-padding: 4 10;
+    -fx-cursor: hand;
+}
+.gst-mini-btn:hover { -fx-background-color: #E2D9D2; }
+
+.gst-link-btn {
+    -fx-background-color: #F1EBE5;
+    -fx-border-color: #E2D9D2;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 6 10;
+    -fx-text-fill: #433934;
+    -fx-font-weight: 700;
+    -fx-font-size: 10.5px;
+    -fx-cursor: hand;
+}
+.gst-link-btn:hover { -fx-background-color: #E2D9D2; -fx-border-color: #D6CDC6; }
+
+.gst-search-field {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2D9D2;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 10 8 36;
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 11px;
+    -fx-font-weight: 500;
+}
+.gst-search-field:focused {
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1;
+}
+
+.gst-job-chip-row { -fx-padding: 4 0 0 0; }
+.gst-job-chip {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #EAE0D6;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 10 12;
+    -fx-pref-width: 220;
+    -fx-cursor: hand;
+}
+.gst-job-chip-selected {
+    -fx-border-color: #CD7B4E;
+    -fx-background-color: #FFFDF9;
+}
+.gst-chip-title { -fx-text-fill: #3E312D; -fx-font-weight: 800; -fx-font-size: 11px; }
+.gst-chip-sub { -fx-text-fill: #3E312D; -fx-font-weight: 500; -fx-font-size: 10px; }
+.gst-chip-meta { -fx-text-fill: #8E7A6B; -fx-font-weight: 500; -fx-font-size: 9.5px; }
+
+.gst-chip-status {
+    -fx-background-color: #E8F5E9;
+    -fx-text-fill: #2E7D32;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-padding: 2 8;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+}
+
+.gst-job-radio .radio {
+    -fx-border-color: #CD7B4E;
+    -fx-border-radius: 50;
+    -fx-padding: 2;
+}
+.gst-job-radio:selected .dot {
+    -fx-background-color: #CD7B4E;
+    -fx-background-radius: 50;
+    -fx-padding: 4;
+}
+
+/* Address Block */
+.gst-address-block { -fx-padding: 8 0 0 0; }
+.gst-address-text { -fx-text-fill: #3E312D; -fx-font-size: 12px; -fx-font-weight: 500; -fx-line-spacing: 2; }
+.gst-address-label { -fx-text-fill: #8E7A6B; -fx-font-size: 11.5px; -fx-font-weight: 600; }
+.gst-address-value { -fx-text-fill: #3E312D; -fx-font-size: 12px; -fx-font-weight: 700; }
+
+.gst-summary-block { -fx-background-color: transparent; -fx-border-color: transparent; -fx-padding: 0; }
+.gst-sep { -fx-opacity: 0.25; }
+
+.gst-grand-total {
+    -fx-background-color: #FFF7ED;
+    -fx-border-color: #F3DEC8;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 10 12;
+}
+.gst-grand-amount { -fx-text-fill: #C26A2D; -fx-font-size: 22px; -fx-font-weight: 900; }
+.gst-grand-words { -fx-text-fill: #8E7A6B; -fx-font-size: 10px; -fx-font-weight: 600; }
+
+.gst-inline-toggle {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #EEE7E0;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 8 10;
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-cursor: hand;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.gst-table .column-header-background {
+    -fx-background-color: #FFF2E5;
+}
+.gst-table .column-header {
+    -fx-background-color: transparent;
+    -fx-border-color: #F0E6DD;
+    -fx-border-width: 0 1 0 0;
+}
+.gst-table .column-header .label {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+}
+
+/* Premium Action Buttons */
+.btn-terracotta {
+    -fx-background-color: #CD7B4E;
+    -fx-text-fill: white;
+}
+.btn-terracotta:hover {
+    -fx-background-color: #B26A42;
+}
+
+.btn-light-orange {
+    -fx-background-color: #F8F0E8;
+    -fx-text-fill: #CD7B4E;
+    -fx-border-color: #EBD1BB;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+.btn-light-orange:hover {
+    -fx-background-color: #F2E8DF;
+}
+
+.gst-inline-toggle:hover { -fx-background-color: #FAF6F0; }
+
+.gst-radio { -fx-text-fill: #3E312D; -fx-font-size: 11px; -fx-font-weight: 800; }
+.gst-radio .radio {
+    -fx-border-color: #CD7B4E;
+    -fx-border-radius: 50;
+    -fx-padding: 2;
+}
+.gst-radio:selected .dot {
+    -fx-background-color: #CD7B4E;
+    -fx-background-radius: 50;
+    -fx-padding: 4;
+}
+
+/* Icons */
+.gst-card-icon {
+    -fx-background-color: #CD7B4E;
+    -fx-min-width: 14; -fx-min-height: 14;
+    -fx-max-width: 14; -fx-max-height: 14;
+}
+.icon-invoice-details { -fx-shape: "M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"; }
+.icon-company { -fx-shape: "M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"; }
+.icon-user { -fx-shape: "M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"; }
+.icon-jobs { -fx-shape: "M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"; }
+.icon-terms { -fx-shape: "M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"; }
+.icon-bank { -fx-shape: "M11.5 1L2 6v2h19V6l-9.5-5zM3 10v7h3v-7H3zm6 0v7h3v-7H9zm6 0v7h3v-7h-3zM2 19v2h19v-2H2z"; }
+
+
+/* Jobs for selected client: squared cards */
+.gst-job-card{
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2D9D2;
+    -fx-border-width: 1;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-padding: 10 10;
+    -fx-min-width: 220;
+    -fx-pref-width: 220;
+    -fx-max-width: 220;
+}
+
+.gst-job-card:hover{
+    -fx-border-color: #CD7B4E;
+    -fx-background-color: #FFFDFA;
+}
+
+.gst-job-card .radio-button{
+    -fx-padding: 0 0 4 0;
+}
+
+
+/* Multi-select jobs (checkbox) */
+.gst-job-check{
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-padding: 0 0 4 0;
+}
+.gst-job-check .box{
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+.gst-job-check:selected .mark{
+    -fx-background-color: #CD7B4E;
+}
+
+.gst-job-card-selected{
+    -fx-border-color: #CD7B4E;
+    -fx-background-color: #FFFDFA;
+}

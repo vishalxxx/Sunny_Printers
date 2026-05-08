@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+
+<StackPane xmlns="http://javafx.com/javafx/23"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="controller.EditJobController"
+           stylesheets="@../css/theme.css, @../css/edit_job.css"
+           styleClass="stack-root, ui-compact, app-page-shell">
+
+    <BorderPane styleClass="edit-job-root"
+                maxWidth="1.7976931348623157E308"
+                prefWidth="0.0"
+                StackPane.alignment="TOP_LEFT">
+
+        <!-- ================= HEADER ================= -->
+        <top>
+            <VBox spacing="8">
+                <HBox fx:id="breadcrumbContainer"
+                      styleClass="breadcrumb-container"
+                      alignment="CENTER_LEFT"
+                      spacing="8"/>
+
+                <HBox styleClass="job-header-bar" alignment="TOP_LEFT">
+                    <VBox spacing="4" alignment="TOP_LEFT">
+                        <Label fx:id="jobNumberLabel"
+                               text="Edit Job #000"
+                               styleClass="job-title"/>
+
+                        <Label fx:id="jobTitleLabel"
+                               text="Job Title"
+                               styleClass="job-subtitle"/>
+                    </VBox>
+                    <Pane HBox.hgrow="ALWAYS"/>
+
+                    <Button text="Discard Changes"
+                            styleClass="btn-secondary"
+                            onAction="#handleDiscardChanges"/>
+                    <Button text="Save Progress" styleClass="btn-primary" onAction="#handleSaveChanges"/>
+                </HBox>
+            </VBox>
+        </top>
+
+        <!-- ================= CENTER ================= -->
+        <center>
+            <VBox spacing="14"
+                  alignment="TOP_LEFT"
+                  VBox.vgrow="ALWAYS"
+                  styleClass="tabs-offset, editor-wrapper"
+                  maxWidth="1.7976931348623157E308"
+                  fillWidth="true">
+
+                <!-- TAB BAR -->
+                <TabPane fx:id="jobTabPane"
+                         tabClosingPolicy="UNAVAILABLE"
+                         maxWidth="1.7976931348623157E308">
+
+                    <Tab fx:id="generalTab" text="General">
+                        <ScrollPane fitToWidth="true"
+                                    hbarPolicy="NEVER"
+                                    vbarPolicy="AS_NEEDED"
+                                    styleClass="editor-panel-scroll"
+                                    maxWidth="1.7976931348623157E308">
+                            <content>
+                                <VBox spacing="15"
+                                      alignment="TOP_LEFT"
+                                      styleClass="editor-card, edit-job-tab-content"
+                                      maxWidth="1.7976931348623157E308"
+                                      fillWidth="true">
+                                    <VBox spacing="14" maxWidth="1.7976931348623157E308" fillWidth="true">
+                                        <Label text="JOB FILE (IMAGE / PDF)" styleClass="field-label-xs"/>
+                                        <StackPane fx:id="previewContainer"
+                                                   styleClass="image-preview, job-file-preview"
+                                                   onMouseClicked="#handleUploadFile"
+                                                   prefHeight="260"
+                                                   maxHeight="260"
+                                                   minHeight="260"
+                                                   maxWidth="1.7976931348623157E308"
+                                                   VBox.vgrow="NEVER">
+                                            <ImageView fx:id="jobImagePreview"
+                                                       styleClass="job-file-image"
+                                                       preserveRatio="true"
+                                                       fitHeight="210"
+                                                       fitWidth="360"
+                                                       visible="false"
+                                                       managed="false"
+                                                       StackPane.alignment="CENTER"/>
+                                            <VBox alignment="CENTER"
+                                                  spacing="10"
+                                                  styleClass="upload-overlay"
+                                                  StackPane.alignment="CENTER">
+                                                <Button onAction="#handleUploadFile"
+                                                        styleClass="upload-icon-button"
+                                                        focusTraversable="false">
+                                                    <graphic>
+                                                        <Region styleClass="upload-icon-glyph"/>
+                                                    </graphic>
+                                                </Button>
+                                                <Label text="Drag &amp; Drop or Upload"
+                                                       styleClass="upload-drop-title"/>
+                                                <Label text="PNG, JPG or PDF"
+                                                       styleClass="upload-drop-subtitle"/>
+                                                <Label text="No File Selected"
+                                                       fx:id="filePlaceholder"
+                                                       styleClass="image-placeholder"
+                                                       visible="false"
+                                                       managed="false"/>
+                                            </VBox>
+                                        </StackPane>
+
+                                        <HBox spacing="10" alignment="CENTER_LEFT" styleClass="file-meta-bar" visible="false" managed="false">
+                                            <Region styleClass="file-thumb"/>
+                                            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                                <Label text="—" styleClass="file-meta-name"/>
+                                                <Label text="Uploaded file" styleClass="file-meta-sub"/>
+                                            </VBox>
+                                            <Button text="Replace" onAction="#handleUploadFile" styleClass="btn-secondary, file-meta-btn"/>
+                                            <Button text="Remove" onAction="#handleRemoveFile" styleClass="btn-secondary, file-meta-btn"/>
+                                        </HBox>
+
+                                        <Label text="JOB REMARKS (NOTES)" styleClass="field-label-xs"/>
+                                        <TextArea fx:id="jobRemarksArea"
+                                                  promptText="Add job remarks..."
+                                                  prefRowCount="4"
+                                                  prefHeight="120"
+                                                  maxHeight="120"
+                                                  wrapText="true"
+                                                  maxWidth="1.7976931348623157E308"/>
+
+                                        <HBox alignment="CENTER_RIGHT">
+                                            <Button text="Upload Image / PDF"
+                                                    fx:id="uploadJobImageBtn"
+                                                    onAction="#handleUploadFile"
+                                                    styleClass="btn-primary"/>
+                                        </HBox>
+                                    </VBox>
+                                </VBox>
+                            </content>
+                        </ScrollPane>
+                    </Tab>
+                    <Tab fx:id="paperTab" text="Paper"/>
+                    <Tab fx:id="printingTab" text="Printing"/>
+                    <Tab fx:id="ctpTab" text="CTP / Plates"/>
+                    <Tab fx:id="bindingTab" text="Binding"/>
+                    <Tab fx:id="laminationTab" text="Lamination"/>
+
+                </TabPane>
+
+            </VBox>
+        </center>
+
+
+
+    </BorderPane>
+</StackPane>

@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.shape.Line?>
+
+<ScrollPane xmlns="http://javafx.com/javafx/23"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fitToWidth="true"
+            styleClass="main-scroll-pane"
+            stylesheets="@../css/theme.css, @../css/add_job.css"
+            fx:controller="controller.AddJobController">
+
+    <VBox spacing="0" alignment="TOP_LEFT" styleClass="add-job-root, ui-compact, app-page-shell">
+
+        <!-- Breadcrumbs below dashboard title (“Add New Job”) -->
+        <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8" />
+
+        <VBox spacing="10" styleClass="header-section">
+            <GridPane hgap="12" vgap="10" styleClass="header-bar">
+                <padding>
+                    <Insets top="10" right="14" bottom="10" left="14" />
+                </padding>
+                
+                <!-- Column 1: Client Search (40%) -->
+                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label text="SELECT CLIENT" styleClass="compact-field-label"/>
+                    <ComboBox fx:id="clientCombo" promptText="Select Client" styleClass="client-combo" maxWidth="Infinity" editable="false"/>
+                </VBox>
+                
+                <!-- Column 2: Job Title (25%) -->
+                <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label text="JOB TITLE" styleClass="compact-field-label"/>
+                    <TextField fx:id="jobName" promptText="e.g. Annual Report 2024" styleClass="compact-field" maxWidth="Infinity"/>
+                </VBox>
+                
+                <!-- Column 3: Job Date (20%) -->
+                <VBox spacing="6" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                    <Label text="JOB DATE" styleClass="compact-field-label"/>
+                    <DatePicker fx:id="jobDate" styleClass="compact-datepicker" maxWidth="Infinity" promptText="Select Date"/>
+                </VBox>
+                
+                <!-- Column 4: Job Number (15%) -->
+                <VBox spacing="6" GridPane.columnIndex="3" GridPane.rowIndex="0">
+                    <Label text="JOB NUMBER" styleClass="compact-field-label"/>
+                    <Label fx:id="jobNoLabel" text="Job No: NEW" styleClass="compact-job-no" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                </VBox>
+
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="40"/>
+                    <ColumnConstraints percentWidth="25"/>
+                    <ColumnConstraints percentWidth="20"/>
+                    <ColumnConstraints percentWidth="15"/>
+                </columnConstraints>
+            </GridPane>
+        </VBox>
+
+        <!-- 2. STEPPER -->
+        <HBox alignment="CENTER" spacing="0" styleClass="stepper-container">
+            <padding>
+                <Insets top="16" bottom="16"/>
+            </padding>
+            
+            <HBox fx:id="step1Btn" alignment="CENTER" spacing="10" styleClass="step-item, step-active">
+                <StackPane>
+                    <Circle radius="14" styleClass="step-circle"/>
+                    <Label text="1" styleClass="step-number"/>
+                </StackPane>
+                <Label text="Printing" styleClass="step-label"/>
+            </HBox>
+            <Line endX="20" styleClass="step-line"/>
+
+            <HBox fx:id="step2Btn" alignment="CENTER" spacing="10" styleClass="step-item">
+                <StackPane>
+                    <Circle radius="14" styleClass="step-circle"/>
+                    <Label text="2" styleClass="step-number"/>
+                </StackPane>
+                <Label text="CTP Plate" styleClass="step-label"/>
+            </HBox>
+            <Line endX="20" styleClass="step-line"/>
+
+            <HBox fx:id="step3Btn" alignment="CENTER" spacing="10" styleClass="step-item">
+                <StackPane>
+                    <Circle radius="14" styleClass="step-circle"/>
+                    <Label text="3" styleClass="step-number"/>
+                </StackPane>
+                <Label text="Paper" styleClass="step-label"/>
+            </HBox>
+            <Line endX="20" styleClass="step-line"/>
+
+            <HBox fx:id="step4Btn" alignment="CENTER" spacing="10" styleClass="step-item">
+                <StackPane>
+                    <Circle radius="14" styleClass="step-circle"/>
+                    <Label text="4" styleClass="step-number"/>
+                </StackPane>
+                <Label text="Binding" styleClass="step-label"/>
+            </HBox>
+            <Line endX="20" styleClass="step-line"/>
+
+            <HBox fx:id="step5Btn" alignment="CENTER" spacing="10" styleClass="step-item">
+                <StackPane>
+                    <Circle radius="14" styleClass="step-circle"/>
+                    <Label text="5" styleClass="step-number"/>
+                </StackPane>
+                <Label text="Lamination" styleClass="step-label"/>
+            </HBox>
+            <Line endX="20" styleClass="step-line"/>
+
+            <HBox fx:id="step6Btn" alignment="CENTER" spacing="10" styleClass="step-item">
+                <StackPane>
+                    <Circle radius="14" styleClass="step-circle"/>
+                    <Label text="6" styleClass="step-number"/>
+                </StackPane>
+                <Label text="Job File" styleClass="step-label"/>
+            </HBox>
+        </HBox>
+
+        <!-- 3. MAIN CONTENT AREA -->
+        <StackPane VBox.vgrow="ALWAYS" styleClass="content-stack">
+            <!-- STEP 1: PRINTING -->
+            <VBox fx:id="printingCard" spacing="16" styleClass="content-card">
+                <HBox alignment="CENTER_LEFT" spacing="15">
+                    <Region styleClass="icon-print-brown"/>
+                    <Label text="Printing Specifications" styleClass="card-content-title"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label text="STEP 1 OF 6" styleClass="step-indicator"/>
+                </HBox>
+
+                <GridPane hgap="16" vgap="12">
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                        <Label text="QUANTITY" styleClass="field-heading-sm"/>
+                        <TextField fx:id="printQtyField" promptText="1000" styleClass="card-field"/>
+                    </VBox>
+                    <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <Label text="UNITS" styleClass="field-heading-sm"/>
+                        <ComboBox fx:id="printUnitsCombo" promptText="Copies" styleClass="card-combo" maxWidth="Infinity"/>
+                    </VBox>
+                    <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="0" GridPane.columnSpan="2">
+                        <Label text="PLATE PROCESSING" styleClass="field-heading-sm"/>
+                        <ComboBox fx:id="printCtpCombo" promptText="With CTP (Computer to Plate)" styleClass="card-combo" maxWidth="Infinity"/>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="2">
+                        <Label text="SET" styleClass="field-heading-sm"/>
+                        <TextField fx:id="printSetField" promptText="Number of sets" styleClass="card-field"/>
+                    </VBox>
+                    <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="1" GridPane.columnSpan="2" GridPane.rowSpan="2">
+                        <Label text="PRODUCTION NOTES" styleClass="field-heading-sm"/>
+                        <TextArea fx:id="printNotesArea" promptText="Specify any additional printing requirements..." styleClass="card-textarea" wrapText="true" prefHeight="60"/>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                        <Label text="COLOR" styleClass="field-heading-sm"/>
+                        <ComboBox fx:id="printColorCombo" promptText="Select Color" styleClass="card-combo" maxWidth="Infinity"/>
+                    </VBox>
+                    <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                        <Label text="SIDE" styleClass="field-heading-sm"/>
+                        <HBox styleClass="segmented-control-bg">
+                            <ToggleButton fx:id="sideDoubleBtn" text="Double" styleClass="segmented-btn, segmented-left" selected="true" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                            <ToggleButton fx:id="sideSingleBtn" text="Single" styleClass="segmented-btn, segmented-right" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                        </HBox>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="3" GridPane.columnSpan="2">
+                        <Label text="PRODUCT TYPE" styleClass="field-heading-sm"/>
+                        <ComboBox fx:id="productTypeCombo"
+                                  promptText="Sticker / Brochure / Label / Book"
+                                  styleClass="card-combo"
+                                  maxWidth="Infinity"/>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="3" GridPane.columnSpan="2">
+                        <Label text="RATE PER UNIT" styleClass="field-heading-sm"/>
+                        <TextField fx:id="ratePerUnitField"
+                                   promptText="0.00"
+                                   styleClass="card-field"
+                                   maxWidth="Infinity"/>
+                    </VBox>
+                    
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="25"/>
+                        <ColumnConstraints percentWidth="25"/>
+                        <ColumnConstraints percentWidth="25"/>
+                        <ColumnConstraints percentWidth="25"/>
+                    </columnConstraints>
+                </GridPane>
+
+                <HBox alignment="CENTER_LEFT" spacing="24" styleClass="cost-summary-card" VBox.vgrow="NEVER">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Estimated Cost" styleClass="cost-label"/>
+                        <HBox alignment="CENTER_LEFT" spacing="2">
+                            <Label text="₹" styleClass="currency-symbol"/>
+                            <TextField fx:id="printAmountField" text="0.00" styleClass="cost-value-field"/>
+                        </HBox>
+                    </VBox>
+                    <Button fx:id="addPrintingBtn" text="Add Printing" onAction="#handleAddPrinting" styleClass="add-item-btn"/>
+                </HBox>
+            </VBox>
+
+             <!-- STEP 2: CTP PLATE -->
+            <VBox fx:id="ctpCard" spacing="16" styleClass="content-card" visible="false" managed="false">
+                <HBox alignment="CENTER_LEFT" spacing="15">
+                    <Region styleClass="icon-plate-brown"/>
+                    <Label text="CTP Plate Specifications" styleClass="card-content-title"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label text="STEP 2 OF 6" styleClass="step-indicator"/>
+                </HBox>
+                <GridPane hgap="16" vgap="12">
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                        <Label text="QUANTITY" styleClass="field-heading-sm"/>
+                        <TextField fx:id="ctpQtyField" promptText="8" styleClass="card-field"/>
+                    </VBox>
+                    <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <Label text="SIZE" styleClass="field-heading-sm"/>
+                        <ComboBox fx:id="ctpSizeCombo" promptText="Select Size" styleClass="card-combo" maxWidth="Infinity"/>
+                    </VBox>
+                    <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                        <Label text="GAUGE" styleClass="field-heading-sm"/>
+                        <ComboBox fx:id="ctpGaugeCombo" promptText="Select Gauge" styleClass="card-combo" maxWidth="Infinity"/>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                        <Label text="COLOR" styleClass="field-heading-sm"/>
+                        <ComboBox fx:id="ctpColorCombo" promptText="Select Color" styleClass="card-combo" maxWidth="Infinity"/>
+                    </VBox>
+                    <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                        <Label text="BACKING" styleClass="field-heading-sm"/>
+                        <ComboBox fx:id="ctpBackingCombo" promptText="Select Backing" styleClass="card-combo" maxWidth="Infinity"/>
+                    </VBox>
+                    <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                        <Label text="SUPPLIER" styleClass="field-heading-sm"/>
+                        <ComboBox fx:id="ctpSupplierCombo" promptText="Select Supplier" styleClass="card-combo" maxWidth="Infinity"/>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="3">
+                        <Label text="PRODUCTION NOTES" styleClass="field-heading-sm"/>
+                        <TextArea fx:id="ctpNotesArea" promptText="Specify any additional CTP requirements..." styleClass="card-textarea" wrapText="true" prefHeight="60"/>
+                    </VBox>
+
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="33.3"/><ColumnConstraints percentWidth="33.3"/><ColumnConstraints percentWidth="33.3"/>
+                    </columnConstraints>
+                </GridPane>
+                <HBox alignment="CENTER_LEFT" spacing="24" styleClass="cost-summary-card" VBox.vgrow="NEVER">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Estimated Cost" styleClass="cost-label"/>
+                        <HBox alignment="CENTER_LEFT" spacing="2">
+                            <Label text="₹" styleClass="currency-symbol"/>
+                            <TextField fx:id="ctpAmountField" text="0.00" styleClass="cost-value-field"/>
+                        </HBox>
+                    </VBox>
+                    <Button fx:id="addPlateBtn" text="Add Plate" onAction="#handleAddCtpPlate" styleClass="add-item-btn"/>
+                </HBox>
+            </VBox>
+
+            <!-- STEP 3: PAPER -->
+            <VBox fx:id="paperCard" spacing="16" styleClass="content-card" visible="false" managed="false">
+                <HBox alignment="CENTER_LEFT" spacing="15">
+                    <Region styleClass="icon-paper-brown"/>
+                    <Label text="Paper Specifications" styleClass="card-content-title"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label text="STEP 3 OF 6" styleClass="step-indicator"/>
+                </HBox>
+                <GridPane hgap="16" vgap="12">
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                        <Label text="QUANTITY" styleClass="field-heading-sm"/>
+                        <TextField fx:id="paperQtyField" promptText="2" styleClass="card-field"/>
+                    </VBox>
+                    <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <Label text="UNITS" styleClass="field-heading-sm"/>
+                        <ComboBox fx:id="paperUnitsCombo" promptText="Rim" styleClass="card-combo" maxWidth="Infinity"/>
+                    </VBox>
+                    <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                        <Label text="PAPER SIZE" styleClass="field-heading-sm"/>
+                        <ComboBox fx:id="paperSizeCombo" promptText="23x36" styleClass="card-combo" maxWidth="Infinity"/>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                        <Label text="GSM" styleClass="field-heading-sm"/>
+                        <ComboBox fx:id="paperGsmCombo" promptText="Select GSM" styleClass="card-combo" maxWidth="Infinity"/>
+                    </VBox>
+                    <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                        <Label text="PAPER TYPE" styleClass="field-heading-sm"/>
+                        <ComboBox fx:id="paperTypeCombo" promptText="Select Type" styleClass="card-combo" maxWidth="Infinity"/>
+                    </VBox>
+                    <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                        <Label text="PAPER SOURCE" styleClass="field-heading-sm"/>
+                        <HBox spacing="15" alignment="CENTER_LEFT" VBox.vgrow="ALWAYS">
+                            <RadioButton fx:id="paperOurRadio" text="Our Stock" styleClass="premium-radio"/>
+                            <RadioButton fx:id="paperClientRadio" text="Client Side" styleClass="premium-radio"/>
+                        </HBox>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="3">
+                        <Label text="PRODUCTION NOTES" styleClass="field-heading-sm"/>
+                        <TextArea fx:id="paperNotesArea" promptText="Specify any additional paper requirements..." styleClass="card-textarea" wrapText="true" prefHeight="60"/>
+                    </VBox>
+
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="33.3"/><ColumnConstraints percentWidth="33.3"/><ColumnConstraints percentWidth="33.3"/>
+                    </columnConstraints>
+                </GridPane>
+                <HBox alignment="CENTER_LEFT" spacing="24" styleClass="cost-summary-card" VBox.vgrow="NEVER">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Estimated Cost" styleClass="cost-label"/>
+                        <HBox alignment="CENTER_LEFT" spacing="2">
+                            <Label text="₹" styleClass="currency-symbol"/>
+                            <TextField fx:id="paperAmountField" text="0.00" styleClass="cost-value-field"/>
+                        </HBox>
+                    </VBox>
+                    <Button fx:id="addPaperBtn" text="Add Paper" onAction="#handleAddPaper" styleClass="add-item-btn"/>
+                </HBox>
+            </VBox>
+
+            <!-- STEP 4: BINDING -->
+            <VBox fx:id="bindingCard" spacing="16" styleClass="content-card" visible="false" managed="false">
+                <HBox alignment="CENTER_LEFT" spacing="15">
+                    <Region styleClass="icon-binding-brown"/>
+                    <Label text="Binding Specifications" styleClass="card-content-title"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label text="STEP 4 OF 6" styleClass="step-indicator"/>
+                </HBox>
+                <GridPane hgap="16" vgap="12">
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                        <Label text="PROCESS" styleClass="field-heading-sm"/>
+                        <ComboBox fx:id="bindingProcessCombo" promptText="Select Binding" styleClass="card-combo" maxWidth="Infinity"/>
+                    </VBox>
+                    <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <Label text="QUANTITY" styleClass="field-heading-sm"/>
+                        <TextField fx:id="bindingQtyField" promptText="1000" styleClass="card-field"/>
+                    </VBox>
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                        <Label text="RATE" styleClass="field-heading-sm"/>
+                        <TextField fx:id="bindingRateField" promptText="0.50" styleClass="card-field"/>
+                    </VBox>
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="2">
+                        <Label text="PRODUCTION NOTES" styleClass="field-heading-sm"/>
+                        <TextArea fx:id="bindingNotesArea" promptText="Specify any additional binding requirements..." styleClass="card-textarea" wrapText="true" prefHeight="60"/>
+                    </VBox>
+
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="50"/><ColumnConstraints percentWidth="50"/>
+                    </columnConstraints>
+                </GridPane>
+                <HBox alignment="CENTER_LEFT" spacing="24" styleClass="cost-summary-card" VBox.vgrow="NEVER">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Estimated Cost" styleClass="cost-label"/>
+                        <HBox alignment="CENTER_LEFT" spacing="2">
+                            <Label text="₹" styleClass="currency-symbol"/>
+                            <TextField fx:id="bindingAmountField" text="0.00" styleClass="cost-value-field"/>
+                        </HBox>
+                    </VBox>
+                    <Button fx:id="addBindingBtn" text="Add Binding" onAction="#handleAddBinding" styleClass="add-item-btn"/>
+                </HBox>
+            </VBox>
+
+            <!-- STEP 5: LAMINATION -->
+            <VBox fx:id="laminationCard" spacing="16" styleClass="content-card" visible="false" managed="false">
+                <HBox alignment="CENTER_LEFT" spacing="15">
+                    <Region styleClass="icon-lamination-brown"/>
+                    <Label text="Lamination Specifications" styleClass="card-content-title"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label text="STEP 5 OF 6" styleClass="step-indicator"/>
+                </HBox>
+                <GridPane hgap="16" vgap="12">
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                        <Label text="QUANTITY" styleClass="field-heading-sm"/>
+                        <TextField fx:id="lamQtyField" promptText="1000" styleClass="card-field"/>
+                    </VBox>
+                    <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <Label text="UNITS" styleClass="field-heading-sm"/>
+                        <ComboBox fx:id="lamUnitCombo" promptText="Select Unit" styleClass="card-combo" maxWidth="Infinity"/>
+                    </VBox>
+                    <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                        <Label text="SIZE" styleClass="field-heading-sm"/>
+                        <ComboBox fx:id="lamSizeCombo" promptText="Select Size" styleClass="card-combo" maxWidth="Infinity"/>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                        <Label text="TYPE" styleClass="field-heading-sm"/>
+                        <ComboBox fx:id="lamTypeCombo" promptText="Select Type" styleClass="card-combo" maxWidth="Infinity"/>
+                    </VBox>
+                    <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                        <Label text="SIDE" styleClass="field-heading-sm"/>
+                        <HBox styleClass="segmented-control-bg">
+                            <ToggleButton fx:id="lamDoubleBtn" text="Double" styleClass="segmented-btn, segmented-left" selected="true" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                            <ToggleButton fx:id="lamSingleBtn" text="Single" styleClass="segmented-btn, segmented-right" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                        </HBox>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="3">
+                        <Label text="PRODUCTION NOTES" styleClass="field-heading-sm"/>
+                        <TextArea fx:id="lamNotesArea" promptText="Specify any additional lamination requirements..." styleClass="card-textarea" wrapText="true" prefHeight="60"/>
+                    </VBox>
+
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="33.3"/><ColumnConstraints percentWidth="33.3"/><ColumnConstraints percentWidth="33.3"/>
+                    </columnConstraints>
+                </GridPane>
+                <HBox alignment="CENTER_LEFT" spacing="24" styleClass="cost-summary-card" VBox.vgrow="NEVER">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Estimated Cost" styleClass="cost-label"/>
+                        <HBox alignment="CENTER_LEFT" spacing="2">
+                            <Label text="₹" styleClass="currency-symbol"/>
+                            <TextField fx:id="lamAmountField" text="0.00" styleClass="cost-value-field"/>
+                        </HBox>
+                    </VBox>
+                    <Button fx:id="addLaminationBtn" text="Add Lamination" onAction="#handleAddLamination" styleClass="add-item-btn"/>
+                </HBox>
+            </VBox>
+
+            <!-- STEP 6: JOB FILE -->
+            <VBox fx:id="fileCard" spacing="24" styleClass="content-card" visible="false" managed="false">
+                <HBox alignment="CENTER_LEFT" spacing="15">
+                    <Region styleClass="icon-file-brown"/>
+                    <Label text="Job File Attachments" styleClass="card-content-title"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label text="STEP 6 OF 6" styleClass="step-indicator"/>
+                </HBox>
+                
+                <VBox alignment="CENTER" spacing="20" styleClass="upload-zone-premium" VBox.vgrow="ALWAYS" onMouseClicked="#handleUploadFile">
+                    <!-- Placeholder when no file is selected -->
+                    <VBox fx:id="filePlaceholder" alignment="CENTER" spacing="12">
+                         <Region styleClass="icon-cloud-upload-large"/>
+                         <VBox alignment="CENTER" spacing="4">
+                              <Label text="Click to browse or drag &amp; drop artwork" styleClass="upload-hint-premium"/>
+                              <Label text="Supported formats: JPG, PNG, PDF (Max 50MB)" styleClass="upload-sub-hint"/>
+                         </VBox>
+                    </VBox>
+
+                    <!-- Image Preview Container -->
+                    <VBox fx:id="imagePreviewContainer" alignment="CENTER" spacing="15" visible="false" managed="false">
+                        <ImageView fx:id="jobImagePreview" 
+                                   fitWidth="400" fitHeight="250" 
+                                   preserveRatio="true"/>
+                        <Button text="Change Artwork" onAction="#handleResetUpload" styleClass="change-file-btn"/>
+                    </VBox>
+                               
+                    <!-- PDF Preview Container -->
+                    <VBox fx:id="pdfPreviewBox" alignment="CENTER" spacing="15" visible="false" managed="false">
+                         <Region styleClass="icon-pdf-large"/>
+                         <Label text="PDF Document Prepared" styleClass="pdf-ready-label"/>
+                         <Button text="Change Artwork" onAction="#handleResetUpload" styleClass="change-file-btn"/>
+                    </VBox>
+                </VBox>
+            </VBox>
+        </StackPane>
+
+        <!-- 4. FOOTER -->
+        <HBox alignment="CENTER_LEFT" spacing="20" styleClass="footer-section">
+            <padding>
+                <Insets top="20" bottom="16" left="0" right="0"/>
+            </padding>
+            <Button text="✕  Cancel Job" onAction="#handleCancel" styleClass="cancel-btn"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="Save Draft" onAction="#handleSaveDraft" styleClass="draft-btn-premium"/>
+            <Button fx:id="nextBtn" text="Next Step  →" onAction="#handleNextStep" styleClass="next-step-btn-premium"/>
+            <Button fx:id="addJobBtn" text="Finish Job  ✓" onAction="#handleAddJobButton" styleClass="finish-btn-premium" visible="false" managed="false"/>
+        </HBox>
+    </VBox>
+</ScrollPane>

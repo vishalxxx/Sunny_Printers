@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.Arc?>
+<?import javafx.scene.Group?>
+<?import javafx.scene.text.Text?>
+
+<ScrollPane xmlns="http://javafx.com/javafx/23" 
+            xmlns:fx="http://javafx.com/fxml/1"
+            fitToWidth="true" 
+            styleClass="main-scroll-pane, view-invoices-root"
+            stylesheets="@../css/theme.css, @../css/view_invoices.css"
+            fx:controller="controller.ViewInvoicesController">
+
+    <VBox fx:id="viScreenRoot" spacing="14" alignment="TOP_LEFT" fillWidth="true" styleClass="root-container, ui-compact, taste-root, app-page-shell">
+
+        <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8" />
+
+        <!-- 2. ACTION TOOLBAR (disabled when no table row is selected) -->
+        <HBox fx:id="viToolbarRow" spacing="10" alignment="CENTER_LEFT" styleClass="vi-toolbar-card">
+            <HBox spacing="8" styleClass="vi-action-bar">
+                <Button fx:id="btnEdit" text="Edit" onAction="#handleEditAction" styleClass="vi-btn-premium, vi-btn-edit">
+                    <graphic><Region styleClass="vi-icon-edit"/></graphic>
+                </Button>
+                <Button fx:id="btnFinalize" text="Finalize" onAction="#handleFinalizeAction" styleClass="vi-btn-premium, vi-btn-finalize">
+                    <graphic><Region styleClass="vi-icon-finalize"/></graphic>
+                </Button>
+                <Button fx:id="btnSend" text="Send" onAction="#handleSendAction" styleClass="vi-btn-premium, vi-btn-send">
+                    <graphic><Region styleClass="vi-icon-send"/></graphic>
+                </Button>
+                <Button fx:id="btnRevised" text="Revised" onAction="#handleRevisedAction" styleClass="vi-btn-premium, vi-btn-revised">
+                    <graphic><Region styleClass="vi-icon-revised"/></graphic>
+                </Button>
+                <Button fx:id="btnPayment" text="Payment" onAction="#handlePaymentAction" styleClass="vi-btn-premium, vi-btn-payment">
+                    <graphic><Region styleClass="vi-icon-payment"/></graphic>
+                </Button>
+                <Button fx:id="btnRaiseCnDn" text="Raise CN/DN" onAction="#handleRaiseCnDnAction" styleClass="vi-btn-premium, vi-btn-cndn">
+                    <graphic><Region styleClass="vi-icon-document"/></graphic>
+                </Button>
+                <Button fx:id="btnCancel" text="Cancel Invoice" onAction="#handleCancelAction" styleClass="vi-btn-premium, vi-btn-cancel">
+                    <graphic><Region styleClass="vi-icon-cancel"/></graphic>
+                </Button>
+            </HBox>
+        </HBox>
+
+        <!-- 3. FILTER BAR (Clear aligned on same row as inputs via VBox + spacer label) -->
+        <HBox spacing="14" alignment="BOTTOM_LEFT" styleClass="vi-filter-bar, info-card-premium">
+            <VBox spacing="4" minWidth="150">
+                <Label text="Search Invoice" styleClass="filter-label-taste"/>
+                <TextField fx:id="invoiceSearchField" promptText="Invoice No..." styleClass="taste-field" maxWidth="Infinity"/>
+            </VBox>
+            <VBox spacing="4" minWidth="160">
+                <Label text="Client" styleClass="filter-label-taste"/>
+                <ComboBox fx:id="clientComboBox" promptText="All Clients" styleClass="taste-combo" maxWidth="Infinity"/>
+            </VBox>
+            <VBox spacing="4" minWidth="140">
+                <Label text="Invoice Status" styleClass="filter-label-taste"/>
+                <ComboBox fx:id="statusComboBox" promptText="All" styleClass="taste-combo" maxWidth="Infinity"/>
+            </VBox>
+            <VBox spacing="4" minWidth="130">
+                <Label text="From Date" styleClass="filter-label-taste"/>
+                <DatePicker fx:id="startDatePicker" styleClass="taste-datepicker" maxWidth="Infinity" editable="false"/>
+            </VBox>
+            <VBox spacing="4" minWidth="130">
+                <Label text="To Date" styleClass="filter-label-taste"/>
+                <DatePicker fx:id="endDatePicker" styleClass="taste-datepicker" maxWidth="Infinity" editable="false"/>
+            </VBox>
+            <Region HBox.hgrow="ALWAYS" />
+            <VBox spacing="4" alignment="CENTER_LEFT" fillWidth="false" minWidth="180">
+                <Label text="&#160;" styleClass="filter-label-taste" />
+                <Button text="Clear filters" onAction="#handleClear" styleClass="vi-btn-filter-clear"
+                        minWidth="172" mnemonicParsing="false">
+                    <graphic><Region styleClass="vi-icon-clear" /></graphic>
+                </Button>
+            </VBox>
+        </HBox>
+
+        <!-- 4. MAIN SPLIT LAYOUT -->
+        <HBox spacing="16" styleClass="vi-main-row" VBox.vgrow="ALWAYS">
+            <!-- Left: Table Area -->
+            <VBox spacing="0" HBox.hgrow="ALWAYS" styleClass="vi-left-stack">
+                <VBox styleClass="content-card-premium, vi-table-shell" VBox.vgrow="ALWAYS">
+                    <TableView fx:id="invoiceTable" styleClass="vi-invoice-table" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="colSelect" minWidth="44" maxWidth="44" prefWidth="44" resizable="false" styleClass="vi-chead-center" />
+                            <TableColumn fx:id="colInvoiceNo" text="INVOICE ID" minWidth="120" prefWidth="150" />
+                            <TableColumn fx:id="colClient" text="CLIENT" minWidth="200" prefWidth="280" />
+                            <TableColumn fx:id="colIssueDate" text="ISSUE DATE" minWidth="110" prefWidth="130" />
+                            <TableColumn fx:id="colDueDate" text="DUE DATE" minWidth="110" prefWidth="130" />
+                            <TableColumn fx:id="colAmount" text="AMOUNT" minWidth="120" prefWidth="140" styleClass="vi-chead-right" />
+                            <TableColumn fx:id="colStatus" text="STATUS" minWidth="100" prefWidth="120" styleClass="vi-chead-center" />
+                            <TableColumn fx:id="colActions" text="ACTIONS" minWidth="64" maxWidth="90" prefWidth="80" resizable="false" styleClass="vi-chead-center" />
+                        </columns>
+                        <columnResizePolicy>
+                            <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />
+                        </columnResizePolicy>
+                    </TableView>
+                    
+                    <!-- Pagination -->
+                    <HBox styleClass="vi-pagination-bar-premium" alignment="CENTER_LEFT" spacing="16">
+                        <Label fx:id="paginationInfoLabel" text="Showing 1-0 of 0 invoices" styleClass="vi-page-info-taste"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        
+                        <HBox spacing="12" alignment="CENTER_RIGHT">
+                             <!-- Page Buttons & Go To will be injected here -->
+                             <HBox fx:id="paginationPagesBox" spacing="8" alignment="CENTER_RIGHT" />
+                        </HBox>
+                    </HBox>
+                </VBox>
+            </VBox>
+
+            <!-- Right: Sidebar -->
+            <VBox spacing="14" styleClass="vi-sidebar" minWidth="300">
+                <!-- Invoice Summary (one row selected → that invoice; none → current filter / date range) -->
+                <VBox spacing="14" styleClass="info-card-premium, vi-side-card">
+                    <HBox alignment="TOP_LEFT" spacing="8" fillHeight="false">
+                        <StackPane styleClass="vi-summary-icon-wrap">
+                            <Region styleClass="vi-icon-summary"/>
+                        </StackPane>
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <Label text="Invoice summary" styleClass="vi-side-title-taste"/>
+                            <Label fx:id="summaryContextLabel" text="" styleClass="vi-summary-context" wrapText="true"/>
+                        </VBox>
+                    </HBox>
+                    <VBox fx:id="summarySingleInvoiceSection" spacing="8" managed="false" visible="false">
+                        <Label text="Adjustments and payments" styleClass="vi-summary-breakdown-heading"/>
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="vi-summary-breakdown-scroll" maxHeight="220">
+                            <VBox fx:id="summaryBreakdownBox" spacing="6"/>
+                        </ScrollPane>
+                        <Separator styleClass="vi-summary-separator"/>
+                    </VBox>
+                    <VBox spacing="10" styleClass="vi-summary-list">
+                        <HBox alignment="CENTER_LEFT">
+                            <Label text="Total Invoices" styleClass="vi-summary-label"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="sumCountLabel" text="126" styleClass="vi-summary-value-bold"/>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT">
+                            <Label text="Total Base Amount" styleClass="vi-summary-label"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="sumBaseLabel" text="₹ 1,25,680.00" styleClass="vi-summary-value-bold"/>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT">
+                            <Label text="Total Adjustment" styleClass="vi-summary-label"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="sumAdjustmentLabel" text="₹ 0.00" styleClass="vi-summary-value-bold"/>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT">
+                            <Label text="Total Net Amount" styleClass="vi-summary-label"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="sumNetLabel" text="₹ 1,25,680.00" styleClass="vi-summary-value-hero"/>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT">
+                            <Label text="Total Paid Amount" styleClass="vi-summary-label"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="sumPaidLabel" text="₹ 45,600.00" styleClass="vi-summary-value-paid"/>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT">
+                            <Label text="Total Due Amount" styleClass="vi-summary-label"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="sumDueLabel" text="₹ 80,080.00" styleClass="vi-summary-value-due"/>
+                        </HBox>
+                    </VBox>
+                </VBox>
+
+                <!-- Status donut (same Arc pattern as dashboard Payment Health); hidden when a table row is selected -->
+                <VBox fx:id="viStatusOverviewBox" spacing="12" styleClass="info-card-premium, vi-side-card">
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <StackPane styleClass="vi-summary-icon-wrap">
+                            <Region styleClass="vi-icon-chart"/>
+                        </StackPane>
+                        <VBox spacing="2">
+                            <Label text="Status Overview" styleClass="vi-side-title-taste"/>
+                            <Label text="Paid · unpaid · overdue (current filter)" styleClass="vi-summary-context"/>
+                        </VBox>
+                    </HBox>
+                    <HBox alignment="CENTER" fillHeight="false">
+                        <StackPane prefWidth="165" prefHeight="165" minWidth="165" minHeight="165" maxWidth="165" maxHeight="165">
+                            <Group StackPane.alignment="CENTER">
+                                <Arc centerX="0" centerY="0" radiusX="75" radiusY="75" startAngle="0" length="360" styleClass="vi-donut-ring-base"/>
+                                <Arc fx:id="viDonutArcPaid" centerX="0" centerY="0" radiusX="75" radiusY="75" startAngle="90" length="0" styleClass="vi-donut-ring-paid"/>
+                                <Arc fx:id="viDonutArcUnpaid" centerX="0" centerY="0" radiusX="75" radiusY="75" startAngle="90" length="0" styleClass="vi-donut-ring-unpaid"/>
+                                <Arc fx:id="viDonutArcOverdue" centerX="0" centerY="0" radiusX="75" radiusY="75" startAngle="90" length="0" styleClass="vi-donut-ring-overdue"/>
+                            </Group>
+                            <VBox alignment="CENTER" spacing="0" StackPane.alignment="CENTER">
+                                <Label fx:id="viDonutCenterCount" text="0" styleClass="vi-donut-center-label"/>
+                                <Label fx:id="viDonutCenterSubtitle" text="INVOICES" styleClass="vi-donut-center-sub"/>
+                            </VBox>
+                        </StackPane>
+                    </HBox>
+                    <VBox spacing="8">
+                        <HBox alignment="CENTER_LEFT">
+                            <Circle radius="4" styleClass="vi-donut-legend-dot-paid"/>
+                            <Label text="Paid" styleClass="vi-summary-label" style="-fx-padding: 0 0 0 8;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="viDonutLegendPaid" text="0" styleClass="vi-summary-value-bold"/>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT">
+                            <Circle radius="4" styleClass="vi-donut-legend-dot-unpaid"/>
+                            <Label text="Unpaid" styleClass="vi-summary-label" style="-fx-padding: 0 0 0 8;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="viDonutLegendUnpaid" text="0" styleClass="vi-summary-value-bold"/>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT">
+                            <Circle radius="4" styleClass="vi-donut-legend-dot-overdue"/>
+                            <Label text="Overdue" styleClass="vi-summary-label" style="-fx-padding: 0 0 0 8;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="viDonutLegendOverdue" text="0" styleClass="vi-summary-value-bold"/>
+                        </HBox>
+                    </VBox>
+                </VBox>
+
+                <!-- Quick Filters -->
+
+            </VBox>
+        </HBox>
+    </VBox>
+</ScrollPane>

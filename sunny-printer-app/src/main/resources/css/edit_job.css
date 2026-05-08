@@ -1,0 +1,895 @@
+/* ======================================================
+   GLOBAL
+   ====================================================== */
+.root {
+    -fx-font-family: "Inter", "Segoe UI", "SF Pro Display";
+    -fx-font-size: 12px;
+    -fx-background-color: #FAF6F0;
+    -fx-text-fill: #3E312D;
+}
+
+.stack-root {
+    -fx-background-color: #FAF6F0;
+}
+
+.app-page-shell {
+    -fx-background-color: #FAF6F0;
+}
+
+.edit-job-root {
+    -fx-padding: 0 16 8 16;
+    -fx-spacing: 12;
+}
+
+.edit-job-root .label,
+.edit-job-root .combo-box,
+.edit-job-root .list-cell,
+.edit-job-root .text-field,
+.edit-job-root .text-area {
+    -fx-font-style: normal;
+}
+
+/* Breadcrumb typography should match View Jobs (theme.css) even with global .label overrides */
+.edit-job-root .breadcrumb-container {
+    -fx-padding: 4 0 8 0;
+    -fx-spacing: 8;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.edit-job-root .breadcrumb-label {
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-text-fill: #A39890;
+    -fx-font-size: 9.5px;
+    -fx-font-weight: 500;
+    -fx-letter-spacing: 0.02em;
+}
+
+.edit-job-root .breadcrumb-separator {
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-text-fill: #CEC6BE;
+    -fx-font-size: 9px;
+    -fx-font-weight: 400;
+    -fx-padding: 0 2 0 2;
+}
+
+.edit-job-root .breadcrumb-current {
+    -fx-text-fill: #3E312D;
+    -fx-font-weight: 700;
+    -fx-font-size: 10px;
+    -fx-font-style: normal;
+}
+
+/* ======================================================
+   HEADER
+   ====================================================== */
+.job-header-bar {
+    -fx-spacing: 16;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 10 0 0 0;
+}
+
+.label.job-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #3E312D;
+}
+
+.label.job-subtitle {
+    -fx-font-size: 13px;
+    -fx-text-fill: #867E78;
+}
+
+/* ======================================================
+   BUTTONS
+   ====================================================== */
+.button {
+    -fx-padding: 10 22;
+    -fx-background-radius: 999;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+}
+
+/* Breadcrumb back button must not inherit pill padding */
+.edit-job-root .breadcrumb-back-btn,
+.breadcrumb-back-btn {
+    -fx-padding: 0;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-max-width: 32;
+    -fx-max-height: 32;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+}
+
+/* Primary */
+.btn-primary {
+    -fx-background-color: #C87941;
+    -fx-text-fill: white;
+    -fx-font-weight: 800;
+    -fx-border-color: #B86A35;
+    -fx-border-width: 1;
+    -fx-border-radius: 999;
+    -fx-background-radius: 999;
+    -fx-padding: 10 22;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.12), 10, 0, 0, 3);
+}
+
+.btn-primary:hover {
+    -fx-background-color: #D0884F;
+    -fx-border-color: #C87941;
+}
+
+/* Keep primary button color even when disabled (avoid gray washout) */
+.btn-primary:disabled {
+    -fx-opacity: 1;
+    -fx-background-color: #C87941;
+    -fx-text-fill: white;
+    -fx-border-color: #B86A35;
+}
+
+/* Secondary */
+.btn-secondary {
+    -fx-background-color: #F1EBE5;
+    -fx-text-fill: #433934;
+    -fx-font-weight: 800;
+    -fx-border-color: #E2D9D2;
+    -fx-border-radius: 999;
+    -fx-border-width: 1;
+}
+
+.btn-secondary:hover {
+    -fx-background-color: #E2D9D2;
+}
+.btn-danger {
+    -fx-background-color: linear-gradient(to bottom, #e53935, #b71c1c);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 999;
+    -fx-cursor: hand;
+}
+
+.btn-danger:hover {
+    -fx-background-color: linear-gradient(to bottom, #ef5350, #c62828);
+}
+
+.btn-danger:pressed {
+    -fx-background-color: #8e0000;
+}
+
+
+/* ======================================================
+   TABS (Tailwind style)
+   ====================================================== */
+.tab-pane {
+    -fx-background-color: transparent;
+}
+
+.tab-pane > .tab-header-area {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 6 0;
+}
+
+.tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: transparent;
+}
+
+/* Tab overflow scroll buttons (left/right arrows) */
+.tab-pane > .tab-header-area > .control-buttons-tab {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 0 6;
+}
+
+.tab-pane > .tab-header-area > .control-buttons-tab > .tab-left-button,
+.tab-pane > .tab-header-area > .control-buttons-tab > .tab-right-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 10;
+    -fx-padding: 6;
+    -fx-cursor: hand;
+}
+
+.tab-pane > .tab-header-area > .control-buttons-tab > .tab-left-button:hover,
+.tab-pane > .tab-header-area > .control-buttons-tab > .tab-right-button:hover {
+    -fx-background-color: #EADFD4;
+}
+
+.tab-pane > .tab-header-area > .control-buttons-tab > .tab-left-button > .arrow,
+.tab-pane > .tab-header-area > .control-buttons-tab > .tab-right-button > .arrow {
+    -fx-background-color: #CD7B4E;
+}
+
+.tab {
+    -fx-background-color: #F1EBE5;
+    -fx-padding: 10 22;
+    -fx-background-radius: 999;
+    -fx-border-width: 0;
+	-fx-focus-color: transparent;
+	    -fx-faint-focus-color: transparent;
+}
+
+.tab:hover {
+    -fx-background-color: #E2D9D2;
+}
+
+.tab:selected {
+    -fx-background-color: #F1EBE5;
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 0 0 2 0;
+    -fx-background-radius: 999;
+}
+
+.tab-pane .tab-label {
+    -fx-text-fill: #867E78;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.tab-pane .tab:selected .tab-label {
+    -fx-text-fill: #3E312D;
+}
+
+/* ======================================================
+   TABLE (Flat, full-width)
+   ====================================================== */
+   .table-view {
+       -fx-background-color: transparent;
+       -fx-border-color: transparent;
+       -fx-padding: 0;
+   }
+
+   /* main table background */
+   .table-view > .virtual-flow {
+       -fx-background-color: white;
+       -fx-background-radius: 16;
+       -fx-padding: 0;
+   }
+
+   /* Empty table background (avoid default gray) */
+   .table-view .placeholder,
+   .data-table .placeholder {
+       -fx-background-color: white;
+   }
+
+   .table-view:focused .placeholder,
+   .data-table:focused .placeholder {
+       -fx-background-color: white;
+   }
+   .table-view .column-header-background {
+       /* visible header strip (card-like) */
+       -fx-background-color: #FFFFFF;
+       -fx-background-insets: 0;
+       -fx-background-radius: 16 16 0 0;
+       -fx-padding: 10 10;
+       -fx-border-color: #F1ECE6;
+       -fx-border-width: 1 1 1 1;
+       -fx-border-radius: 16 16 0 0;
+   }
+
+   .table-view .column-header {
+       -fx-background-color: transparent;
+       -fx-border-color: transparent;
+   }
+
+   .table-view .column-header .label {
+       -fx-text-fill: #1A1311;
+       -fx-font-size: 11px;
+       -fx-font-weight: 800;
+       -fx-padding: 6 10;
+	   -fx-alignment: CENTER;
+	     -fx-text-alignment: CENTER;
+   }
+
+   /* Some tables use explicit styleClass="data-table" */
+   .data-table .column-header-background {
+    /* same as .table-view header strip, but for tables using styleClass="data-table" */
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 0;
+    -fx-background-radius: 16 16 0 0;
+    -fx-padding: 10 10;
+    -fx-border-color: #F1ECE6;
+    -fx-border-width: 1 1 1 1;
+    -fx-border-radius: 16 16 0 0;
+   }
+
+/* Ensure the header filler matches the header strip */
+.data-table .filler,
+.table-view .filler {
+    -fx-background-color: transparent;
+}
+
+   .data-table .column-header .label {
+       -fx-text-fill: #1A1311;
+       -fx-font-size: 11px;
+       -fx-font-weight: 800;
+   }
+
+/* Empty state for tab tables */
+.tab-empty-state {
+    -fx-padding: 18 16 22 16;
+    -fx-alignment: center;
+    -fx-max-width: 420;
+}
+
+.tab-empty-title {
+    -fx-text-fill: #8E7A6B;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.tab-empty-icon {
+    -fx-min-width: 44;
+    -fx-min-height: 44;
+    -fx-max-width: 44;
+    -fx-max-height: 44;
+    -fx-background-color: #CD7B4E;
+    -fx-opacity: 0.35;
+    -fx-shape: "M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 7h10v2H7V7zm0 4h10v2H7v-2z";
+}
+   .table-view .filler {
+       -fx-background-color: transparent;
+   }
+   .table-row-cell {
+       -fx-background-color: white;
+       -fx-border-color: transparent transparent #F1ECE6 transparent;
+       -fx-border-width: 0 0 1 0;
+       -fx-padding: 0;
+   }
+
+   /* actual row surface */
+   .table-row-cell > .table-cell {
+       -fx-background-color: transparent;
+       -fx-border-color: transparent;
+       -fx-padding: 12 10;
+       -fx-text-fill: #1A1311;
+	   -fx-alignment: CENTER;
+
+   }
+
+   /* alternate row */
+   .table-row-cell:odd > .table-cell {
+       -fx-background-color: transparent;
+   }
+   .table-row-cell:hover > .table-cell {
+       -fx-background-color: #FAF9F6;
+   }
+
+   .table-row-cell:selected > .table-cell {
+       -fx-background-color: #FFF9F3;
+   }
+   .table-cell {
+       -fx-font-size: 13.5px;
+	   -fx-alignment: CENTER;
+	      -fx-text-alignment: CENTER;
+	     }
+
+   /* Amount column emphasis */
+   .table-cell.amount {
+       -fx-font-size: 15px;
+       -fx-font-weight: 700;
+   }
+  
+ 
+
+   /* 🟨 NEW */
+   .table-row-cell.row-new .table-cell {
+       -fx-background-color: rgba(255, 215, 0, 0.35);
+   }
+
+   /* 🟦 UPDATED */
+   .table-row-cell.row-updated .table-cell {
+       -fx-background-color: rgba(100, 149, 237, 0.35);
+   }
+
+   /* 🟥 DELETED */
+   .table-row-cell.row-deleted .table-cell {
+       -fx-background-color: rgba(255, 99, 71, 0.35);
+   }
+   .table-cell {
+       -fx-background-color: transparent;
+   }
+
+
+/* ======================================================
+   RIGHT EDITOR (Bento cards)
+   ====================================================== */
+   .editor-panel {
+       -fx-background-color: white;
+       -fx-border-color: #F1ECE6;
+       -fx-border-width: 1;
+       /* Padding moved to scroll content so scrollbar can sit flush-right */
+       -fx-padding: 0;
+       -fx-spacing: 18;
+       -fx-min-width: 320;
+       -fx-max-width: 40em;
+       -fx-background-radius: 14;
+       -fx-border-radius: 14;
+       -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.04), 20, 0, 0, 5);
+   }
+
+/* Scrollable content inside editor cards */
+.editor-panel-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-padding: 0;
+    -fx-fit-to-width: true;
+}
+
+.editor-panel-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.editor-panel-content {
+    /* Comfortable inner spacing, but keep right tighter so scrollbar is at edge */
+    -fx-padding: 16 10 16 16;
+}
+
+/* Slim scrollbar inside right editor cards (flush right) */
+.editor-panel-scroll .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+    -fx-pref-width: 6;
+    -fx-min-width: 6;
+    -fx-max-width: 6;
+}
+
+.editor-panel-scroll .scroll-bar:vertical .track {
+    -fx-background-color: transparent;
+    -fx-background-radius: 999;
+}
+
+.editor-panel-scroll .scroll-bar:vertical .thumb {
+    -fx-background-color: rgba(205, 123, 78, 0.28);
+    -fx-background-insets: 0;
+    -fx-background-radius: 999;
+}
+
+.editor-panel-scroll .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: rgba(205, 123, 78, 0.42);
+}
+
+.editor-panel-scroll .scroll-bar .increment-button,
+.editor-panel-scroll .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.editor-panel-scroll .scroll-bar .increment-arrow,
+.editor-panel-scroll .scroll-bar .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-shape: "";
+}
+
+.editor-panel-scroll .corner {
+    -fx-background-color: transparent;
+}
+
+
+/* Individual card */
+.editor-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 14;
+    -fx-padding: 16;
+    -fx-spacing: 10;
+    -fx-border-color: #F0EBE5;
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.03), 15, 0, 0, 4);
+}
+
+.card-title {
+    -fx-text-fill: #C87941;
+    -fx-font-size: 20px;
+    -fx-font-weight: 800;
+}
+
+/* ======================================================
+   INPUTS
+   ====================================================== */
+.label {
+    -fx-text-fill: #867E78;
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+}
+
+.text-field,
+.combo-box,
+.text-area {
+    -fx-background-color: #FAF6F0;
+    -fx-text-fill: #3E312D;
+    -fx-prompt-text-fill: #8E7A6B;
+    -fx-border-color: #D4C4BC;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-font-size: 14px;
+}
+
+.text-field:focused,
+.combo-box:focused,
+.text-area:focused {
+    -fx-border-color: #CD7B4E;
+}
+/* ===============================
+   COMBOBOX DROPDOWN (POPUP LIST)
+   =============================== */
+
+/* Popup background */
+.combo-box-popup .list-view {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E6E0D5;
+}
+
+.combo-box-popup .list-cell {
+    -fx-text-fill: #3E312D;
+    -fx-background-color: #FFFFFF;
+}
+
+.combo-box-popup .list-cell:hover {
+    -fx-background-color: #F7EDE0;
+}
+
+.combo-box-popup .list-cell:selected {
+    -fx-background-color: #C87941;
+    -fx-text-fill: white;
+    -fx-font-weight: 800;
+}
+
+/* Focus border fix */
+.combo-box:focused {
+    -fx-border-color: #CD7B4E;
+}
+.combo-box .arrow-button {
+    -fx-background-color: transparent;
+}
+
+.combo-box .arrow {
+    -fx-background-color: #8E7A6B;
+}
+
+.combo-box:hover .arrow {
+    -fx-background-color: #3E312D;
+}
+.combo-box > .list-cell {
+    -fx-text-fill: #3E312D;
+    -fx-background-color: transparent;
+}
+.combo-box > .arrow-button {
+    -fx-background-color: transparent;
+}
+
+.combo-box > .arrow-button > .arrow {
+    -fx-background-color: #8E7A6B;
+}
+
+
+/* Toggle */
+.toggle-button {
+    -fx-background-color: #1C212B;
+    -fx-text-fill: #9CA3AF;
+    -fx-background-radius: 8;
+}
+
+.toggle-button:selected {
+    -fx-background-color: #00D188;
+    -fx-text-fill: #02140B;
+    -fx-font-weight: bold;
+}
+/* ===============================
+   TEXT AREA (NOTES)
+   =============================== */
+
+.text-area {
+    -fx-background-color: #FAF6F0;
+    -fx-control-inner-background: #FAF6F0;
+    -fx-text-fill: #3E312D;
+    -fx-prompt-text-fill: #8E7A6B;
+    -fx-border-color: #D4C4BC;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-font-size: 14px;
+    -fx-padding: 10;
+}
+
+/* Focus */
+.text-area:focused {
+    -fx-border-color: #CD7B4E;
+}
+
+/* Remove white inset */
+.text-area .content {
+    -fx-background-color: #FAF6F0;
+}
+
+/* Ensure inner viewport doesn't turn gray */
+.text-area .scroll-pane,
+.text-area .scroll-pane .viewport,
+.text-area .scroll-pane .content {
+    -fx-background-color: #FAF6F0;
+}
+
+/* Extra specificity for editor panels (prevents default gray inner fill) */
+.editor-panel .text-area,
+.editor-card .text-area {
+    -fx-control-inner-background: #FAF6F0;
+    -fx-background-insets: 0;
+}
+
+.editor-panel .text-area .content,
+.editor-card .text-area .content,
+.editor-panel .text-area .scroll-pane,
+.editor-card .text-area .scroll-pane,
+.editor-panel .text-area .scroll-pane .viewport,
+.editor-card .text-area .scroll-pane .viewport {
+    -fx-background-color: #FAF6F0;
+    -fx-background-insets: 0;
+}
+
+
+/* ======================================================
+   FOOTER TOTAL
+   ====================================================== */
+.amount-highlight {
+    -fx-text-fill: #00D188;
+    -fx-font-size: 18px;
+    -fx-font-weight: 800;
+}
+
+/* ======================================================
+   SCROLLBAR (Invisible style)
+   ====================================================== */
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #E2D6C8;
+    -fx-background-radius: 6;
+}
+
+/* ===============================
+   RADIO BUTTON – DARK UI FIXED
+   =============================== */
+
+.radio-button {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+/* Outer circle */
+.radio-button .radio {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #D4C4BC;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 50%;
+    -fx-background-radius: 50%;
+    -fx-padding: 6;                   /* controls size */
+}
+
+/* Hover feedback */
+.radio-button:hover .radio {
+    -fx-border-color: #CD7B4E;
+}
+
+/* Selected outer ring */
+.radio-button:selected .radio {
+    -fx-border-color: #CD7B4E;
+}
+
+/* Inner dot (CENTERED FIX) */
+.radio-button .dot {
+    -fx-background-color: transparent;
+    -fx-background-radius: 50%;
+    -fx-padding: 4;                   /* DOT SIZE */
+}
+
+/* Selected dot */
+.radio-button:selected .dot {
+    -fx-background-color: #CD7B4E;
+}
+
+/* ===== CHECKBOX BASE ===== */
+.check-box {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-padding: 4 0 0 0; /* fixes vertical drift */
+}
+
+/* ===== CHECK MARK BOX ===== */
+.check-box .box {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #CD7B4E;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-pref-width: 18;
+    -fx-pref-height: 18;
+}
+
+/* ===== CHECKED STATE ===== */
+.check-box:selected .box {
+    -fx-background-color: #CD7B4E;
+    -fx-border-color: #CD7B4E;
+}
+
+/* ===== CHECK MARK ===== */
+.check-box:selected .mark {
+    -fx-background-color: white;
+}
+
+/* =======================  Status Column ==================== */
+/* ===== Base pill ===== */
+.status-pill {
+    -fx-padding: 6 6;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+
+    -fx-alignment: center;
+    -fx-text-alignment: center;
+
+    /* 🔒 fixed button-like width */
+    -fx-min-width: 90px;
+    -fx-pref-width: 90px;
+    -fx-max-width: 90px;
+}
+
+/* ===== NEW ===== */
+.status-new {
+    -fx-text-fill: #20e3a2;
+    -fx-background-color: rgba(32, 227, 162, 0.15);
+    -fx-border-color: #20e3a2;
+    -fx-border-width: 1.5;
+    -fx-effect: dropshadow(gaussian, rgba(32,227,162,0.45), 10, 0.3, 0, 0);
+}
+
+/* ===== UPDATED ===== */
+.status-updated {
+    -fx-text-fill: #4da3ff;
+    -fx-background-color: rgba(77,163,255,0.15);
+    -fx-border-color: #4da3ff;
+    -fx-border-width: 1.5;
+    -fx-effect: dropshadow(gaussian, rgba(77,163,255,0.45), 10, 0.3, 0, 0);
+}
+
+/* ===== DELETED ===== */
+.status-deleted {
+    -fx-text-fill: #ff6b6b;
+    -fx-background-color: rgba(255,107,107,0.15);
+    -fx-border-color: #ff6b6b;
+    -fx-border-width: 1.5;
+    -fx-effect: dropshadow(gaussian, rgba(255,107,107,0.45), 10, 0.3, 0, 0);
+}
+
+
+.tabs-offset {
+    -fx-padding: 14 0 0 0;
+}
+
+.editor-wrapper {
+    -fx-padding: 0;
+}
+
+/* ======================================================
+   EDIT JOB - GENERAL TAB CONTENT
+   ====================================================== */
+.edit-job-tab-pad {
+    -fx-padding: 14 0 0 0;
+    -fx-max-width: Infinity;
+}
+
+.edit-job-tab-content {
+    -fx-padding: 22;
+    -fx-max-width: Infinity;
+}
+
+/* File preview "card" (dropzone) */
+.image-preview {
+    -fx-background-color: #FFFDF9;
+    -fx-border-color: #EADFD4;
+    -fx-border-radius: 0;
+    -fx-background-radius: 0;
+    -fx-padding: 16;
+    -fx-cursor: hand;
+    -fx-border-style: dashed;
+    -fx-border-width: 1.2;
+}
+
+/* Job file preview should stretch full width */
+.job-file-preview {
+    -fx-pref-width: -1;
+    -fx-max-width: Infinity;
+}
+
+.image-preview:hover {
+    -fx-border-color: #CD7B4E;
+}
+
+.image-placeholder {
+    -fx-text-fill: #8E7A6B;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.upload-drop-title {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+}
+
+.upload-drop-subtitle {
+    -fx-text-fill: #8E7A6B;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+}
+
+/* Uploaded file meta row */
+.file-meta-bar {
+    -fx-padding: 10 12;
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #F1ECE6;
+    -fx-border-width: 1;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+}
+
+.file-thumb {
+    -fx-min-width: 28;
+    -fx-min-height: 28;
+    -fx-max-width: 28;
+    -fx-max-height: 28;
+    -fx-background-color: #CD7B4E;
+    -fx-opacity: 0.35;
+    -fx-background-radius: 8;
+    -fx-shape: "M14 2H6c-1.1 0-2 .9-2 2L4 20c0 1.1.9 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H6V4h7v5h5v13z";
+}
+
+.file-meta-name {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+}
+
+.file-meta-sub {
+    -fx-text-fill: #8E7A6B;
+    -fx-font-size: 10px;
+    -fx-font-weight: 600;
+}
+
+.file-meta-btn {
+    -fx-padding: 6 12;
+    -fx-font-size: 12px;
+}
+
+/* Image itself should feel like a photo preview */
+.job-file-image {
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.14), 18, 0, 0, 6);
+}
+
+/* Center upload icon button inside preview */
+.upload-icon-button {
+    -fx-background-color: white;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-padding: 10;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.06), 10, 0, 0, 3);
+}
+
+.upload-icon-button:hover {
+    -fx-background-color: #FBF9F2;
+    -fx-border-color: #CD7B4E;
+}
+
+.upload-icon-glyph {
+    -fx-min-width: 18;
+    -fx-min-height: 18;
+    -fx-max-width: 18;
+    -fx-max-height: 18;
+    -fx-background-color: #CD7B4E;
+    -fx-shape: "M5 20h14v-2H5v2zm7-18l-5.5 5.5 1.41 1.41L11 6.83V16h2V6.83l3.09 3.09 1.41-1.41L12 2z";
+}
