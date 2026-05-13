@@ -1,0 +1,23 @@
+target/
+.settings/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.classpath
+.project
+.vscode/
+
+# Runtime / generated artifacts
+*.class
+*.log
+*.tmp
+
+# Local app data (do not commit)
+/database/
+*.db
+*.db-shm
+*.db-wal
+/Images/
+/output/
+/scratch/

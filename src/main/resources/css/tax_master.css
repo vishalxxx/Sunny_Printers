@@ -1,0 +1,778 @@
+/* Tax Master (HSN/SAC) - warm cream/brown theme. Keep ASCII-only in this file (UTF-8, no BOM). */
+
+.tax-master-scroll {
+    -fx-background-color: #FDFBF7;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.tax-master-scroll > .viewport {
+    -fx-background-color: #FDFBF7;
+}
+
+.tax-master-page {
+    -fx-background-color: transparent;
+    -fx-padding: 12 20 24 20;
+    -fx-spacing: 14;
+}
+
+.tax-master-page-header {
+    -fx-padding: 4 0 0 0;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.tax-master-hero-title {
+    -fx-font-family: 'Georgia', 'Times New Roman', serif;
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #5D4037;
+}
+
+.tax-master-hero-sub {
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-font-size: 13px;
+    -fx-text-fill: #8E7B71;
+    -fx-max-width: Infinity;
+}
+
+.tax-master-btn-outline {
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #A07D63;
+    -fx-background-color: #FDF4EB;
+    -fx-background-radius: 12;
+    -fx-border-color: #E2CDBC;
+    -fx-border-radius: 12;
+    -fx-border-width: 1.5;
+    -fx-padding: 10 18;
+    -fx-cursor: hand;
+}
+
+.tax-master-btn-outline:hover {
+    -fx-background-color: #FFF8EF;
+}
+
+.tax-master-btn-outline:pressed {
+    -fx-background-color: #F3E6D8;
+}
+
+.tax-master-split {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.tax-master-split > .split-pane-divider {
+    -fx-background-color: transparent;
+    -fx-padding: 0 6;
+}
+
+.tax-master-split > .split-pane-divider > .horizontal-grabber {
+    -fx-background-color: #D7CEC4;
+    -fx-background-radius: 4;
+    -fx-padding: 0;
+    -fx-pref-width: 6;
+}
+
+.tax-master-main-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(93, 64, 55, 0.12);
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-padding: 16;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.06), 18, 0, 0, 4);
+}
+
+.tax-master-toolbar {
+    -fx-alignment: CENTER_LEFT;
+}
+
+.tax-master-search-wrap {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 12;
+    -fx-border-color: #E0D8CF;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 0 12 0 36;
+    -fx-min-height: 40;
+}
+
+.tax-master-search-input {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 10 8;
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-font-size: 13px;
+    -fx-text-fill: #3E312D;
+}
+
+.tax-master-search-input:focused {
+    -fx-background-color: transparent;
+}
+
+.tax-master-search-ico {
+    -fx-min-width: 16;
+    -fx-min-height: 16;
+    -fx-max-width: 16;
+    -fx-max-height: 16;
+    -fx-background-color: #A39890;
+    -fx-shape: "M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z";
+}
+
+.tax-master-combo,
+.tax-master-combo-input {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 12;
+    -fx-border-color: #E0D8CF;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-font-size: 13px;
+}
+
+.tax-master-combo .list-cell,
+.tax-master-combo-input .list-cell {
+    -fx-text-fill: #3E312D;
+}
+
+.tax-master-btn-outline-icon {
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #A07D63;
+    -fx-background-color: #FDF4EB;
+    -fx-background-radius: 12;
+    -fx-border-color: #E2CDBC;
+    -fx-border-radius: 12;
+    -fx-border-width: 1.5;
+    -fx-padding: 10 14;
+    -fx-cursor: hand;
+}
+.tax-master-btn-outline-icon:hover {
+    -fx-background-color: #FFF8EF;
+}
+.tax-master-btn-outline-icon:pressed {
+    -fx-background-color: #F3E6D8;
+}
+
+.tax-master-icon-import {
+    -fx-min-width: 16;
+    -fx-min-height: 16;
+    -fx-max-width: 16;
+    -fx-max-height: 16;
+    -fx-background-color: #5D4037;
+    -fx-shape: "M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z";
+}
+
+.tax-master-table {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E8E2DA;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 0;
+}
+
+.tax-master-table .column-header-background {
+    -fx-background-color: #FAF5F0;
+    -fx-background-insets: 0;
+    -fx-background-radius: 10 10 0 0;
+}
+
+.tax-master-table .column-header,
+.tax-master-table .filler {
+    -fx-size: 40px;
+    -fx-border-color: transparent transparent #DCD6CF transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.tax-master-table .column-header .label {
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #5C534D;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 0 8;
+}
+
+.tax-master-table .table-row-cell {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: transparent transparent #EEE9E3 transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.tax-master-table .table-row-cell:selected {
+    -fx-background-color: #FFF8F0;
+    -fx-table-cell-border-color: transparent;
+}
+
+.tax-master-table .table-row-cell:selected .text {
+    -fx-fill: #3E312D;
+}
+
+.tax-master-table .table-cell {
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-font-size: 13px;
+    -fx-text-fill: #3E312D;
+    -fx-padding: 10 8;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.tax-master-table .table-placeholder .label {
+    -fx-text-fill: #A39890;
+    -fx-font-size: 13px;
+}
+
+.tax-master-pagination-row {
+    -fx-padding: 4 0 0 0;
+}
+
+.tax-master-page-info {
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-font-size: 12px;
+    -fx-text-fill: #8E7B71;
+}
+
+.tax-master-page-arrow {
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+    -fx-background-radius: 10;
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #D7CEC4;
+    -fx-border-radius: 10;
+    -fx-font-size: 16px;
+    -fx-text-fill: #5D4037;
+    -fx-cursor: hand;
+}
+
+.tax-master-page-arrow:hover {
+    -fx-background-color: #FBF9F2;
+}
+
+.tax-master-page-num {
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-padding: 0;
+    -fx-background-radius: 8;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #6D5F58;
+    -fx-cursor: hand;
+}
+
+.tax-master-page-num:hover {
+    -fx-background-color: #F3EDE6;
+}
+
+.tax-master-page-num-active {
+    -fx-background-color: #5D4037;
+    -fx-text-fill: #FFFFFF;
+}
+
+.tax-master-footer-bar {
+    -fx-background-color: linear-gradient(to bottom, #F8F6F2, #F2EDE6);
+    -fx-background-radius: 12;
+    -fx-border-color: #E5DDD4;
+    -fx-border-radius: 12;
+    -fx-padding: 12 14;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.tax-master-footer-info-ico {
+    /* Square bounds so shape stays circular (HBox fillHeight won't stretch oval) */
+    -fx-min-width: 14;
+    -fx-min-height: 14;
+    -fx-pref-width: 14;
+    -fx-pref-height: 14;
+    -fx-max-width: 14;
+    -fx-max-height: 14;
+    -fx-background-color: #8E7B71;
+    -fx-shape: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z";
+}
+
+.tax-master-footer-msg {
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-font-size: 12px;
+    -fx-text-fill: #6D5F58;
+}
+
+.tax-master-icon-eye {
+    -fx-min-width: 16;
+    -fx-min-height: 16;
+    -fx-background-color: #5D4037;
+    -fx-shape: "M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z";
+}
+
+.tax-master-drawer {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(93, 64, 55, 0.14);
+    -fx-border-radius: 14;
+    -fx-padding: 16;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.07), 16, 0, 0, 3);
+}
+
+.tax-master-drawer-title {
+    -fx-font-family: 'Georgia', 'Times New Roman', serif;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #5D4037;
+}
+
+.tax-master-drawer-close {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8;
+    -fx-padding: 4;
+    -fx-cursor: hand;
+}
+
+.tax-master-drawer-close:hover {
+    -fx-background-color: #F3EDE6;
+}
+
+.tax-master-icon-close {
+    -fx-min-width: 14;
+    -fx-min-height: 14;
+    -fx-max-width: 14;
+    -fx-max-height: 14;
+    -fx-background-color: #6D5F58;
+    -fx-scale-shape: true;
+    -fx-shape: "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z";
+}
+
+/* Sidebar close: undo settings btn-secondary padding so 28×28 button shows the X glyph */
+.settings-master-scroll .button.tax-master-form-close-btn {
+    -fx-padding: 0 !important;
+    -fx-content-display: GRAPHIC_ONLY;
+    -fx-graphic-text-gap: 0;
+    -fx-min-width: 28;
+    -fx-min-height: 28;
+    -fx-max-width: 28;
+    -fx-max-height: 28;
+}
+
+.tax-master-form-body {
+    -fx-padding: 4 0 0 0;
+}
+
+.tax-master-field-label {
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #5D4037;
+}
+
+.tax-master-req-star {
+    -fx-font-size: 12px;
+    -fx-text-fill: #C62828;
+    -fx-padding: 0 0 0 2;
+}
+
+.tax-master-input,
+.tax-master-textarea {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 10;
+    -fx-border-color: #E0D8CF;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-font-size: 13px;
+    -fx-text-fill: #3E312D;
+    -fx-padding: 10 12;
+}
+
+.tax-master-textarea {
+    -fx-min-height: 72;
+}
+
+.tax-master-textarea .content {
+    -fx-background-color: transparent;
+}
+
+.tax-master-checkbox .box {
+    -fx-background-radius: 4;
+    -fx-border-color: #C4B8AE;
+    -fx-border-radius: 4;
+}
+
+.tax-master-checkbox:selected .mark {
+    -fx-background-color: #5D4037;
+}
+
+.tax-master-hint {
+    -fx-font-size: 11px;
+    -fx-text-fill: #A39890;
+}
+
+.tax-master-form-actions {
+    -fx-padding: 8 0 0 0;
+}
+
+.tax-master-btn-cancel {
+    -fx-background-color: #FDF4EB;
+    -fx-border-color: #E2CDBC;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-text-fill: #A07D63;
+    -fx-font-weight: 600;
+    -fx-padding: 10 18;
+    -fx-cursor: hand;
+}
+
+.tax-master-btn-save {
+    -fx-background-color: #AC815C;
+    -fx-background-radius: 10;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-weight: 700;
+    -fx-padding: 10 22;
+    -fx-cursor: hand;
+}
+
+.tax-master-btn-save:hover {
+    -fx-background-color: #8C6A4D;
+}
+
+/* Category pill */
+.tax-master-pill-category {
+    -fx-background-color: #FDF4EB;
+    -fx-background-radius: 6;
+    -fx-border-color: #E2CDBC;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+    -fx-text-fill: #A07D63;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-padding: 4 10;
+}
+
+/* Type pills */
+.tax-master-pill-hsn {
+    -fx-background-color: #F0F7F1;
+    -fx-background-radius: 6;
+    -fx-border-color: #C1DEC3;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+    -fx-text-fill: #5D9960;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-padding: 4 10;
+}
+
+.tax-master-pill-sac {
+    -fx-background-color: #F0F7F1;
+    -fx-background-radius: 6;
+    -fx-border-color: #C1DEC3;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+    -fx-text-fill: #5D9960;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-padding: 4 10;
+}
+
+/* GST row */
+.tax-master-gst-dot {
+    -fx-min-width: 8;
+    -fx-min-height: 8;
+    -fx-max-width: 8;
+    -fx-max-height: 8;
+    -fx-background-radius: 8;
+}
+
+.tax-master-gst-dot.gst-0 {
+    -fx-background-color: #78909C;
+}
+
+.tax-master-gst-dot.gst-5 {
+    -fx-background-color: #FB8C00;
+}
+
+.tax-master-gst-dot.gst-12 {
+    -fx-background-color: #f39c12;
+}
+
+.tax-master-gst-dot.gst-18 {
+    -fx-background-color: #3498db;
+}
+
+.tax-master-gst-dot.gst-28 {
+    -fx-background-color: #E65100;
+}
+
+.tax-master-gst-label {
+    -fx-font-weight: 600;
+    -fx-text-fill: #3E312D;
+}
+
+/* Status */
+.tax-master-pill-status-active {
+    -fx-background-color: #F0F7F1;
+    -fx-background-radius: 6;
+    -fx-border-color: #C1DEC3;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+    -fx-text-fill: #5D9960;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-padding: 4 12;
+}
+
+.tax-master-pill-status-inactive {
+    -fx-background-color: #FFEBEE;
+    -fx-background-radius: 6;
+    -fx-border-color: #EF9A9A;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+    -fx-text-fill: #D32F2F;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-padding: 4 12;
+}
+
+/*
+ * Row actions: warm bronze edit + dusty rose remove (aligned with Tax Master / settings creams)
+ */
+.tax-master-icon-btn {
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+    -fx-max-width: 36;
+    -fx-max-height: 36;
+    -fx-padding: 0;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-cursor: hand;
+}
+
+.tax-master-icon-edit {
+    -fx-background-color: linear-gradient(to bottom, #FFFFFD, #F8F1E9);
+    -fx-border-color: #D4BFAC;
+}
+
+.tax-master-icon-edit:hover {
+    -fx-background-color: linear-gradient(to bottom, #FFFAF5, #F5EADF);
+    -fx-border-color: #AC815C;
+    -fx-effect: dropshadow(three-pass-box, rgba(172, 129, 92, 0.22), 10, 0, 0, 2);
+}
+
+.tax-master-icon-edit:pressed {
+    -fx-background-color: #EDE2D6;
+    -fx-border-color: #9E7356;
+    -fx-effect: none;
+}
+
+.tax-master-icon-danger {
+    -fx-background-color: linear-gradient(to bottom, #FFFBFA, #F9EBE8);
+    -fx-border-color: #DEB2AD;
+}
+
+.tax-master-icon-danger:hover {
+    -fx-background-color: linear-gradient(to bottom, #FFF5F3, #F5DDD8);
+    -fx-border-color: #C98680;
+    -fx-effect: dropshadow(three-pass-box, rgba(191, 109, 102, 0.2), 10, 0, 0, 2);
+}
+
+.tax-master-icon-danger:pressed {
+    -fx-background-color: #EDD5D2;
+    -fx-border-color: #B86B65;
+    -fx-effect: none;
+}
+
+/* Pencil: terracotta / bronze ink (pairs with footer +Save #AC815C family) */
+.tax-master-inline-icon-edit {
+    -fx-min-width: 18;
+    -fx-min-height: 18;
+    -fx-max-width: 18;
+    -fx-max-height: 18;
+    -fx-background-color: #A8673D;
+    -fx-scale-shape: true;
+    -fx-shape: "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z";
+}
+
+.tax-master-icon-edit:hover .tax-master-inline-icon-edit {
+    -fx-background-color: #8B5530;
+}
+
+.tax-master-icon-edit:pressed .tax-master-inline-icon-edit {
+    -fx-background-color: #744829;
+}
+
+/* Trash: vector, muted rose-red (readable delete affordance without flat Material red) */
+.tax-master-inline-icon-trash {
+    -fx-min-width: 18;
+    -fx-min-height: 18;
+    -fx-max-width: 18;
+    -fx-max-height: 18;
+    -fx-background-color: #BF6364;
+    -fx-scale-shape: true;
+    -fx-shape: "M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V8H6v11zm13-13v2H5V6h3.5l1-1h5l1 1H19zM10 10v6h2v-6h-2zm4 0v6h2v-6h-2z";
+}
+
+.tax-master-icon-danger:hover .tax-master-inline-icon-trash {
+    -fx-background-color: #A85152;
+}
+
+.tax-master-icon-danger:pressed .tax-master-inline-icon-trash {
+    -fx-background-color: #8F4445;
+}
+
+/* --- Scoped on live Tax Master FXML (settings-* layout + shared sheets) --- */
+
+.settings-master-scroll.settings-screen-compact.tax-master-compact TextField.taste-field.tax-master-toolbar-search {
+    -fx-min-height: 26;
+    -fx-pref-height: 28;
+    -fx-max-height: 28;
+    -fx-padding: 2 8 2 8;
+    -fx-font-size: 11px;
+}
+
+/* Toolbar combos: align height with compact search strip */
+.settings-master-scroll.settings-screen-compact.tax-master-compact .tax-master-toolbar .tax-master-toolbar-combo {
+    -fx-min-height: 26;
+    -fx-pref-height: 28;
+    -fx-max-height: 28;
+}
+
+/* Description TextArea: strip default white .content (match taste-field cream) */
+.settings-master-scroll TextArea.tax-master-description-area {
+    -fx-control-inner-background: #FAF6F0;
+}
+.settings-master-scroll TextArea.tax-master-description-area .content,
+.settings-master-scroll TextArea.tax-master-description-area .scroll-pane,
+.settings-master-scroll TextArea.tax-master-description-area .scroll-pane .viewport {
+    -fx-background-color: #FAF6F0;
+}
+.settings-master-scroll TextArea.tax-master-description-area:focused .content,
+.settings-master-scroll TextArea.tax-master-description-area:focused .scroll-pane,
+.settings-master-scroll TextArea.tax-master-description-area:focused .scroll-pane .viewport {
+    -fx-background-color: #FAF6F0;
+}
+.settings-master-scroll TextArea.tax-master-description-area .text {
+    -fx-fill: #3E312D;
+}
+
+.settings-master-scroll .tax-master-footer-info-ico {
+    -fx-min-width: 14;
+    -fx-min-height: 14;
+    -fx-pref-width: 14;
+    -fx-pref-height: 14;
+    -fx-max-width: 14;
+    -fx-max-height: 14;
+    -fx-background-color: #A87D5E;
+    -fx-shape: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z";
+}
+
+.settings-master-scroll .tax-master-footer-strip {
+    -fx-background-color: linear-gradient(to bottom, #FFF9EC, #FFEFD6);
+    -fx-background-radius: 10;
+    -fx-border-color: #F0DFC4;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-padding: 12 14;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.settings-master-scroll .tax-master-footer-strip .settings-section-kicker {
+    -fx-text-fill: #6D5346;
+    -fx-font-size: 12px;
+}
+
+.settings-master-scroll .invoice-jobs-table-premium .column-header-background {
+    -fx-background-color: linear-gradient(to bottom, #F7F4F0, #EDE8E2);
+}
+
+.settings-master-scroll .invoice-jobs-table-premium .column-header .label {
+    -fx-text-fill: #5C534D;
+}
+
+.settings-master-scroll .invoice-jobs-table-premium.tax-master-table-fulltext .column-header .label {
+    -fx-alignment: center;
+}
+
+/* Tax Master: multi-line Item Name / HSN (overrides premium fixed row height) */
+.settings-master-scroll .invoice-jobs-table-premium.tax-master-table-fulltext,
+.settings-master-scroll.settings-screen-compact .invoice-jobs-table-premium.tax-master-table-fulltext {
+    -fx-fixed-cell-size: -1;
+}
+
+.settings-master-scroll .invoice-jobs-table-premium.tax-master-table-fulltext .table-cell {
+    -fx-padding: 8 8 10 8;
+    -fx-alignment: CENTER;
+}
+
+.settings-master-scroll .tax-master-page-num {
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-padding: 0;
+    -fx-background-radius: 8;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #6D5F58;
+    -fx-cursor: hand;
+}
+
+.settings-master-scroll .tax-master-page-num:hover {
+    -fx-background-color: #F3EDE6;
+}
+
+.settings-master-scroll .tax-master-page-num-active {
+    -fx-background-color: #AC815C;
+    -fx-text-fill: #FFFFFF;
+}
+
+/* Tax-only compact tweaks (shared compact base: settings-screen-compact in settings_screens.css) */
+.settings-master-scroll.tax-master-compact .tax-master-footer-strip {
+    -fx-padding: 8 10;
+}
+
+.settings-master-scroll.tax-master-compact .tax-master-footer-strip .settings-section-kicker {
+    -fx-font-size: 10px;
+}
+
+.settings-master-scroll.tax-master-compact .tax-master-page-num {
+    -fx-min-width: 28;
+    -fx-min-height: 28;
+    -fx-font-size: 11px;
+}
+
+.settings-master-scroll.tax-master-compact .tax-master-icon-btn {
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-max-width: 32;
+    -fx-max-height: 32;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+}
+
+.settings-master-scroll.tax-master-compact .tax-master-inline-icon-edit,
+.settings-master-scroll.tax-master-compact .tax-master-inline-icon-trash {
+    -fx-min-width: 15;
+    -fx-min-height: 15;
+    -fx-max-width: 15;
+    -fx-max-height: 15;
+}
+
+.settings-master-scroll.tax-master-compact .tax-master-footer-info-ico {
+    -fx-min-width: 12;
+    -fx-min-height: 12;
+    -fx-pref-width: 12;
+    -fx-pref-height: 12;
+    -fx-max-width: 12;
+    -fx-max-height: 12;
+}
+
+.settings-master-scroll.tax-master-compact .tax-master-icon-import,
+.settings-master-scroll.tax-master-compact .tax-master-icon-eye,
+.settings-master-scroll.tax-master-compact .tax-master-icon-close {
+    -fx-min-width: 13;
+    -fx-min-height: 13;
+    -fx-max-width: 13;
+    -fx-max-height: 13;
+}

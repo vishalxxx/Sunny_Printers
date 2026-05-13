@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+
+<ScrollPane xmlns:fx="http://javafx.com/fxml/1"
+            fitToWidth="true"
+            hbarPolicy="AS_NEEDED"
+            vbarPolicy="AS_NEEDED"
+            styleClass="settings-master-scroll, settings-theme-root, ui-compact, settings-screen-compact"
+            stylesheets="@../css/theme.css, @../css/add_job.css, @../css/view_job.css, @../css/client_edit_selection.css, @../css/settings_screens.css"
+            fx:controller="controller.BankSettingsController">
+
+    <VBox styleClass="settings-page, app-page-shell" alignment="TOP_LEFT" fillWidth="true">
+
+        <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="6"/>
+
+        <HBox alignment="CENTER_RIGHT" spacing="10">
+            <padding><Insets bottom="6"/></padding>
+            <Button fx:id="newBtn" text="+ New Bank" styleClass="button, btn-secondary"/>
+            <Button fx:id="saveBtn" text="Save" styleClass="button, btn-primary"/>
+        </HBox>
+        <HBox spacing="10" alignment="TOP_LEFT" fillHeight="true">
+
+            <VBox styleClass="settings-form-card" spacing="8" HBox.hgrow="ALWAYS" minWidth="0">
+                <Label text="Saved bank accounts" styleClass="card-title-sm"/>
+                <Label text="Used in invoice PDFs and the GST invoice screen." wrapText="true" styleClass="settings-section-kicker"/>
+
+                <TableView fx:id="bankTable" styleClass="invoice-jobs-table-premium, bank-settings-table" prefHeight="260" minHeight="140" maxWidth="Infinity">
+                    <columnResizePolicy>
+                        <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY"/>
+                    </columnResizePolicy>
+                    <columns>
+                        <TableColumn fx:id="colBankName" text="Bank" prefWidth="148"/>
+                        <TableColumn fx:id="colHolder" text="A/c Holder" prefWidth="128"/>
+                        <TableColumn fx:id="colAccount" text="A/c No." prefWidth="118"/>
+                        <TableColumn fx:id="colIfsc" text="Branch &amp; IFSC" prefWidth="176"/>
+                        <TableColumn fx:id="colDefault" text="Default" prefWidth="72"/>
+                        <TableColumn fx:id="colActive" text="Active" prefWidth="72"/>
+                    </columns>
+                </TableView>
+
+                <HBox spacing="8" alignment="CENTER_RIGHT" styleClass="bank-settings-row-actions">
+                    <Button fx:id="editRowBtn" contentDisplay="GRAPHIC_ONLY" focusTraversable="false"
+                            styleClass="row-action-btn, row-btn-orange"
+                            minWidth="32" minHeight="32" prefWidth="32" prefHeight="32">
+                        <tooltip><Tooltip text="Load selected bank into the form"/></tooltip>
+                        <graphic>
+                            <Region styleClass="row-action-pencil-graphic"/>
+                        </graphic>
+                    </Button>
+                    <Button fx:id="deleteBtn" contentDisplay="GRAPHIC_ONLY" focusTraversable="false"
+                            styleClass="bank-settings-icon-btn, bank-settings-icon-danger"
+                            minWidth="32" minHeight="32" prefWidth="32" prefHeight="32">
+                        <tooltip><Tooltip text="Delete selected bank"/></tooltip>
+                        <graphic>
+                            <Region styleClass="bank-settings-inline-trash"/>
+                        </graphic>
+                    </Button>
+                </HBox>
+            </VBox>
+
+            <VBox styleClass="settings-form-card" spacing="10" HBox.hgrow="ALWAYS" minWidth="0">
+                <Label text="Bank details" styleClass="card-title-sm"/>
+                <Label text="Select a row to edit, or click New Bank." wrapText="true" styleClass="settings-section-kicker"/>
+
+                <GridPane hgap="10" vgap="10">
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                        <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <VBox spacing="4" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0">
+                        <Label text="Bank name" styleClass="field-heading-sm"/>
+                        <TextField fx:id="bankNameField" promptText="e.g. INDIAN OVERSEAS BANK" styleClass="taste-field" maxWidth="Infinity"/>
+                    </VBox>
+
+                    <VBox spacing="4" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1">
+                        <Label text="A/c Holder’s name" styleClass="field-heading-sm"/>
+                        <TextField fx:id="holderField" promptText="e.g. SUNNY PRINTER" styleClass="taste-field" maxWidth="Infinity"/>
+                    </VBox>
+
+                    <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                        <Label text="A/c No." styleClass="field-heading-sm"/>
+                        <TextField fx:id="accountNoField" promptText="Account number" styleClass="taste-field" maxWidth="Infinity"/>
+                    </VBox>
+
+                    <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                        <Label text="Branch name" styleClass="field-heading-sm"/>
+                        <TextField fx:id="branchField" promptText="e.g. PITAMPURA" styleClass="taste-field" maxWidth="Infinity"/>
+                    </VBox>
+
+                    <VBox spacing="4" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="3">
+                        <Label text="IFSC code" styleClass="field-heading-sm"/>
+                        <TextField fx:id="ifscCodeField" promptText="e.g. IOBA0001598" styleClass="taste-field" maxWidth="Infinity"/>
+                    </VBox>
+
+                    <HBox spacing="8" alignment="CENTER_LEFT" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="4">
+                        <CheckBox fx:id="defaultCheck" text="Make default" styleClass="settings-check"/>
+                        <CheckBox fx:id="activeCheck" text="Active" styleClass="settings-check" selected="true"/>
+                    </HBox>
+                </GridPane>
+            </VBox>
+        </HBox>
+    </VBox>
+</ScrollPane>
+

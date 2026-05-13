@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane xmlns:fx="http://javafx.com/fxml/1"
+            fitToWidth="true"
+            hbarPolicy="AS_NEEDED"
+            vbarPolicy="AS_NEEDED"
+            styleClass="settings-master-scroll, settings-theme-root, ui-compact, settings-screen-compact"
+            stylesheets="@../css/theme.css, @../css/add_job.css, @../css/view_job.css, @../css/client_edit_selection.css, @../css/settings_screens.css"
+            fx:controller="controller.GeneralSettingsController">
+
+    <VBox styleClass="settings-page, app-page-shell" alignment="TOP_LEFT" fillWidth="true">
+
+        <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="6"/>
+
+        <HBox alignment="CENTER_RIGHT" spacing="10">
+            <padding><Insets bottom="6"/></padding>
+            <Button fx:id="saveBtn" text="Save Configuration" styleClass="button, btn-primary"/>
+        </HBox>
+
+        <!-- Owner company (letterhead: invoices, receipts, exports) -->
+        <VBox styleClass="settings-form-card" spacing="10" fillWidth="true">
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Label text="Company details" styleClass="card-title-sm"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button fx:id="manageCompaniesBtn" text="Manage Companies" styleClass="button, btn-secondary"/>
+            </HBox>
+            <Label text="Used on invoices, payment receipts, and Excel/PDF exports." styleClass="settings-section-kicker"/>
+            <GridPane hgap="10" vgap="10">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                </columnConstraints>
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0">
+                    <Label text="Company / trade name" styleClass="field-heading-sm"/>
+                    <ComboBox fx:id="companyCombo" promptText="Select company" styleClass="taste-combo" maxWidth="Infinity"/>
+                </VBox>
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1">
+                    <Label text="Address" styleClass="field-heading-sm"/>
+                    <TextArea fx:id="companyAddressArea" promptText="Street, city, PIN (multiple lines OK)" styleClass="taste-field" wrapText="true" prefRowCount="3" maxWidth="Infinity" editable="false"/>
+                </VBox>
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                    <Label text="Phone" styleClass="field-heading-sm"/>
+                    <TextField fx:id="companyPhoneField" promptText="Contact numbers" styleClass="taste-field" maxWidth="Infinity" editable="false"/>
+                </VBox>
+                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                    <Label text="Email" styleClass="field-heading-sm"/>
+                    <TextField fx:id="companyEmailField" promptText="company@example.com" styleClass="taste-field" maxWidth="Infinity" editable="false"/>
+                </VBox>
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="3">
+                    <Label text="GST / UIN (optional)" styleClass="field-heading-sm"/>
+                    <TextField fx:id="companyGstField" promptText="Shown on invoice PDFs when set" styleClass="taste-field" maxWidth="Infinity" editable="false"/>
+                </VBox>
+            </GridPane>
+        </VBox>
+
+        <!-- Default bank for invoice PDFs / GST invoice bank dropdown -->
+        <VBox styleClass="settings-form-card" spacing="10" fillWidth="true">
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Label text="Bank details" styleClass="card-title-sm"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button fx:id="manageBanksBtn" text="Manage Banks" styleClass="button, btn-secondary"/>
+            </HBox>
+            <Label text="Select the default bank account shown on invoices." styleClass="settings-section-kicker"/>
+            <GridPane hgap="10" vgap="10">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                </columnConstraints>
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0">
+                    <Label text="Default bank account" styleClass="field-heading-sm"/>
+                    <ComboBox fx:id="bankCombo" promptText="Select bank" styleClass="taste-combo" maxWidth="Infinity"/>
+                </VBox>
+            </GridPane>
+        </VBox>
+
+        <!-- Default download folder (file pickers app-wide) -->
+        <VBox styleClass="settings-form-card" spacing="10" fillWidth="true">
+            <Label text="Downloads" styleClass="card-title-sm"/>
+            <VBox spacing="4" fillWidth="true">
+                <Label text="Default download folder" styleClass="field-heading-sm"/>
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <TextField fx:id="downloadPathField" promptText="Choose a folder for saves and exports" styleClass="taste-field" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                    <Button fx:id="browseDownloadPathBtn" text="Browse..." styleClass="button, btn-secondary"/>
+                </HBox>
+            </VBox>
+        </VBox>
+
+        <!-- Supabase (optional; stored locally — used when cloud sync is enabled) -->
+        <VBox styleClass="settings-form-card" spacing="10" fillWidth="true">
+            <Label text="Supabase database" styleClass="card-title-sm"/>
+            <Label text="Project URL and anon key are used to reach PostgREST. Email and password are reserved for future Auth-based sync." wrapText="true" maxWidth="Infinity" styleClass="settings-section-kicker"/>
+            <GridPane hgap="10" vgap="10">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                </columnConstraints>
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0">
+                    <Label text="Supabase URL" styleClass="field-heading-sm"/>
+                    <TextField fx:id="supabaseUrlField" promptText="https://your-project.supabase.co" styleClass="taste-field" maxWidth="Infinity"/>
+                </VBox>
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1">
+                    <Label text="Anon key" styleClass="field-heading-sm"/>
+                    <PasswordField fx:id="supabaseAnonKeyField" promptText="Public anon (JWT) key from Supabase API settings" styleClass="taste-field" maxWidth="Infinity"/>
+                </VBox>
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                    <Label text="Email" styleClass="field-heading-sm"/>
+                    <TextField fx:id="supabaseEmailField" promptText="Service account or user email (optional)" styleClass="taste-field" maxWidth="Infinity"/>
+                </VBox>
+                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                    <Label text="Password" styleClass="field-heading-sm"/>
+                    <PasswordField fx:id="supabasePasswordField" promptText="Password for future Auth sync" styleClass="taste-field" maxWidth="Infinity"/>
+                </VBox>
+            </GridPane>
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Button fx:id="supabaseVerifyBtn" text="Verify Connection" styleClass="button, btn-secondary"/>
+                <Button fx:id="supabaseSaveBtn" text="Save Settings" styleClass="button, btn-secondary"/>
+                <Button fx:id="supabaseSyncTestBtn" text="Sync Test" styleClass="button, btn-secondary"/>
+            </HBox>
+        </VBox>
+
+        <!-- Email / SMTP -->
+        <VBox styleClass="settings-form-card" spacing="10" fillWidth="true">
+            <Label text="Email settings" styleClass="card-title-sm"/>
+
+            <GridPane hgap="10" vgap="10">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                    <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                </columnConstraints>
+
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label text="SMTP hostname" styleClass="field-heading-sm"/>
+                    <TextField fx:id="smtpHostField" promptText="smtp.gmail.com" styleClass="taste-field" maxWidth="Infinity"/>
+                </VBox>
+                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label text="SMTP port" styleClass="field-heading-sm"/>
+                    <TextField fx:id="smtpPortField" promptText="587" styleClass="taste-field" maxWidth="Infinity"/>
+                </VBox>
+
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1">
+                    <Label text="Sender email address" styleClass="field-heading-sm"/>
+                    <TextField fx:id="senderEmailField" promptText="youremail@gmail.com" styleClass="taste-field" maxWidth="Infinity"/>
+                </VBox>
+
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
+                    <Label text="Sender app password" styleClass="field-heading-sm"/>
+                    <PasswordField fx:id="senderPasswordField" promptText="App password" styleClass="taste-field" maxWidth="Infinity"/>
+                </VBox>
+            </GridPane>
+        </VBox>
+    </VBox>
+</ScrollPane>

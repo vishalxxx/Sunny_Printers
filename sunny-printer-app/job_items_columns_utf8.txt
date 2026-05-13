@@ -1,7 +1,0 @@
-﻿0|id|INTEGER|0||1
-1|job_id|INTEGER|1||0
-2|type|TEXT|1||0
-3|description|TEXT|1||0
-4|amount|REAL|1|0|0
-5|sort_order|INTEGER|0|0|0
-6|created_at|TEXT|0|CURRENT_TIMESTAMP|0
