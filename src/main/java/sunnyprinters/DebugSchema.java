@@ -8,8 +8,9 @@ import java.sql.Statement;
 
 public class DebugSchema {
     public static void main(String[] args) {
-        try (PrintWriter out = new PrintWriter("schema_dump.txt");
-                Connection conn = DriverManager.getConnection("jdbc:sqlite:database/sunnyprinters.db");
+        try (PrintWriter out = new PrintWriter("schema_dump.txt")) {
+			utils.DBConnection.ensureDatabaseParentDirectory();
+			try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database/sunnyprinters.db");
                 Statement stmt = conn.createStatement()) {
 
             out.println("=== TABLES ===");
@@ -30,6 +31,7 @@ public class DebugSchema {
                 }
             }
 
+			}
         } catch (Exception e) {
             e.printStackTrace();
         }

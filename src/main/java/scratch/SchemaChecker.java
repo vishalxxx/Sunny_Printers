@@ -4,6 +4,7 @@ import java.sql.*;
 public class SchemaChecker {
     public static void main(String[] args) throws Exception {
         Class.forName("org.sqlite.JDBC");
+		utils.DBConnection.ensureDatabaseParentDirectory();
         try (Connection con = DriverManager.getConnection("jdbc:sqlite:database/sunnyprinters.db")) {
             System.out.println("Printing schema for invoice_master:");
             try (Statement stmt = con.createStatement();

@@ -1,5 +1,7 @@
 package utils;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -9,6 +11,8 @@ public class DatabaseInitializer {
 
     public static void initialize() throws Exception
  {
+
+		Files.createDirectories(Path.of("database"));
 
         // Open a direct JDBC connection here to avoid calling DBConnection.getConnection()
         // which itself calls DatabaseInitializer.initialize() and causes recursion.
