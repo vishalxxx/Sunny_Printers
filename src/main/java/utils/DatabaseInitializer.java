@@ -149,6 +149,21 @@ public class DatabaseInitializer {
                 );
             """);
 
+            // Credit/debit notes linked to invoices (dashboard + adjustments UI)
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS invoice_adjustments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    invoice_id INTEGER NOT NULL,
+                    type TEXT NOT NULL CHECK (type IN ('Credit Note', 'Debit Note')),
+                    note_no TEXT UNIQUE NOT NULL,
+                    amount REAL NOT NULL,
+                    reason TEXT,
+                    date TEXT DEFAULT (date('now')),
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (invoice_id) REFERENCES invoice_master(id)
+                );
+            """);
+
             // ================== MIGRATION: REMOVE RESTRICTIVE CHECK CONSTRAINT ==================
             // SQLite doesn't support DROP CONSTRAINT. We must check if the constraint exists by 
             // inspecting the schema and if so, recreate the table.
@@ -282,6 +297,13 @@ public class DatabaseInitializer {
 			        (id, invoice_mode, invoice_prefix, invoice_start_no, invoice_padding)
 			        VALUES (1, 'AUTO', 'INV-', 1, 3);
 			""");
+
+            // Columns expected by SystemSettingsRepository / numbering (safe on existing DBs)
+            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_invoice_no INTEGER DEFAULT 0;"); } catch (Exception e) {}
+            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_job_no INTEGER DEFAULT 0;"); } catch (Exception e) {}
+            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN job_prefix TEXT DEFAULT 'SUN-';"); } catch (Exception e) {}
+            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN job_start_no INTEGER DEFAULT 1;"); } catch (Exception e) {}
+            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN job_padding INTEGER DEFAULT 4;"); } catch (Exception e) {}
 			
             // ================== EMAIL SETTINGS TABLE ==================
             stmt.execute("""

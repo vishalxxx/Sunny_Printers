@@ -7,6 +7,7 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.ResourceBundle;
 
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -93,28 +94,31 @@ public class SystemSettingsController implements Initializable, utils.DirtySuppo
 
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
-		utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null,
-				() -> MainController.getInstance().handleBack(null));
+		// FXML may be loaded from a worker thread in MainController; all scene-graph work must run on FX.
+		Platform.runLater(() -> {
+			utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null,
+					() -> MainController.getInstance().handleBack(null));
 
-		if (seriesGrid == null) {
-			return;
-		}
-		paddingCombo.setItems(FXCollections.observableArrayList(1, 2, 3, 4, 5, 6));
-
-		buildSeriesGrid();
-
-		paddingCombo.valueProperty().addListener((o, prev, cur) -> {
-			for (Spinner<Integer> sp : seriesSpinners.values()) {
-				applyPaddedEditorText(sp);
+			if (seriesGrid == null) {
+				return;
 			}
-			refreshKpiStrip();
+			paddingCombo.setItems(FXCollections.observableArrayList(1, 2, 3, 4, 5, 6));
+
+			buildSeriesGrid();
+
+			paddingCombo.valueProperty().addListener((o, prev, cur) -> {
+				for (Spinner<Integer> sp : seriesSpinners.values()) {
+					applyPaddedEditorText(sp);
+				}
+				refreshKpiStrip();
+			});
+
+			installKpiFocusTracking();
+
+			loadSettings();
+
+			saveBtn.setOnAction(e -> save());
 		});
-
-		installKpiFocusTracking();
-
-		loadSettings();
-
-		saveBtn.setOnAction(e -> save());
 	}
 
 	private void buildSeriesGrid() {
@@ -386,31 +390,45 @@ public class SystemSettingsController implements Initializable, utils.DirtySuppo
 	}
 
 	private void showInfo(String msg) {
-		Alert alert = new Alert(Alert.AlertType.INFORMATION);
-		alert.setHeaderText("Message");
-		alert.setContentText(msg);
-		alert.initStyle(javafx.stage.StageStyle.TRANSPARENT);
-		alert.getDialogPane().setBackground(null);
-		alert.getDialogPane().getStyleClass().add("settings-warm-dialog");
-		alert.getDialogPane().getStylesheets()
-				.add(getClass().getResource("/css/theme.css").toExternalForm());
-		alert.getDialogPane().getStylesheets()
-				.add(getClass().getResource("/css/settings_screens.css").toExternalForm());
-		alert.showAndWait();
+		Runnable r = () -> {
+			Alert alert = new Alert(Alert.AlertType.INFORMATION);
+			alert.setHeaderText("Message");
+			alert.setContentText(msg);
+			alert.initStyle(javafx.stage.StageStyle.TRANSPARENT);
+			alert.getDialogPane().setBackground(null);
+			alert.getDialogPane().getStyleClass().add("settings-warm-dialog");
+			alert.getDialogPane().getStylesheets()
+					.add(getClass().getResource("/css/theme.css").toExternalForm());
+			alert.getDialogPane().getStylesheets()
+					.add(getClass().getResource("/css/settings_screens.css").toExternalForm());
+			alert.showAndWait();
+		};
+		if (Platform.isFxApplicationThread()) {
+			r.run();
+		} else {
+			Platform.runLater(r);
+		}
 	}
 
 	private void showError(String msg, Exception e) {
 		e.printStackTrace();
-		Alert alert = new Alert(Alert.AlertType.ERROR);
-		alert.setHeaderText("Error");
-		alert.setContentText(msg + "\n" + e.getMessage());
-		alert.initStyle(javafx.stage.StageStyle.TRANSPARENT);
-		alert.getDialogPane().setBackground(null);
-		alert.getDialogPane().getStyleClass().add("settings-warm-dialog");
-		alert.getDialogPane().getStylesheets()
-				.add(getClass().getResource("/css/theme.css").toExternalForm());
-		alert.getDialogPane().getStylesheets()
-				.add(getClass().getResource("/css/settings_screens.css").toExternalForm());
-		alert.showAndWait();
+		Runnable r = () -> {
+			Alert alert = new Alert(Alert.AlertType.ERROR);
+			alert.setHeaderText("Error");
+			alert.setContentText(msg + "\n" + e.getMessage());
+			alert.initStyle(javafx.stage.StageStyle.TRANSPARENT);
+			alert.getDialogPane().setBackground(null);
+			alert.getDialogPane().getStyleClass().add("settings-warm-dialog");
+			alert.getDialogPane().getStylesheets()
+					.add(getClass().getResource("/css/theme.css").toExternalForm());
+			alert.getDialogPane().getStylesheets()
+					.add(getClass().getResource("/css/settings_screens.css").toExternalForm());
+			alert.showAndWait();
+		};
+		if (Platform.isFxApplicationThread()) {
+			r.run();
+		} else {
+			Platform.runLater(r);
+		}
 	}
 }
