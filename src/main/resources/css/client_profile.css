@@ -120,6 +120,28 @@
 }
 .btn-profile-primary .icon-small { -fx-background-color: white; }
 
+.profile-root .btn-profile-delete {
+    -fx-background-color: #C94C45;
+    -fx-text-fill: #FFFBF7;
+    -fx-font-weight: 800;
+    -fx-font-size: 11px;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-border-color: #A63D38;
+    -fx-border-width: 1;
+    -fx-padding: 8 16;
+    -fx-cursor: hand;
+}
+
+.profile-root .btn-profile-delete:hover {
+    -fx-background-color: #D85A52;
+    -fx-border-color: #C94C45;
+}
+
+.profile-root .btn-profile-delete:pressed {
+    -fx-background-color: #A63D38;
+}
+
 /* --- KPI CARDS --- */
 .kpi-card-profile {
     -fx-background-color: #FFFFFF;

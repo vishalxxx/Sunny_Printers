@@ -73,7 +73,7 @@ public class GenerateGSTInvoiceController implements Initializable {
     private final service.SettingsService settingsService = new service.SettingsService();
 
     private final List<model.JobSummary> loadedJobSummaries = new ArrayList<>();
-    private final Set<Integer> selectedJobIds = new LinkedHashSet<>();
+    private final Set<String> selectedJobUuids = new LinkedHashSet<>();
     private final ObservableList<ItemRow> itemRows = FXCollections.observableArrayList();
     private final ObservableList<HsnSummaryRow> hsnRows = FXCollections.observableArrayList();
     private final ObservableList<String> printingHsnOptions = FXCollections.observableArrayList();
@@ -301,7 +301,7 @@ public class GenerateGSTInvoiceController implements Initializable {
             });
             comboBillTo.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
                 if (newV != null) {
-                    loadJobsForClient(newV.getId());
+                    loadJobsForClient(newV.getClientUuid());
                 } else {
                     clearJobsBox();
                 }
@@ -328,7 +328,7 @@ public class GenerateGSTInvoiceController implements Initializable {
 
     private void clearJobsBox() {
         loadedJobSummaries.clear();
-        selectedJobIds.clear();
+        selectedJobUuids.clear();
         itemRows.clear();
         hsnRows.clear();
         if (flowJobsContainer != null) {
@@ -336,12 +336,12 @@ public class GenerateGSTInvoiceController implements Initializable {
         }
     }
 
-    private void loadJobsForClient(int clientId) {
+    private void loadJobsForClient(String clientUuid) {
         clearJobsBox();
         if (flowJobsContainer == null) {
             return;
         }
-        List<model.JobSummary> jobs = jobService.getJobsByClientId(clientId); // completed + uninvoiced
+        List<model.JobSummary> jobs = jobService.getJobsByClientId(clientUuid); // completed + uninvoiced
         loadedJobSummaries.addAll(jobs);
 
         if (jobs.isEmpty()) {
@@ -360,10 +360,10 @@ public class GenerateGSTInvoiceController implements Initializable {
             cb.getStyleClass().add("gst-job-check");
             cb.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
                 if (isSelected) {
-                    selectedJobIds.add(js.getId());
+                    selectedJobUuids.add(js.getUuid());
                     card.getStyleClass().add("gst-job-card-selected");
                 } else {
-                    selectedJobIds.remove(js.getId());
+                    selectedJobUuids.remove(js.getUuid());
                     card.getStyleClass().remove("gst-job-card-selected");
                 }
                 refreshItemsTableFromSelectedJobs();
@@ -383,7 +383,7 @@ public class GenerateGSTInvoiceController implements Initializable {
 
     private void refreshItemsTableFromSelectedJobs() {
         itemRows.clear();
-        if (selectedJobIds.isEmpty()) {
+        if (selectedJobUuids.isEmpty()) {
             hsnRows.clear();
             return;
         }
@@ -391,18 +391,18 @@ public class GenerateGSTInvoiceController implements Initializable {
         boolean intraState = isIntraStateSupply();
         int sl = 1;
         for (model.JobSummary js : loadedJobSummaries) {
-            if (!selectedJobIds.contains(js.getId())) {
+            if (!selectedJobUuids.contains(js.getUuid())) {
                 continue;
             }
 
-            List<model.JobItem> items = jobItemService.getJobItems(js.getId());
+            List<model.JobItem> items = jobItemService.getJobItems(js.getUuid());
             if (items == null || items.isEmpty()) {
                 // fallback: single job row (previous behavior)
-                double taxable = jobService.getSumJobItemsAmountForJobIds(List.of(js.getId()));
-                long qty = jobService.getTotalPrintingQtyForJobIds(List.of(js.getId()));
+                double taxable = jobService.getSumJobItemsAmountForJobUuids(List.of(js.getUuid()));
+                long qty = jobService.getTotalPrintingQtyForJobUuids(List.of(js.getUuid()));
                 double rate = qty > 0 ? (taxable / qty) : 0.0;
                 Taxes taxes = Taxes.compute(taxable, DEFAULT_GST_RATE, intraState);
-                itemRows.add(ItemRow.ofJob(sl++, js.getId(), js.getJobTitle(), "—", qty, "PCS", rate, taxable, taxes));
+                itemRows.add(ItemRow.ofJob(sl++, js.getUuid(), js.getJobTitle(), "—", qty, "PCS", rate, taxable, taxes));
                 continue;
             }
 
@@ -424,7 +424,7 @@ public class GenerateGSTInvoiceController implements Initializable {
                 double rate = qty > 0 ? (taxable / qty) : 0.0;
                 Taxes taxes = Taxes.compute(taxable, gstRate, intraState);
 
-                itemRows.add(ItemRow.ofJob(sl++, js.getId(), ji.getDescription(), hsn, qty, unit, rate, taxable, taxes, gstRate));
+                itemRows.add(ItemRow.ofJob(sl++, js.getUuid(), ji.getDescription(), hsn, qty, unit, rate, taxable, taxes, gstRate));
             }
         }
 
@@ -525,23 +525,23 @@ public class GenerateGSTInvoiceController implements Initializable {
             try {
                 switch (ji.getType() != null ? ji.getType().trim().toUpperCase() : "") {
                     case "PRINTING" -> {
-                        model.Printing p = new repository.PrintingItemRepository().findByJobItemId(ji.getId());
+                        model.Printing p = new repository.PrintingItemRepository().findByJobItemUuid(ji.getUuid());
                         if (p != null) return new QtyUnit(p.getQty(), p.getUnits());
                     }
                     case "PAPER" -> {
-                        model.Paper p = new repository.PaperItemRepository().findByJobItemId(ji.getId());
+                        model.Paper p = new repository.PaperItemRepository().findByJobItemUuid(ji.getUuid());
                         if (p != null) return new QtyUnit(p.getQty(), p.getUnits());
                     }
                     case "BINDING" -> {
-                        model.Binding b = new repository.BindingItemRepository().findByJobItemId(ji.getId());
+                        model.Binding b = new repository.BindingItemRepository().findByJobItemUuid(ji.getUuid());
                         if (b != null) return new QtyUnit(b.getQty(), "PCS");
                     }
                     case "LAMINATION" -> {
-                        model.Lamination l = new repository.LaminationItemRepository().findByJobItemId(ji.getId());
+                        model.Lamination l = new repository.LaminationItemRepository().findByJobItemUuid(ji.getUuid());
                         if (l != null) return new QtyUnit(l.getQty(), l.getUnit());
                     }
                     case "CTP" -> {
-                        model.CtpPlate c = new repository.CtpItemRepository().findByJobItemId(ji.getId());
+                        model.CtpPlate c = new repository.CtpItemRepository().findByJobItemUuid(ji.getUuid());
                         if (c != null) return new QtyUnit(c.getQty(), "PCS");
                     }
                     default -> { }
@@ -596,7 +596,7 @@ public class GenerateGSTInvoiceController implements Initializable {
                         ? buyer.getBusinessName()
                         : buyer.getClientName();
                 invoice.setClientName(name);
-                invoice.setClientId(buyer.getId());
+                invoice.setClientId(buyer.getClientUuid());
                 invoice.setBuyerAddress(buyer.getBillingAddress());
                 invoice.setBuyerGstin(buyer.getGst());
                 invoice.setBuyerStateName(comboPlaceOfSupply != null ? comboPlaceOfSupply.getValue() : null);
@@ -605,7 +605,7 @@ public class GenerateGSTInvoiceController implements Initializable {
             invoice.setInvoiceType("GST_INVOICE");
             invoice.setMasterDocumentSeries(model.MasterDocumentSeries.GST_INVOICE);
 
-            if (selectedJobIds.isEmpty()) {
+            if (selectedJobUuids.isEmpty()) {
                 Alert alert = new Alert(Alert.AlertType.WARNING);
                 alert.setTitle("Missing Items");
                 alert.setHeaderText("Nothing to generate");
@@ -614,23 +614,23 @@ public class GenerateGSTInvoiceController implements Initializable {
                 return;
             }
 
-            List<Integer> selectedIds = new ArrayList<>(selectedJobIds);
+            List<String> selectedIds = new ArrayList<>(selectedJobUuids);
 
             // Build invoice jobs for each selected job.
             for (model.JobSummary js : loadedJobSummaries) {
-                if (!selectedJobIds.contains(js.getId())) {
+                if (!selectedJobUuids.contains(js.getUuid())) {
                     continue;
                 }
 
                 model.InvoiceJob invJob = new model.InvoiceJob();
-                invJob.setJobId(js.getId());
+                invJob.setJobId(js.getUuid());
                 invJob.setJobNo(js.getJobNo());
                 invJob.setJobName(js.getJobTitle());
                 invJob.setJobDate(js.getJobDate());
 
                 // Pull totals/qty from DB so PDF matches real amounts.
-                double jobTaxable = jobService.getSumJobItemsAmountForJobIds(List.of(js.getId()));
-                long jobQty = jobService.getTotalPrintingQtyForJobIds(List.of(js.getId()));
+                double jobTaxable = jobService.getSumJobItemsAmountForJobUuids(List.of(js.getUuid()));
+                long jobQty = jobService.getTotalPrintingQtyForJobUuids(List.of(js.getUuid()));
                 invJob.setQuantity(jobQty);
                 invJob.setUnit("PCS");
                 if (jobQty > 0) {
@@ -656,7 +656,7 @@ public class GenerateGSTInvoiceController implements Initializable {
             }
 
             // Ensure grand total includes IGST like your original sample.
-            double taxable = jobService.getSumJobItemsAmountForJobIds(selectedIds);
+            double taxable = jobService.getSumJobItemsAmountForJobUuids(selectedIds);
             double igst = Math.round(taxable * 0.18 * 100.0) / 100.0;
             invoice.setGrandTotal(Math.round((taxable + igst) * 100.0) / 100.0);
             
@@ -741,7 +741,7 @@ public class GenerateGSTInvoiceController implements Initializable {
     }
 
     public static final class ItemRow {
-        private final int jobId;
+        private final String jobUuid;
         private final int slNo;
         private final String description;
         private final String qty;
@@ -761,7 +761,7 @@ public class GenerateGSTInvoiceController implements Initializable {
         private final DoubleProperty gstRateRaw = new SimpleDoubleProperty(DEFAULT_GST_RATE);
 
         private ItemRow(
-                int jobId,
+                String jobUuid,
                 int slNo,
                 String description,
                 String hsnSac,
@@ -780,7 +780,7 @@ public class GenerateGSTInvoiceController implements Initializable {
                 double igstRaw,
                 double gstRateRaw
         ) {
-            this.jobId = jobId;
+            this.jobUuid = jobUuid;
             this.slNo = slNo;
             this.description = description;
             this.qty = qty;
@@ -800,14 +800,14 @@ public class GenerateGSTInvoiceController implements Initializable {
             this.gstRateRaw.set(gstRateRaw);
         }
 
-        static ItemRow ofJob(int slNo, int jobId, String desc, String hsnSac, long qty, String unit, double rate, double taxable, Taxes taxes) {
-            return ofJob(slNo, jobId, desc, hsnSac, qty, unit, rate, taxable, taxes, DEFAULT_GST_RATE);
+        static ItemRow ofJob(int slNo, String jobUuid, String desc, String hsnSac, long qty, String unit, double rate, double taxable, Taxes taxes) {
+            return ofJob(slNo, jobUuid, desc, hsnSac, qty, unit, rate, taxable, taxes, DEFAULT_GST_RATE);
         }
 
-        static ItemRow ofJob(int slNo, int jobId, String desc, String hsnSac, long qty, String unit, double rate, double taxable, Taxes taxes, double gstRate) {
+        static ItemRow ofJob(int slNo, String jobUuid, String desc, String hsnSac, long qty, String unit, double rate, double taxable, Taxes taxes, double gstRate) {
             String gstPct = String.format("%.0f%%", gstRate * 100.0);
             return new ItemRow(
-                    jobId,
+                    jobUuid,
                     slNo,
                     desc != null ? desc : "",
                     hsnSac != null ? hsnSac : "—",
@@ -832,7 +832,7 @@ public class GenerateGSTInvoiceController implements Initializable {
             return String.format("₹ %.2f", v);
         }
 
-        public int getJobId() { return jobId; }
+        public String getJobUuid() { return jobUuid; }
         public int getSlNo() { return slNo; }
         public String getDescription() { return description; }
         public String getHsnSac() { return hsnSac.get(); }

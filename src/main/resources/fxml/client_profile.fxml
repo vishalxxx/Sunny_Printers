@@ -45,6 +45,7 @@
                 <Button text="Message" styleClass="btn-profile-primary">
                     <graphic><Region styleClass="icon-small icon-msg"/></graphic>
                 </Button>
+                <Button fx:id="btnDeleteClient" text="Delete" styleClass="btn-profile-delete" onAction="#handleDeleteClient"/>
             </HBox>
         </HBox>
 

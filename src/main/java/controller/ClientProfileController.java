@@ -9,20 +9,23 @@ import javafx.geometry.Side;
 import javafx.scene.Cursor;
 import javafx.application.Platform;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import model.Client;
 import model.Invoice;
 import model.InvoiceMaster;
 import model.Job;
+import utils.ClientDeleteHelper;
 import utils.CompanyDataLayout;
 import utils.DBConnection;
 import utils.DocumentNumbering;
-import repository.SystemSettingsRepository;
-import service.InvoiceBuilderService;
-import service.InvoiceMasterService;
-import service.PdfInvoiceService;
 import utils.InvoiceSummaryDialogUtil;
 import utils.PaymentDetailsDialogUtil;
 import utils.Toast;
+import repository.ClientRepository;
+import service.InvoiceBuilderService;
+import service.InvoiceMasterService;
+import service.NumberSequenceAllocationService;
+import service.PdfInvoiceService;
 
 import java.net.URL;
 import java.io.File;
@@ -54,6 +57,7 @@ public class ClientProfileController implements Initializable {
 
     @FXML private HBox breadcrumbContainer;
     @FXML private Button btnEditProfile;
+    @FXML private Button btnDeleteClient;
 
     @FXML private VBox pipelineContainer;
     @FXML private VBox historyContainer;
@@ -63,6 +67,7 @@ public class ClientProfileController implements Initializable {
     @FXML private Label lblNotes;
 
     private Client currentClient;
+    private final ClientRepository clientRepo = new ClientRepository();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -83,7 +88,7 @@ public class ClientProfileController implements Initializable {
             return;
         }
         if (currentClient != null) {
-            mc.loadViewJobFiltered(currentClient.getId());
+            mc.loadViewJobFiltered(currentClient.getClientUuid());
         } else {
             mc.loadViewJob();
         }
@@ -92,6 +97,19 @@ public class ClientProfileController implements Initializable {
     @FXML
     private void handleBack(javafx.event.Event e) {
         MainController.getInstance().handleBack(e);
+    }
+
+    @FXML
+    private void handleDeleteClient() {
+        if (currentClient == null || !currentClient.hasClientUuid()) {
+            return;
+        }
+        Window owner = btnDeleteClient != null && btnDeleteClient.getScene() != null
+                ? btnDeleteClient.getScene().getWindow()
+                : null;
+        if (ClientDeleteHelper.confirmAndDelete(owner, currentClient, clientRepo)) {
+            MainController.getInstance().loadViewClients();
+        }
     }
 
 
@@ -161,17 +179,17 @@ public class ClientProfileController implements Initializable {
         List<Job> activeJobs = new ArrayList<>();
         int totalActive = 0;
         try (Connection con = DBConnection.getConnection()) {
-            String countSql = "SELECT COUNT(*) FROM jobs WHERE client_id = ? AND (status IS NULL OR LOWER(TRIM(status)) != 'completed')";
+            String countSql = "SELECT COUNT(*) FROM jobs WHERE client_uuid = ? AND (status IS NULL OR LOWER(TRIM(status)) != 'completed')";
             try (java.sql.PreparedStatement ps = con.prepareStatement(countSql)) {
-                ps.setInt(1, currentClient.getId());
+                ps.setString(1, currentClient.getClientUuid());
                 ResultSet rs = ps.executeQuery();
                 if (rs.next()) {
                     totalActive = rs.getInt(1);
                 }
             }
-            String sql = "SELECT job_title, status, job_no FROM jobs WHERE client_id = ? AND (status IS NULL OR LOWER(TRIM(status)) != 'completed') ORDER BY id DESC LIMIT 2";
+            String sql = "SELECT job_title, status, job_code FROM jobs WHERE client_uuid = ? AND (status IS NULL OR LOWER(TRIM(status)) != 'completed') ORDER BY created_at DESC LIMIT 2";
             try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
-                ps.setInt(1, currentClient.getId());
+                ps.setString(1, currentClient.getClientUuid());
                 ResultSet rs = ps.executeQuery();
                 while (rs.next()) {
                     Job j = new Job();
@@ -308,31 +326,28 @@ public class ClientProfileController implements Initializable {
         if (historyContainer == null) return;
         
         List<Invoice> history = new ArrayList<>();
-        int pad = 4;
-        try (Connection conPad = DBConnection.getConnection()) {
-            pad = Math.max(1, new SystemSettingsRepository().load(conPad).getInvoicePadding());
-        } catch (Exception ignored) {
-        }
+        NumberSequenceAllocationService receiptNumbers = new NumberSequenceAllocationService();
         try (Connection con = DBConnection.getConnection()) {
-            String sql = "SELECT invoice_no, invoice_date, amount, status, payment_status, 'INVOICE' as row_type, CAST(NULL AS INTEGER) as payment_id FROM invoice_master WHERE client_id = ? AND is_void = 0 "
+            String sql = "SELECT invoice_no, invoice_date, amount, status, payment_status, 'INVOICE' as row_type, CAST(NULL AS TEXT) as payment_uuid FROM invoice_master WHERE client_uuid = ? AND is_void = 0 "
                          + "UNION ALL "
-                         + "SELECT '', payment_date, amount, 'PAID', 'PAID', 'PAYMENT' as row_type, id as payment_id FROM payments WHERE client_id = ? "
+                         + "SELECT '', payment_date, amount, 'PAID', 'PAID', 'PAYMENT' as row_type, uuid as payment_uuid FROM payments WHERE client_uuid = ? "
                          + "ORDER BY invoice_date DESC LIMIT 10";
                          
             try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
-                ps.setInt(1, currentClient.getId());
-                ps.setInt(2, currentClient.getId());
+                ps.setString(1, currentClient.getClientUuid());
+                ps.setString(2, currentClient.getClientUuid());
                 ResultSet rs = ps.executeQuery();
                 while (rs.next()) {
                     Invoice inv = new Invoice();
-                    Integer payId = rs.getObject(7) != null ? rs.getInt(7) : null;
+                    String payUuid = rs.getString(7);
                     String dateStr = rs.getString(2);
                     if (dateStr != null && !dateStr.isEmpty()) {
                         try { inv.setInvoiceDate(LocalDate.parse(dateStr.contains(" ") ? dateStr.split(" ")[0] : dateStr)); } catch (Exception e) {}
                     }
-                    if (payId != null) {
-                        inv.setStandalonePaymentId(payId);
-                        inv.setInvoiceNo(DocumentNumbering.formatPaymentReceiptNo(inv.getInvoiceDate(), payId, pad));
+                    if (payUuid != null) {
+                        inv.setStandalonePaymentUuid(payUuid);
+                        // Still need a numeric ID for some legacy logic or just use UUID
+                        inv.setInvoiceNo(receiptNumbers.resolvePaymentReceiptNo(con, payUuid, inv.getInvoiceDate(), false));
                     } else {
                         inv.setInvoiceNo(rs.getString(1));
                     }
@@ -414,12 +429,12 @@ public class ClientProfileController implements Initializable {
         actionDots.setCursor(Cursor.HAND);
 
         final String rowKey = inv.getInvoiceNo();
-        final Integer paymentId = inv.getStandalonePaymentId();
+        final String paymentUuid = inv.getStandalonePaymentUuid();
 
         // Action Menu
         ContextMenu contextMenu = new ContextMenu();
         MenuItem viewItem = new MenuItem("View Details");
-        boolean isPaymentRow = paymentId != null;
+        boolean isPaymentRow = paymentUuid != null;
         MenuItem downloadItem = new MenuItem(isPaymentRow ? "Download Receipt" : "Download Invoice");
         contextMenu.getItems().addAll(viewItem, downloadItem);
 
@@ -428,8 +443,8 @@ public class ClientProfileController implements Initializable {
             if (w == null) {
                 return;
             }
-            if (paymentId != null) {
-                PaymentDetailsDialogUtil.show(w, paymentId);
+            if (paymentUuid != null) {
+                PaymentDetailsDialogUtil.showByUuid(w, paymentUuid);
             } else if (rowKey != null && !rowKey.isBlank()) {
                 InvoiceSummaryDialogUtil.showForInvoiceNo(w, rowKey);
             }
@@ -438,11 +453,11 @@ public class ClientProfileController implements Initializable {
         downloadItem.setOnAction(e -> {
             javafx.stage.Window w = historyContainer.getScene() != null ? historyContainer.getScene().getWindow() : null;
             Stage stage = w instanceof Stage ? (Stage) w : null;
-            if (paymentId != null) {
+            if (paymentUuid != null) {
                 try {
                     LocalDate payDate = inv.getInvoiceDate() != null ? inv.getInvoiceDate() : LocalDate.now();
                     File out = CompanyDataLayout.paymentReceiptPdfPath(clientFolderDisplayName(), payDate, rowKey);
-                    new PdfInvoiceService().writePaymentReceiptPdf(paymentId, out);
+                    new PdfInvoiceService().writePaymentReceiptPdf(paymentUuid, out);
                     if (stage != null) {
                         Toast.showSmall(stage, "Receipt saved");
                     }
@@ -460,7 +475,7 @@ public class ClientProfileController implements Initializable {
                         return;
                     }
                     InvoiceBuilderService builder = new InvoiceBuilderService();
-                    Invoice full = builder.buildInvoiceFromMasterForPdfExport(master.getId());
+                    Invoice full = builder.buildInvoiceFromMasterForPdfExport(master.getUuid());
                     File created = new PdfInvoiceService().generateSingleInvoicePDF(full);
                     if (stage != null) {
                         Toast.showSmall(stage, "Invoice PDF saved");

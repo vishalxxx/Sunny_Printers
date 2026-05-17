@@ -15,7 +15,9 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.MouseEvent;
@@ -42,8 +44,12 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import utils.DBConnection;
 import model.DashboardJobDTO;
+import model.User;
 
 public class MainController implements Initializable {
+
+	private static final User USER_HEMANT = profileUser("Hemant", "User");
+	private static final User USER_ADMIN = profileUser("Admin", "Administrator");
 
 	private final double COLLAPSED_WIDTH = 74;
 	private final double EXPANDED_WIDTH = 240;
@@ -140,14 +146,14 @@ public class MainController implements Initializable {
 	Job currentJob = new Job();
 	private int currentLoadTaskId = 0;
 
-	private Integer pendingInvoicingClientId;
-	private Integer pendingInvoicingJobId;
+	private String pendingInvoicingClientUuid;
+	private String pendingInvoicingJobUuid;
 
 	private Object currentController; // Tracks the controller of the view currently in center
 
-	public void loadInvoiceWithJob(int clientId, int jobId) {
-		this.pendingInvoicingClientId = clientId;
-		this.pendingInvoicingJobId = jobId;
+	public void loadInvoiceWithJob(String clientUuid, String jobUuid) {
+		this.pendingInvoicingClientUuid = clientUuid;
+		this.pendingInvoicingJobUuid = jobUuid;
 		loadInvoiceGeneration();
 	}
 	// Center content container
@@ -357,6 +363,8 @@ public class MainController implements Initializable {
 	private Button bankSettingsSubBtn;
 	@FXML
 	private Button taxMasterSubBtn;
+	@FXML
+	private Button userSettingsSubBtn;
 
 	// Chevrons
 	@FXML
@@ -417,6 +425,8 @@ public class MainController implements Initializable {
 		}
 
 		loadDashboardData();
+		service.sync.ConnectivitySyncWatcher.start();
+		service.sync.UniversalSyncEngine.scheduleSyncAsync();
 
 		if (mainSearchBox != null && mainSearchField != null) {
 			mainSearchField.focusedProperty().addListener((obs, oldVal, focused) -> {
@@ -468,93 +478,220 @@ public class MainController implements Initializable {
 		setPageTitle("Dashboard");
 
 		Platform.runLater(() -> {
-
-			Stage stage = (Stage) root.getScene().getWindow();
-
-			// -----------------------
-			// 1. Dynamic UI Scaling
-			// -----------------------
-			ChangeListener<Number> resizeListener = (obs, oldVal, newVal) -> {
-
-				double w = stage.getWidth();
-				double h = stage.getHeight();
-
-				// baseline scaling = 900px height = 1.0em
-				// baseline = 900px = 1.0
-				double scale = Math.min(w, h) / 900.0;
-
-				// Never go below 1.0 (never shrink)
-				if (scale < 1.0) {
-					scale = 1.0;
-				}
-
-				// Optional: maximum limit
-				if (scale > 1.6) {
-					scale = 1.6;
-				}
-
-				root.setStyle("-fx-font-size: " + scale + "em;");
-			};
-
-			stage.widthProperty().addListener(resizeListener);
-			stage.heightProperty().addListener(resizeListener);
-
-			// ---------------------------------------------------
-			// 2. FINAL FIX: Make center area fill full screen
-			// ---------------------------------------------------
-			// Only set MIN HEIGHT (never prefHeight!)
-			// This avoids binding conflicts inside ScrollPane.
-			// fallback for centerScroll if only dashboardView is provided
-			ScrollPane scroll = (centerScroll != null) ? centerScroll : dashboardView;
-
-			if (scroll != null && centerRoot != null) {
-
-				scroll.viewportBoundsProperty().addListener((obs, oldB, newB) -> {
-					if (newB != null && newB.getHeight() > 0) {
-						centerRoot.setMinHeight(newB.getHeight());
+			if (root == null) return;
+			if (root.getScene() == null || root.getScene().getWindow() == null) {
+				root.sceneProperty().addListener((obsScene, oldScene, newScene) -> {
+					if (newScene != null) {
+						if (newScene.getWindow() != null) {
+							initializeOnWindowReady((Stage) newScene.getWindow());
+						} else {
+							newScene.windowProperty().addListener((obsWindow, oldWindow, newWindow) -> {
+								if (newWindow != null) {
+									initializeOnWindowReady((Stage) newWindow);
+								}
+							});
+						}
 					}
 				});
-
-				// Initial set (in case viewport is already available)
-				if (scroll.getViewportBounds() != null) {
-					centerRoot.setMinHeight(scroll.getViewportBounds().getHeight());
-				}
+			} else {
+				initializeOnWindowReady((Stage) root.getScene().getWindow());
 			}
-
-			// Initialize User Profile
-
-			// ---------------------------------------------------
-			// 3. Absolute Layout Width Lock for Sidebars
-			// ---------------------------------------------------
-			if (sidebarScroll != null && sidebarStack != null) {
-				javafx.scene.Node content = sidebarScroll.getContent();
-				if (content instanceof javafx.scene.layout.Region inner) {
-					inner.prefWidthProperty().bind(sidebarStack.widthProperty());
-					inner.minWidthProperty().bind(sidebarStack.widthProperty());
-					inner.maxWidthProperty().bind(sidebarStack.widthProperty());
-				}
-
-				// Forcefully eliminate all phantom focus-scroll shifting in the sidebar
-				sidebarScroll.hvalueProperty().addListener((obs, oldV, newV) -> {
-					if (newV != null && newV.doubleValue() != 0) {
-						sidebarScroll.setHvalue(0);
-					}
-				});
-				sidebarScroll.setHvalue(0);
-			}
-
-			if (userNameLabel != null && utils.SessionManager.getInstance().isLoggedIn()) {
-				String user = utils.SessionManager.getInstance().getCurrentUser().getUsername();
-				userNameLabel.setText(user);
-				if (lblDashboardGreeting != null)
-					lblDashboardGreeting.setText("Welcome, " + user);
-			} else if (userNameLabel != null) {
-				userNameLabel.setText("Guest");
-				if (lblDashboardGreeting != null)
-					lblDashboardGreeting.setText("Welcome");
-			}
-
 		});
+	}
+
+	private boolean windowInitialized = false;
+
+	private void initializeOnWindowReady(Stage stage) {
+		if (windowInitialized) return;
+		windowInitialized = true;
+
+		// -----------------------
+		// 1. Dynamic UI Scaling
+		// -----------------------
+		ChangeListener<Number> resizeListener = (obs, oldVal, newVal) -> {
+			double w = stage.getWidth();
+			double h = stage.getHeight();
+
+			// baseline scaling = 900px height = 1.0em
+			double scale = Math.min(w, h) / 900.0;
+
+			// Never go below 1.0 (never shrink)
+			if (scale < 1.0) {
+				scale = 1.0;
+			}
+
+			// Optional: maximum limit
+			if (scale > 1.6) {
+				scale = 1.6;
+			}
+
+			root.setStyle("-fx-font-size: " + scale + "em;");
+		};
+
+		stage.widthProperty().addListener(resizeListener);
+		stage.heightProperty().addListener(resizeListener);
+
+		// Trigger initial scale immediately
+		resizeListener.changed(null, null, null);
+
+		// ---------------------------------------------------
+		// 2. FINAL FIX: Make center area fill full screen
+		// ---------------------------------------------------
+		ScrollPane scroll = (centerScroll != null) ? centerScroll : dashboardView;
+
+		if (scroll != null && centerRoot != null) {
+			scroll.viewportBoundsProperty().addListener((obs, oldB, newB) -> {
+				if (newB != null && newB.getHeight() > 0) {
+					centerRoot.setMinHeight(newB.getHeight());
+				}
+			});
+
+			// Initial set (in case viewport is already available)
+			if (scroll.getViewportBounds() != null) {
+				centerRoot.setMinHeight(scroll.getViewportBounds().getHeight());
+			}
+		}
+
+		// ---------------------------------------------------
+		// 3. Absolute Layout Width Lock for Sidebars
+		// ---------------------------------------------------
+		if (sidebarScroll != null && sidebarStack != null) {
+			javafx.scene.Node content = sidebarScroll.getContent();
+			if (content instanceof javafx.scene.layout.Region inner) {
+				inner.prefWidthProperty().bind(sidebarStack.widthProperty());
+				inner.minWidthProperty().bind(sidebarStack.widthProperty());
+				inner.maxWidthProperty().bind(sidebarStack.widthProperty());
+			}
+
+			// Forcefully eliminate all phantom focus-scroll shifting in the sidebar
+			sidebarScroll.hvalueProperty().addListener((obs, oldV, newV) -> {
+				if (newV != null && newV.doubleValue() != 0) {
+					sidebarScroll.setHvalue(0);
+				}
+			});
+			sidebarScroll.setHvalue(0);
+		}
+
+		refreshProfileHeaderFromSession();
+		setupProfileAccountMenu();
+	}
+
+	private static User profileUser(String username, String role) {
+		User u = new User();
+		u.setUsername(username);
+		u.setRole(role);
+		return u;
+	}
+
+	private ContextMenu profileAccountMenu;
+
+	@FXML
+	private HBox profileHeaderBox;
+	@FXML
+	private Label userRoleLabel;
+	@FXML
+	private Label profileAvatarInitials;
+
+	private void setupProfileAccountMenu() {
+		if (profileHeaderBox == null) {
+			return;
+		}
+		profileAccountMenu = new ContextMenu();
+		profileAccountMenu.setStyle("-fx-min-width: 140px;");
+
+		MenuItem infoItem = new MenuItem("Signed in");
+		infoItem.setDisable(true);
+		infoItem.setStyle("-fx-font-weight: bold; -fx-opacity: 1.0; -fx-text-fill: -fx-text-dark;");
+
+		javafx.scene.control.SeparatorMenuItem separator = new javafx.scene.control.SeparatorMenuItem();
+
+		MenuItem logoutItem = new MenuItem("Log Out");
+		logoutItem.setOnAction(e -> handleSignOut(null));
+		logoutItem.setStyle("-fx-text-fill: #DC2626; -fx-font-weight: bold;");
+
+		profileAccountMenu.getItems().addAll(infoItem, separator, logoutItem);
+
+		profileAccountMenu.setOnShowing(e -> {
+			if (utils.SessionManager.getInstance().isLoggedIn()) {
+				User current = utils.SessionManager.getInstance().getCurrentUser();
+				infoItem.setText("Signed in as: " + (current.getUsername() != null ? current.getUsername() : "User"));
+			} else {
+				infoItem.setText("Guest");
+			}
+		});
+
+		profileHeaderBox.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
+			if (e.isSecondaryButtonDown()) {
+				showProfileAccountMenu(e);
+				e.consume();
+			}
+		});
+	}
+
+	@FXML
+	private void handleProfileHeaderClick(MouseEvent event) {
+		showProfileAccountMenu(event);
+	}
+
+	private void showProfileAccountMenu(MouseEvent event) {
+		if (profileHeaderBox == null || profileAccountMenu == null || event == null) {
+			return;
+		}
+		profileAccountMenu.show(profileHeaderBox, event.getScreenX(), event.getScreenY());
+	}
+
+	private void refreshProfileHeaderFromSession() {
+		if (utils.SessionManager.getInstance().isLoggedIn()) {
+			User user = utils.SessionManager.getInstance().getCurrentUser();
+			String name = user.getUsername() != null ? user.getUsername() : "User";
+			if (userNameLabel != null) {
+				userNameLabel.setText(name);
+			}
+			if (userRoleLabel != null) {
+				String role = user.getRole();
+				userRoleLabel.setText(role != null && !role.isBlank() ? role.toUpperCase() : "USER");
+			}
+			if (profileAvatarInitials != null) {
+				profileAvatarInitials.setText(initialsFor(name));
+			}
+			if (lblDashboardGreeting != null) {
+				lblDashboardGreeting.setText("Welcome, " + name);
+			}
+			if (userSettingsSubBtn != null) {
+				String role = user.getRole();
+				boolean isAdmin = role != null && (role.equalsIgnoreCase("ADMIN") || role.equalsIgnoreCase("ADMINISTRATOR"));
+				userSettingsSubBtn.setVisible(isAdmin);
+				userSettingsSubBtn.setManaged(isAdmin);
+			}
+		} else {
+			if (userNameLabel != null) {
+				userNameLabel.setText("Guest");
+			}
+			if (userRoleLabel != null) {
+				userRoleLabel.setText("GUEST");
+			}
+			if (profileAvatarInitials != null) {
+				profileAvatarInitials.setText("?");
+			}
+			if (lblDashboardGreeting != null) {
+				lblDashboardGreeting.setText("Welcome");
+			}
+			if (userSettingsSubBtn != null) {
+				userSettingsSubBtn.setVisible(false);
+				userSettingsSubBtn.setManaged(false);
+			}
+		}
+	}
+
+	private static String initialsFor(String name) {
+		if (name == null || name.isBlank()) {
+			return "?";
+		}
+		String[] parts = name.trim().split("\\s+");
+		if (parts.length >= 2) {
+			return ("" + Character.toUpperCase(parts[0].charAt(0)) + Character.toUpperCase(parts[1].charAt(0)));
+		}
+		return ("" + Character.toUpperCase(name.trim().charAt(0)));
 	}
 
 	private void applyCollapsedStyleToAll(boolean collapsed) {
@@ -940,10 +1077,10 @@ public class MainController implements Initializable {
 		ObservableList<DashboardJobDTO> jobs = FXCollections.observableArrayList();
 		try (Connection con = DBConnection.getConnection()) {
 			String filter = getTimeFilterSQL();
-			String sql = "SELECT j.job_name, c.client_name, j.order_date, j.delivery_date, j.total_amount, j.status " +
-					"FROM job j JOIN client_master c ON j.client_id = c.id " +
-					"WHERE 1=1 " + filter.replace("invoice_date", "j.order_date") +
-					" ORDER BY j.id DESC LIMIT 5";
+			String sql = "SELECT j.job_title, c.business_name, j.created_at, j.status " +
+					"FROM jobs j JOIN clients c ON j.client_uuid = c.uuid " +
+					"WHERE 1=1 " + filter.replace("invoice_date", "j.created_at") +
+					" ORDER BY j.created_at DESC LIMIT 5";
 			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
 				while (rs.next()) {
 					jobs.add(new DashboardJobDTO(
@@ -1078,10 +1215,10 @@ public class MainController implements Initializable {
 					}
 
 					if (controller instanceof InvoiceGenerationController invController) {
-						if (pendingInvoicingClientId != null && pendingInvoicingJobId != null) {
-							invController.preSelectJob(pendingInvoicingClientId, pendingInvoicingJobId);
-							pendingInvoicingClientId = null;
-							pendingInvoicingJobId = null;
+						if (pendingInvoicingClientUuid != null && pendingInvoicingJobUuid != null) {
+							invController.preSelectJob(pendingInvoicingClientUuid, pendingInvoicingJobUuid);
+							pendingInvoicingClientUuid = null;
+							pendingInvoicingJobUuid = null;
 						}
 					}
 
@@ -1213,7 +1350,8 @@ public class MainController implements Initializable {
 				// This prevents clicking a parent after a collapse/expand cycle from resetting
 				// the child view.
 				if (activeParent != parentBtn) {
-					expand.setOnFinished(e -> onFinished.run());
+					// Defer screen load: showAndWait in canDiscardChanges is illegal during animation pulse.
+					expand.setOnFinished(e -> Platform.runLater(onFinished));
 				}
 			}
 
@@ -1682,8 +1820,8 @@ public class MainController implements Initializable {
 	 * Open View Jobs; when {@code clientId} is non-null, the client filter is
 	 * selected after data loads.
 	 */
-	public void loadViewJobFiltered(Integer clientId) {
-		ViewJobsController.pendingFilterClientId = clientId;
+	public void loadViewJobFiltered(String clientUuid) {
+		ViewJobsController.pendingFilterClientUuid = clientUuid;
 		highlightActiveMenu(jobsBtn);
 		highlightSubmenu(viewJobsSubBtn);
 		loadCenterScreen("/fxml/view_job.fxml",
@@ -1971,8 +2109,11 @@ public class MainController implements Initializable {
 			Parent loginRoot = loader.load();
 			Stage stage = (Stage) root.getScene().getWindow();
 			Scene scene = new Scene(loginRoot);
-			scene.getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+			sunnyprinters.Main.applyAppSceneStylesheets(scene);
 			stage.setScene(scene);
+			stage.setMaximized(false);
+			stage.setWidth(760);
+			stage.setHeight(500);
 			stage.centerOnScreen();
 		} catch (IOException e) {
 			e.printStackTrace();

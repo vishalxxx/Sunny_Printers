@@ -24,26 +24,18 @@ public class Main extends Application {
 		// Load bundled fonts once (works offline)
 		loadBundledFonts();
 
-		// BYPASS LOGIN FOR DEV
-		model.User admin = new model.User();
-		admin.setUsername("Admin");
-		admin.setRole("Administrator");
-		// Ensure SessionManager exists and has a login method
-		utils.SessionManager.getInstance().login(admin);
-
-		FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dashboard.fxml"));
+		FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
 		Parent root = loader.load();
-
-		// FXMLLoader loginLoader = new
-		// FXMLLoader(getClass().getResource("/fxml/login.fxml"));
-		// Parent root = loginLoader.load(); // Login root is AnchorPane
 
 		Scene scene = new Scene(root);
 		applyAppSceneStylesheets(scene);
 
 		primaryStage.setScene(scene);
 		primaryStage.setTitle("Sunny Printers");
-		primaryStage.setMaximized(true);
+		primaryStage.setMaximized(false);
+		primaryStage.setWidth(760);
+		primaryStage.setHeight(500);
+		primaryStage.centerOnScreen();
 
 		primaryStage.setOnCloseRequest(event -> {
 			if (controller.MainController.getInstance() != null) {

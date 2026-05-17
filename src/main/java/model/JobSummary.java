@@ -4,47 +4,47 @@ import java.time.LocalDate;
 
 public class JobSummary {
 
-    private int id;
-    private String jobNo;
-    private String jobTitle;
-    private LocalDate jobDate;
-    private int jobId;
+	private String uuid;
+	private String jobCode;
+	private String jobTitle;
+	private LocalDate jobDate;
 
-    public int getJobId() {
-        return jobId;
-    }
+	public JobSummary() {
+	}
 
-    public void setJobId(int jobId) {
-        this.jobId = jobId;
-    }
+	public JobSummary(String uuid, String jobCode, String jobTitle, LocalDate jobDate) {
+		this.uuid = uuid;
+		this.jobCode = jobCode;
+		this.jobTitle = jobTitle;
+		this.jobDate = jobDate;
+	}
 
-    public JobSummary() {}
+	public String getUuid() {
+		return uuid;
+	}
 
-    public JobSummary(int id, String jobNo, String jobTitle, LocalDate jobDate) {
-        this.id = id;
-        this.jobNo = jobNo;
-        this.jobTitle = jobTitle;
-        this.jobDate = jobDate;
-    }
+	public void setUuid(String uuid) {
+		this.uuid = uuid;
+	}
 
-    public int getId() {
-        return id;
-    }
+	public String getJobCode() {
+		return jobCode;
+	}
 
-    public String getJobNo() {
-        return jobNo;
-    }
+	public String getJobNo() {
+		return jobCode;
+	}
 
-    public String getJobTitle() {
-        return jobTitle;
-    }
+	public String getJobTitle() {
+		return jobTitle;
+	}
 
-    public LocalDate getJobDate() {
-        return jobDate;
-    }
+	public LocalDate getJobDate() {
+		return jobDate;
+	}
 
-    @Override
-    public String toString() {
-        return jobNo + " - " + jobTitle;
-    }
+	@Override
+	public String toString() {
+		return jobCode + " - " + jobTitle;
+	}
 }

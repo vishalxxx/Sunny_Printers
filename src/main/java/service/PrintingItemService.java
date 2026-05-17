@@ -13,9 +13,9 @@ public class PrintingItemService {
     private final JobItemRepository jobItemRepo = new JobItemRepository();
     private final PrintingItemRepository printingRepo = new PrintingItemRepository();
 
-	public JobItem addPrinting(int jobId, Printing p) {
+	public JobItem addPrinting(String jobUuid, Printing p) {
 
-        if (jobId <= 0) {
+        if (jobUuid == null || jobUuid.isBlank()) {
             throw new IllegalArgumentException("Job not created");
         }
 
@@ -43,7 +43,7 @@ public class PrintingItemService {
 
             // ✅ Step 1: Save JobItem
             JobItem item = new JobItem();
-            item.setJobId(jobId);
+            item.setJobUuid(jobUuid);
             item.setType("PRINTING");
             item.setDescription(buildPrintingDescription(p));  // short summary
             item.setAmount(p.getAmount());
@@ -52,7 +52,7 @@ public class PrintingItemService {
             JobItem savedItem = jobItemRepo.save(con, item);
 
             // ✅ Step 2: Save Printing Details table
-            printingRepo.save(con, savedItem.getId(), p);
+            printingRepo.save(con, savedItem.getUuid(), p);
 
             con.commit();
             return savedItem;

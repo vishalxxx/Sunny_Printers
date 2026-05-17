@@ -187,11 +187,11 @@ public class CtpTabController {
         currentJob = job;
         ctpTable.getItems().clear();
 
-        for (JobItem ji : jobItemService.getJobItems(job.getId())) {
+        for (JobItem ji : jobItemService.getJobItems(job.getUuid())) {
             if ("CTP".equalsIgnoreCase(ji.getType())) {
-                CtpPlate p = ctpRepo.findByJobItemId(ji.getId());
+                CtpPlate p = ctpRepo.findByJobItemUuid(ji.getUuid());
                 if (p != null) {
-                    p.setJobItemId(ji.getId());
+                    p.setJobItemUuid(ji.getUuid());
                     p.resetFlags();
                     p.captureOriginal();
                     ctpTable.getItems().add(p);

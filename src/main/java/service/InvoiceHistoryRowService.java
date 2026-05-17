@@ -13,7 +13,7 @@ public class InvoiceHistoryRowService {
 
     public void saveHistory(
             String invoiceNo,
-            int clientId,
+            String clientId,
             String clientName,
             String invoiceDate,
             double amount,
@@ -28,7 +28,7 @@ public class InvoiceHistoryRowService {
 
         saveHistory(
                 invoice.getInvoiceNo(),
-                client.getId(),
+                client.getClientUuid(),
                 invoice.getClientName(),
                 invoice.getInvoiceDate().toString(),
                 invoice.getGrandTotal(),

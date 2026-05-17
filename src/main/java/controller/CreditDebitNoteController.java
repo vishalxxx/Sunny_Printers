@@ -73,7 +73,7 @@ public class CreditDebitNoteController {
 
         clientComboBox.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
-                loadInvoicesForClient(newVal.getId());
+                loadInvoicesForClient(newVal.getClientUuid());
             } else {
                 invoiceComboBox.getItems().clear();
             }
@@ -96,7 +96,7 @@ public class CreditDebitNoteController {
     private void prefillForm(InvoiceMaster inv) {
         // 1. Select Client
         for (Client c : clientComboBox.getItems()) {
-            if (c.getId() == inv.getClientId()) {
+            if (inv.getClientId() != null && inv.getClientId().equals(c.getClientUuid())) {
                 clientComboBox.getSelectionModel().select(c);
                 break;
             }
@@ -105,7 +105,7 @@ public class CreditDebitNoteController {
         // 2. Select Invoice (must wait for async load or trigger manually)
         javafx.application.Platform.runLater(() -> {
             for (InvoiceMaster existingInv : invoiceComboBox.getItems()) {
-                if (existingInv.getId() == inv.getId()) {
+                if (existingInv.getUuid().equals(inv.getUuid())) {
                     invoiceComboBox.getSelectionModel().select(existingInv);
                     break;
                 }
@@ -251,9 +251,9 @@ public class CreditDebitNoteController {
         });
     }
 
-    private void loadInvoicesForClient(int clientId) {
+    private void loadInvoicesForClient(String clientUuid) {
         try (Connection con = DBConnection.getConnection()) {
-            List<InvoiceMaster> invoices = invoiceRepo.findByClientId(con, clientId);
+            List<InvoiceMaster> invoices = invoiceRepo.findByClientId(con, clientUuid);
             ObservableList<InvoiceMaster> invList = FXCollections.observableArrayList(invoices);
             invoiceComboBox.setItems(invList);
 
@@ -359,9 +359,9 @@ public class CreditDebitNoteController {
                 String noteNo = settingsService.allocateNextMasterNumber(con, series, noteDateEffective);
 
                 // 2. Save to invoice_adjustments
-                String sqlInsert = "INSERT INTO invoice_adjustments (invoice_id, type, note_no, amount, reason, date) VALUES (?, ?, ?, ?, ?, ?)";
+                String sqlInsert = "INSERT INTO invoice_adjustments (invoice_uuid, type, note_no, amount, reason, date) VALUES (?, ?, ?, ?, ?, ?)";
                 try (java.sql.PreparedStatement ps = con.prepareStatement(sqlInsert)) {
-                    ps.setInt(1, selectedInvoice.getId());
+                    ps.setString(1, selectedInvoice.getUuid());
                     ps.setString(2, noteType);
                     ps.setString(3, noteNo);
                     ps.setDouble(4, amount);
@@ -373,7 +373,7 @@ public class CreditDebitNoteController {
                 // 3. Update invoice_master (Update due_amount AND payment_status)
                 double adjustment = noteType.startsWith("Credit") ? -amount : amount;
                 
-                InvoiceMaster inv = invoiceRepo.findById(con, selectedInvoice.getId());
+                InvoiceMaster inv = invoiceRepo.findByUuid(con, selectedInvoice.getUuid());
                 if (inv != null) {
                     double newPaid = inv.getPaidAmount();
                     double newDue = inv.getDueAmount() + adjustment;
@@ -388,7 +388,7 @@ public class CreditDebitNoteController {
                         newStatus = "UNPAID";
                     }
                     
-                    invoiceRepo.updatePayment(con, selectedInvoice.getId(), newPaid, newDue, newStatus, LocalDate.now());
+                    invoiceRepo.updatePayment(con, selectedInvoice.getUuid(), newPaid, newDue, newStatus, LocalDate.now());
                 }
                 
                 javafx.application.Platform.runLater(() -> {

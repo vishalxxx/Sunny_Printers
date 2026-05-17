@@ -48,7 +48,7 @@
         </HBox>
     </HBox>
 
-    <!-- LIST AREA -->
+    <!-- LIST AREA: each row is built in ViewClientsController.ClientCardCell (View Profile + Delete). Delete uses .view-clients-delete-btn in view_client.css -->
     <ListView fx:id="clientListView" styleClass="client-list-view" VBox.vgrow="ALWAYS" />
 
     <!-- FOOTER -->

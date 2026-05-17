@@ -178,10 +178,10 @@
                                         <Button fx:id="taxMasterSubBtn" onAction="#loadTaxMaster" styleClass="submenu-btn" text="Tax Master">
                                             <graphic><Region styleClass="sidebar-icon, icon-tax-master" style="-fx-background-color: #8B5E3C; -fx-min-width: 14; -fx-min-height: 14;"/></graphic>
                                         </Button>
-                                        <Button onAction="#loadInvoiceSettings" styleClass="submenu-btn" text="Invoice Templates">
+                                        <Button onAction="#loadInvoiceSettings" styleClass="submenu-btn" text="Number Sequence">
                                             <graphic><Region styleClass="sidebar-icon, icon-brush" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
                                         </Button>
-                                        <Button onAction="#loadUserSettings" styleClass="submenu-btn" text="User Permissions">
+                                        <Button fx:id="userSettingsSubBtn" onAction="#loadUserSettings" styleClass="submenu-btn" text="User Permissions">
                                             <graphic><Region styleClass="sidebar-icon, icon-clients" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
                                         </Button>
                                     </VBox>
@@ -243,15 +243,16 @@
                             
                             <Separator orientation="VERTICAL" prefHeight="24" style="-fx-opacity: 0.1; -fx-padding: 0 5;"/>
                             
-                            <!-- User Profile -->
-                            <HBox spacing="12" alignment="CENTER">
+                            <!-- User Profile (click for account switch) -->
+                            <HBox fx:id="profileHeaderBox" spacing="12" alignment="CENTER" styleClass="profile-header-clickable"
+                                  onMouseClicked="#handleProfileHeaderClick">
                                 <VBox alignment="CENTER_RIGHT" spacing="0">
-                                    <Label fx:id="userNameLabel" text="Alex Mercer" style="-fx-font-weight: 800; -fx-text-fill: -fx-text-dark; -fx-font-size: 14;"/>
-                                    <Label text="PRODUCTION MANAGER" style="-fx-font-size: 8; -fx-font-weight: 900; -fx-text-fill: -fx-text-muted; -fx-letter-spacing: 0.5;"/>
+                                    <Label fx:id="userNameLabel" text="Admin" style="-fx-font-weight: 800; -fx-text-fill: -fx-text-dark; -fx-font-size: 14;"/>
+                                    <Label fx:id="userRoleLabel" text="ADMINISTRATOR" style="-fx-font-size: 8; -fx-font-weight: 900; -fx-text-fill: -fx-text-muted; -fx-letter-spacing: 0.5;"/>
                                 </VBox>
                                 <StackPane styleClass="profile-avatar">
                                     <Circle radius="18" fill="#EBE7DE"/>
-                                    <Label text="AM" style="-fx-font-weight: 800; -fx-text-fill: #8E857C; -fx-font-size: 12;"/>
+                                    <Label fx:id="profileAvatarInitials" text="A" style="-fx-font-weight: 800; -fx-text-fill: #8E857C; -fx-font-size: 12;"/>
                                 </StackPane>
                             </HBox>
                         </HBox>

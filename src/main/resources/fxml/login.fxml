@@ -2,8 +2,10 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Hyperlink?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
@@ -14,17 +16,16 @@
 
 <AnchorPane prefHeight="500" prefWidth="760" styleClass="gradient-bg" stylesheets="@../css/login.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.LoginController">
 
-	<HBox alignment="CENTER" layoutX="30.0" layoutY="30.0" prefHeight="440.0" prefWidth="700.0" style="-fx-background-color: white; -fx-border-radius: 20;" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="30.0" AnchorPane.rightAnchor="30.0" AnchorPane.topAnchor="30.0">
+	<HBox alignment="CENTER" style="-fx-background-color: #FAF6F0;" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
 
-		<!-- LEFT SIDE PANEL -->
-		<StackPane prefWidth="350" style="-fx-background-color: #1E1E1E; -fx-background-radius: 0;" HBox.hgrow="ALWAYS">
-			<ImageView fitHeight="500" fitWidth="350" opacity="0.35">
+		<StackPane prefWidth="380" style="-fx-background-color: #3E312D; -fx-background-radius: 0;" HBox.hgrow="ALWAYS">
+			<ImageView fitHeight="500" fitWidth="380" opacity="0.15">
 				<Image url="@images/bg.jpg" />
 			</ImageView>
 
-			<VBox alignment="CENTER_LEFT" prefHeight="600.0" prefWidth="452.0" spacing="15">
-				<Label style="-fx-text-fill: white; -fx-font-size: 36px; -fx-font-weight: bold;" text="Sunny Printers" />
-				<Label style="-fx-text-fill: #dddddd; -fx-font-size: 16px;" text="Content Management System" />
+			<VBox alignment="CENTER_LEFT" prefHeight="600.0" prefWidth="452.0" spacing="12">
+				<Label style="-fx-text-fill: #FAF6F0; -fx-font-size: 34px; -fx-font-weight: 800; -fx-font-family: 'Manrope';" text="Sunny Printers" />
+				<Label style="-fx-text-fill: #CEC6BE; -fx-font-size: 14px; -fx-font-family: 'Inter';" text="Content Management System" />
             <padding>
                <Insets bottom="40.0" left="40.0" right="40.0" top="40.0" />
             </padding>
@@ -32,33 +33,35 @@
 
 		</StackPane>
 
-		<!-- RIGHT SIDE PANEL -->
-		<AnchorPane style="-fx-background-color: white; -fx-background-radius: 12;">
+		<AnchorPane prefWidth="380" style="-fx-background-color: #FAF6F0; -fx-background-radius: 0;" HBox.hgrow="ALWAYS">
 
-			<!-- Sign-in area -->
-			<VBox layoutX="60" layoutY="90.0" prefHeight="339.0" prefWidth="306.0" spacing="18.0" AnchorPane.topAnchor="150.0">
-				<Label style="-fx-font-size: 32px; -fx-font-weight: bold;" text="Sign In" />
-				<Label style="-fx-text-fill: #777;" text="Enter your details below" />
+			<VBox fx:id="loginFormContainer" spacing="14.0" AnchorPane.leftAnchor="40.0" AnchorPane.rightAnchor="40.0" AnchorPane.topAnchor="90.0">
+				<Label fx:id="titleLabel" style="-fx-font-size: 28px; -fx-font-weight: 800; -fx-text-fill: #3E312D; -fx-font-family: 'Manrope';" text="Sign In" />
+				<Label fx:id="subtitleLabel" style="-fx-text-fill: #8E7B71; -fx-font-family: 'Inter'; -fx-font-size: 13;" text="Enter your details below" />
 
-				<!-- EMAIL FIELD -->
+				<Label fx:id="infoLabel" managed="false" style="-fx-text-fill: #2e7d32; -fx-font-size: 12px;" visible="false" wrapText="true" />
+				<Label fx:id="errorLabel" managed="false" style="-fx-text-fill: #c62828; -fx-font-size: 12px;" visible="false" wrapText="true" />
+
 				<VBox spacing="6">
-					<Label style="-fx-font-size: 12px; -fx-text-fill: #555;" text="Enter Username" />
-					<TextField fx:id="emailField" promptText="Enter your username" />
+					<Label fx:id="emailFieldLabel" style="-fx-font-size: 11px; -fx-font-weight: 800; -fx-text-fill: #8E7B71; -fx-font-family: 'Inter';" text="USERNAME" />
+					<TextField fx:id="emailField" promptText="Enter your username" styleClass="taste-field" style="-fx-background-color: #FAF6F0; -fx-border-color: #EADFD4; -fx-text-fill: #3E312D;" />
 				</VBox>
 
-				<!-- PASSWORD FIELD -->
 				<VBox spacing="6">
-					<Label style="-fx-font-size: 12px; -fx-text-fill: #555;" text="PASSWORD" />
-					<PasswordField fx:id="passwordField" promptText="Enter your password" />
+					<Label style="-fx-font-size: 11px; -fx-font-weight: 800; -fx-text-fill: #8E7B71; -fx-font-family: 'Inter';" text="PASSWORD" />
+					<PasswordField fx:id="passwordField" promptText="Enter your password" styleClass="taste-field" style="-fx-background-color: #FAF6F0; -fx-border-color: #EADFD4; -fx-text-fill: #3E312D;" />
 				</VBox>
 
-				<HBox spacing="5" />
+				<Button fx:id="submitButton" defaultButton="true" onAction="#onSubmitClick" prefHeight="40.0" style="-fx-background-color: #CD7B4E; -fx-text-fill: white; -fx-font-size: 13; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;" text="SIGN IN" />
 
-				<Button onAction="#onSubmitClick" prefHeight="40.0" style="-fx-background-color: #4A61DD; -fx-text-fill: white; -fx-font-size: 14; -fx-font-weight: bold;" text="SIGN IN" />
+				<Button onAction="#onCancelClick" prefHeight="32.0" style="-fx-background-color: transparent; -fx-text-fill: #8E7B71; -fx-font-size: 12; -fx-cursor: hand; -fx-font-weight: bold;" text="Exit" />
 			</VBox>
-         <HBox.margin>
-            <Insets right="30.0" />
-         </HBox.margin>
+
+			<VBox fx:id="loadingContainer" alignment="CENTER" spacing="20.0" visible="false" managed="false" AnchorPane.leftAnchor="40.0" AnchorPane.rightAnchor="40.0" AnchorPane.topAnchor="150.0">
+				<ProgressIndicator style="-fx-progress-color: #CD7B4E;" prefWidth="60.0" prefHeight="60.0" />
+				<Label style="-fx-text-fill: #3E312D; -fx-font-family: 'Manrope'; -fx-font-size: 16px; -fx-font-weight: bold;" text="Preparing workspace…" />
+				<Label style="-fx-text-fill: #8E7B71; -fx-font-family: 'Inter'; -fx-font-size: 13px;" text="Please wait while we load your dashboard" />
+			</VBox>
 
 		</AnchorPane>
 

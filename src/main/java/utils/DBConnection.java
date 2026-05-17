@@ -22,7 +22,7 @@ public class DBConnection {
 	/**
 	 * SQLite needs the parent directory to exist; {@code database/} is not in Git.
 	 */
-	static void ensureDatabaseParentDirectory() throws Exception {
+	public static void ensureDatabaseParentDirectory() throws Exception {
 		Files.createDirectories(Path.of("database"));
 	}
 

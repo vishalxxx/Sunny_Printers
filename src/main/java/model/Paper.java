@@ -5,6 +5,8 @@ import java.util.Objects;
 
 public class Paper implements Serializable {
 
+    private String uuid;
+    private String jobItemUuid;
     private int qty;          // optional
     private String units;     // Sheet/Rim/Bundle/Kg...
     private String size;      // 12x18 / 13x19 ...
@@ -13,11 +15,22 @@ public class Paper implements Serializable {
     private String source;    // Our / Client
     private String notes;     // optional
     private double amount;    // required
+    
+    private String syncStatus = "PENDING";
+    private int syncVersion = 1;
+    private int isDeletedSync = 0;
+    private int isActive = 1;
+    private String createdAt;
+    private String updatedAt;
+    private String syncedAt;
+    private String deletedAt;
 
     public Paper() {}
 
     public Paper copy() {
         Paper p = new Paper();
+        p.setUuid(this.uuid);
+        p.setJobItemUuid(this.jobItemUuid);
         p.setQty(this.qty);
         p.setUnits(this.units);
         p.setSize(this.size);
@@ -57,16 +70,11 @@ public class Paper implements Serializable {
     public void setAmount(double amount) { this.amount = amount; }
 
     
-    private int jobItemId;
+    public String getUuid() { return uuid; }
+    public void setUuid(String uuid) { this.uuid = uuid; }
 
-    
-    public int getJobItemId() {
-		return jobItemId;
-	}
-
-	public void setJobItemId(int jobItemId) {
-		this.jobItemId = jobItemId;
-	}
+    public String getJobItemUuid() { return jobItemUuid; }
+    public void setJobItemUuid(String jobItemUuid) { this.jobItemUuid = jobItemUuid; }
 
 
 	private transient boolean isNew;
@@ -156,5 +164,27 @@ public class Paper implements Serializable {
     }
 
     
+    public String getSyncStatus() { return syncStatus; }
+    public void setSyncStatus(String syncStatus) { this.syncStatus = syncStatus; }
 
+    public int getSyncVersion() { return syncVersion; }
+    public void setSyncVersion(int syncVersion) { this.syncVersion = syncVersion; }
+
+    public int getIsDeletedSync() { return isDeletedSync; }
+    public void setIsDeletedSync(int isDeletedSync) { this.isDeletedSync = isDeletedSync; }
+
+    public int getIsActive() { return isActive; }
+    public void setIsActive(int isActive) { this.isActive = isActive; }
+
+    public String getCreatedAt() { return createdAt; }
+    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
+
+    public String getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getSyncedAt() { return syncedAt; }
+    public void setSyncedAt(String syncedAt) { this.syncedAt = syncedAt; }
+
+    public String getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(String deletedAt) { this.deletedAt = deletedAt; }
 }

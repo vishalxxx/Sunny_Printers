@@ -14,18 +14,22 @@ public class SupplierService {
 	public void addSupplier(Supplier s) {
 		String sql = """
 				    INSERT INTO suppliers
-				    (name, business_name, type, phone, address, gst_number)
-				    VALUES (?, ?, ?, ?, ?, ?)
+				    (uuid, name, business_name, type, phone, address, gst_number)
+				    VALUES (?, ?, ?, ?, ?, ?, ?)
 				""";
 
 		try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-			stmt.setString(1, s.getName());
-			stmt.setString(2, s.getbusinessName()); // 🔥 REQUIRED
-			stmt.setString(3, s.getType());
-			stmt.setString(4, s.getPhone());
-			stmt.setString(5, s.getAddress());
-			stmt.setString(6, s.getGstNumber());
+			if (s.getUuid() == null || s.getUuid().isBlank()) {
+				s.setUuid(java.util.UUID.randomUUID().toString());
+			}
+			stmt.setString(1, s.getUuid());
+			stmt.setString(2, s.getName());
+			stmt.setString(3, s.getbusinessName()); // 🔥 REQUIRED
+			stmt.setString(4, s.getType());
+			stmt.setString(5, s.getPhone());
+			stmt.setString(6, s.getAddress());
+			stmt.setString(7, s.getGstNumber());
 
 			stmt.executeUpdate();
 
@@ -52,7 +56,7 @@ public class SupplierService {
 			ResultSet rs = stmt.executeQuery();
 			while (rs.next()) {
 				Supplier s = new Supplier();
-				s.setId(rs.getInt("id"));
+				s.setUuid(rs.getString("uuid"));
 				s.setName(rs.getString("name"));
 				s.setbusinessName(rs.getString("business_name")); // 🔥 FIX
 				s.setType(rs.getString("type"));

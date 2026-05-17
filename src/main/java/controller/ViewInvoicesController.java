@@ -59,7 +59,7 @@ public class ViewInvoicesController {
     @FXML private TableColumn<InvoiceMaster, String> colStatus;
     @FXML private TableColumn<InvoiceMaster, Void> colActions;
 
-    @FXML private Button btnEdit, btnFinalize, btnSend, btnPayment, btnCancel, btnRevised, btnRaiseCnDn;
+    @FXML private Button btnEdit, btnFinalize, btnSend, btnDownload, btnPayment, btnCancel, btnRevised, btnRaiseCnDn;
     @FXML private Label paginationInfoLabel;
     @FXML private HBox paginationPagesBox;
     @FXML private TextField goToPageField;
@@ -94,14 +94,15 @@ public class ViewInvoicesController {
     @FXML private HBox viToolbarRow;
 
     public static String pendingSearchInvoiceNo;
-    private static final int ALL_CLIENTS_ID = 0;
+    /** Sentinel combo value: filter all clients (reserved uuid, not a real row). */
+    private static final String ALL_CLIENTS_UUID = "00000000-0000-7000-8000-000000000001";
 
     private static final DateTimeFormatter ISSUE_DUE_FORMAT =
             DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.ENGLISH);
     /** Placeholder band when toolbar actions hidden — same height as last shown bar avoids table jump. */
     private static final double VI_TOOLBAR_MIN_SLOT = 52;
 
-    private final Map<Integer, String> clientIdToEmail = new HashMap<>();
+    private final Map<String, String> clientIdToEmail = new HashMap<>();
     private final Set<Integer> selectedInvoiceIds = new HashSet<>();
 
     private final ClientService clientService = new ClientService();
@@ -426,6 +427,7 @@ public class ViewInvoicesController {
         if (btnEdit != null) btnEdit.setGraphic(createIcon("M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"));
         if (btnFinalize != null) btnFinalize.setGraphic(createIcon("M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"));
         if (btnSend != null) btnSend.setGraphic(createIcon("M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"));
+        if (btnDownload != null) btnDownload.setGraphic(createIcon("M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"));
         if (btnPayment != null) btnPayment.setGraphic(createIcon("M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"));
         if (btnCancel != null) btnCancel.setGraphic(createIcon("M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"));
         if (btnRevised != null) btnRevised.setGraphic(createIcon("M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"));
@@ -450,13 +452,23 @@ public class ViewInvoicesController {
                         if (checkBox.isSelected()) {
                             selectedInvoiceIds.add(inv.getId());
                             if (invoiceTable != null) {
-                                Platform.runLater(() -> invoiceTable.getSelectionModel().select(inv));
+                                Platform.runLater(() -> {
+                                    invoiceTable.getSelectionModel().select(inv);
+                                    updateButtonStates(invoiceTable.getSelectionModel().getSelectedItem());
+                                });
                             }
                         } else {
                             selectedInvoiceIds.remove(inv.getId());
                             if (invoiceTable != null
                                     && invoiceTable.getSelectionModel().getSelectedItem() == inv) {
-                                Platform.runLater(() -> invoiceTable.getSelectionModel().clearSelection());
+                                Platform.runLater(() -> {
+                                    invoiceTable.getSelectionModel().clearSelection();
+                                    updateButtonStates(null);
+                                });
+                            } else {
+                                Platform.runLater(() -> {
+                                    updateButtonStates(invoiceTable.getSelectionModel().getSelectedItem());
+                                });
                             }
                         }
                     });
@@ -526,7 +538,7 @@ public class ViewInvoicesController {
                             return;
                         }
                         nameLabel.setText(inv.getClientName() != null ? inv.getClientName() : "—");
-                        int cid = inv.getClientId();
+                        String cid = inv.getClientId();
                         emailLabel.setText(clientIdToEmail.getOrDefault(cid, "—"));
                         setAlignment(Pos.CENTER_LEFT);
                         setGraphic(box);
@@ -815,6 +827,10 @@ public class ViewInvoicesController {
 
     private void updateButtonStates(InvoiceMaster inv) {
         applyToolbarFromState(InvoiceActionState.from(inv), inv);
+        if (btnDownload != null) {
+            boolean hasSelection = (inv != null || !selectedInvoiceIds.isEmpty());
+            btnDownload.setDisable(!hasSelection);
+        }
     }
 
     /**
@@ -904,7 +920,7 @@ public class ViewInvoicesController {
                 ? (Stage) invoiceTable.getScene().getWindow() : null;
         try {
             InvoiceBuilderService builder = new InvoiceBuilderService();
-            Invoice full = builder.buildInvoiceFromMasterForPdfExport(inv.getId());
+            Invoice full = builder.buildInvoiceFromMasterForPdfExport(inv.getUuid());
             File created = new PdfInvoiceService().generateSingleInvoicePDF(full);
             if (stage != null) {
                 Toast.showSmall(stage, "Invoice PDF saved");
@@ -914,6 +930,63 @@ public class ViewInvoicesController {
             new Alert(Alert.AlertType.ERROR, "Could not save PDF: " + ex.getMessage(), ButtonType.OK)
                     .showAndWait();
         }
+    }
+
+    @FXML
+    private void handleDownloadAction(ActionEvent event) {
+        List<InvoiceMaster> toDownload = new ArrayList<>();
+        if (!selectedInvoiceIds.isEmpty()) {
+            for (InvoiceMaster inv : fullInvoiceResults) {
+                if (selectedInvoiceIds.contains(inv.getId())) {
+                    toDownload.add(inv);
+                }
+            }
+        } else {
+            InvoiceMaster highlighted = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
+            if (highlighted != null) {
+                toDownload.add(highlighted);
+            }
+        }
+
+        if (toDownload.isEmpty()) {
+            toast("No invoice selected to download ❌");
+            return;
+        }
+
+        Stage stage = invoiceTable != null && invoiceTable.getScene() != null
+                && invoiceTable.getScene().getWindow() instanceof Stage
+                ? (Stage) invoiceTable.getScene().getWindow() : null;
+
+        new Thread(() -> {
+            int successCount = 0;
+            int total = toDownload.size();
+            for (InvoiceMaster inv : toDownload) {
+                try {
+                    InvoiceBuilderService builder = new InvoiceBuilderService();
+                    Invoice full = builder.buildInvoiceFromMasterForPdfExport(inv.getUuid());
+                    new PdfInvoiceService().generateSingleInvoicePDF(full);
+                    successCount++;
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+            final int finalSuccess = successCount;
+            Platform.runLater(() -> {
+                if (stage != null) {
+                    if (finalSuccess == total) {
+                        if (total == 1) {
+                            utils.Toast.show(stage, "✅ Invoice PDF downloaded successfully!");
+                        } else {
+                            utils.Toast.show(stage, "✅ " + total + " invoices downloaded successfully!");
+                        }
+                    } else if (finalSuccess > 0) {
+                        utils.Toast.show(stage, "⚠️ Downloaded " + finalSuccess + " of " + total + " invoices.");
+                    } else {
+                        utils.Toast.show(stage, "❌ Failed to download invoices.");
+                    }
+                }
+            });
+        }, "bulk-pdf-download").start();
     }
 
     /**
@@ -1019,9 +1092,9 @@ public class ViewInvoicesController {
 
     /** Invoked from live filter listeners and programmatic refresh; not an FXML button. */
     private void handleSearch(ActionEvent event) {
-        final Integer clientId = (clientComboBox != null && clientComboBox.getValue() != null
-                && clientComboBox.getValue().getId() != ALL_CLIENTS_ID)
-                ? clientComboBox.getValue().getId()
+        final String clientId = (clientComboBox != null && clientComboBox.getValue() != null
+                && !ALL_CLIENTS_UUID.equals(clientComboBox.getValue().getClientUuid()))
+                ? clientComboBox.getValue().getClientUuid()
                 : null;
         String status = (statusComboBox != null) ? statusComboBox.getValue() : "All";
         LocalDate start = (startDatePicker != null) ? startDatePicker.getValue() : null;
@@ -1029,7 +1102,7 @@ public class ViewInvoicesController {
         String invoiceNo = (invoiceSearchField != null) ? invoiceSearchField.getText() : "";
 
         InvoiceMaster selected = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
-        final Integer selectedId = (selected != null) ? selected.getId() : null;
+        final String selectedUuid = (selected != null) ? selected.getUuid() : null;
 
         new Thread(() -> {
             try {
@@ -1042,14 +1115,14 @@ public class ViewInvoicesController {
                     repaginate();
 
                     if (invoiceTable != null) {
-                        if (selectedId != null) {
+                        if (selectedUuid != null) {
                             int idx = -1;
                             for (int i = 0; i < fullInvoiceResults.size(); i++) {
-                                if (fullInvoiceResults.get(i).getId() == selectedId) {
+                                if (fullInvoiceResults.get(i).getUuid().equals(selectedUuid)) {
                                     idx = i;
-                                break;
+                                    break;
+                                }
                             }
-                        }
                             if (idx >= 0) {
                                 currentPageIndex = idx / pageSize;
                                 repaginate();
@@ -1193,7 +1266,7 @@ public class ViewInvoicesController {
             return null;
         }
         for (InvoiceMaster inv : fullInvoiceResults) {
-            if (inv.getId() == sel.getId()) {
+            if (inv.getUuid().equals(sel.getUuid())) {
                 return sel;
             }
         }
@@ -1394,7 +1467,7 @@ public class ViewInvoicesController {
         InvoiceMaster inv = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
         if (inv != null) {
             try {
-                String newNo = invoiceMasterService.finalizeInvoice(inv.getId());
+                String newNo = invoiceMasterService.finalizeInvoice(inv.getUuid());
                 handleSearch(null); // Refresh table
                 Toast.show((Stage) invoiceTable.getScene().getWindow(), "✅ Invoice Finalized as: " + newNo);
             } catch (Exception ex) {
@@ -1409,7 +1482,7 @@ public class ViewInvoicesController {
     private void updateStatus(String status) {
         InvoiceMaster inv = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
         if (inv != null) {
-            invoiceMasterService.updateInvoiceStatus(inv.getId(), status);
+            invoiceMasterService.updateInvoiceStatus(inv.getUuid(), status);
             handleSearch(null);
         }
     }
@@ -1469,7 +1542,7 @@ public class ViewInvoicesController {
         }
         List<Client> all = clientService.getAllClients();
         Client sentinel = new Client();
-        sentinel.setId(ALL_CLIENTS_ID);
+        sentinel.setClientUuid(ALL_CLIENTS_UUID);
         sentinel.businessNameProperty().set("All Clients");
         sentinel.clientNameProperty().set("");
         ObservableList<Client> items = FXCollections.observableArrayList(sentinel);
@@ -1483,7 +1556,7 @@ public class ViewInvoicesController {
         clientIdToEmail.clear();
         for (Client c : clientService.getAllClients()) {
             String em = c.getEmail();
-            clientIdToEmail.put(c.getId(), (em != null && !em.isBlank()) ? em.trim() : "—");
+            clientIdToEmail.put(c.getClientUuid(), (em != null && !em.isBlank()) ? em.trim() : "—");
         }
     }
     private void loadStatuses() {
@@ -1613,13 +1686,13 @@ public class ViewInvoicesController {
         try (java.sql.Connection con = utils.DBConnection.getConnection();
              java.sql.PreparedStatement ps = con.prepareStatement(
                      "SELECT id, type, note_no, amount, reason, date FROM invoice_adjustments "
-                             + "WHERE invoice_id = ? ORDER BY id DESC")) {
-            ps.setInt(1, inv.getId());
+                             + "WHERE invoice_uuid = ? ORDER BY id DESC")) {
+            ps.setString(1, inv.getUuid());
             try (java.sql.ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     InvoiceAdjustment a = new InvoiceAdjustment();
                     a.setId(rs.getInt("id"));
-                    a.setInvoiceId(inv.getId());
+                    a.setInvoiceUuid(inv.getUuid());
                     a.setType(rs.getString("type"));
                     a.setNoteNo(rs.getString("note_no"));
                     a.setAmount(rs.getDouble("amount"));
@@ -1688,9 +1761,9 @@ public class ViewInvoicesController {
              java.sql.PreparedStatement ps = con.prepareStatement(
                      "SELECT p.type, p.payment_date, pa.allocated_amount "
                              + "FROM payment_allocations pa "
-                             + "JOIN payments p ON pa.payment_id = p.id "
-                             + "WHERE pa.invoice_id = ? ORDER BY p.payment_date DESC")) {
-            ps.setInt(1, inv.getId());
+                             + "JOIN payments p ON pa.payment_uuid = p.uuid "
+                             + "WHERE pa.invoice_uuid = ? ORDER BY p.payment_date DESC")) {
+            ps.setString(1, inv.getUuid());
             try (java.sql.ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     PaymentRecord r = new PaymentRecord();

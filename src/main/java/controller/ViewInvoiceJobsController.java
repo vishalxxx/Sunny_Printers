@@ -56,7 +56,7 @@ public class ViewInvoiceJobsController {
     @FXML
     private TableColumn<Job, Boolean> selectCol;
     @FXML
-    private TableColumn<Job, Integer> idCol;
+    private TableColumn<Job, Job> idCol;
     @FXML
     private TableColumn<Job, String> jobNoCol;
     @FXML
@@ -91,10 +91,10 @@ public class ViewInvoiceJobsController {
     public static boolean viewOnlyMode = false;
     private boolean isViewOnly = false;
     private InvoiceMaster currentEditInvoice;
-    private final java.util.Set<Integer> jobsToCancel = new java.util.HashSet<>();
-    private final java.util.Map<Integer, String> jobsToUpdateStatus = new java.util.HashMap<>();
-    private final java.util.Set<Integer> jobsToUnlink = new java.util.HashSet<>();
-    private final java.util.Set<Integer> jobsToAdd = new java.util.HashSet<>();
+    private final java.util.Set<String> jobsToCancel = new java.util.HashSet<>();
+    private final java.util.Map<String, String> jobsToUpdateStatus = new java.util.HashMap<>();
+    private final java.util.Set<String> jobsToUnlink = new java.util.HashSet<>();
+    private final java.util.Set<String> jobsToAdd = new java.util.HashSet<>();
     private boolean isUpdating = false;
     @FXML
     private Button btnAddJob;
@@ -186,14 +186,15 @@ public class ViewInvoiceJobsController {
         selectCol.setEditable(true);
         jobsTable.setEditable(true);
 
-        idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
-        idCol.setCellFactory(col -> new TableCell<>() {
+        idCol.setCellValueFactory(cd -> new javafx.beans.property.ReadOnlyObjectWrapper<>(cd.getValue()));
+        idCol.setCellFactory(col -> new TableCell<Job, Job>() {
             @Override
-            protected void updateItem(Integer item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) setText(null);
-                else {
-                    setText(String.valueOf(item));
+            protected void updateItem(Job job, boolean empty) {
+                super.updateItem(job, empty);
+                if (empty || job == null) {
+                    setText(null);
+                } else {
+                    setText(String.valueOf(getIndex() + 1));
                     setStyle("-fx-text-fill: #A7A69D; -fx-font-weight: 500;");
                 }
             }
@@ -389,7 +390,7 @@ public class ViewInvoiceJobsController {
         boolean isCancelled = status.startsWith("cancel");
         // boolean isCompleted = status.equals("completed");
         // boolean isInProgress = status.equals("in progress");
-        boolean isInvoiced = job.getInvoiceId() != null && job.getInvoiceId() > 0;
+        boolean isInvoiced = job.getInvoiceUuid() != null && !job.getInvoiceUuid().isBlank();
 
         boolean isInvoiceDrafted = status.equals("invoice drafted") || status.equals("invoice_drafted");
 
@@ -497,7 +498,7 @@ public class ViewInvoiceJobsController {
     private void handleJobCancelAction() {
         Job selected = jobsTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
-            jobsToCancel.add(selected.getId());
+            jobsToCancel.add(selected.getUuid());
             selected.setStatus("Cancelled");
             tableData.remove(selected);
             resultLabel.setText("Showing " + tableData.size() + " jobs");
@@ -534,7 +535,7 @@ public class ViewInvoiceJobsController {
             alert.getDialogPane().setStyle("-fx-font-family: 'Segoe UI';");
             alert.showAndWait().ifPresent(type -> {
                 if (type == ButtonType.YES) {
-                    jobsToUnlink.add(selected.getId());
+                    jobsToUnlink.add(selected.getUuid());
                     tableData.remove(selected);
                     resultLabel.setText("Showing " + tableData.size() + " jobs");
                     toast("Job unlinked locally. Click Save to persist.");
@@ -591,7 +592,7 @@ public class ViewInvoiceJobsController {
         dialog.showAndWait().ifPresent(selected -> {
             for (Job j : selected) {
                 if (!tableData.contains(j)) {
-                    jobsToAdd.add(j.getId());
+                    jobsToAdd.add(j.getUuid());
                     j.setStatus("Invoiced"); // Local update for UI
                     tableData.add(j);
                 }
@@ -616,12 +617,12 @@ public class ViewInvoiceJobsController {
 
     private void showJobDetails(Job job) {
         service.JobItemService jis = new service.JobItemService();
-        java.util.List<model.JobItem> items = jis.getJobItems(job.getId());
+        java.util.List<model.JobItem> items = jis.getJobItems(job.getUuid());
 
         String clientName = "Unknown Client";
         if (job.getClientId() != null) {
             for (Client c : clientComboBox.getItems()) {
-                if (c.getId() == job.getClientId()) {
+                if (job.getClientId() != null && job.getClientId().equals(c.getClientUuid())) {
                     clientName = c.getBusinessName();
                     break;
                 }
@@ -780,7 +781,7 @@ public class ViewInvoiceJobsController {
                 isUpdating = true;
                 try {
                     clientComboBox.setValue(newV);
-                    List<InvoiceMaster> invoices = invoiceMasterService.getInvoicesByClientId(newV.getId());
+                    List<InvoiceMaster> invoices = invoiceMasterService.getInvoicesByClientId(newV.getClientUuid());
                     if (invoices.isEmpty()) {
                         txtInvoiceNo.getItems().clear();
                         txtInvoiceNo.setPromptText("No invoices found");
@@ -851,7 +852,7 @@ public class ViewInvoiceJobsController {
         }
 
         invoiceComboBox.setDisable(false);
-        List<InvoiceMaster> invoices = invoiceMasterService.getInvoicesByClientId(client.getId());
+        List<InvoiceMaster> invoices = invoiceMasterService.getInvoicesByClientId(client.getClientUuid());
         if (invoices.isEmpty()) {
             invoiceComboBox.getItems().clear();
             invoiceComboBox.setPromptText("No invoices for this client");
@@ -917,18 +918,18 @@ public class ViewInvoiceJobsController {
 
         // Populate Client Name automatically
         Client matchingClient = clientComboBox.getItems().stream()
-                .filter(c -> c.getId() == inv.getClientId())
+                .filter(c -> inv.getClientId() != null && inv.getClientId().equals(c.getClientUuid()))
                 .findFirst().orElse(null);
 
         isUpdating = true;
         try {
             if (matchingClient != null) {
                 txtClientName.setValue(matchingClient);
-                List<InvoiceMaster> invoices = invoiceMasterService.getInvoicesByClientId(matchingClient.getId());
+                List<InvoiceMaster> invoices = invoiceMasterService.getInvoicesByClientId(matchingClient.getClientUuid());
                 txtInvoiceNo.getItems().setAll(invoices);
             } else if (clientComboBox.getValue() != null) {
                 txtClientName.setValue(clientComboBox.getValue());
-                List<InvoiceMaster> invoices = invoiceMasterService.getInvoicesByClientId(clientComboBox.getValue().getId());
+                List<InvoiceMaster> invoices = invoiceMasterService.getInvoicesByClientId(clientComboBox.getValue().getClientUuid());
                 txtInvoiceNo.getItems().setAll(invoices);
             }
 
@@ -1023,14 +1024,19 @@ public class ViewInvoiceJobsController {
         boolean hasStatusChanges = !jobsToUpdateStatus.isEmpty();
 
         if (dateChanged || jobsChanged || hasAddedJobs || hasStatusChanges) {
+            final String invoiceUuid = currentEditInvoice.getUuid();
+            if (invoiceUuid == null || invoiceUuid.isBlank()) {
+                toast("Error: invoice has no UUID — cannot save job links.");
+                return;
+            }
             try {
                 utils.AtomicDB.runVoid(con -> {
                     // 1. Update Date
                     if (dateChanged) {
                         try (java.sql.PreparedStatement ps = con
-                                .prepareStatement("UPDATE invoice_master SET invoice_date = ? WHERE id = ?")) {
+                                .prepareStatement("UPDATE invoice_master SET invoice_date = ? WHERE uuid = ?")) {
                             ps.setString(1, newDate.toString());
-                            ps.setInt(2, currentEditInvoice.getId());
+                            ps.setString(2, invoiceUuid);
                             ps.executeUpdate();
                         }
                     }
@@ -1038,10 +1044,10 @@ public class ViewInvoiceJobsController {
                     // 2. Status Updates
                     if (hasStatusChanges) {
                         try (java.sql.PreparedStatement psS = con
-                                .prepareStatement("UPDATE jobs SET status = ? WHERE id = ?")) {
-                            for (java.util.Map.Entry<Integer, String> entry : jobsToUpdateStatus.entrySet()) {
+                                .prepareStatement("UPDATE jobs SET status = ? WHERE uuid = ?")) {
+                            for (java.util.Map.Entry<String, String> entry : jobsToUpdateStatus.entrySet()) {
                                 psS.setString(1, entry.getValue());
-                                psS.setInt(2, entry.getKey());
+                                psS.setString(2, entry.getKey());
                                 psS.addBatch();
                             }
                             psS.executeBatch();
@@ -1051,10 +1057,12 @@ public class ViewInvoiceJobsController {
                     // 3. Cancel Jobs
                     if (!jobsToCancel.isEmpty()) {
                         try (java.sql.PreparedStatement psC = con.prepareStatement(
-                                "UPDATE jobs SET status = 'Cancelled', invoice_id = NULL WHERE id = ?")) {
-                            for (int jobId : jobsToCancel) {
-                                psC.setInt(1, jobId);
+                                "UPDATE jobs SET status = 'Cancelled', invoice_uuid = NULL, sync_status = 'PENDING', "
+                                        + "updated_at = datetime('now') WHERE uuid = ?")) {
+                            for (String jobUuid : jobsToCancel) {
+                                psC.setString(1, jobUuid);
                                 psC.addBatch();
+                                service.InvoiceMasterService.deleteInvoiceJobMapping(con, invoiceUuid, jobUuid);
                             }
                             psC.executeBatch();
                         }
@@ -1063,10 +1071,12 @@ public class ViewInvoiceJobsController {
                     // 4. Unlink Jobs
                     if (!jobsToUnlink.isEmpty()) {
                         try (java.sql.PreparedStatement psU = con.prepareStatement(
-                                "UPDATE jobs SET invoice_id = NULL, status = 'Completed' WHERE id = ?")) {
-                            for (int jobId : jobsToUnlink) {
-                                psU.setInt(1, jobId);
+                                "UPDATE jobs SET invoice_uuid = NULL, status = 'Completed', sync_status = 'PENDING', "
+                                        + "updated_at = datetime('now') WHERE uuid = ?")) {
+                            for (String jobUuid : jobsToUnlink) {
+                                psU.setString(1, jobUuid);
                                 psU.addBatch();
+                                service.InvoiceMasterService.deleteInvoiceJobMapping(con, invoiceUuid, jobUuid);
                             }
                             psU.executeBatch();
                         }
@@ -1076,36 +1086,36 @@ public class ViewInvoiceJobsController {
                     if (hasAddedJobs) {
                         boolean isRevision = invNo != null && invNo.contains("-R");
                         String statusToSet = isRevision ? "Invoiced" : "Invoice Drafted";
-                        try (java.sql.PreparedStatement psA = con
-                                .prepareStatement("UPDATE jobs SET invoice_id = ?, status = ? WHERE id = ?")) {
-                            for (int jobId : jobsToAdd) {
-                                psA.setInt(1, currentEditInvoice.getId());
-                                psA.setString(2, statusToSet);
-                                psA.setInt(3, jobId);
-                                psA.addBatch();
-                            }
-                            psA.executeBatch();
-                        }
+                        invoiceMasterService.linkJobUuidsToInvoice(con, invoiceUuid,
+                                new java.util.ArrayList<>(jobsToAdd), statusToSet);
                     }
 
                     // 6. Recalculate Totals
                     try (java.sql.PreparedStatement psT = con.prepareStatement(
-                            "UPDATE invoice_master SET " +
-                                    "amount = (SELECT COALESCE(SUM(ji.amount), 0) FROM job_items ji JOIN jobs j ON ji.job_id = j.id WHERE j.invoice_id = ?), "
-                                    +
-                                    "due_amount = (SELECT COALESCE(SUM(ji.amount), 0) FROM job_items ji JOIN jobs j ON ji.job_id = j.id WHERE j.invoice_id = ?) "
-                                    +
-                                    " + (SELECT COALESCE(SUM(amount), 0) FROM invoice_adjustments WHERE invoice_id = ? AND type = 'Debit Note') "
-                                    +
-                                    " - (SELECT COALESCE(SUM(amount), 0) FROM invoice_adjustments WHERE invoice_id = ? AND type = 'Credit Note') "
-                                    +
-                                    " - paid_amount " +
-                                    "WHERE id = ?")) {
-                        psT.setInt(1, currentEditInvoice.getId());
-                        psT.setInt(2, currentEditInvoice.getId());
-                        psT.setInt(3, currentEditInvoice.getId());
-                        psT.setInt(4, currentEditInvoice.getId());
-                        psT.setInt(5, currentEditInvoice.getId());
+                            """
+                                    UPDATE invoice_master SET
+                                      amount = (SELECT COALESCE(SUM(ji.amount), 0)
+                                                FROM job_items ji
+                                                JOIN jobs j ON ji.job_uuid = j.uuid
+                                                WHERE j.invoice_uuid = ?),
+                                      due_amount = (SELECT COALESCE(SUM(ji.amount), 0)
+                                                    FROM job_items ji
+                                                    JOIN jobs j ON ji.job_uuid = j.uuid
+                                                    WHERE j.invoice_uuid = ?)
+                                        + (SELECT COALESCE(SUM(amount), 0)
+                                           FROM invoice_adjustments
+                                           WHERE invoice_uuid = ? AND type = 'Debit Note')
+                                        - (SELECT COALESCE(SUM(amount), 0)
+                                           FROM invoice_adjustments
+                                           WHERE invoice_uuid = ? AND type = 'Credit Note')
+                                        - paid_amount
+                                    WHERE uuid = ?
+                                    """)) {
+                        psT.setString(1, invoiceUuid);
+                        psT.setString(2, invoiceUuid);
+                        psT.setString(3, invoiceUuid);
+                        psT.setString(4, invoiceUuid);
+                        psT.setString(5, invoiceUuid);
                         psT.executeUpdate();
                     }
 

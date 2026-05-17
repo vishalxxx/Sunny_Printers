@@ -26,6 +26,7 @@ import javafx.util.StringConverter;
 import model.Binding;
 import model.Client;
 import model.CtpPlate;
+import service.sync.UniversalSyncEngine;
 import model.Job;
 import model.Lamination;
 import model.Paper;
@@ -389,6 +390,7 @@ public class AddJobController implements utils.DirtySupport {
 			addJobBtn.setVisible(currentStep == 6);
 			addJobBtn.setManaged(currentStep == 6);
 		}
+		updateFormState();
 	}
 
 	/* ========================= CLIENT COMBO STATE ========================= */
@@ -434,8 +436,11 @@ public class AddJobController implements utils.DirtySupport {
 			addLaminationBtn.setDisable(!isLaminationValid());
 		}
 
-		// ✅ disable Add Job button until at least 1 item is added
-		addJobBtn.setDisable(!allowCards || itemCount == 0);
+		// Finish / Add Job: require client, job name, and at least one line item
+		if (addJobBtn != null) {
+			boolean hasItems = !pendingItems.isEmpty();
+			addJobBtn.setDisable(!allowCards || !hasItems);
+		}
 	}
 
 	/* ========================= JOB FLOW ========================= */
@@ -465,9 +470,9 @@ public class AddJobController implements utils.DirtySupport {
 	}
 
 	// This method might be deprecated or used only for actual resumes of saved but incomplete jobs
-	public void openForEdit(int jobId) {
+	public void openForEdit(String jobUuid) {
 		JobService jobService = new JobService();
-		Job job = jobService.getJobById(jobId);
+		Job job = jobService.getJobByUuid(jobUuid);
 		if (job == null) {
 			toast("❌ Job not found");
 			return;
@@ -480,7 +485,7 @@ public class AddJobController implements utils.DirtySupport {
 		jobDate.setValue(currentJob.getJobDate() != null ? currentJob.getJobDate() : java.time.LocalDate.now());
 		
 		// Load items into pending
-		pendingItems.setAll(new JobItemService().getJobItems(jobId));
+		pendingItems.setAll(new JobItemService().loadJobItemCards(jobUuid));
 
 		updateItemCount();
 		updateFormState();
@@ -491,9 +496,9 @@ public class AddJobController implements utils.DirtySupport {
 		if (currentJob == null || currentJob.getClientId() == null)
 			return;
 
-		Integer cid = currentJob.getClientId();
+		String cid = currentJob.getClientId();
 
-		Client match = masterClients.stream().filter(c -> c.getId() == cid).findFirst().orElse(null);
+		Client match = masterClients.stream().filter(c -> cid != null && cid.equals(c.getClientUuid())).findFirst().orElse(null);
 
 		if (match != null) {
 			clientCombo.getSelectionModel().select(match);
@@ -623,34 +628,25 @@ public class AddJobController implements utils.DirtySupport {
 			con = utils.DBConnection.getConnection();
 			con.setAutoCommit(false);
 
-			// 1. Create Job or Update existing
-			int jobId = currentJob.getId();
-			if (jobId == 0) {
-				// Create NEW job
-				currentJob.setClientId(selectedClient.getId());
+			String jobUuid = currentJob.getUuid();
+			if (!currentJob.hasUuid()) {
+				currentJob.setClientId(selectedClient.getClientUuid());
 				currentJob.setJobTitle(title);
 				currentJob.setJobDate(date);
 				currentJob.setStatus("Created");
-				
 				repository.JobRepository jobRepo = new repository.JobRepository();
-				currentJob = jobRepo.insertJob(con, currentJob); // Insert full job
-				jobId = currentJob.getId();
+				currentJob = jobRepo.insertJob(con, currentJob);
+				jobUuid = currentJob.getUuid();
 			} else {
-				// Update existing (unlikely in this screen now, but for safety)
-				js.updateJobDetails(jobId, title, date);
-				js.updateJobStatus(jobId, "Created");
+				js.updateJobDetails(jobUuid, title, date);
+				js.updateJobStatus(jobUuid, "Created");
 			}
 
-			// 2. Save Item details
 			JobItemService transJis = new JobItemService(con);
 			for (Object item : pendingItems) {
-				// If item is already a JobItem (from openForEdit), handle update?
-				// For now, simplify: if it doesn't have an ID, add it.
-				// In AddJobController, they are usually new.
-				transJis.addJobItem(con, jobId, item);
+				transJis.addJobItem(con, jobUuid, item);
 			}
 
-			// 3. Save Image
 			if (selectedImageFile != null) {
 				java.io.File dir = new java.io.File("Images");
 				if (!dir.exists()) dir.mkdirs();
@@ -658,21 +654,23 @@ public class AddJobController implements utils.DirtySupport {
 				String name = selectedImageFile.getName();
 				int dotIndex = name.lastIndexOf('.');
 				if (dotIndex > 0) ext = name.substring(dotIndex);
-				String newFileName = "job_" + jobId + "_" + System.currentTimeMillis() + ext;
+				String newFileName = "job_" + jobUuid.replace("-", "") + "_" + System.currentTimeMillis() + ext;
 				java.io.File targetFile = new java.io.File(dir, newFileName);
 				java.nio.file.Files.copy(selectedImageFile.toPath(), targetFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 				String relativePath = "Images/" + newFileName;
-				
-				String updateImgQuery = "UPDATE jobs SET image_path = ? WHERE id = ?";
+				String updateImgQuery = "UPDATE jobs SET image_path = ? WHERE uuid = ?";
 				try (java.sql.PreparedStatement ps = con.prepareStatement(updateImgQuery)) {
 					ps.setString(1, relativePath);
-					ps.setInt(2, jobId);
+					ps.setString(2, jobUuid);
 					ps.executeUpdate();
 				}
 				currentJob.setImagePath(relativePath);
 			}
 
 			con.commit();
+
+			UniversalSyncEngine.scheduleSyncAsync();
+
 			System.out.println("✅ Finalizing job: " + currentJob.getJobNo());
 			toast("✅ Job Added Successfully!");
 			
@@ -764,7 +762,7 @@ public class AddJobController implements utils.DirtySupport {
 
 		Supplier supplier = ctpSupplierCombo.getValue();
 		if (supplier != null) {
-			c.setSupplierId(supplier.getId());
+			c.setSupplierUuid(supplier.getUuid());
 			c.setSupplierName(supplier.getName());
 		}
 
@@ -1173,8 +1171,8 @@ public class AddJobController implements utils.DirtySupport {
 			clientLocked = true;
 			selectedClient = newClient;
 
-			if (currentJob != null && currentJob.getId() > 0) {
-				new JobService().assignClient(currentJob, newClient.getId());
+			if (currentJob != null && currentJob.hasUuid()) {
+				new JobService().assignClient(currentJob, newClient.getClientUuid());
 			}
 
 			updateFormState();
@@ -1241,6 +1239,15 @@ public class AddJobController implements utils.DirtySupport {
 
 		// ✅ Fill dropdowns
 		populateCombos();
+
+		pendingItems.addListener((javafx.collections.ListChangeListener<Object>) c -> {
+			updateItemCount();
+			updateFormState();
+		});
+
+		if (addJobBtn != null) {
+			addJobBtn.setDisable(true);
+		}
 
 		// ✅ initial lock state
 		updateFormState();

@@ -260,11 +260,11 @@ public class PaperTabController {
 		this.currentJob = job;
 		paperTable.getItems().clear();
 
-		List<JobItem> items = jobItemService.getJobItems(job.getId());
+		List<JobItem> items = jobItemService.getJobItems(job.getUuid());
 
 		for (JobItem ji : items) {
 			if ("PAPER".equalsIgnoreCase(ji.getType())) {
-				Paper p = paperRepo.findByJobItemId(ji.getId());
+				Paper p = paperRepo.findByJobItemUuid(ji.getUuid());
 				if (p != null) {
 				    p.captureOriginal();   // 🔥 THIS IS IMPORTANT
 

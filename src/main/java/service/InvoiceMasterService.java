@@ -4,9 +4,15 @@ import model.Invoice;
 import model.InvoiceMaster;
 import model.MasterDocumentSeries;
 import repository.InvoiceMasterRepository;
+import service.NumberSequenceAllocationService.AllocatedNumber;
+import service.sync.UniversalNumberAllocator;
+import service.sync.UniversalSyncEngine;
 import utils.AtomicDB;
+import utils.ClientIdentifiers;
+import utils.DocumentNumbering;
 
 import java.time.LocalDate;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,6 +28,7 @@ public class InvoiceMasterService {
 
     private final InvoiceMasterRepository repo = new InvoiceMasterRepository();
     private final SettingsService settingsService = new SettingsService();
+    private final UniversalNumberAllocator numberAllocator = UniversalNumberAllocator.getInstance();
 
     /*
      * =========================================================
@@ -33,17 +40,22 @@ public class InvoiceMasterService {
             String type,
             String filePath) {
 
-        return AtomicDB.run(con -> {
+        CreateOrGetResult result = AtomicDB.run(con -> {
 
             if (invoice.getJobs() == null || invoice.getJobs().isEmpty()) {
                 throw new RuntimeException("Cannot create an empty invoice. No jobs found.");
             }
 
-            // 🔥 Requirement: Always create a new draft, do not reuse old invoices based on period
-            String tempNo = settingsService.generateNextTempInvoiceNumber(con);
+            MasterDocumentSeries series = invoice.getMasterDocumentSeries();
+            if (series == null) {
+                series = MasterDocumentSeries.GST_INVOICE;
+            }
+            AllocatedNumber allocated = numberAllocator.allocateInvoiceNumber(con, series, invoice.getInvoiceDate());
+            String invoiceNo = allocated.value();
+            invoice.setInvoiceNo(invoiceNo);
 
             InvoiceMaster inv = new InvoiceMaster(
-                    tempNo,
+                    invoiceNo,
                     invoice.getClientId(),
                     invoice.getClientName(),
                     invoice.getInvoiceDate(),
@@ -54,27 +66,30 @@ public class InvoiceMasterService {
             inv.setFilePath(filePath);
             inv.setPeriodFrom(invoice.getFromDate());
             inv.setPeriodTo(invoice.getToDate());
-            inv.setDocumentSeries(invoice.getMasterDocumentSeries().name());
+            inv.setDocumentSeries(series.name());
+            inv.setSyncStatus("PENDING");
 
             repo.insert(con, inv);
             return new CreateOrGetResult(inv, true);
         });
+        UniversalSyncEngine.scheduleSyncAsync();
+        return result;
     }
 
     /**
      * Delete invoices created during a cancelled run (avoids duplicate
      * voided+active records).
      */
-    public void deleteInvoicesIfCancelled(List<Integer> invoiceIds) {
-        if (invoiceIds == null || invoiceIds.isEmpty())
+    public void deleteInvoicesIfCancelled(List<String> invoiceUuids) {
+        if (invoiceUuids == null || invoiceUuids.isEmpty())
             return;
         AtomicDB.runVoid(con -> {
-            for (int id : invoiceIds) {
+            for (String uuid : invoiceUuids) {
                 try {
-                    unlinkJobsFromInvoice(con, id);
-                    repo.deleteInvoice(con, id);
+                    unlinkJobsFromInvoice(con, uuid);
+                    repo.deleteInvoice(con, uuid);
                 } catch (Exception e) {
-                    System.err.println("Failed to delete invoice " + id + " on cancel: " + e.getMessage());
+                    System.err.println("Failed to delete invoice " + uuid + " on cancel: " + e.getMessage());
                 }
             }
         });
@@ -85,29 +100,37 @@ public class InvoiceMasterService {
             String type,
             String status,
             String filePath) {
-        InvoiceMaster inv = new InvoiceMaster(
-                invoice.getInvoiceNo(),
-                invoice.getClientId(),
-                invoice.getClientName(),
-                invoice.getInvoiceDate(),
-                invoice.getGrandTotal(),
-                type,
-                status);
-
-        inv.setFilePath(filePath);
-
-        inv.setDocumentSeries(invoice.getMasterDocumentSeries().name());
-
         if (invoice.getJobs() == null || invoice.getJobs().isEmpty()) {
             throw new RuntimeException("Cannot save an empty invoice.");
         }
 
         AtomicDB.runVoid(con -> {
+            MasterDocumentSeries series = invoice.getMasterDocumentSeries();
+            if (series == null) {
+                series = MasterDocumentSeries.GST_INVOICE;
+            }
+            AllocatedNumber allocated = numberAllocator.allocateInvoiceNumber(con, series, invoice.getInvoiceDate());
+            String invoiceNo = allocated.value();
+            invoice.setInvoiceNo(invoiceNo);
+
+            InvoiceMaster inv = new InvoiceMaster(
+                    invoiceNo,
+                    invoice.getClientId(),
+                    invoice.getClientName(),
+                    invoice.getInvoiceDate(),
+                    invoice.getGrandTotal(),
+                    type,
+                    status);
+
+            inv.setFilePath(filePath);
+            inv.setDocumentSeries(series.name());
+
             repo.insert(con, inv);
-            linkJobsToInvoice(con, inv.getId(), invoice);
-            
+            linkJobsToInvoice(con, inv.getUuid(), invoice);
+
             deleteEmptyInvoices(con);
         });
+        UniversalSyncEngine.scheduleSyncAsync();
     }
 
     public void registerDateRangeInvoice(
@@ -123,7 +146,7 @@ public class InvoiceMasterService {
 
             if (existing != null) {
                 // Link jobs to the draft created earlier
-                linkJobsToInvoice(con, existing.getId(), invoice);
+                linkJobsToInvoice(con, existing.getUuid(), invoice);
                 return;
             }
 
@@ -153,56 +176,130 @@ public class InvoiceMasterService {
             inv.setDocumentSeries(invoice.getMasterDocumentSeries().name());
 
             repo.insert(con, inv);
-            linkJobsToInvoice(con, inv.getId(), invoice);
+            linkJobsToInvoice(con, inv.getUuid(), invoice);
             deleteEmptyInvoices(con);
         });
     }
 
-    private void linkJobsToInvoice(java.sql.Connection con, int invoiceId, Invoice invoice) {
+    private void linkJobsToInvoice(java.sql.Connection con, String invoiceUuid, Invoice invoice) {
         if (invoice == null || invoice.getJobs() == null || invoice.getJobs().isEmpty())
             return;
 
-        List<Integer> jobIds = invoice.getJobs().stream()
-                .map(model.InvoiceJob::getJobId)
+        List<String> jobUuids = invoice.getJobs().stream()
+                .map(model.InvoiceJob::getJobUuid)
+                .filter(u -> u != null && !u.isBlank())
                 .toList();
 
-        if (jobIds.isEmpty())
+        if (jobUuids.isEmpty()) {
+            if (invoice.getJobs() != null && !invoice.getJobs().isEmpty()) {
+                throw new RuntimeException("Cannot link invoice: job lines are missing job UUIDs.");
+            }
             return;
+        }
 
-        String placeholders = jobIds.stream().map(i -> "?").collect(java.util.stream.Collectors.joining(","));
-        String updateJobsSql = "UPDATE jobs SET invoice_id = ?, status = 'Invoice Drafted' WHERE id IN (" + placeholders + ")";
-        String insertMappingSql = "INSERT OR IGNORE INTO invoice_job_mapping (invoice_id, job_id) VALUES (?, ?)";
+        linkJobUuidsToInvoice(con, invoiceUuid, jobUuids, "Invoice Drafted");
+    }
 
-        try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql);
-             java.sql.PreparedStatement psMap = con.prepareStatement(insertMappingSql)) {
-            
-            // 1. Update Jobs
-            psUpdate.setInt(1, invoiceId);
-            int idx = 2;
-            for (int jobId : jobIds) {
-                psUpdate.setInt(idx++, jobId);
+    /**
+     * Sets {@code jobs.invoice_uuid} and ensures {@code invoice_job_mapping} rows exist.
+     */
+    public void linkJobUuidsToInvoice(java.sql.Connection con, String invoiceUuid, List<String> jobUuids,
+            String jobStatus) {
+        if (invoiceUuid == null || invoiceUuid.isBlank() || jobUuids == null || jobUuids.isEmpty()) {
+            return;
+        }
+        String status = jobStatus != null && !jobStatus.isBlank() ? jobStatus.trim() : "Invoice Drafted";
+        String placeholders = jobUuids.stream().map(i -> "?").collect(java.util.stream.Collectors.joining(","));
+        String updateJobsSql = "UPDATE jobs SET invoice_uuid = ?, status = ?, sync_status = 'PENDING', "
+                + "sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now') WHERE uuid IN ("
+                + placeholders + ")";
+        try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql)) {
+            psUpdate.setString(1, invoiceUuid);
+            psUpdate.setString(2, status);
+            int idx = 3;
+            for (String jobUuid : jobUuids) {
+                psUpdate.setString(idx++, jobUuid);
             }
             psUpdate.executeUpdate();
 
-            // 2. Insert Mappings
-            for (int jobId : jobIds) {
-                psMap.setInt(1, invoiceId);
-                psMap.setInt(2, jobId);
-                psMap.addBatch();
+            for (String jobUuid : jobUuids) {
+                insertInvoiceJobMapping(con, invoiceUuid, jobUuid);
             }
-            psMap.executeBatch();
-
         } catch (Exception e) {
-            System.err.println("Failed to link jobs to invoice: " + e.getMessage());
+            throw new RuntimeException("Failed to link jobs to invoice: " + e.getMessage(), e);
         }
     }
 
-    public void deleteEmptyInvoices(java.sql.Connection con) {
+    /**
+     * Junction row for invoice ↔ job (requires uuid PK for SQLite + Supabase sync).
+     */
+    public static void insertInvoiceJobMapping(java.sql.Connection con, String invoiceUuid, String jobUuid)
+            throws SQLException {
+        if (invoiceUuid == null || invoiceUuid.isBlank() || jobUuid == null || jobUuid.isBlank()) {
+            return;
+        }
         String sql = """
-            DELETE FROM invoice_master 
-            WHERE status = 'DRAFT' 
+                INSERT INTO invoice_job_mapping (
+                  uuid, invoice_uuid, job_uuid, sync_status, sync_version, is_deleted, is_active, created_at, updated_at
+                ) VALUES (?, ?, ?, 'PENDING', 1, 0, 1, datetime('now'), datetime('now'))
+                ON CONFLICT(invoice_uuid, job_uuid) DO UPDATE SET
+                  sync_status = 'PENDING',
+                  sync_version = COALESCE(invoice_job_mapping.sync_version, 1) + 1,
+                  updated_at = datetime('now')
+                """;
+        try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, ClientIdentifiers.newUuidV7String());
+            ps.setString(2, invoiceUuid.trim());
+            ps.setString(3, jobUuid.trim());
+            ps.executeUpdate();
+        }
+    }
+
+    /** Remove one job from an invoice mapping (local + marks job for re-sync). */
+    public static void deleteInvoiceJobMapping(java.sql.Connection con, String invoiceUuid, String jobUuid)
+            throws SQLException {
+        if (jobUuid == null || jobUuid.isBlank()) {
+            return;
+        }
+        try (java.sql.PreparedStatement ps = con.prepareStatement(
+                "DELETE FROM invoice_job_mapping WHERE job_uuid = ?"
+                        + (invoiceUuid != null && !invoiceUuid.isBlank() ? " AND invoice_uuid = ?" : ""))) {
+            ps.setString(1, jobUuid.trim());
+            if (invoiceUuid != null && !invoiceUuid.isBlank()) {
+                ps.setString(2, invoiceUuid.trim());
+            }
+            ps.executeUpdate();
+        }
+    }
+
+    private static String resolveInvoiceUuid(java.sql.Connection con, int invoiceId) {
+        try (java.sql.PreparedStatement ps = con.prepareStatement(
+                "SELECT uuid FROM invoice_master WHERE id = ?")) {
+            ps.setInt(1, invoiceId);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("uuid");
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to resolve invoice uuid: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public void deleteEmptyInvoices(java.sql.Connection con) {
+        // Keep drafts that still have jobs linked even when mapping insert failed earlier.
+        String sql = """
+            DELETE FROM invoice_master
+            WHERE status = 'DRAFT'
               AND invoice_no LIKE 'TEMP-%'
-              AND id NOT IN (SELECT DISTINCT invoice_id FROM invoice_job_mapping)
+              AND uuid NOT IN (
+                SELECT invoice_uuid FROM invoice_job_mapping
+                WHERE invoice_uuid IS NOT NULL AND TRIM(invoice_uuid) <> ''
+                UNION
+                SELECT invoice_uuid FROM jobs
+                WHERE invoice_uuid IS NOT NULL AND TRIM(invoice_uuid) <> ''
+              )
         """;
         try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
             ps.executeUpdate();
@@ -211,16 +308,19 @@ public class InvoiceMasterService {
         }
     }
 
-    private void unlinkJobsFromInvoice(java.sql.Connection con, int invoiceId) {
-        String updateJobsSql = "UPDATE jobs SET invoice_id = NULL, status = 'Completed' WHERE invoice_id = ?";
-        String deleteMappingSql = "DELETE FROM invoice_job_mapping WHERE invoice_id = ?";
+    private void unlinkJobsFromInvoice(java.sql.Connection con, String invoiceUuid) {
+        if (invoiceUuid == null || invoiceUuid.isBlank()) {
+            return;
+        }
+        String updateJobsSql = "UPDATE jobs SET invoice_uuid = NULL, status = 'Completed' WHERE invoice_uuid = ?";
+        String deleteMappingSql = "DELETE FROM invoice_job_mapping WHERE invoice_uuid = ?";
         try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql);
              java.sql.PreparedStatement psDelMap = con.prepareStatement(deleteMappingSql)) {
-            
-            psUpdate.setInt(1, invoiceId);
+
+            psUpdate.setString(1, invoiceUuid);
             psUpdate.executeUpdate();
-            
-            psDelMap.setInt(1, invoiceId);
+
+            psDelMap.setString(1, invoiceUuid);
             psDelMap.executeUpdate();
             
             // 🔥 Requirement: if temporary invoice is empty, delete it automatically
@@ -231,11 +331,13 @@ public class InvoiceMasterService {
         }
     }
 
-    private void releaseJobsKeepHistory(java.sql.Connection con, int invoiceId) {
-        // Releases jobs for reuse but keeps the 'invoice_job_mapping' for history
-        String updateJobsSql = "UPDATE jobs SET invoice_id = NULL, status = 'Completed' WHERE invoice_id = ?";
+    private void releaseJobsKeepHistory(java.sql.Connection con, String invoiceUuid) {
+        if (invoiceUuid == null || invoiceUuid.isBlank()) {
+            return;
+        }
+        String updateJobsSql = "UPDATE jobs SET invoice_uuid = NULL, status = 'Completed' WHERE invoice_uuid = ?";
         try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql)) {
-            psUpdate.setInt(1, invoiceId);
+            psUpdate.setString(1, invoiceUuid);
             psUpdate.executeUpdate();
         } catch (Exception e) {
             System.err.println("Failed to release jobs for history: " + e.getMessage());
@@ -247,8 +349,8 @@ public class InvoiceMasterService {
      * MARK SENT
      * =========================================================
      */
-    public void markSent(int invoiceId) {
-        AtomicDB.runVoid(con -> repo.updatePayment(con, invoiceId, 0, 0, "SENT", LocalDate.now()));
+    public void markSent(String invoiceUuid) {
+        AtomicDB.runVoid(con -> repo.updatePayment(con, invoiceUuid, 0, 0, "SENT", LocalDate.now()));
     }
 
     /*
@@ -256,15 +358,12 @@ public class InvoiceMasterService {
      * REGISTER PAYMENT / PARTIAL / FULL
      * =========================================================
      */
-    public void registerPayment(int invoiceId, double amount, double totalDue) {
-
+    public void registerPayment(String invoiceUuid, double amount, double totalDue) {
         AtomicDB.runVoid(con -> {
-
             String status = amount >= totalDue ? "PAID" : "PARTIAL_PAID";
-
             repo.updatePayment(
                     con,
-                    invoiceId,
+                    invoiceUuid,
                     amount,
                     totalDue - amount,
                     status,
@@ -295,6 +394,15 @@ public class InvoiceMasterService {
                     continue;
                 }
 
+                // Find the master created earlier in this session (by invoice_no)
+                InvoiceMaster existing = repo.findByInvoiceNo(con, invoice.getInvoiceNo());
+
+                if (existing != null) {
+                    // Link jobs to the draft created earlier
+                    linkJobsToInvoice(con, existing.getUuid(), invoice);
+                    continue;
+                }
+
                 // 🔥 create NEW invoice master entry
                 InvoiceMaster inv = new InvoiceMaster(
                         invoice.getInvoiceNo(),
@@ -311,7 +419,7 @@ public class InvoiceMasterService {
                 inv.setDocumentSeries(invoice.getMasterDocumentSeries().name());
 
                 repo.insert(con, inv);
-                linkJobsToInvoice(con, inv.getId(), invoice);
+                linkJobsToInvoice(con, inv.getUuid(), invoice);
             }
             deleteEmptyInvoices(con);
         });
@@ -322,11 +430,10 @@ public class InvoiceMasterService {
      * VOID INVOICE
      * =========================================================
      */
-    public void voidInvoice(int invoiceId, String reason) {
-
+    public void voidInvoice(String invoiceUuid, String reason) {
         AtomicDB.runVoid(con -> {
-            repo.voidInvoice(con, invoiceId, reason, LocalDate.now());
-            unlinkJobsFromInvoice(con, invoiceId);
+            repo.voidInvoice(con, invoiceUuid, reason, LocalDate.now());
+            unlinkJobsFromInvoice(con, invoiceUuid);
         });
     }
 
@@ -340,8 +447,14 @@ public class InvoiceMasterService {
         return AtomicDB.run(con -> repo.findRecent(con, limit));
     }
 
-    public InvoiceMaster getInvoiceById(int invoiceId) {
-        return AtomicDB.run(con -> repo.findById(con, invoiceId));
+    public InvoiceMaster getInvoiceById(String invoiceUuid) {
+        return AtomicDB.run(con -> {
+            try {
+                return repo.findByUuid(con, invoiceUuid);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     public InvoiceMaster getInvoiceByInvoiceNo(String invoiceNo) {
@@ -362,16 +475,16 @@ public class InvoiceMasterService {
      * UPDATE INDIVIDUAL STATUSES
      * =========================================================
      */
-    public void updateInvoiceStatus(int invoiceId, String newStatus) {
+    public void updateInvoiceStatus(String invoiceUuid, String newStatus) {
         AtomicDB.runVoid(con -> {
-            InvoiceMaster inv = repo.findById(con, invoiceId);
+            InvoiceMaster inv = repo.findByUuid(con, invoiceUuid);
             if (inv != null) {
                 // 🔥 Requirement: if temporary (DRAFT/TEMP) cancelled, remove it from DB
                 if ("CANCELLED".equalsIgnoreCase(newStatus)) {
                     String invNo = inv.getInvoiceNo();
                     if ("DRAFT".equals(inv.getStatus()) || (invNo != null && invNo.startsWith("TEMP-"))) {
-                        unlinkJobsFromInvoice(con, invoiceId);
-                        repo.deleteInvoice(con, invoiceId);
+                        unlinkJobsFromInvoice(con, inv.getUuid());
+                        repo.deleteInvoice(con, inv.getUuid());
                         return; // Done
                     }
                 }
@@ -382,69 +495,85 @@ public class InvoiceMasterService {
                     inv.setPaymentStatus("Void");
                     inv.setVoid(false); // Stay visible in table
                     // 🔥 Requirement: Keep history but release jobs
-                    releaseJobsKeepHistory(con, invoiceId);
+                    releaseJobsKeepHistory(con, inv.getUuid());
                 } else if ("VOID".equalsIgnoreCase(newStatus)) {
                     inv.setPaymentStatus("VOID");
                     inv.setVoid(true);
                     inv.setVoidReason("User updated status to VOID");
                     inv.setVoidDate(LocalDate.now());
                     
-                    repo.updatePayment(con, invoiceId, inv.getPaidAmount(), inv.getDueAmount(), "VOID", LocalDate.now());
-                    unlinkJobsFromInvoice(con, invoiceId);
+                    repo.updatePayment(con, inv.getUuid(), inv.getPaidAmount(), inv.getDueAmount(), "VOID", LocalDate.now());
+                    unlinkJobsFromInvoice(con, inv.getUuid());
                 }
                 repo.update(con, inv);
             }
         });
     }
 
-    public String finalizeInvoice(int invoiceId) {
-        return AtomicDB.run(con -> {
-            InvoiceMaster inv = repo.findById(con, invoiceId);
-            if (inv == null) throw new RuntimeException("Invoice not found: " + invoiceId);
-            if (!"DRAFT".equals(inv.getStatus())) throw new RuntimeException("Only DRAFT invoices can be finalized");
+    public String finalizeInvoice(String invoiceUuid) {
+        String finalNo = AtomicDB.run(con -> {
+            InvoiceMaster inv = repo.findByUuid(con, invoiceUuid);
+            if (inv == null) {
+                throw new RuntimeException("Invoice not found: " + invoiceUuid);
+            }
+            if (!"DRAFT".equals(inv.getStatus())) {
+                throw new RuntimeException("Only DRAFT invoices can be finalized");
+            }
 
             String currentNo = inv.getInvoiceNo();
-            String finalNo;
+            String resolvedNo;
 
-            // 🔥 Requirement: Revised invoices (-R1, -R2...) keep their number
             if (currentNo != null && currentNo.contains("-R")) {
-                finalNo = currentNo;
+                resolvedNo = currentNo;
             } else {
-                // 1. Generate permanent number for TEMP or original DRAFTs
-                finalNo = settingsService.generateNextInvoiceNumber(con, inv.getInvoiceDate(),
-                        inv.resolveDocumentSeries());
+                MasterDocumentSeries series = inv.resolveDocumentSeries();
+                var permanent = numberAllocator.tryAllocatePermanentInvoice(con, series, inv.getInvoiceDate());
+                if (permanent.isPresent()) {
+                    resolvedNo = permanent.get().value();
+                } else {
+                    if (currentNo != null && DocumentNumbering.isTemporaryNumber(currentNo)) {
+                        resolvedNo = currentNo;
+                    } else {
+                        AllocatedNumber fallback = numberAllocator.allocateInvoiceNumber(con, series, inv.getInvoiceDate());
+                        resolvedNo = fallback.value();
+                    }
+                }
             }
-            
-            // 2. Update Invoice Master
-            inv.setInvoiceNo(finalNo);
+
+            inv.setInvoiceNo(resolvedNo);
             inv.setStatus("FINAL");
+            inv.setSyncStatus("PENDING");
             repo.update(con, inv);
 
-            // 3. Update Jobs Status
-            updateJobsStatusByInvoice(con, invoiceId, "Invoiced");
-            
-            return finalNo;
+            updateJobsStatusByInvoice(con, invoiceUuid, "Invoiced");
+
+            return resolvedNo;
         });
+        UniversalSyncEngine.scheduleSyncAsync();
+        return finalNo;
     }
 
-    private void updateJobsStatusByInvoice(java.sql.Connection con, int invoiceId, String status) {
-        String sql = "UPDATE jobs SET status = ? WHERE invoice_id = ?";
+    private void updateJobsStatusByInvoice(java.sql.Connection con, String invoiceUuid, String status) {
+        if (invoiceUuid == null || invoiceUuid.isBlank()) {
+            return;
+        }
+        String sql = "UPDATE jobs SET status = ? WHERE invoice_uuid = ?";
         try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, status);
-            ps.setInt(2, invoiceId);
+            ps.setString(2, invoiceUuid);
             ps.executeUpdate();
         } catch (Exception e) {
-            System.err.println("Failed to update jobs status for invoice " + invoiceId + ": " + e.getMessage());
+            System.err.println("Failed to update jobs status for invoice " + invoiceUuid + ": " + e.getMessage());
         }
     }
 
-    public void updateInvoicePaymentStatus(int invoiceId, String newPaymentStatus) {
+    public void updateInvoicePaymentStatus(String invoiceUuid, String newPaymentStatus) {
         AtomicDB.runVoid(con -> {
             // Updating just payment_status without affecting other amounts
-            String sql = "UPDATE invoice_master SET payment_status = ? WHERE id = ?";
+            String sql = "UPDATE invoice_master SET payment_status = ? WHERE uuid = ?";
             try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
                 ps.setString(1, newPaymentStatus);
-                ps.setInt(2, invoiceId);
+                ps.setString(2, invoiceUuid);
                 ps.executeUpdate();
             }
         });
@@ -455,17 +584,17 @@ public class InvoiceMasterService {
      * GET INVOICES BY CLIENT
      * =========================================================
      */
-    public List<InvoiceMaster> getInvoicesByClientId(int clientId) {
+    public List<InvoiceMaster> getInvoicesByClientId(String clientId) {
         return AtomicDB.run(con -> repo.findByClientId(con, clientId));
     }
 
     public InvoiceMaster reviseInvoice(InvoiceMaster old) {
         return AtomicDB.run(con -> {
             // 1. Calculate new invoice number
-            // If old is INV-100 and has parentId=50, we should count revisions of 50.
-            // If old is the original (parentId=null), we count revisions of old.id.
-            int rootId = (old.getParentInvoiceId() != null) ? old.getParentInvoiceId() : old.getId();
-            int revCount = repo.countRevisions(con, rootId);
+            // If old is INV-100 and has parentInvoiceUuid=50, we should count revisions of 50.
+            // If old is the original (parentInvoiceUuid=null), we count revisions of old.uuid.
+            String rootUuid = (old.getParentInvoiceUuid() != null) ? old.getParentInvoiceUuid() : old.getUuid();
+            int revCount = repo.countRevisions(con, rootUuid);
 
             String originalNo = old.getInvoiceNo();
             if (originalNo.contains("-R")) {
@@ -486,16 +615,15 @@ public class InvoiceMasterService {
 
             newInv.setStatus("DRAFT");
             newInv.setPaymentStatus("UNPAID");
-            newInv.setPaidAmount(0);
             newInv.setDueAmount(old.getAmount());
-            newInv.setParentInvoiceId(rootId);
+            newInv.setParentInvoiceUuid(rootUuid);
             newInv.setDocumentSeries(old.getDocumentSeries());
 
             // 2. Mark OLD as REVISED in DB first to clear unique constraint for the new DRAFT
             // 🔥 Requirement: Revised status turning payment status to CLOSED and Dues/Amount to 0
-            String clearQuery = "UPDATE invoice_master SET status = 'REVISED', payment_status = 'CLOSED', due_amount = 0, amount = 0 WHERE id = ?";
+            String clearQuery = "UPDATE invoice_master SET status = 'REVISED', payment_status = 'CLOSED', due_amount = 0, amount = 0 WHERE uuid = ?";
             try (java.sql.PreparedStatement ps = con.prepareStatement(clearQuery)) {
-                ps.setInt(1, old.getId());
+                ps.setString(1, old.getUuid());
                 ps.executeUpdate();
                 
                 // Sync Memory
@@ -509,23 +637,28 @@ public class InvoiceMasterService {
             repo.insert(con, newInv);
 
             // 4. Update OLD with proper link
-            old.setReplacedByInvoiceId(newInv.getId());
+            old.setReplacedByInvoiceUuid(newInv.getUuid());
             repo.update(con, old);
 
             // 5. Clone Mappings from OLD to NEW in invoice_job_mapping for history
-            String cloneMappingSql = "INSERT OR IGNORE INTO invoice_job_mapping (invoice_id, job_id) SELECT ?, job_id FROM invoice_job_mapping WHERE invoice_id = ?";
-            try (java.sql.PreparedStatement ps = con.prepareStatement(cloneMappingSql)) {
-                ps.setInt(1, newInv.getId());
-                ps.setInt(2, old.getId());
-                ps.executeUpdate();
-            }
-
-            // 6. Move JOBS pointer from OLD to NEW (active assignment)
-            String moveJobsSql = "UPDATE jobs SET invoice_id = ? WHERE invoice_id = ?";
-            try (java.sql.PreparedStatement ps = con.prepareStatement(moveJobsSql)) {
-                ps.setInt(1, newInv.getId());
-                ps.setInt(2, old.getId());
-                ps.executeUpdate();
+            String oldUuid = old.getUuid();
+            String newUuid = newInv.getUuid();
+            if (oldUuid != null && newUuid != null) {
+                try (java.sql.PreparedStatement ps = con.prepareStatement(
+                        "SELECT job_uuid FROM invoice_job_mapping WHERE invoice_uuid = ?")) {
+                    ps.setString(1, oldUuid);
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                            insertInvoiceJobMapping(con, newUuid, rs.getString("job_uuid"));
+                        }
+                    }
+                }
+                String moveJobsSql = "UPDATE jobs SET invoice_uuid = ? WHERE invoice_uuid = ?";
+                try (java.sql.PreparedStatement ps = con.prepareStatement(moveJobsSql)) {
+                    ps.setString(1, newUuid);
+                    ps.setString(2, oldUuid);
+                    ps.executeUpdate();
+                }
             }
 
             return newInv;
@@ -537,7 +670,7 @@ public class InvoiceMasterService {
      * UPDATE FILTERED INVOICES (FOR VIEW INVOICES SCREEN)
      * =========================================================
      */
-    public List<InvoiceMaster> getFilteredInvoices(Integer clientId, String status, LocalDate start, LocalDate end, String invoiceNo) {
+    public List<InvoiceMaster> getFilteredInvoices(String clientId, String status, LocalDate start, LocalDate end, String invoiceNo) {
         return AtomicDB.run(con -> repo.findFiltered(con, clientId, status, start, end, invoiceNo));
     }
 }

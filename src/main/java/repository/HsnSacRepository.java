@@ -14,7 +14,7 @@ public class HsnSacRepository {
         String sql = """
                 SELECT hsn_sac, gst_rate, unit_default
                 FROM hsn_sac_master
-                WHERE is_active = 1
+                WHERE is_deleted = 0
                   AND item_type = ?
                   AND (
                         keyword IS NULL
@@ -51,7 +51,7 @@ public class HsnSacRepository {
         String sql = """
                 SELECT hsn_sac, gst_rate, unit_default
                 FROM hsn_sac_master
-                WHERE is_active = 1
+                WHERE is_deleted = 0
                   AND item_type = ?
                 ORDER BY hsn_sac
                 """;

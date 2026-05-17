@@ -158,9 +158,9 @@ public class LaminationTabController {
 
         int count = 0; double total = 0;
 
-        for (JobItem ji : jobItemService.getJobItems(job.getId())) {
+        for (JobItem ji : jobItemService.getJobItems(job.getUuid())) {
             if ("LAMINATION".equalsIgnoreCase(ji.getType())) {
-                Lamination l = repo.findByJobItemId(ji.getId());
+                Lamination l = repo.findByJobItemUuid(ji.getUuid());
                 if (l != null) {
                     l.captureOriginal();
                     laminationTable.getItems().add(l);

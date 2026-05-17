@@ -30,9 +30,11 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Insets;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import model.Client;
 import repository.ClientRepository;
+import utils.ClientDeleteHelper;
 
 public class ViewClientsController implements Initializable {
 
@@ -263,7 +265,7 @@ public class ViewClientsController implements Initializable {
             boolean matchesSearch = keyword.isBlank()
                     || (biz != null && biz.toLowerCase().contains(keyword))
                     || (name != null && name.toLowerCase().contains(keyword))
-                    || String.valueOf(client.getId()).contains(keyword);
+                    || client.getClientUuid().contains(keyword);
 
             boolean matchesInsight = insight == null
                     || "All Insights".equals(insight)
@@ -315,7 +317,7 @@ public class ViewClientsController implements Initializable {
                 case "Most Active":
                     return Integer.compare(c2.getActivityScore(), c1.getActivityScore());
                 default:
-                    return Integer.compare(c1.getId(), c2.getId());
+                    return c1.getBusinessName().compareToIgnoreCase(c2.getBusinessName());
             }
         });
     }
@@ -323,48 +325,46 @@ public class ViewClientsController implements Initializable {
     private void calculateAnalytics() {
         try (java.sql.Connection con = utils.DBConnection.getConnection()) {
             for (Client c : masterList) {
-                int clientId = c.getId();
+                String clientUuid = c.getClientUuid();
                 
                 // 1. LTV Logic: Sum of all invoices (Paid + Unpaid)
                 double ltv = 0;
-                String sqlLtv = "SELECT SUM(amount) FROM invoice_master WHERE client_id = ? AND is_void = 0";
+                String sqlLtv = "SELECT SUM(amount) FROM invoice_master WHERE client_uuid = ? AND is_void = 0";
                 try (java.sql.PreparedStatement ps = con.prepareStatement(sqlLtv)) {
-                    ps.setInt(1, clientId);
+                    ps.setString(1, clientUuid);
                     java.sql.ResultSet rs = ps.executeQuery();
                     if (rs.next()) ltv = rs.getDouble(1);
                 }
                 c.setLtv(ltv);
                 
                 // 2. Balance Logic: Total outstanding - Payments
-                // (Using repo logic for unallocated balance if applicable, or simple aggregation)
-                double totalInvoiced = ltv;
                 double totalPaid = 0;
-                String sqlPaid = "SELECT SUM(amount) FROM payments WHERE client_id = ?";
+                String sqlPaid = "SELECT SUM(amount) FROM payments WHERE client_uuid = ?";
                 try (java.sql.PreparedStatement ps = con.prepareStatement(sqlPaid)) {
-                    ps.setInt(1, clientId);
+                    ps.setString(1, clientUuid);
                     java.sql.ResultSet rs = ps.executeQuery();
                     if (rs.next()) totalPaid = rs.getDouble(1);
                 }
                 
                 // Adjust for CN/DN
                 double adjustments = 0;
-                String sqlAdj = "SELECT SUM(CASE WHEN type='Debit Note' THEN amount ELSE -amount END) FROM invoice_adjustments WHERE invoice_id IN (SELECT id FROM invoice_master WHERE client_id = ?)";
+                String sqlAdj = "SELECT SUM(CASE WHEN type='Debit Note' THEN amount ELSE -amount END) FROM invoice_adjustments WHERE invoice_uuid IN (SELECT uuid FROM invoice_master WHERE client_uuid = ?)";
                 try (java.sql.PreparedStatement ps = con.prepareStatement(sqlAdj)) {
-                    ps.setInt(1, clientId);
+                    ps.setString(1, clientUuid);
                     java.sql.ResultSet rs = ps.executeQuery();
                     if (rs.next()) adjustments = rs.getDouble(1);
                 }
                 
-                double bal = totalInvoiced + adjustments - totalPaid;
+                double bal = ltv + adjustments - totalPaid;
                 c.setBalance(bal);
                 
                 // 3. Activity Score (Simulated: count in last 30 days)
                 int activity = 0;
-                String sqlAct = "SELECT (SELECT COUNT(*) FROM invoice_master WHERE client_id = ? AND invoice_date > date('now','-30 days')) + " +
-                                "(SELECT COUNT(*) FROM payments WHERE client_id = ? AND payment_date > date('now','-30 days'))";
+                String sqlAct = "SELECT (SELECT COUNT(*) FROM invoice_master WHERE client_uuid = ? AND invoice_date > date('now','-30 days')) + " +
+                                "(SELECT COUNT(*) FROM payments WHERE client_uuid = ? AND payment_date > date('now','-30 days'))";
                 try (java.sql.PreparedStatement ps = con.prepareStatement(sqlAct)) {
-                    ps.setInt(1, clientId);
-                    ps.setInt(2, clientId);
+                    ps.setString(1, clientUuid);
+                    ps.setString(2, clientUuid);
                     java.sql.ResultSet rs = ps.executeQuery();
                     if (rs.next()) activity = rs.getInt(1);
                 }
@@ -515,7 +515,8 @@ public class ViewClientsController implements Initializable {
         private final VBox activityContainer = new VBox(2, new Label("ACTIVITY"), activityBox);
         
         private final Button btnProfile = new Button("View Profile");
-        
+        private final Button btnDelete = new Button("Delete");
+
         private final Random rand = new Random();
 
         public ClientCardCell() {
@@ -566,10 +567,16 @@ public class ViewClientsController implements Initializable {
                 }
             });
 
+            btnDelete.getStyleClass().add("view-clients-delete-btn");
+            btnDelete.setOnAction(e -> handleDeleteClientFromCell());
+
+            HBox actionButtons = new HBox(8, btnProfile, btnDelete);
+            actionButtons.setAlignment(Pos.CENTER_RIGHT);
+
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);
 
-            root.getChildren().addAll(iconBox, nameBox, spacer, statusBox, ltvBox, balanceBox, insightBox, activityContainer, btnProfile);
+            root.getChildren().addAll(iconBox, nameBox, spacer, statusBox, ltvBox, balanceBox, insightBox, activityContainer, actionButtons);
         }
 
         @Override
@@ -643,7 +650,7 @@ public class ViewClientsController implements Initializable {
                 
                 // 5. Activity Sparkline
                 activityBox.getChildren().clear();
-                rand.setSeed(client.getId());
+                rand.setSeed(client.getClientUuid().hashCode());
                 int score = client.getActivityScore();
                 
                 if (score == 0) { // Inactive
@@ -668,7 +675,23 @@ public class ViewClientsController implements Initializable {
                 setGraphic(root);
             }
         }
+
+        private void handleDeleteClientFromCell() {
+            Client client = getItem();
+            ViewClientsController.this.confirmAndDeleteClient(client);
+        }
     }
 
 	// (legacy) openEditClient removed — navigation happens via MainController now.
+
+	private void confirmAndDeleteClient(Client client) {
+		Window owner = clientListView != null && clientListView.getScene() != null
+				? clientListView.getScene().getWindow()
+				: null;
+		if (ClientDeleteHelper.confirmAndDelete(owner, client, repo)) {
+			masterList.remove(client);
+			updatePagination();
+			updateMetrics();
+		}
+	}
 }

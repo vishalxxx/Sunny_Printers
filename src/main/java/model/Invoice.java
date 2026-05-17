@@ -16,12 +16,12 @@ public class Invoice {
 	private String companyContact;
 	private String email;
 	private String clientName;
-	private int clientId;
+	private String clientId;
 	private String invoiceType; // JOB_SPECIFIC / DATE_RANGE / MONTHLY_BULK
 	private String status; // SENT / DRAFT / PAID
 
 	/** When non-null, this row is a standalone payment in mini-ledgers (client profile). */
-	private Integer standalonePaymentId;
+	private String standalonePaymentUuid;
 
 	/** Which master numbering sequence to use when the invoice is finalized (GST vs Proforma). */
 	private MasterDocumentSeries masterDocumentSeries = MasterDocumentSeries.GST_INVOICE;
@@ -58,12 +58,21 @@ public class Invoice {
 		this.status = status;
 	}
 
-	public Integer getStandalonePaymentId() {
-		return standalonePaymentId;
+	public String getStandalonePaymentUuid() {
+		return standalonePaymentUuid;
+	}
+	
+	public void setStandalonePaymentUuid(String standalonePaymentUuid) {
+		this.standalonePaymentUuid = standalonePaymentUuid;
 	}
 
-	public void setStandalonePaymentId(Integer standalonePaymentId) {
-		this.standalonePaymentId = standalonePaymentId;
+	/** Legacy alias. */
+	public String getStandalonePaymentId() {
+		return standalonePaymentUuid;
+	}
+
+	public void setStandalonePaymentId(String standalonePaymentUuid) {
+		this.standalonePaymentUuid = standalonePaymentUuid;
 	}
 
 	public MasterDocumentSeries getMasterDocumentSeries() {
@@ -75,11 +84,11 @@ public class Invoice {
 				: MasterDocumentSeries.GST_INVOICE;
 	}
 
-	public int getClientId() {
+	public String getClientId() {
 		return clientId;
 	}
 
-	public void setClientId(int clientId) {
+	public void setClientId(String clientId) {
 		this.clientId = clientId;
 	}
 

@@ -30,6 +30,9 @@
                 <Button fx:id="btnSend" text="Send" onAction="#handleSendAction" styleClass="vi-btn-premium, vi-btn-send">
                     <graphic><Region styleClass="vi-icon-send"/></graphic>
                 </Button>
+                <Button fx:id="btnDownload" text="Download" onAction="#handleDownloadAction" styleClass="vi-btn-premium, vi-btn-download">
+                    <graphic><Region styleClass="vi-icon-download"/></graphic>
+                </Button>
                 <Button fx:id="btnRevised" text="Revised" onAction="#handleRevisedAction" styleClass="vi-btn-premium, vi-btn-revised">
                     <graphic><Region styleClass="vi-icon-revised"/></graphic>
                 </Button>

@@ -395,8 +395,8 @@ public class PdfInvoiceService {
     /**
      * Payment receipt PDF: payment header, payment_details rows, invoice allocations.
      */
-    public void writePaymentReceiptPdf(int paymentId, File destFile) throws Exception {
-        if (destFile == null || paymentId <= 0) {
+    public void writePaymentReceiptPdf(String paymentUuid, File destFile) throws Exception {
+        if (destFile == null || paymentUuid == null || paymentUuid.isBlank()) {
             throw new IllegalArgumentException("Invalid payment or destination file.");
         }
         File parent = destFile.getParentFile();
@@ -413,12 +413,12 @@ public class PdfInvoiceService {
         try (Connection con = DBConnection.getConnection()) {
             String sql = "SELECT p.payment_date, p.type, p.method, p.amount, "
                     + "c.business_name, c.client_name FROM payments p "
-                    + "LEFT JOIN clients c ON c.id = p.client_id WHERE p.id = ?";
+                    + "LEFT JOIN clients c ON c.uuid = p.client_uuid WHERE p.uuid = ?";
             try (PreparedStatement ps = con.prepareStatement(sql)) {
-                ps.setInt(1, paymentId);
+                ps.setString(1, paymentUuid);
                 ResultSet rs = ps.executeQuery();
                 if (!rs.next()) {
-                    throw new IllegalArgumentException("Payment not found: " + paymentId);
+                    throw new IllegalArgumentException("Payment not found: " + paymentUuid);
                 }
                 String dateRaw = rs.getString("payment_date");
                 LocalDate payDate = LocalDate.now();
@@ -429,10 +429,8 @@ public class PdfInvoiceService {
                     }
                 } catch (Exception ignored) {
                 }
-                SystemSettingsRepository settingsRepo = new SystemSettingsRepository();
-                SystemSettings sett = settingsRepo.load(con);
-                int pad = Math.max(1, sett.getInvoicePadding());
-                String receiptNo = DocumentNumbering.formatPaymentReceiptNo(payDate, paymentId, pad);
+                String receiptNo = new NumberSequenceAllocationService()
+                        .resolvePaymentReceiptNo(con, paymentUuid, payDate, true);
                 core.put("Receipt no", receiptNo);
                 core.put("Date", formatPaymentDateForReceiptPdf(dateRaw));
                 String bName = rs.getString("business_name");
@@ -446,8 +444,8 @@ public class PdfInvoiceService {
             }
 
             try (PreparedStatement ps = con.prepareStatement(
-                    "SELECT field_key, field_value FROM payment_details WHERE payment_id = ?")) {
-                ps.setInt(1, paymentId);
+                    "SELECT field_key, field_value FROM payment_details WHERE payment_uuid = ?")) {
+                ps.setString(1, paymentUuid);
                 ResultSet rs = ps.executeQuery();
                 while (rs.next()) {
                     String key = rs.getString("field_key").replace("_", " ").toUpperCase(Locale.ROOT);
@@ -457,8 +455,8 @@ public class PdfInvoiceService {
 
             try (PreparedStatement ps = con.prepareStatement(
                     "SELECT i.invoice_no, a.allocated_amount FROM payment_allocations a "
-                            + "JOIN invoice_master i ON a.invoice_id = i.id WHERE a.payment_id = ?")) {
-                ps.setInt(1, paymentId);
+                            + "JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = ?")) {
+                ps.setString(1, paymentUuid);
                 ResultSet rs = ps.executeQuery();
                 while (rs.next()) {
                     allocLines.add(new String[] {

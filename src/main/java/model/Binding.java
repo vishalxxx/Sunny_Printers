@@ -13,26 +13,34 @@ public class Binding implements Serializable {
     private String notes;
     private double amount;
 
-    private int jobItemId;
-    public int getId() {
-		return id;
+    private String syncStatus = "PENDING";
+    private int syncVersion = 1;
+    private int isDeletedSync = 0;
+    private int isActive = 1;
+    private String createdAt;
+    private String updatedAt;
+    private String syncedAt;
+    private String deletedAt;
+
+	private String uuid;
+	private String jobItemUuid;
+
+	public String getUuid() {
+		return uuid;
 	}
 
-	public void setId(int id) {
-		this.id = id;
+	public void setUuid(String uuid) {
+		this.uuid = uuid;
 	}
 
-	public Binding getOriginalSnapshot() {
-		return originalSnapshot;
+	public String getJobItemUuid() {
+		return jobItemUuid;
 	}
 
-	public void setOriginalSnapshot(Binding originalSnapshot) {
-		this.originalSnapshot = originalSnapshot;
+	public void setJobItemUuid(String jobItemUuid) {
+		this.jobItemUuid = jobItemUuid;
 	}
 
-	private int id;
-    
-    
     /* ================= UI FLAGS ================= */
 
     private transient boolean isNew;
@@ -49,12 +57,13 @@ public class Binding implements Serializable {
 
     public Binding copy() {
         Binding b = new Binding();
+        b.uuid = this.uuid;
+        b.jobItemUuid = this.jobItemUuid;
         b.process = this.process;
         b.qty = this.qty;
         b.rate = this.rate;
         b.notes = this.notes;
         b.amount = this.amount;
-        b.jobItemId = this.jobItemId;
         return b;
     }
 
@@ -118,8 +127,29 @@ public class Binding implements Serializable {
     public double getAmount() { return amount; }
     public void setAmount(double amount) { this.amount = amount; }
 
-    public int getJobItemId() { return jobItemId; }
-    public void setJobItemId(int jobItemId) { this.jobItemId = jobItemId; }
+    public String getSyncStatus() { return syncStatus; }
+    public void setSyncStatus(String syncStatus) { this.syncStatus = syncStatus; }
+
+    public int getSyncVersion() { return syncVersion; }
+    public void setSyncVersion(int syncVersion) { this.syncVersion = syncVersion; }
+
+    public int getIsDeletedSync() { return isDeletedSync; }
+    public void setIsDeletedSync(int isDeletedSync) { this.isDeletedSync = isDeletedSync; }
+
+    public int getIsActive() { return isActive; }
+    public void setIsActive(int isActive) { this.isActive = isActive; }
+
+    public String getCreatedAt() { return createdAt; }
+    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
+
+    public String getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getSyncedAt() { return syncedAt; }
+    public void setSyncedAt(String syncedAt) { this.syncedAt = syncedAt; }
+
+    public String getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(String deletedAt) { this.deletedAt = deletedAt; }
 
     @Override
     public String toString() {

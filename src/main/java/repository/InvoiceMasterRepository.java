@@ -8,12 +8,35 @@ import java.util.List;
 import java.util.Optional;
 import java.time.LocalDate;
 
+import service.sync.PendingSyncFilters;
+import utils.DBConnection;
 import utils.DocumentNumbering;
+import utils.InvoiceIdentifiers;
 
 public class InvoiceMasterRepository {
 
     public InvoiceMasterRepository() {
         // Initialization if needed
+    }
+
+    public List<InvoiceMaster> findPendingForSync() {
+        List<InvoiceMaster> list = new ArrayList<>();
+        String sql = """
+                SELECT * FROM invoice_master
+                WHERE %s AND %s
+                ORDER BY created_at ASC
+                """.formatted(PendingSyncFilters.NOT_DELETED, PendingSyncFilters.PENDING_STATUS);
+        try (Connection conn = DBConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                InvoiceMaster inv = mapInvoiceRowBase(rs);
+                list.add(inv);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 
     /*
@@ -25,63 +48,69 @@ public class InvoiceMasterRepository {
 
         String sql = """
                     INSERT INTO invoice_master (
-                        invoice_no, client_id, client_name,
+                        uuid, invoice_no, client_uuid, client_name,
                         invoice_date, period_from, period_to,
                         amount, paid_amount, due_amount, payment_status,
                         last_payment_date, type, status,
                         is_void, void_reason, void_date,
-                        replaced_by_invoice_id, parent_invoice_id, status_updated_by, file_path,
-                        document_series
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        replaced_by_invoice_uuid, parent_invoice_uuid, status_updated_by, file_path,
+                        document_series, sync_status, sync_version
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """;
 
-        try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            String uuid = inv.getUuid() != null && !inv.getUuid().isBlank()
+                    ? inv.getUuid()
+                    : InvoiceIdentifiers.newUuidString();
+            inv.setUuid(uuid);
 
             String invNo = DocumentNumbering.stripLeadingHash(inv.getInvoiceNo());
-            ps.setString(1, invNo);
             inv.setInvoiceNo(invNo);
-            ps.setInt(2, inv.getClientId());
-            ps.setString(3, inv.getClientName());
-            ps.setString(4, toIso(inv.getInvoiceDate())); // CHECK requires YYYY-MM-DD
+            if (inv.getSyncStatus() == null || inv.getSyncStatus().isBlank()) {
+                inv.setSyncStatus("PENDING");
+            }
 
-            ps.setString(5, toIso(inv.getPeriodFrom()));
-            ps.setString(6, toIso(inv.getPeriodTo()));
-
-            ps.setDouble(7, inv.getAmount());
-            ps.setDouble(8, inv.getPaidAmount());
-            ps.setDouble(9, inv.getDueAmount());
-            ps.setString(10, inv.getPaymentStatus());
-
-            ps.setString(11, toIso(inv.getLastPaymentDate()));
-
-            ps.setString(12, inv.getType());
-            ps.setString(13, inv.getStatus());
-
-            ps.setInt(14, inv.isVoid() ? 1 : 0);
-            ps.setString(15, inv.getVoidReason());
-            ps.setString(16, toIso(inv.getVoidDate()));
-
-            if (inv.getReplacedByInvoiceId() != null)
-                ps.setInt(17, inv.getReplacedByInvoiceId());
-            else
-                ps.setNull(17, Types.INTEGER);
-
-            if (inv.getParentInvoiceId() != null)
-                ps.setInt(18, inv.getParentInvoiceId());
-            else
-                ps.setNull(18, Types.INTEGER);
-
-            ps.setString(19, inv.getStatusUpdatedBy());
-            ps.setString(20, inv.getFilePath());
-            ps.setString(21, inv.getDocumentSeries());
+            ps.setString(1, uuid);
+            ps.setString(2, invNo);
+            ps.setString(3, inv.getClientUuid());
+            ps.setString(4, inv.getClientName());
+            ps.setString(5, toIso(inv.getInvoiceDate()));
+            ps.setString(6, toIso(inv.getPeriodFrom()));
+            ps.setString(7, toIso(inv.getPeriodTo()));
+            ps.setDouble(8, inv.getAmount());
+            ps.setDouble(9, inv.getPaidAmount());
+            ps.setDouble(10, inv.getDueAmount());
+            ps.setString(11, inv.getPaymentStatus());
+            ps.setString(12, toIso(inv.getLastPaymentDate()));
+            ps.setString(13, inv.getType());
+            ps.setString(14, inv.getStatus());
+            ps.setInt(15, inv.isVoid() ? 1 : 0);
+            ps.setString(16, inv.getVoidReason());
+            ps.setString(17, toIso(inv.getVoidDate()));
+            ps.setString(18, inv.getReplacedByInvoiceUuid());
+            ps.setString(19, inv.getParentInvoiceUuid());
+            ps.setString(20, inv.getStatusUpdatedBy());
+            ps.setString(21, inv.getFilePath());
+            ps.setString(22, inv.getDocumentSeries());
+            ps.setString(23, inv.getSyncStatus());
+            ps.setInt(24, inv.getSyncVersion());
 
             ps.executeUpdate();
+        }
+    }
 
-            try (ResultSet rs = ps.getGeneratedKeys()) {
-                if (rs.next()) {
-                    inv.setId(rs.getInt(1));
-                }
-            }
+    public void updateInvoiceNo(Connection con, String invoiceUuid, String newInvoiceNo) throws Exception {
+        if (invoiceUuid == null || invoiceUuid.isBlank() || newInvoiceNo == null || newInvoiceNo.isBlank()) {
+            return;
+        }
+        try (PreparedStatement ps = con.prepareStatement("""
+                UPDATE invoice_master SET invoice_no = ?, sync_status = 'PENDING',
+                sync_version = sync_version + 1, updated_at = datetime('now')
+                WHERE uuid = ?
+                """)) {
+            ps.setString(1, DocumentNumbering.stripLeadingHash(newInvoiceNo.trim()));
+            ps.setString(2, invoiceUuid.trim());
+            ps.executeUpdate();
         }
     }
 
@@ -94,7 +123,7 @@ public class InvoiceMasterRepository {
      */
     public Optional<InvoiceMaster> findActiveByClientPeriod(
             Connection con,
-            int clientId,
+            String clientId,
             LocalDate from,
             LocalDate to) throws Exception {
 
@@ -103,7 +132,7 @@ public class InvoiceMasterRepository {
 
         String sql = """
                     SELECT * FROM invoice_master
-                    WHERE client_id = ?
+                    WHERE client_uuid = ?
                       AND period_from = ?
                       AND period_to   = ?
                       AND is_void = 0
@@ -112,7 +141,7 @@ public class InvoiceMasterRepository {
                 """;
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, clientId);
+            ps.setString(1, clientId);
             ps.setString(2, toIso(from));
             ps.setString(3, toIso(to));
 
@@ -129,16 +158,21 @@ public class InvoiceMasterRepository {
      * SIMPLE FIND BY ID (used by payments)
      * =========================================================
      */
-    public InvoiceMaster findById(Connection con, int id) throws Exception {
-        String sql = "SELECT * FROM invoice_master WHERE id = ?";
+    public InvoiceMaster findByUuid(Connection con, String uuid) throws Exception {
+        String sql = "SELECT * FROM invoice_master WHERE uuid = ?";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, id);
+            ps.setString(1, uuid);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return mapRowPublic(rs);
                 }
             }
         }
+        return null;
+    }
+    
+    /** Legacy alias. */
+    public InvoiceMaster findById(Connection con, int id) throws Exception {
         return null;
     }
 
@@ -149,14 +183,14 @@ public class InvoiceMasterRepository {
      */
     public Optional<InvoiceMaster> findActiveByClientPeriodType(
             Connection con,
-            int clientId,
+            String clientId,
             LocalDate from,
             LocalDate to,
             String type) throws Exception {
 
         String sql = """
                     SELECT * FROM invoice_master
-                    WHERE client_id = ?
+                    WHERE client_uuid = ?
                       AND type = ?
                       AND is_void = 0
                       AND status IN ('DRAFT', 'FINAL')
@@ -167,7 +201,7 @@ public class InvoiceMasterRepository {
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
 
-            ps.setInt(1, clientId);
+            ps.setString(1, clientId);
             ps.setString(2, type);
 
             // Use ISO strings for CHECK constraint compatibility
@@ -189,7 +223,7 @@ public class InvoiceMasterRepository {
      * UPDATE PAYMENT (partial / full)
      * =========================================================
      */
-    public void updatePayment(Connection con, int invoiceId,
+    public void updatePayment(Connection con, String invoiceUuid,
             double paidAmount,
             double dueAmount,
             String paymentStatus,
@@ -198,8 +232,9 @@ public class InvoiceMasterRepository {
         String sql = """
                     UPDATE invoice_master
                     SET paid_amount = ?, due_amount = ?,
-                        payment_status = ?, last_payment_date = ?
-                    WHERE id = ?
+                        payment_status = ?, last_payment_date = ?,
+                        updated_at = datetime('now'), sync_status = 'PENDING'
+                    WHERE uuid = ?
                 """;
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -207,7 +242,7 @@ public class InvoiceMasterRepository {
             ps.setDouble(2, dueAmount);
             ps.setString(3, paymentStatus);
             ps.setString(4, toIso(lastPaymentDate));
-            ps.setInt(5, invoiceId);
+            ps.setString(5, invoiceUuid);
             ps.executeUpdate();
         }
     }
@@ -217,20 +252,23 @@ public class InvoiceMasterRepository {
      * DELETE INVOICE (used for cancel rollback - no duplicate records)
      * =========================================================
      */
-    public void deleteInvoice(Connection con, int invoiceId) throws Exception {
-        String sql = "DELETE FROM invoice_master WHERE id = ?";
+    public void deleteInvoice(Connection con, String invoiceUuid) throws Exception {
+        String sql = "DELETE FROM invoice_master WHERE uuid = ?";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, invoiceId);
+            ps.setString(1, invoiceUuid);
             ps.executeUpdate();
         }
     }
+    
+    /** Legacy alias. */
+    public void deleteInvoice(Connection con, int id) throws Exception {}
 
     /*
      * =========================================================
      * VOID INVOICE
      * =========================================================
      */
-    public void voidInvoice(Connection con, int invoiceId,
+    public void voidInvoice(Connection con, String invoiceUuid,
             String reason, LocalDate date) throws Exception {
 
         String sql = """
@@ -238,14 +276,16 @@ public class InvoiceMasterRepository {
                     SET is_void = 1,
                         void_reason = ?,
                         void_date = ?,
-                        payment_status = 'VOID'
-                    WHERE id = ?
+                        payment_status = 'VOID',
+                        updated_at = datetime('now'),
+                        sync_status = 'PENDING'
+                    WHERE uuid = ?
                 """;
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, reason);
             ps.setString(2, toIso(date));
-            ps.setInt(3, invoiceId);
+            ps.setString(3, invoiceUuid);
             ps.executeUpdate();
         }
     }
@@ -284,18 +324,18 @@ public class InvoiceMasterRepository {
      * FIND INVOICES BY CLIENT (ALL GENERATED)
      * =========================================================
      */
-    public List<InvoiceMaster> findByClientId(Connection con, int clientId) throws Exception {
+    public List<InvoiceMaster> findByClientId(Connection con, String clientId) throws Exception {
 
         String sql = """
                     SELECT * FROM invoice_master
-                    WHERE client_id = ? AND is_void = 0
-                    ORDER BY invoice_date DESC, id DESC
+                    WHERE client_uuid = ? AND is_void = 0
+                    ORDER BY invoice_date DESC, uuid DESC
                 """;
 
         List<InvoiceMaster> list = new ArrayList<>();
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, clientId);
+            ps.setString(1, clientId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     list.add(mapInvoiceRowBase(rs));
@@ -313,13 +353,13 @@ public class InvoiceMasterRepository {
      * FIND FILTERED INVOICES (FOR VIEW INVOICES SCREEN)
      * =========================================================
      */
-    public List<InvoiceMaster> findFiltered(Connection con, Integer clientId, String status, LocalDate start, LocalDate end, String invoiceNo) throws Exception {
+    public List<InvoiceMaster> findFiltered(Connection con, String clientId, String status, LocalDate start, LocalDate end, String invoiceNo) throws Exception {
         StringBuilder sql = new StringBuilder("SELECT * FROM invoice_master WHERE is_void = 0");
         List<Object> params = new ArrayList<>();
 
-        if (clientId != null && clientId > 0) {
-            sql.append(" AND client_id = ?");
-            params.add(clientId);
+        if (clientId != null && !clientId.isBlank()) {
+            sql.append(" AND client_uuid = ?");
+            params.add(clientId.trim());
         }
         if (status != null && !status.equalsIgnoreCase("All") && !status.trim().isEmpty()) {
             sql.append(" AND UPPER(payment_status) = ?");
@@ -341,7 +381,7 @@ public class InvoiceMasterRepository {
             params.add(toIso(end));
         }
 
-        sql.append(" ORDER BY invoice_date DESC, id DESC");
+        sql.append(" ORDER BY invoice_date DESC, uuid DESC");
 
         List<InvoiceMaster> list = new ArrayList<>();
 
@@ -389,9 +429,9 @@ public class InvoiceMasterRepository {
      */
     private InvoiceMaster mapInvoiceRowBase(ResultSet rs) throws Exception {
         InvoiceMaster inv = new InvoiceMaster();
-        inv.setId(rs.getInt("id"));
+        inv.setUuid(rs.getString("uuid"));
         inv.setInvoiceNo(DocumentNumbering.stripLeadingHash(rs.getString("invoice_no")));
-        inv.setClientId(rs.getInt("client_id"));
+        inv.setClientUuid(rs.getString("client_uuid"));
         inv.setClientName(rs.getString("client_name"));
         inv.setInvoiceDate(parseDate(rs.getString("invoice_date")));
         inv.setAmount(rs.getDouble("amount"));
@@ -404,15 +444,15 @@ public class InvoiceMasterRepository {
         inv.setPeriodFrom(parseDate(rs.getString("period_from")));
         inv.setPeriodTo(parseDate(rs.getString("period_to")));
 
-        int replacedId = rs.getInt("replaced_by_invoice_id");
-        if (!rs.wasNull()) {
-            inv.setReplacedByInvoiceId(replacedId);
-        }
-        int parentId = rs.getInt("parent_invoice_id");
-        if (!rs.wasNull()) {
-            inv.setParentInvoiceId(parentId);
-        }
+        inv.setReplacedByInvoiceUuid(rs.getString("replaced_by_invoice_uuid"));
+        inv.setParentInvoiceUuid(rs.getString("parent_invoice_uuid"));
+        
         inv.setFilePath(rs.getString("file_path"));
+        inv.setSyncStatus(rs.getString("sync_status"));
+        inv.setSyncVersion(rs.getInt("sync_version"));
+        inv.setCreatedAt(rs.getString("created_at"));
+        inv.setUpdatedAt(rs.getString("updated_at"));
+        
         return inv;
     }
 
@@ -432,9 +472,9 @@ public class InvoiceMasterRepository {
     }
 
     private void fetchAdjustmentSummaries(Connection con, InvoiceMaster inv) {
-        String sql = "SELECT type, SUM(amount), COUNT(*) FROM invoice_adjustments WHERE invoice_id = ? GROUP BY type";
+        String sql = "SELECT type, SUM(amount), COUNT(*) FROM invoice_adjustments WHERE invoice_uuid = ? GROUP BY type";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, inv.getId());
+            ps.setString(1, inv.getUuid());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     String type = rs.getString(1);
@@ -453,13 +493,13 @@ public class InvoiceMasterRepository {
 
         // Add refund summary
         String sqlRef = """
-            SELECT SUM(pa.allocated_amount), COUNT(pa.id) 
+            SELECT SUM(pa.allocated_amount), COUNT(pa.uuid) 
             FROM payment_allocations pa 
-            JOIN payments p ON pa.payment_id = p.id 
-            WHERE pa.invoice_id = ? AND p.type = 'Refund'
+            JOIN payments p ON pa.payment_uuid = p.uuid 
+            WHERE pa.invoice_uuid = ? AND p.type = 'Refund'
         """;
         try (PreparedStatement ps = con.prepareStatement(sqlRef)) {
-            ps.setInt(1, inv.getId());
+            ps.setString(1, inv.getUuid());
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     inv.setRefundAmount(rs.getDouble(1));
@@ -506,7 +546,7 @@ public class InvoiceMasterRepository {
                     UPDATE invoice_master
                     SET
                         invoice_no   = ?,
-                        client_id    = ?,
+                        client_uuid  = ?,
                         client_name  = ?,
                         invoice_date = ?,
                         amount       = ?,
@@ -518,21 +558,22 @@ public class InvoiceMasterRepository {
                         period_from  = ?,
                         period_to    = ?,
                         file_path    = ?,
-                        replaced_by_invoice_id = ?,
-                        parent_invoice_id = ?,
+                        replaced_by_invoice_uuid = ?,
+                        parent_invoice_uuid = ?,
                         is_void      = ?,
                         void_reason  = ?,
                         void_date    = ?,
-                        document_series = ?
-                    WHERE id = ?
+                        document_series = ?,
+                        updated_at   = datetime('now'),
+                        sync_status  = 'PENDING'
+                    WHERE uuid = ?
                 """;
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
-
             String invNo = DocumentNumbering.stripLeadingHash(inv.getInvoiceNo());
-            ps.setString(1, invNo);
             inv.setInvoiceNo(invNo);
-            ps.setInt(2, inv.getClientId());
+            ps.setString(1, invNo);
+            ps.setString(2, inv.getClientUuid());
             ps.setString(3, inv.getClientName());
             ps.setString(4, toIso(inv.getInvoiceDate()));
             ps.setDouble(5, inv.getAmount());
@@ -547,31 +588,24 @@ public class InvoiceMasterRepository {
 
             ps.setString(13, inv.getFilePath());
 
-            if (inv.getReplacedByInvoiceId() != null)
-                ps.setInt(14, inv.getReplacedByInvoiceId());
-            else
-                ps.setNull(14, Types.INTEGER);
-
-            if (inv.getParentInvoiceId() != null)
-                ps.setInt(15, inv.getParentInvoiceId());
-            else
-                ps.setNull(15, Types.INTEGER);
+            ps.setString(14, inv.getReplacedByInvoiceUuid());
+            ps.setString(15, inv.getParentInvoiceUuid());
 
             ps.setInt(16, inv.isVoid() ? 1 : 0);
             ps.setString(17, inv.getVoidReason());
             ps.setString(18, toIso(inv.getVoidDate()));
             ps.setString(19, inv.getDocumentSeries());
             
-            ps.setInt(20, inv.getId());
+            ps.setString(20, inv.getUuid());
 
             ps.executeUpdate();
         }
     }
 
-    public int countRevisions(Connection con, int parentId) throws Exception {
-        String sql = "SELECT COUNT(*) FROM invoice_master WHERE parent_invoice_id = ?";
+    public int countRevisions(Connection con, String parentUuid) throws Exception {
+        String sql = "SELECT COUNT(*) FROM invoice_master WHERE parent_invoice_uuid = ?";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, parentId);
+            ps.setString(1, parentUuid);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
             }
@@ -579,14 +613,14 @@ public class InvoiceMasterRepository {
         return 0;
     }
 
-    public double getClientUnallocatedBalance(Connection con, int clientId) throws Exception {
+    public double getClientUnallocatedBalance(Connection con, String clientId) throws Exception {
         double totalPayments = 0;
         double totalAllocated = 0;
 
         // 1. Sum all payments (Payments are +, Refunds are -)
-        String sqlPay = "SELECT SUM(amount) FROM payments WHERE client_id = ?";
+        String sqlPay = "SELECT SUM(amount) FROM payments WHERE client_uuid = ?";
         try (PreparedStatement ps = con.prepareStatement(sqlPay)) {
-            ps.setInt(1, clientId);
+            ps.setString(1, clientId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) totalPayments = rs.getDouble(1);
             }
@@ -596,11 +630,11 @@ public class InvoiceMasterRepository {
         String sqlAlloc = """
             SELECT SUM(pa.allocated_amount) 
             FROM payment_allocations pa
-            JOIN payments p ON pa.payment_id = p.id
-            WHERE p.client_id = ?
+            JOIN payments p ON pa.payment_uuid = p.uuid
+            WHERE p.client_uuid = ?
         """;
         try (PreparedStatement ps = con.prepareStatement(sqlAlloc)) {
-            ps.setInt(1, clientId);
+            ps.setString(1, clientId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) totalAllocated = rs.getDouble(1);
             }
@@ -617,7 +651,7 @@ public class InvoiceMasterRepository {
      */
     public java.util.Map<String, Integer> getInvoiceMonthlyCounts(Connection con, int monthsLimit) throws Exception {
         String sql = """
-                    SELECT strftime('%Y-%m', invoice_date) as month_val, COUNT(id) as inv_count
+                    SELECT strftime('%Y-%m', invoice_date) as month_val, COUNT(uuid) as inv_count
                     FROM invoice_master
                     WHERE is_void = 0 AND invoice_date IS NOT NULL
                     GROUP BY month_val

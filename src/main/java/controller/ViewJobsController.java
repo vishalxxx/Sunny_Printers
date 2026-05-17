@@ -67,7 +67,7 @@ public class ViewJobsController {
     private static final double JOB_DETAILS_ICON_GAP = 8;
 
     /** When set before opening View Jobs, client filter selects this client id once clients load. */
-    public static volatile Integer pendingFilterClientId;
+    public static volatile String pendingFilterClientUuid;
 
     private final ClientService clientService = new ClientService();
     private final JobService jobService = new JobService();
@@ -76,7 +76,7 @@ public class ViewJobsController {
     private final ObservableList<Job> masterJobs = FXCollections.observableArrayList();
 
     // ✅ clientId -> clientName map (for fast lookup)
-    private final Map<Integer, String> clientNameMap = new HashMap<>();
+    private final Map<String, String> clientNameMap = new HashMap<>();
 
     private final ExecutorService dataLoadExecutor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "view-jobs-data-loader");
@@ -345,7 +345,7 @@ public class ViewJobsController {
         if (selected.isEmpty()) return;
 
         for (Job job : selected) {
-            jobService.updateJobStatus(job.getId(), status);
+            jobService.updateJobStatus(job.getUuid(), status);
             job.setStatus(status);
             applyDefaultChildForNewMajor(job, status);
         }
@@ -359,7 +359,7 @@ public class ViewJobsController {
             toast("❌ Job has no client associated.");
             return;
         }
-        MainController.getInstance().loadInvoiceWithJob(job.getClientId(), job.getId());
+        MainController.getInstance().loadInvoiceWithJob(job.getClientId(), job.getUuid());
     }
 
     // =========================================================
@@ -419,7 +419,7 @@ public class ViewJobsController {
 
         clientNameMap.clear();
         for (Client c : clients) {
-            if (c != null) clientNameMap.put(c.getId(), c.getBusinessName());
+            if (c != null) clientNameMap.put(c.getClientUuid(), c.getBusinessName());
         }
         // Refresh visible rows that display client names.
         if (jobsTable != null) jobsTable.refresh();
@@ -427,12 +427,12 @@ public class ViewJobsController {
     }
 
     private void applyPendingClientFilter() {
-        Integer id = pendingFilterClientId;
-        if (id == null || clientComboBox == null || clientComboBox.getItems().isEmpty()) {
+        String uuid = pendingFilterClientUuid;
+        if (uuid == null || uuid.isBlank() || clientComboBox == null || clientComboBox.getItems().isEmpty()) {
             return;
         }
-        pendingFilterClientId = null;
-        autoSelectClient(id);
+        pendingFilterClientUuid = null;
+        autoSelectClient(uuid);
     }
 
     private static void useGraphicOnlyCell(TableCell<?, ?> cell) {
@@ -683,7 +683,7 @@ public class ViewJobsController {
                 if (invNo != null && !invNo.isEmpty() && !invNo.equals("-")) {
                     invLink.setText(invNo);
                     invLink.setDisable(false);
-                    invLink.setOnAction(e -> openInvoiceDetails(job.getInvoiceId()));
+                    invLink.setOnAction(e -> openInvoiceDetailsByUuid(job.getInvoiceUuid()));
                     invLink.getStyleClass().add("active-link");
                 } else {
                     invLink.setText("-");
@@ -832,7 +832,7 @@ public class ViewJobsController {
     }
 
     private void handleStartActionForJob(Job job) {
-        jobService.updateJobStatus(job.getId(), "In Progress");
+        jobService.updateJobStatus(job.getUuid(), "In Progress");
         job.setStatus("In Progress");
         applyDefaultChildForNewMajor(job, "In Progress");
         jobsTable.refresh();
@@ -840,7 +840,7 @@ public class ViewJobsController {
     }
 
     private void handleCompleteActionForJob(Job job) {
-        jobService.updateJobStatus(job.getId(), "Completed");
+        jobService.updateJobStatus(job.getUuid(), "Completed");
         job.setStatus("Completed");
         applyDefaultChildForNewMajor(job, "Completed");
         jobsTable.refresh();
@@ -848,7 +848,7 @@ public class ViewJobsController {
     }
 
     private void handleCancelActionForJob(Job job) {
-        jobService.updateJobStatus(job.getId(), "Cancelled");
+        jobService.updateJobStatus(job.getUuid(), "Cancelled");
         job.setStatus("Cancelled");
         applyDefaultChildForNewMajor(job, "Cancelled");
         jobsTable.refresh();
@@ -1001,7 +1001,7 @@ public class ViewJobsController {
             return;
         }
         String canon = JobWorkflow.canonicalChildLabel(major, childLabel);
-        jobService.updateJobChildStatus(job.getId(), canon);
+        jobService.updateJobChildStatus(job.getUuid(), canon);
         job.setChildStatus(canon);
         jobsTable.refresh();
     }
@@ -1012,13 +1012,13 @@ public class ViewJobsController {
         }
         JobWorkflow.Major m = JobWorkflow.majorFromJobStatus(newStatus);
         if (m == JobWorkflow.Major.CANCELLED) {
-            jobService.updateJobChildStatus(job.getId(), null);
+            jobService.updateJobChildStatus(job.getUuid(), null);
             job.setChildStatus(null);
             return;
         }
         String def = JobWorkflow.defaultChildForMajor(m);
         if (def != null && !def.isEmpty()) {
-            jobService.updateJobChildStatus(job.getId(), def);
+            jobService.updateJobChildStatus(job.getUuid(), def);
             job.setChildStatus(def);
         }
     }
@@ -1189,9 +1189,18 @@ public class ViewJobsController {
 
     private void showJobDetails(Job job) {
         if (job == null) return;
-        
+        if (job.hasUuid()) {
+            Job fresh = jobService.getJobByUuid(job.getUuid());
+            if (fresh != null) {
+                job = fresh;
+            }
+        }
+
         service.JobItemService jis = new service.JobItemService();
-        List<model.JobItem> items = jis.getJobItems(job.getId());
+        String jobUuid = job.getUuid();
+        List<model.JobItem> items = (jobUuid != null && !jobUuid.isBlank())
+                ? jis.getJobItems(jobUuid)
+                : List.of();
         String clientName = clientNameMap.getOrDefault(job.getClientId(), "Unknown Client");
         String formattedDate = job.getJobDate() != null ? java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy").format(job.getJobDate()) : "-";
 
@@ -1231,34 +1240,70 @@ public class ViewJobsController {
         
         header.getChildren().addAll(titleBox, spacer, closeBtn);
 
-        // Items Table
+        // Items table (do not use jobs-table-premium: its CSS hides text via graphic-only cells)
         TableView<model.JobItem> table = new TableView<>();
-        table.getStyleClass().add("jobs-table-premium");
+        table.getStyleClass().add("job-details-popup-table");
         table.setPrefHeight(250);
-        
+        table.setMinHeight(120);
+
+        TableColumn<model.JobItem, String> typeCol = new TableColumn<>("Type");
+        typeCol.setPrefWidth(100);
+        typeCol.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(
+                cd.getValue() != null && cd.getValue().getType() != null ? cd.getValue().getType() : ""));
+        typeCol.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String type, boolean empty) {
+                super.updateItem(type, empty);
+                setText(empty || type == null || type.isBlank() ? null : type);
+                setGraphic(null);
+            }
+        });
+
         TableColumn<model.JobItem, String> descCol = new TableColumn<>("Description");
-        descCol.setCellValueFactory(new PropertyValueFactory<>("description"));
-        descCol.setPrefWidth(350);
-        
-        TableColumn<model.JobItem, Double> amtCol = new TableColumn<>("Amount");
-        amtCol.setCellValueFactory(new PropertyValueFactory<>("amount"));
-        amtCol.setPrefWidth(120);
-        amtCol.setCellFactory(c -> new TableCell<>() {
-            @Override protected void updateItem(Double amt, boolean empty) {
-                super.updateItem(amt, empty);
-                if (empty || amt == null) {
+        descCol.setPrefWidth(280);
+        descCol.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(
+                cd.getValue() != null && cd.getValue().getDescription() != null ? cd.getValue().getDescription() : ""));
+        descCol.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String desc, boolean empty) {
+                super.updateItem(desc, empty);
+                setText(empty || desc == null || desc.isBlank() ? null : desc);
+                setGraphic(null);
+            }
+        });
+
+        TableColumn<model.JobItem, String> amtCol = new TableColumn<>("Amount");
+        amtCol.setPrefWidth(100);
+        amtCol.getStyleClass().add("job-details-amt-cell");
+        amtCol.setCellValueFactory(cd -> {
+            if (cd.getValue() == null) {
+                return new javafx.beans.property.SimpleStringProperty("");
+            }
+            return new javafx.beans.property.SimpleStringProperty(
+                    String.format("%.2f", cd.getValue().getAmount()));
+        });
+        amtCol.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String amtText, boolean empty) {
+                super.updateItem(amtText, empty);
+                if (empty || amtText == null || amtText.isBlank()) {
                     setText(null);
-                    setGraphic(null);
                 } else {
-                    setText("₹ " + String.format("%.2f", amt));
-                    setStyle("-fx-font-weight: 700; -fx-text-fill: #3E312D;");
+                    setText("\u20B9 " + amtText);
+                }
+                setGraphic(null);
+                if (!getStyleClass().contains("job-details-amt-cell")) {
+                    getStyleClass().add("job-details-amt-cell");
                 }
             }
         });
-        
-        table.getColumns().addAll(descCol, amtCol);
+
+        table.getColumns().addAll(typeCol, descCol, amtCol);
         table.setItems(FXCollections.observableArrayList(items));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        if (items.isEmpty()) {
+            table.setPlaceholder(new Label("No line items for this job."));
+        }
 
         // Grand Total Section
         HBox totalBox = new HBox(12);
@@ -1319,7 +1364,7 @@ public class ViewJobsController {
         }
 
         // ✅ full jobs of that client
-        List<Job> jobs = jobService.getFullJobsByClientId(selectedClient.getId());
+        List<Job> jobs = jobService.getFullJobsByClientId(selectedClient.getClientUuid());
         masterJobs.setAll(jobs);
 
         applyFilters();
@@ -1362,7 +1407,7 @@ public class ViewJobsController {
             boolean matchesClient = true;
             Client selectedClient = clientComboBox.getValue();
             if (selectedClient != null) {
-                if (job.getClientId() == null || !job.getClientId().equals(selectedClient.getId())) {
+                if (job.getClientId() == null || !job.getClientId().equals(selectedClient.getClientUuid())) {
                     matchesClient = false;
                 }
             }
@@ -1480,13 +1525,13 @@ public class ViewJobsController {
         applyFilters();
     }
 
-    private void autoSelectClient(Integer clientId) {
+    private void autoSelectClient(String clientUuid) {
 
-        if (clientId == null) return;
+        if (clientUuid == null || clientUuid.isBlank()) return;
 
         Optional<Client> match = clientComboBox.getItems()
                 .stream()
-                .filter(c -> c.getId() == clientId)
+                .filter(c -> clientUuid.equals(c.getClientUuid()))
                 .findFirst();
 
         match.ifPresent(c -> clientComboBox.getSelectionModel().select(c));
@@ -1540,11 +1585,29 @@ public class ViewJobsController {
 
 
 
-    private void openInvoiceDetails(Integer invoiceId) {
-        if (invoiceId == null || invoiceId == 0) return;
+    private void openInvoiceDetailsByUuid(String invoiceUuid) {
+        if (invoiceUuid == null || invoiceUuid.isBlank()) {
+            return;
+        }
+        try (java.sql.Connection con = utils.DBConnection.getConnection();
+                java.sql.PreparedStatement ps = con.prepareStatement(
+                        "SELECT uuid FROM invoice_master WHERE uuid = ?")) {
+            ps.setString(1, invoiceUuid.trim());
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    openInvoiceDetails(rs.getString("uuid"));
+                }
+            }
+        } catch (Exception e) {
+            toast("Could not open invoice: " + e.getMessage());
+        }
+    }
+
+    private void openInvoiceDetails(String invoiceUuid) {
+        if (invoiceUuid == null || invoiceUuid.isBlank()) return;
         
         new Thread(() -> {
-            InvoiceMaster inv = invoiceService.getInvoiceById(invoiceId);
+            InvoiceMaster inv = invoiceService.getInvoiceById(invoiceUuid);
             if (inv != null) {
                 Platform.runLater(() -> {
                     ViewInvoiceJobsController.pendingPrefillInvoice = inv;

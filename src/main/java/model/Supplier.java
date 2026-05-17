@@ -1,7 +1,7 @@
 package model;
 
 public class Supplier {
-	private int id;
+	private String uuid;
 	private String name;
 	private String type; // CTP, Paper, Binding, Lamination...
 	private String phone;
@@ -12,8 +12,8 @@ public class Supplier {
 	public Supplier() {
 	}
 
-	public Supplier(int id, String name, String type, String phone, String address, String gstNumber) {
-		this.id = id;
+	public Supplier(String uuid, String name, String type, String phone, String address, String gstNumber) {
+		this.uuid = uuid;
 		this.name = name;
 		this.type = type;
 		this.phone = phone;
@@ -21,12 +21,12 @@ public class Supplier {
 		this.gstNumber = gstNumber;
 	}
 
-	public int getId() {
-		return id;
+	public String getUuid() {
+		return uuid;
 	}
 
-	public void setId(int id) {
-		this.id = id;
+	public void setUuid(String uuid) {
+		this.uuid = uuid;
 	}
 
 	public String getName() {

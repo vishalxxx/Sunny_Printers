@@ -1174,3 +1174,40 @@
     -fx-font-size: 11.5px;
 }
 
+/* Job details popup (double-click): must show text cells, not graphic-only like main jobs grid */
+.job-details-popup-table {
+    -fx-background-color: white;
+    -fx-fixed-cell-size: 40;
+    -fx-table-cell-border-color: #F1ECE6;
+}
+.job-details-popup-table .column-header-background {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #EEECE8;
+    -fx-border-width: 0 0 1 0;
+}
+.job-details-popup-table .column-header .label {
+    -fx-font-weight: 700;
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 12px;
+}
+.job-details-popup-table .table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: #F1ECE6;
+    -fx-border-width: 0 0 1 0;
+}
+.job-details-popup-table .table-cell {
+    -fx-padding: 8 12;
+    -fx-alignment: CENTER_LEFT;
+    -fx-content-display: LEFT;
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 13px;
+}
+.job-details-popup-table .table-cell.job-details-amt-cell {
+    -fx-alignment: CENTER_RIGHT;
+    -fx-font-weight: 700;
+}
+.job-details-popup-table .placeholder .label {
+    -fx-text-fill: #8B7E74;
+    -fx-font-size: 13px;
+}
+

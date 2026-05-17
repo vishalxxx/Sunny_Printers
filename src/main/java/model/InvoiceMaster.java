@@ -4,11 +4,10 @@ import java.time.LocalDate;
 
 public class InvoiceMaster {
 
-    private int id;
-
+    private String uuid;
     private String invoiceNo;
 
-    private int clientId;
+    private String clientUuid;
     private String clientName;
 
     private LocalDate invoiceDate;
@@ -25,7 +24,6 @@ public class InvoiceMaster {
     private String type;
     private String status;
 
-    /** {@link MasterDocumentSeries#name()} stored for finalize (GST vs Proforma sequence). */
     private String documentSeries;
 
     private Double cnAmount;
@@ -37,24 +35,32 @@ public class InvoiceMaster {
     private String voidReason;
     private LocalDate voidDate;
 
-    private Integer replacedByInvoiceId;
-    private Integer parentInvoiceId;
+    private String replacedByInvoiceUuid;
+    private String parentInvoiceUuid;
 
     private String statusUpdatedBy;
 
     private String filePath;
-    private LocalDate createdAt;
+    
+    private String syncStatus = "PENDING";
+    private int syncVersion = 1;
+    private int isDeleted = 0;
+    private int isActive = 1;
+    private String createdAt;
+    private String updatedAt;
+    private String syncedAt;
+    private String deletedAt;
 
     /* ===== CONSTRUCTORS ===== */
 
     public InvoiceMaster() {}
 
-    public InvoiceMaster(String invoiceNo, int clientId, String clientName,
+    public InvoiceMaster(String invoiceNo, String clientId, String clientName,
                          LocalDate invoiceDate, double amount,
                          String type, String status) {
 
         this.invoiceNo = invoiceNo;
-        this.clientId = clientId;
+        this.clientUuid = clientId;
         this.clientName = clientName;
         this.invoiceDate = invoiceDate;
         this.amount = amount;
@@ -73,14 +79,18 @@ public class InvoiceMaster {
 
     /* ===== GETTERS & SETTERS ===== */
 
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    public String getUuid() { return uuid; }
+    public void setUuid(String uuid) { this.uuid = uuid; }
 
     public String getInvoiceNo() { return invoiceNo; }
     public void setInvoiceNo(String invoiceNo) { this.invoiceNo = invoiceNo; }
 
-    public int getClientId() { return clientId; }
-    public void setClientId(int clientId) { this.clientId = clientId; }
+    public String getClientUuid() { return clientUuid; }
+    public void setClientUuid(String clientUuid) { this.clientUuid = clientUuid; }
+
+    /** Legacy alias. */
+    public String getClientId() { return clientUuid; }
+    public void setClientId(String clientId) { this.clientUuid = clientId; }
 
     public String getClientName() { return clientName; }
     public void setClientName(String clientName) { this.clientName = clientName; }
@@ -212,11 +222,17 @@ public class InvoiceMaster {
     public LocalDate getVoidDate() { return voidDate; }
     public void setVoidDate(LocalDate voidDate) { this.voidDate = voidDate; }
 
-    public Integer getReplacedByInvoiceId() { return replacedByInvoiceId; }
-    public void setReplacedByInvoiceId(Integer replacedByInvoiceId) { this.replacedByInvoiceId = replacedByInvoiceId; }
+    public String getReplacedByInvoiceUuid() { return replacedByInvoiceUuid; }
+    public void setReplacedByInvoiceUuid(String replacedByInvoiceUuid) { this.replacedByInvoiceUuid = replacedByInvoiceUuid; }
 
-    public Integer getParentInvoiceId() { return parentInvoiceId; }
-    public void setParentInvoiceId(Integer parentInvoiceId) { this.parentInvoiceId = parentInvoiceId; }
+    public String getParentInvoiceUuid() { return parentInvoiceUuid; }
+    public void setParentInvoiceUuid(String parentInvoiceUuid) { this.parentInvoiceUuid = parentInvoiceUuid; }
+
+    /** Legacy int getters returning -1 or parsing if possible. */
+    public Integer getReplacedByInvoiceId() { return null; }
+    public Integer getParentInvoiceId() { return null; }
+    public int getId() { return -1; }
+    public void setId(int id) {}
 
     public String getStatusUpdatedBy() { return statusUpdatedBy; }
     public void setStatusUpdatedBy(String statusUpdatedBy) { this.statusUpdatedBy = statusUpdatedBy; }
@@ -224,6 +240,30 @@ public class InvoiceMaster {
     public String getFilePath() { return filePath; }
     public void setFilePath(String filePath) { this.filePath = filePath; }
 
-    public LocalDate getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDate createdAt) { this.createdAt = createdAt; }
+    public LocalDate getCreatedAtDate() { return createdAt != null ? LocalDate.parse(createdAt.substring(0,10)) : null; }
+    public void setCreatedAtDate(LocalDate createdAt) { this.createdAt = createdAt != null ? createdAt.toString() : null; }
+
+    public String getSyncStatus() { return syncStatus; }
+    public void setSyncStatus(String syncStatus) { this.syncStatus = syncStatus; }
+
+    public int getSyncVersion() { return syncVersion; }
+    public void setSyncVersion(int syncVersion) { this.syncVersion = syncVersion; }
+
+    public int getIsDeleted() { return isDeleted; }
+    public void setIsDeleted(int isDeleted) { this.isDeleted = isDeleted; }
+
+    public int getIsActive() { return isActive; }
+    public void setIsActive(int isActive) { this.isActive = isActive; }
+
+    public String getCreatedAt() { return createdAt; }
+    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
+
+    public String getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getSyncedAt() { return syncedAt; }
+    public void setSyncedAt(String syncedAt) { this.syncedAt = syncedAt; }
+
+    public String getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(String deletedAt) { this.deletedAt = deletedAt; }
 }

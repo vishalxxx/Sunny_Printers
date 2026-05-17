@@ -294,7 +294,7 @@ public class ClientLedgerController implements Initializable {
                     LedgerEntry entry = row.getItem();
                     // Show details only if it's a payment/refund
                     if (entry != null && (entry.getType().contains("PAYMENT") || entry.getType().contains("REFUND"))) {
-                        showPaymentDetailsDialog(entry);
+                        utils.PaymentDetailsDialogUtil.showByUuid(ledgerTable.getScene().getWindow(), entry.getTxnUuid());
                     }
                 }
             });
@@ -326,9 +326,9 @@ public class ClientLedgerController implements Initializable {
         
         try (Connection con = DBConnection.getConnection()) {
             // Detailed properties
-            String sql = "SELECT field_key, field_value FROM payment_details WHERE payment_id = ?";
+            String sql = "SELECT field_key, field_value FROM payment_details WHERE payment_uuid = ?";
             try (PreparedStatement ps = con.prepareStatement(sql)) {
-                ps.setInt(1, entry.getTxnId());
+                ps.setString(1, entry.getTxnUuid());
                 ResultSet rs = ps.executeQuery();
                 while (rs.next()) {
                     String key = rs.getString("field_key").replace("_", " ").toUpperCase();
@@ -337,9 +337,9 @@ public class ClientLedgerController implements Initializable {
             }
             
             // Allocations
-            String allocSql = "SELECT i.invoice_no, a.allocated_amount FROM payment_allocations a JOIN invoice_master i ON a.invoice_id = i.id WHERE a.payment_id = ?";
+            String allocSql = "SELECT i.invoice_no, a.allocated_amount FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = ?";
             try (PreparedStatement ps = con.prepareStatement(allocSql)) {
-                ps.setInt(1, entry.getTxnId());
+                ps.setString(1, entry.getTxnUuid());
                 ResultSet rs = ps.executeQuery();
                 StringBuilder sb = new StringBuilder();
                 while (rs.next()) {
@@ -393,11 +393,11 @@ public class ClientLedgerController implements Initializable {
     private void loadClients() {
         try (Connection con = DBConnection.getConnection();
                 PreparedStatement ps = con
-                        .prepareStatement("SELECT id, client_name, business_name FROM clients ORDER BY client_name")) {
+                        .prepareStatement("SELECT uuid, client_name, business_name FROM clients WHERE IFNULL(is_deleted,0)=0 ORDER BY client_name")) {
             ResultSet rs = ps.executeQuery();
             ObservableList<ClientComboItem> items = FXCollections.observableArrayList();
             while (rs.next()) {
-                items.add(new ClientComboItem(rs.getInt("id"), rs.getString("client_name"),
+                items.add(new ClientComboItem(rs.getString("uuid"), rs.getString("client_name"),
                         rs.getString("business_name")));
             }
             clientCombo.setItems(items);
@@ -425,7 +425,7 @@ public class ClientLedgerController implements Initializable {
             return;
         }
 
-        loadClientDetails(selected.id);
+        loadClientDetails(selected.uuid);
         loadLedgerData();
 
         if (summaryCard != null) {
@@ -458,21 +458,23 @@ public class ClientLedgerController implements Initializable {
         }
     }
 
-    private void loadClientDetails(int clientId) {
+    private void loadClientDetails(String clientUuid) {
         try (Connection con = DBConnection.getConnection();
-                PreparedStatement ps = con.prepareStatement("SELECT * FROM clients WHERE id = ?")) {
-            ps.setInt(1, clientId);
+                PreparedStatement ps = con.prepareStatement("SELECT * FROM clients WHERE uuid = ?")) {
+            ps.setString(1, clientUuid);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 if (clientNameLabel != null)
                     clientNameLabel.setText(rs.getString("client_name"));
                 if (gstLabel != null)
-                    gstLabel.setText("GST: " + (rs.getString("gst") == null ? "-" : rs.getString("gst")));
+                    gstLabel.setText("GST: " + (rs.getString("gstin") == null ? "-" : rs.getString("gstin")));
                 if (addressLabel != null)
-                    addressLabel
-                            .setText(rs.getString("shipping_address") == null ? "-" : rs.getString("shipping_address"));
+                    addressLabel.setText(
+                            rs.getString("shipping_address") == null || rs.getString("shipping_address").isBlank()
+                                    ? (rs.getString("billing_address") == null ? "-" : rs.getString("billing_address"))
+                                    : rs.getString("shipping_address"));
                 if (phoneLabel != null)
-                    phoneLabel.setText(rs.getString("phone") == null ? "-" : rs.getString("phone"));
+                    phoneLabel.setText(rs.getString("mobile") == null ? "-" : rs.getString("mobile"));
                 if (emailLabel != null)
                     emailLabel.setText(rs.getString("email") == null ? "-" : rs.getString("email"));
 
@@ -498,7 +500,7 @@ public class ClientLedgerController implements Initializable {
             updateRecordCount();
             return;
         }
-        int clientId = selected.id;
+        String clientUuid = selected.uuid;
 
         LocalDate from = dateFrom.getValue();
         LocalDate to = dateTo.getValue();
@@ -507,10 +509,10 @@ public class ClientLedgerController implements Initializable {
         sql.append("SELECT * FROM (");
 
         // Invoices
-        sql.append("SELECT id as txn_id, invoice_date as txn_date, invoice_no as ref, 'INVOICE' as type, ");
+        sql.append("SELECT uuid as txn_id, invoice_date as txn_date, invoice_no as ref, 'INVOICE' as type, ");
         sql.append("'-' as mode, ");
         sql.append("0 as debit, amount as credit, status, payment_status ");
-        sql.append("FROM invoice_master WHERE client_id = ? ");
+        sql.append("FROM invoice_master WHERE client_uuid = ? ");
         if (from != null)
             sql.append("AND invoice_date >= ? ");
         if (to != null)
@@ -519,15 +521,15 @@ public class ClientLedgerController implements Initializable {
         sql.append("UNION ALL ");
 
         // Payments
-        sql.append("SELECT p.id as txn_id, p.payment_date as txn_date, ");
+        sql.append("SELECT p.uuid as txn_id, p.payment_date as txn_date, ");
         sql.append("COALESCE(");
-        sql.append("  (SELECT GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_id = i.id WHERE a.payment_id = p.id), ");
+        sql.append("  (SELECT GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid), ");
         sql.append("  CASE WHEN p.type = 'Refund' THEN 'Advance Refund' ELSE 'Advance' END");
         sql.append(") as ref, ");
         sql.append("UPPER(p.type) as type, ");
         sql.append("p.method as mode, ");
         sql.append("p.amount as debit, 0 as credit, 'SUCCESS' as status, '' as payment_status ");
-        sql.append("FROM payments p WHERE p.client_id = ? ");
+        sql.append("FROM payments p WHERE p.client_uuid = ? ");
         if (from != null)
             sql.append("AND p.payment_date >= ? ");
         if (to != null)
@@ -553,14 +555,14 @@ public class ClientLedgerController implements Initializable {
             int idx = 1;
 
             // Invoices params
-            ps.setInt(idx++, clientId);
+            ps.setString(idx++, clientUuid);
             if (from != null)
                 ps.setString(idx++, from.toString());
             if (to != null)
                 ps.setString(idx++, to.toString());
 
             // Payments params
-            ps.setInt(idx++, clientId);
+            ps.setString(idx++, clientUuid);
             if (from != null)
                 ps.setString(idx++, from.toString());
             if (to != null)
@@ -607,7 +609,7 @@ public class ClientLedgerController implements Initializable {
                 } catch (Exception e) {}
 
                 ledgerData.add(new LedgerEntry(
-                        rs.getInt("txn_id"),
+                        rs.getString("txn_id"),
                         formattedDate,
                         rs.getString("ref"),
                         rs.getString("type"),
@@ -658,12 +660,12 @@ public class ClientLedgerController implements Initializable {
     // --- Inner Classes ---
 
     public static class ClientComboItem {
-        int id;
+        String uuid;
         String clientName;
         String businessName;
 
-        public ClientComboItem(int id, String clientName, String businessName) {
-            this.id = id;
+        public ClientComboItem(String uuid, String clientName, String businessName) {
+            this.uuid = uuid;
             this.clientName = clientName;
             this.businessName = businessName;
         }
@@ -677,7 +679,7 @@ public class ClientLedgerController implements Initializable {
     }
 
     public static class LedgerEntry {
-        int txnId;
+        String txnUuid;
         String date;
         String reference;
         // String description; // Removed
@@ -688,9 +690,9 @@ public class ClientLedgerController implements Initializable {
         Double balance;
         String status;
 
-        public LedgerEntry(int txnId, String date, String reference, String type, String mode, Double debit, Double credit,
+        public LedgerEntry(String txnUuid, String date, String reference, String type, String mode, Double debit, Double credit,
                 Double balance, String status) {
-            this.txnId = txnId;
+            this.txnUuid = txnUuid;
             this.date = date;
             this.reference = reference;
             this.type = type;
@@ -701,7 +703,7 @@ public class ClientLedgerController implements Initializable {
             this.status = status;
         }
 
-        public int getTxnId() { return txnId; }
+        public String getTxnUuid() { return txnUuid; }
 
         public String getDate() {
             return date;

@@ -14,7 +14,7 @@ public class InvoiceHistoryRepo {
     // ✅ INSERT
     public void insertHistory(
             String invoiceNo,
-            int clientId,
+            String clientId,
             String clientName,
             String invoiceDate,
             double amount,
@@ -33,7 +33,7 @@ public class InvoiceHistoryRepo {
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, invoiceNo);
-            ps.setInt(2, clientId);
+            ps.setString(2, clientId);
             ps.setString(3, clientName);
             ps.setString(4, invoiceDate); // yyyy-mm-dd
             ps.setDouble(5, amount);

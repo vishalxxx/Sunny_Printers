@@ -162,11 +162,11 @@ public class BindingTabController {
         currentJob = job;
         bindingTable.getItems().clear();
 
-        for (JobItem ji : jobItemService.getJobItems(job.getId())) {
+        for (JobItem ji : jobItemService.getJobItems(job.getUuid())) {
             if ("BINDING".equalsIgnoreCase(ji.getType())) {
-                Binding b = repo.findByJobItemId(ji.getId());
+                Binding b = repo.findByJobItemUuid(ji.getUuid());
                 if (b != null) {
-                    b.setJobItemId(ji.getId());
+                    b.setJobItemUuid(ji.getUuid());
                     b.resetFlags();
                     b.captureOriginal();
                     bindingTable.getItems().add(b);

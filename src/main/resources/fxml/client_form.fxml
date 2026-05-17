@@ -39,18 +39,11 @@
                         <TextField fx:id="businessNameField" styleClass="form-input"
                             promptText="Enter business name" />
                     </VBox>
-                    <HBox spacing="15">
-                        <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
-                            <Label text="CLIENT NAME" styleClass="field-label" />
-                            <TextField fx:id="clientNameField" styleClass="form-input"
-                                promptText="Full name" />
-                        </VBox>
-                        <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
-                            <Label text="NICK NAME" styleClass="field-label" />
-                            <TextField fx:id="nickNameField" styleClass="form-input"
-                                promptText="Optional" />
-                        </VBox>
-                    </HBox>
+                    <VBox styleClass="input-container-inset">
+                        <Label text="CLIENT NAME" styleClass="field-label" />
+                        <TextField fx:id="clientNameField" styleClass="form-input"
+                            promptText="Full name" />
+                    </VBox>
                 </VBox>
             </VBox>
 

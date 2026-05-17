@@ -3,6 +3,7 @@ package controller;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.TextArea;
@@ -21,25 +22,29 @@ public class ClientFormController implements Initializable {
 
 	private Client selectedClient;
 
+	private EditFormBaseline editBaseline;
+
+	private record EditFormBaseline(String businessName, String clientName, String phone, String altPhone, String email,
+			String gst, String pan, String billing, String shipping, String notes) {
+	}
+
 	@FXML
 	private Label lblTitleName;
 	@FXML
 	private Label lblClientId;
-    @FXML
-    private HBox breadcrumbContainer;
-    @FXML
-    private VBox formShell;
-    @FXML
-    private VBox pageTitleBlock;
-    @FXML
-    private Button btnSave;
+	@FXML
+	private HBox breadcrumbContainer;
+	@FXML
+	private VBox formShell;
+	@FXML
+	private VBox pageTitleBlock;
+	@FXML
+	private Button btnSave;
 
 	@FXML
 	private TextField businessNameField;
 	@FXML
 	private TextField clientNameField;
-	@FXML
-	private TextField nickNameField;
 	@FXML
 	private TextField phoneField;
 	@FXML
@@ -64,65 +69,88 @@ public class ClientFormController implements Initializable {
 
 	@Override
 	public void initialize(URL url, ResourceBundle resourceBundle) {
-        // Initial population
-        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null, () -> handleBack(null));
+		utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null, () -> handleBack(null));
 		setupAddressSyncToggle();
+		setupSaveButtonRequiredFields();
 	}
 
-    @FXML
-    private void handleBack(javafx.event.Event e) {
-        MainController.getInstance().handleBack(e);
-    }
+	/** Register / Update stays disabled until both business name and client name are non-empty. */
+	private void setupSaveButtonRequiredFields() {
+		if (btnSave == null || businessNameField == null || clientNameField == null) {
+			return;
+		}
+		btnSave.disableProperty().bind(Bindings.createBooleanBinding(
+				() -> !hasRequiredNameFields(),
+				businessNameField.textProperty(),
+				clientNameField.textProperty()));
+	}
 
-	// This method is called from ViewClientsController or MainController
+	private boolean hasRequiredNameFields() {
+		return !nz(businessNameField.getText()).isBlank() && !nz(clientNameField.getText()).isBlank();
+	}
+
+	@FXML
+	private void handleBack(javafx.event.Event e) {
+		MainController.getInstance().handleBack(e);
+	}
+
 	public void setClientData(Client client) {
 		this.selectedClient = client;
 
-        if (client == null) {
-            // "ADD MODE"
-            if (formShell != null) {
-                if (!formShell.getStyleClass().contains("client-form--add")) {
-                    formShell.getStyleClass().add("client-form--add");
-                }
-            }
-            if (pageTitleBlock != null) {
-                pageTitleBlock.setVisible(false);
-                pageTitleBlock.setManaged(false);
-            }
-            if (lblClientId != null) lblClientId.setText("#CL-NEW");
-            utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null, () -> handleBack(null));
-            if (btnSave != null) btnSave.setText("Register Client");
-            
-            clearFields();
-            return;
-        }
+		if (client == null) {
+			editBaseline = null;
+			if (formShell != null) {
+				if (!formShell.getStyleClass().contains("client-form--add")) {
+					formShell.getStyleClass().add("client-form--add");
+				}
+			}
+			if (pageTitleBlock != null) {
+				pageTitleBlock.setVisible(false);
+				pageTitleBlock.setManaged(false);
+			}
+			if (lblClientId != null) {
+				lblClientId.setText("#CL-NEW");
+			}
+			utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null, () -> handleBack(null));
+			if (btnSave != null) {
+				btnSave.setText("Register Client");
+			}
+			clearFields();
+			return;
+		}
 
-        // "EDIT MODE"
-        if (formShell != null) {
-            formShell.getStyleClass().remove("client-form--add");
-        }
-        if (pageTitleBlock != null) {
-            pageTitleBlock.setVisible(true);
-            pageTitleBlock.setManaged(true);
-        }
-        if (lblTitleName != null) {
-            lblTitleName.setVisible(true);
-            lblTitleName.setManaged(true);
-            lblTitleName.setText(client.getBusinessName());
-        }
-        if (lblClientId != null) lblClientId.setText("#CL-" + client.getId());
-        utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Edit Client", () -> handleBack(null));
-        if (btnSave != null) btnSave.setText("Update Profile");
+		editBaseline = new EditFormBaseline(nz(client.getBusinessName()), nz(client.getClientName()),
+				nz(client.getPhone()), nz(client.getAltPhone()), nz(client.getEmail()), nz(client.getGst()),
+				nz(client.getPan()), nz(client.getBillingAddress()), nz(client.getShippingAddress()),
+				nz(client.getNotes()));
+		if (formShell != null) {
+			formShell.getStyleClass().remove("client-form--add");
+		}
+		if (pageTitleBlock != null) {
+			pageTitleBlock.setVisible(true);
+			pageTitleBlock.setManaged(true);
+		}
+		if (lblTitleName != null) {
+			lblTitleName.setVisible(true);
+			lblTitleName.setManaged(true);
+			lblTitleName.setText(client.getBusinessName());
+		}
+		if (lblClientId != null) {
+			String code = client.getClientCode();
+			lblClientId.setText((code != null && !code.isBlank()) ? code : client.getClientUuid());
+		}
+		utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, "Edit Client", () -> handleBack(null));
+		if (btnSave != null) {
+			btnSave.setText("Update Profile");
+		}
 
 		businessNameField.setText(client.getBusinessName());
 		clientNameField.setText(client.getClientName());
-		nickNameField.setText(client.getNickName());
 		phoneField.setText(client.getPhone());
 		altPhoneField.setText(client.getAltPhone());
 		emailField.setText(client.getEmail());
 		gstField.setText(client.getGst());
 		panField.setText(client.getPan());
-
 		billingAddressField.setText(client.getBillingAddress());
 		shippingAddressField.setText(client.getShippingAddress());
 		notesField.setText(client.getNotes());
@@ -130,11 +158,31 @@ public class ClientFormController implements Initializable {
 		applyAddressSyncUiFromLoadedAddresses();
 	}
 
+	private static String nz(String s) {
+		return s == null ? "" : s.trim();
+	}
+
 	private static String normalizeAddress(String s) {
 		return s == null ? "" : s.trim();
 	}
 
-	/** After billing/shipping fields are filled, turn sync on when they match (edit profile). */
+	private boolean editFormUnchangedFromBaseline() {
+		if (editBaseline == null) {
+			return false;
+		}
+		String curBill = nz(billingAddressField.getText());
+		String curShip = (syncAddressToggle != null && syncAddressToggle.isSelected()) ? curBill
+				: nz(shippingAddressField.getText());
+		return nz(businessNameField.getText()).equals(editBaseline.businessName())
+				&& nz(clientNameField.getText()).equals(editBaseline.clientName())
+				&& nz(phoneField.getText()).equals(editBaseline.phone())
+				&& nz(altPhoneField.getText()).equals(editBaseline.altPhone())
+				&& nz(emailField.getText()).equals(editBaseline.email())
+				&& nz(gstField.getText()).equals(editBaseline.gst()) && nz(panField.getText()).equals(editBaseline.pan())
+				&& curBill.equals(editBaseline.billing()) && curShip.equals(editBaseline.shipping())
+				&& nz(notesField.getText()).equals(editBaseline.notes());
+	}
+
 	private void applyAddressSyncUiFromLoadedAddresses() {
 		if (syncAddressToggle == null || billingAddressField == null || shippingAddressField == null) {
 			return;
@@ -165,38 +213,47 @@ public class ClientFormController implements Initializable {
 		});
 	}
 
-    private void clearFields() {
-        businessNameField.clear();
-        clientNameField.clear();
-        nickNameField.clear();
-        phoneField.clear();
-        altPhoneField.clear();
-        emailField.clear();
-        gstField.clear();
-        panField.clear();
-        billingAddressField.clear();
-        shippingAddressField.clear();
-        notesField.clear();
-        if (syncAddressToggle != null) {
-            syncAddressToggle.setSelected(false);
-        }
-        if (shippingAddressField != null) {
-            shippingAddressField.setDisable(false);
-        }
-    }
+	private void clearFields() {
+		businessNameField.clear();
+		clientNameField.clear();
+		phoneField.clear();
+		altPhoneField.clear();
+		emailField.clear();
+		gstField.clear();
+		panField.clear();
+		billingAddressField.clear();
+		shippingAddressField.clear();
+		notesField.clear();
+		if (syncAddressToggle != null) {
+			syncAddressToggle.setSelected(false);
+		}
+		if (shippingAddressField != null) {
+			shippingAddressField.setDisable(false);
+		}
+	}
 
 	@FXML
 	private void handleSaveClient() {
-        boolean isEdit = (selectedClient != null);
-        
-        if (!isEdit) {
-            selectedClient = new Client();
-        }
+		if (!hasRequiredNameFields()) {
+			Toast.show((Stage) businessNameField.getScene().getWindow(),
+					"Business name and client name are required.");
+			return;
+		}
 
-		// update fields
+		boolean isEdit = (selectedClient != null);
+
+		if (isEdit && editFormUnchangedFromBaseline()) {
+			Stage stage = (Stage) businessNameField.getScene().getWindow();
+			Toast.show(stage, "No changes to save.");
+			return;
+		}
+
+		if (!isEdit) {
+			selectedClient = new Client();
+		}
+
 		selectedClient.businessNameProperty().set(businessNameField.getText());
 		selectedClient.clientNameProperty().set(clientNameField.getText());
-		selectedClient.nickNameProperty().set(nickNameField.getText());
 		selectedClient.phoneProperty().set(phoneField.getText());
 		selectedClient.altPhoneProperty().set(altPhoneField.getText());
 		selectedClient.emailProperty().set(emailField.getText());
@@ -212,40 +269,35 @@ public class ClientFormController implements Initializable {
 		}
 		selectedClient.notesProperty().set(notesField.getText());
 
-        boolean success = false;
-        try {
-            if (isEdit) {
-                success = repo.update(selectedClient);
-            } else {
-                success = repo.save(selectedClient);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+		boolean success = false;
+		try {
+			if (isEdit) {
+				success = repo.update(selectedClient);
+			} else {
+				success = repo.save(selectedClient);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 		if (success) {
-            // Send Welcome Email if it's a new registration
-            if (!isEdit) {
-                String emailAddress = emailField.getText().trim();
-                if (!emailAddress.isEmpty()) {
-                    utils.EmailUtil.sendWelcomeEmail(emailAddress, clientNameField.getText().trim());
-                }
-            }
+			if (!isEdit) {
+				String emailAddress = emailField.getText().trim();
+				if (!emailAddress.isEmpty()) {
+					utils.EmailUtil.sendWelcomeEmail(emailAddress, clientNameField.getText().trim());
+				}
+			}
 
 			Stage stage = (Stage) businessNameField.getScene().getWindow();
 			Toast.show(stage, isEdit ? "Client updated successfully!" : "Client registered successfully!");
-
-			// Reload View Clients Table
 			MainController.getInstance().loadViewClients();
 		} else {
-            Toast.show((Stage) businessNameField.getScene().getWindow(), "Failed to save client data.");
+			Toast.show((Stage) businessNameField.getScene().getWindow(), "Failed to save client data.");
 		}
 	}
 
 	@FXML
 	private void handleCancel() {
-		// Just navigate back to selection without showing any toast
 		MainController.getInstance().loadEditClientSidebar();
 	}
-
 }

@@ -8,6 +8,10 @@ import repository.ClientRepository;
 public class ClientService {
 	private final ClientRepository repo = new ClientRepository();
 
+	/**
+	 * Lists clients from local SQLite. When Supabase URL + anon key are configured,
+	 * {@link ClientRepository} also pushes create/update/delete to the {@code clients} table asynchronously.
+	 */
 	public List<Client> getAllClients() {
 		return repo.findAllSortedById();
 	}

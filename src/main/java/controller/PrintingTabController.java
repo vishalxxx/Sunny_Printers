@@ -192,9 +192,9 @@ public class PrintingTabController {
         this.currentJob = job;
         printingTable.getItems().clear();
 
-        for (JobItem ji : jobItemService.getJobItems(job.getId())) {
+        for (JobItem ji : jobItemService.getJobItems(job.getUuid())) {
             if ("PRINTING".equalsIgnoreCase(ji.getType())) {
-                Printing p = printingRepo.findByJobItemId(ji.getId());
+                Printing p = printingRepo.findByJobItemUuid(ji.getUuid());
                 if (p != null) {
                     p.captureOriginal(); // 🔥 critical
                     printingTable.getItems().add(p);

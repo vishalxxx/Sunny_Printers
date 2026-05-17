@@ -89,11 +89,6 @@ public class GenerateInvoiceController {
     private TextArea notesArea;
 
     @FXML
-    private RadioButton radioGstInvoice;
-    @FXML
-    private RadioButton radioProformaInvoice;
-
-    @FXML
     private Label itemCountLabel;
     @FXML
     private Label totalAmountLabel;
@@ -177,29 +172,12 @@ public class GenerateInvoiceController {
         setupJobSearch();
         setupDateRangeTab();
         setupMonthlyTab();
-        setupInvoiceDocumentTypeRadios();
         refreshTabVisuals();
         applyTabContent();
         utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null, this::handleBack);
     }
 
-    private void setupInvoiceDocumentTypeRadios() {
-        ToggleGroup group = new ToggleGroup();
-        if (radioGstInvoice != null) {
-            radioGstInvoice.setToggleGroup(group);
-        }
-        if (radioProformaInvoice != null) {
-            radioProformaInvoice.setToggleGroup(group);
-        }
-        if (radioGstInvoice != null) {
-            radioGstInvoice.setSelected(true);
-        }
-        if (group != null) {
-            group.selectedToggleProperty().addListener((obs, prev, sel) -> refreshInvoiceNoPreview());
-        }
-    }
-
-    /** Updates the client box invoice number to the next value for the selected GST vs Proforma sequence. */
+    /** Updates the client box invoice number to the next value for the GST invoice sequence. */
     private void refreshInvoiceNoPreview() {
         if (invoiceNoField == null) {
             return;
@@ -221,9 +199,6 @@ public class GenerateInvoiceController {
     }
 
     private MasterDocumentSeries selectedDocumentSeriesForGeneration() {
-        if (radioProformaInvoice != null && radioProformaInvoice.isSelected()) {
-            return MasterDocumentSeries.PROFORMA_INVOICE;
-        }
         return MasterDocumentSeries.GST_INVOICE;
     }
 
@@ -815,9 +790,9 @@ public class GenerateInvoiceController {
                 String totalStr = j.getJobTotal() != null ? String.format("₹ %,.2f", j.getJobTotal()) : "₹ 0.00";
                 String biz = j.getClientBusinessName();
                 String subtitle = (biz != null && !biz.isBlank() ? biz + " · " : "") + j.getJobNo();
-                int cid = j.getClientId() != null ? j.getClientId() : 0;
+                String cid = j.getClientId();
                 monthlyMasterJobs.add(new JobItem(
-                        j.getId(),
+                        j.getUuid(),
                         cid,
                         j.getJobTitle(),
                         subtitle,
@@ -873,10 +848,10 @@ public class GenerateInvoiceController {
         }
 
         try {
-            List<Integer> ids = jobService.getCompletedJobIdsByClientInDateRange(client.getId(), from, to);
-            dateRangeJobCount = ids.size();
-            dateRangeTotalQty = jobService.getTotalPrintingQtyForJobIds(ids);
-            dateRangeTotalAmount = jobService.getSumJobItemsAmountForJobIds(ids);
+            List<String> uuids = jobService.getCompletedJobUuidsByClientInDateRange(client.getClientUuid(), from, to);
+            dateRangeJobCount = uuids.size();
+            dateRangeTotalQty = jobService.getTotalPrintingQtyForJobUuids(uuids);
+            dateRangeTotalAmount = jobService.getSumJobItemsAmountForJobUuids(uuids);
         } catch (Exception e) {
             dateRangeJobCount = 0;
             dateRangeTotalQty = 0;
@@ -1030,7 +1005,7 @@ public class GenerateInvoiceController {
             return;
         }
         masterClients.stream()
-                .filter(c -> c.getId() == ref.getId())
+                .filter(c -> c.getClientUuid().equals(ref.getClientUuid()))
                 .findFirst()
                 .ifPresent(c -> {
                     if (activeTab == BillingTab.MONTHLY) {
@@ -1068,13 +1043,13 @@ public class GenerateInvoiceController {
 
         masterJobs.clear();
         try {
-            System.out.println("DEBUG: Loading jobs for client ID: " + client.getId());
-            List<model.Job> jobs = jobService.getCompletedJobsByClient(client.getId());
+            System.out.println("DEBUG: Loading jobs for client ID: " + client.getClientUuid());
+            List<model.Job> jobs = jobService.getCompletedJobsByClient(client.getClientUuid());
             System.out.println("DEBUG: Found " + jobs.size() + " jobs.");
 
             if (jobs.isEmpty()) {
                 // Diagnostic: check if ANY jobs exist for this client
-                List<model.Job> allJobs = jobService.getFullJobsByClientId(client.getId());
+                List<model.Job> allJobs = jobService.getFullJobsByClientId(client.getClientUuid());
                 System.out.println("DEBUG: Diagnostic - Total jobs (any status) for this client: " + allJobs.size());
                 for (model.Job aj : allJobs) {
                     System.out.println("DEBUG: Job " + aj.getJobNo() + " has status: " + aj.getStatus());
@@ -1085,9 +1060,9 @@ public class GenerateInvoiceController {
                 String dateStr = j.getJobDate() != null ? j.getJobDate().toString() : "-";
                 String totalStr = j.getJobTotal() != null ? String.format("₹ %,.2f", j.getJobTotal()) : "₹ 0.00";
 
-                int cid = j.getClientId() != null ? j.getClientId() : 0;
+                String cid = j.getClientId();
                 masterJobs.add(new JobItem(
-                        j.getId(),
+                        j.getUuid(),
                         cid,
                         j.getJobTitle(),
                         j.getJobNo(),
@@ -1157,7 +1132,7 @@ public class GenerateInvoiceController {
         final boolean dateRangeMode = activeTab == BillingTab.DATE_RANGE;
         final LocalDate drFrom;
         final LocalDate drTo;
-        final List<Integer> previewJobIds;
+        final List<String> previewJobUuids;
         if (dateRangeMode) {
             LocalDate f = dateRangeFromPicker != null ? dateRangeFromPicker.getValue() : null;
             LocalDate t = dateRangeToPicker != null ? dateRangeToPicker.getValue() : null;
@@ -1175,12 +1150,12 @@ public class GenerateInvoiceController {
             }
             drFrom = f;
             drTo = t;
-            previewJobIds = List.of();
+            previewJobUuids = List.of();
         } else {
             drFrom = null;
             drTo = null;
-            previewJobIds = collectSelectedJobIds();
-            if (previewJobIds.isEmpty()) {
+            previewJobUuids = collectSelectedJobUuids();
+            if (previewJobUuids.isEmpty()) {
                 toast("Please select at least 1 job.");
                 return;
             }
@@ -1200,13 +1175,13 @@ public class GenerateInvoiceController {
                     updateMessage("Building preview...");
                     Invoice invoice;
                     if (dateRangeMode) {
-                        invoice = invoiceBuilder.buildInvoiceForClient(client.getId(),
+                        invoice = invoiceBuilder.buildInvoiceForClient(client.getClientUuid(),
                                 client.getClientName(), client.getBusinessName(),
                                 drFrom, drTo, invoiceDate, false);
                     } else {
-                        invoice = invoiceBuilder.buildInvoiceForClientByJobs(client.getId(),
+                        invoice = invoiceBuilder.buildInvoiceForClientByJobs(client.getClientUuid(),
                                 client.getClientName(), client.getBusinessName(),
-                                previewJobIds, invoiceDate, false);
+                                previewJobUuids, invoiceDate, false);
                     }
                     invoice.setMasterDocumentSeries(selectedDocumentSeriesForGeneration());
 
@@ -1284,7 +1259,7 @@ public class GenerateInvoiceController {
         final boolean monthlyMode = activeTab == BillingTab.MONTHLY;
         final LocalDate drFromGen;
         final LocalDate drToGen;
-        final List<Integer> generateJobIds;
+        final List<String> generateJobUuids;
         if (dateRangeMode) {
             LocalDate f = dateRangeFromPicker != null ? dateRangeFromPicker.getValue() : null;
             LocalDate t = dateRangeToPicker != null ? dateRangeToPicker.getValue() : null;
@@ -1302,18 +1277,18 @@ public class GenerateInvoiceController {
             }
             drFromGen = f;
             drToGen = t;
-            generateJobIds = List.of();
+            generateJobUuids = List.of();
         } else {
             drFromGen = null;
             drToGen = null;
-            generateJobIds = collectSelectedJobIds();
-            if (generateJobIds.isEmpty()) {
+            generateJobUuids = collectSelectedJobUuids();
+            if (generateJobUuids.isEmpty()) {
                 toast("Please select at least 1 job.");
                 return;
             }
         }
 
-        final List<Integer> newlyCreatedIds = new ArrayList<>();
+        final List<String> newlyCreatedIds = new ArrayList<>();
 
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/progress_dialog.fxml"));
@@ -1331,12 +1306,12 @@ public class GenerateInvoiceController {
 
                     Invoice invoice;
                     if (dateRangeMode) {
-                        invoice = invoiceBuilder.buildInvoiceForClient(client.getId(),
+                        invoice = invoiceBuilder.buildInvoiceForClient(client.getClientUuid(),
                                 client.getClientName(), client.getBusinessName(),
                                 drFromGen, drToGen, invoiceDate);
                     } else {
-                        invoice = invoiceBuilder.buildInvoiceForClientByJobs(client.getId(),
-                                client.getClientName(), client.getBusinessName(), generateJobIds, invoiceDate);
+                        invoice = invoiceBuilder.buildInvoiceForClientByJobs(client.getClientUuid(),
+                                client.getClientName(), client.getBusinessName(), generateJobUuids, invoiceDate);
                     }
                     invoice.setMasterDocumentSeries(selectedDocumentSeriesForGeneration());
 
@@ -1354,7 +1329,7 @@ public class GenerateInvoiceController {
                         if (reserved != null) {
                             invoice.setInvoiceNo(reserved.master().getInvoiceNo());
                             if (reserved.wasNewlyCreated()) {
-                                newlyCreatedIds.add(reserved.master().getId());
+                                newlyCreatedIds.add(reserved.master().getUuid());
                             }
                         }
                         if (isCancelled()) {
@@ -1411,7 +1386,7 @@ public class GenerateInvoiceController {
         }
     }
 
-    private List<Integer> collectSelectedJobIds() {
+    private List<String> collectSelectedJobUuids() {
         Client invoiceClient = clientComboBox != null ? clientComboBox.getValue() : null;
         return jobsTable.getItems().stream()
                 .filter(JobItem::isSelected)
@@ -1419,12 +1394,12 @@ public class GenerateInvoiceController {
                     if (activeTab != BillingTab.MONTHLY || invoiceClient == null) {
                         return true;
                     }
-                    int cid = item.getClientId();
-                    return cid == 0 || cid == invoiceClient.getId();
+                    String cid = item.getClientId();
+                    return cid == null || cid.isBlank() || cid.equals(invoiceClient.getClientUuid());
                 })
-                .mapToInt(JobItem::getJobId)
+                .map(JobItem::getJobUuid)
+                .filter(u -> u != null && !u.isBlank())
                 .distinct()
-                .boxed()
                 .toList();
     }
 
@@ -1448,9 +1423,9 @@ public class GenerateInvoiceController {
 
     // Helper class for TableView
     public static class JobItem {
-        private final int jobId;
-        /** 0 = unknown / single-client screen; otherwise jobs.client_id for monthly filtering. */
-        private final int clientId;
+        private final String jobUuid;
+        /** null = unknown / single-client screen; otherwise jobs.client_uuid for monthly filtering. */
+        private final String clientId;
         private final SimpleBooleanProperty selected = new SimpleBooleanProperty(false);
         private final SimpleStringProperty name;
         private final SimpleStringProperty subtitle;
@@ -1459,13 +1434,13 @@ public class GenerateInvoiceController {
         private final SimpleStringProperty rate;
         private final SimpleStringProperty total;
 
-        public JobItem(int jobId, String name, String subtitle, String date, String qty, String rate, String total) {
-            this(jobId, 0, name, subtitle, date, qty, rate, total);
+        public JobItem(String jobUuid, String name, String subtitle, String date, String qty, String rate, String total) {
+            this(jobUuid, null, name, subtitle, date, qty, rate, total);
         }
 
-        public JobItem(int jobId, int clientId, String name, String subtitle, String date, String qty, String rate,
+        public JobItem(String jobUuid, String clientId, String name, String subtitle, String date, String qty, String rate,
                 String total) {
-            this.jobId = jobId;
+            this.jobUuid = jobUuid;
             this.clientId = clientId;
             this.name = new SimpleStringProperty(name);
             this.subtitle = new SimpleStringProperty(subtitle);
@@ -1487,11 +1462,16 @@ public class GenerateInvoiceController {
             selected.set(val);
         }
 
-        public int getJobId() {
-            return jobId;
+        public String getJobUuid() {
+            return jobUuid;
         }
 
-        public int getClientId() {
+        /** @deprecated use {@link #getJobUuid()} */
+        public String getJobId() {
+            return jobUuid;
+        }
+
+        public String getClientId() {
             return clientId;
         }
 

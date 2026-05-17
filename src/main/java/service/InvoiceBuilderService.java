@@ -30,7 +30,7 @@ public class InvoiceBuilderService {
 	// =========================================================
 	// ✅ BUILD SINGLE INVOICE BY CLIENT ID (BEST METHOD)
 	// =========================================================
-	public Invoice buildInvoiceForClient(int clientId, String clientName, String businessName, LocalDate fromDate,
+	public Invoice buildInvoiceForClient(String clientId, String clientName, String businessName, LocalDate fromDate,
 			LocalDate toDate, LocalDate invoiceDate) {
 		return buildInvoiceForClient(clientId, clientName, businessName, fromDate, toDate, invoiceDate, true);
 	}
@@ -39,7 +39,7 @@ public class InvoiceBuilderService {
 	 * @param reserveTempInvoiceNumber when false (PDF preview), uses "PREVIEW" and does
 	 *                                 not advance the TEMP-* sequence.
 	 */
-	public Invoice buildInvoiceForClient(int clientId, String clientName, String businessName, LocalDate fromDate,
+	public Invoice buildInvoiceForClient(String clientId, String clientName, String businessName, LocalDate fromDate,
 			LocalDate toDate, LocalDate invoiceDate, boolean reserveTempInvoiceNumber) {
 
 		return AtomicDB.run(con -> {
@@ -73,17 +73,17 @@ public class InvoiceBuilderService {
 		});
 	}
 
-	public Invoice buildInvoiceForClientByJobs(int clientId, String clientName, String businessName,
-			List<Integer> jobIds, LocalDate invoiceDate) {
-		return buildInvoiceForClientByJobs(clientId, clientName, businessName, jobIds, invoiceDate, true);
+	public Invoice buildInvoiceForClientByJobs(String clientId, String clientName, String businessName,
+			List<String> jobUuids, LocalDate invoiceDate) {
+		return buildInvoiceForClientByJobs(clientId, clientName, businessName, jobUuids, invoiceDate, true);
 	}
 
 	/**
 	 * @param reserveTempInvoiceNumber when false (e.g. PDF preview), uses a fixed
 	 *                                   invoice no and does not advance TEMP-* sequence.
 	 */
-	public Invoice buildInvoiceForClientByJobs(int clientId, String clientName, String businessName,
-			List<Integer> jobIds, LocalDate invoiceDate, boolean reserveTempInvoiceNumber) {
+	public Invoice buildInvoiceForClientByJobs(String clientId, String clientName, String businessName,
+			List<String> jobUuids, LocalDate invoiceDate, boolean reserveTempInvoiceNumber) {
 
 		return AtomicDB.run(con -> {
 
@@ -108,22 +108,22 @@ public class InvoiceBuilderService {
 			invoice.setInvoiceType("JOB_SPECIFIC");
 			invoice.setStatus("DRAFT");
 
-			loadSelectedJobs(con, invoice, clientId, jobIds);
+			loadSelectedJobs(con, invoice, clientId, jobUuids);
 
 			return invoice;
 		});
 	}
 
-	private void loadSelectedJobs(Connection con, Invoice invoice, int clientId, List<Integer> jobIds) {
+	private void loadSelectedJobs(Connection con, Invoice invoice, String clientId, List<String> jobUuids) {
 
-		if (jobIds == null || jobIds.isEmpty())
+		if (jobUuids == null || jobUuids.isEmpty())
 			return;
 
-		String placeholders = String.join(",", jobIds.stream().map(x -> "?").toList());
+		String placeholders = String.join(",", jobUuids.stream().map(x -> "?").toList());
 
 		String sql = """
-				SELECT j.id AS job_id,
-				       j.job_no,
+				SELECT j.uuid AS job_uuid,
+				       j.job_code,
 				       j.job_date,
 				       j.job_title,
 				       ji.description,
@@ -131,38 +131,39 @@ public class InvoiceBuilderService {
 				       ji.type,
 				       ji.sort_order
 				FROM jobs j
-				JOIN job_items ji ON ji.job_id = j.id
-				WHERE j.client_id = ?
-				  AND j.status = 'Completed'
-				  AND j.invoice_id IS NULL
-				  AND j.id IN (""" + placeholders + ") " + "ORDER BY j.job_date, j.id, ji.sort_order";
+				JOIN job_items ji ON ji.job_uuid = j.uuid
+				WHERE j.client_uuid = ?
+				  AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
+				  AND j.invoice_uuid IS NULL
+				  AND j.uuid IN (""" + placeholders + ") " + "ORDER BY j.job_date, j.uuid, ji.sort_order";
 
 		try (PreparedStatement ps = con.prepareStatement(sql)) {
 
 			int index = 1;
-			ps.setInt(index++, clientId);
+			ps.setString(index++, clientId);
 
-			for (Integer id : jobIds)
-				ps.setInt(index++, id);
+			for (String uuid : jobUuids)
+				ps.setString(index++, uuid);
 
 			ResultSet rs = ps.executeQuery();
 
-			Map<Integer, InvoiceJob> jobMap = new LinkedHashMap<>();
+			Map<String, InvoiceJob> jobMap = new LinkedHashMap<>();
 
 			while (rs.next()) {
 
-				int jobId = rs.getInt("job_id");
+				String jobUuid = rs.getString("job_uuid");
 
-				InvoiceJob job = jobMap.get(jobId);
+				InvoiceJob job = jobMap.get(jobUuid);
 
 				if (job == null) {
 					job = new InvoiceJob();
-					job.setJobId(jobId);
-					job.setJobNo(rs.getString("job_no"));
+					job.setJobUuid(jobUuid);
+					job.setJobNo(rs.getString("job_code"));
 					job.setJobName(rs.getString("job_title"));
-					job.setJobDate(LocalDate.parse(rs.getString("job_date")));
+					LocalDate jd = parseJobDateFlexible(rs.getString("job_date"));
+					job.setJobDate(jd != null ? jd : invoice.getInvoiceDate());
 
-					jobMap.put(jobId, job);
+					jobMap.put(jobUuid, job);
 					invoice.getJobs().add(job);
 				}
 
@@ -183,11 +184,11 @@ public class InvoiceBuilderService {
 	/**
 	 * Rebuild a printable {@link Invoice} from a saved {@code invoice_master} row (for PDF export).
 	 */
-	public Invoice buildInvoiceFromMasterForPdfExport(int invoiceMasterId) {
+	public Invoice buildInvoiceFromMasterForPdfExport(String invoiceUuid) {
 		InvoiceMasterService invoiceMasterService = new InvoiceMasterService();
-		InvoiceMaster master = invoiceMasterService.getInvoiceById(invoiceMasterId);
+		InvoiceMaster master = invoiceMasterService.getInvoiceById(invoiceUuid);
 		if (master == null) {
-			throw new IllegalArgumentException("Invoice not found: id=" + invoiceMasterId);
+			throw new IllegalArgumentException("Invoice not found: uuid=" + invoiceUuid);
 		}
 		return AtomicDB.run(con -> {
 			Invoice invoice = new Invoice();
@@ -203,8 +204,8 @@ public class InvoiceBuilderService {
 			invoice.setMasterDocumentSeries(master.resolveDocumentSeries());
 			invoice.setGrandTotal(0);
 
-			List<Integer> jobIds = loadJobIdsForSavedInvoice(con, master.getId());
-			loadJobLinesForSavedInvoice(con, invoice, jobIds);
+			List<String> jobUuids = loadJobUuidsForSavedInvoice(con, master.getUuid());
+			loadJobLinesForSavedInvoice(con, invoice, jobUuids);
 			if (invoice.getJobs().isEmpty()) {
 				invoice.setGrandTotal(master.getAmount());
 			}
@@ -212,42 +213,50 @@ public class InvoiceBuilderService {
 		});
 	}
 
-	private List<Integer> loadJobIdsForSavedInvoice(Connection con, int invoiceId) {
-		List<Integer> ids = new ArrayList<>();
+	private List<String> loadJobUuidsForSavedInvoice(Connection con, String invoiceUuid) {
+		List<String> uuids = new ArrayList<>();
 		try {
-			String sql = "SELECT job_id FROM invoice_job_mapping WHERE invoice_id = ? ORDER BY job_id";
+			String sql = """
+					SELECT job_uuid FROM invoice_job_mapping
+					WHERE invoice_uuid = ?
+					ORDER BY job_uuid
+					""";
 			try (PreparedStatement ps = con.prepareStatement(sql)) {
-				ps.setInt(1, invoiceId);
+				ps.setString(1, invoiceUuid);
 				ResultSet rs = ps.executeQuery();
 				while (rs.next()) {
-					ids.add(rs.getInt(1));
+					uuids.add(rs.getString(1));
 				}
 			}
-			if (!ids.isEmpty()) {
-				return ids;
+			if (!uuids.isEmpty()) {
+				return uuids;
 			}
-			String sql2 = "SELECT id FROM jobs WHERE invoice_id = ? ORDER BY id";
+			String sql2 = """
+					SELECT uuid FROM jobs
+					WHERE invoice_uuid = ?
+					ORDER BY created_at
+					""";
 			try (PreparedStatement ps = con.prepareStatement(sql2)) {
-				ps.setInt(1, invoiceId);
+				ps.setString(1, invoiceUuid);
 				ResultSet rs = ps.executeQuery();
 				while (rs.next()) {
-					ids.add(rs.getInt(1));
+					uuids.add(rs.getString(1));
 				}
 			}
-			return ids;
+			return uuids;
 		} catch (Exception e) {
-			throw new RuntimeException("Failed loading job ids for invoice " + invoiceId, e);
+			throw new RuntimeException("Failed loading job uuids for invoice " + invoiceUuid, e);
 		}
 	}
 
-	private void loadJobLinesForSavedInvoice(Connection con, Invoice invoice, List<Integer> jobIds) {
-		if (jobIds == null || jobIds.isEmpty()) {
+	private void loadJobLinesForSavedInvoice(Connection con, Invoice invoice, List<String> jobUuids) {
+		if (jobUuids == null || jobUuids.isEmpty()) {
 			return;
 		}
-		String placeholders = String.join(",", jobIds.stream().map(x -> "?").toList());
+		String placeholders = String.join(",", jobUuids.stream().map(x -> "?").toList());
 		String sql = """
-				SELECT j.id AS job_id,
-				       j.job_no,
+				SELECT j.uuid AS job_uuid,
+				       j.job_code,
 				       j.job_date,
 				       j.job_title,
 				       ji.description,
@@ -255,27 +264,27 @@ public class InvoiceBuilderService {
 				       ji.type,
 				       ji.sort_order
 				FROM jobs j
-				JOIN job_items ji ON ji.job_id = j.id
-				WHERE j.id IN (""" + placeholders + ") ORDER BY j.job_date, j.id, ji.sort_order";
+				JOIN job_items ji ON ji.job_uuid = j.uuid
+				WHERE j.uuid IN (""" + placeholders + ") ORDER BY j.job_date, j.uuid, ji.sort_order";
 		try (PreparedStatement ps = con.prepareStatement(sql)) {
 			int index = 1;
-			for (Integer id : jobIds) {
-				ps.setInt(index++, id);
+			for (String uuid : jobUuids) {
+				ps.setString(index++, uuid);
 			}
 			ResultSet rs = ps.executeQuery();
-			Map<Integer, InvoiceJob> jobMap = new LinkedHashMap<>();
+			Map<String, InvoiceJob> jobMap = new LinkedHashMap<>();
 			while (rs.next()) {
-				int jobId = rs.getInt("job_id");
-				InvoiceJob job = jobMap.get(jobId);
+				String jobUuid = rs.getString("job_uuid");
+				InvoiceJob job = jobMap.get(jobUuid);
 				if (job == null) {
 					job = new InvoiceJob();
-					job.setJobId(jobId);
-					String jobNo = rs.getString("job_no");
+					job.setJobUuid(jobUuid);
+					String jobNo = rs.getString("job_code");
 					job.setJobNo(jobNo);
-					job.setJobName(jobDisplayTitle(rs, jobId, jobNo));
+					job.setJobName(jobDisplayTitle(rs, jobUuid, jobNo));
 					LocalDate jd = parseJobDateFlexible(rs.getString("job_date"));
 					job.setJobDate(jd != null ? jd : invoice.getInvoiceDate());
-					jobMap.put(jobId, job);
+					jobMap.put(jobUuid, job);
 					invoice.getJobs().add(job);
 				}
 				InvoiceLine line = new InvoiceLine();
@@ -306,15 +315,15 @@ public class InvoiceBuilderService {
         // ✅ ONLY clients who actually have jobs in this month
         String sql = """
             SELECT DISTINCT
-                c.id AS client_id,
+                c.uuid AS client_id,
                 c.client_name,
                 c.business_name
             FROM jobs j
-            JOIN clients c ON c.id = j.client_id
+            JOIN clients c ON c.uuid = j.client_uuid
             WHERE DATE(j.job_date) BETWEEN ? AND ?
-            AND j.status = 'Completed'
-            AND j.invoice_id IS NULL
-            ORDER BY c.business_name, c.client_name, c.id
+            AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
+            AND j.invoice_uuid IS NULL
+            ORDER BY c.business_name, c.client_name, c.uuid
         """;
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -326,7 +335,7 @@ public class InvoiceBuilderService {
 
             while (rs.next()) {
 
-                int clientId = rs.getInt("client_id");
+                String clientId = rs.getString("client_id");
                 String clientName = rs.getString("client_name");
                 String businessName = rs.getString("business_name");
 
@@ -372,12 +381,12 @@ public class InvoiceBuilderService {
 }
 
 
-	private void loadJobsIntoInvoice(Connection con, Invoice invoice, int clientId, LocalDate fromDate,
+	private void loadJobsIntoInvoice(Connection con, Invoice invoice, String clientId, LocalDate fromDate,
 			LocalDate toDate) {
 
 		String sql = """
-				SELECT j.id AS job_id,
-				j.job_no,
+				SELECT j.uuid AS job_uuid,
+				j.job_code,
 				j.job_date,
 				j.job_title,
 				ji.description,
@@ -385,38 +394,39 @@ public class InvoiceBuilderService {
 				ji.type,
 				ji.sort_order
 				FROM jobs j
-				JOIN job_items ji ON ji.job_id = j.id
-				WHERE j.client_id = ?
+				JOIN job_items ji ON ji.job_uuid = j.uuid
+				WHERE j.client_uuid = ?
 				AND DATE(j.job_date) BETWEEN ? AND ?
 				AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
-				AND j.invoice_id IS NULL
-				ORDER BY j.job_date, j.id, ji.sort_order
+				AND j.invoice_uuid IS NULL
+				ORDER BY j.job_date, j.uuid, ji.sort_order
 				""";
 
 		try (PreparedStatement ps = con.prepareStatement(sql)) {
 
-			ps.setInt(1, clientId);
+			ps.setString(1, clientId);
 			ps.setString(2, fromDate.toString());
 			ps.setString(3, toDate.toString());
 
 			ResultSet rs = ps.executeQuery();
 
-			Map<Integer, InvoiceJob> jobMap = new LinkedHashMap<>();
+			Map<String, InvoiceJob> jobMap = new LinkedHashMap<>();
 
 			while (rs.next()) {
 
-				int jobId = rs.getInt("job_id");
+				String jobUuid = rs.getString("job_uuid");
 
-				InvoiceJob job = jobMap.get(jobId);
+				InvoiceJob job = jobMap.get(jobUuid);
 
 				if (job == null) {
 					job = new InvoiceJob();
-					job.setJobId(jobId);
-					job.setJobNo(rs.getString("job_no"));
+					job.setJobUuid(jobUuid);
+					job.setJobNo(rs.getString("job_code"));
 					job.setJobName(rs.getString("job_title"));
-					job.setJobDate(LocalDate.parse(rs.getString("job_date")));
+					LocalDate jd = parseJobDateFlexible(rs.getString("job_date"));
+					job.setJobDate(jd != null ? jd : invoice.getInvoiceDate());
 
-					jobMap.put(jobId, job);
+					jobMap.put(jobUuid, job);
 					invoice.getJobs().add(job);
 				}
 
@@ -438,7 +448,7 @@ public class InvoiceBuilderService {
 		System.out.println("[InvoiceBuilder] " + msg);
 	}
 
-	private static String jobDisplayTitle(ResultSet rs, int jobId, String jobNo) throws SQLException {
+	private static String jobDisplayTitle(ResultSet rs, String jobUuid, String jobNo) throws SQLException {
 		String t = rs.getString("job_title");
 		if (t != null && !t.isBlank()) {
 			return t.trim();
@@ -446,7 +456,7 @@ public class InvoiceBuilderService {
 		if (jobNo != null && !jobNo.isBlank()) {
 			return jobNo.trim();
 		}
-		return "Job " + jobId;
+		return jobUuid != null && jobUuid.length() > 8 ? "Job " + jobUuid.substring(0, 8) : "Job";
 	}
 
 	private static LocalDate parseJobDateFlexible(String dateStr) {
