@@ -24,7 +24,8 @@ public final class NumberSequenceCatalog {
 			new ModuleDef("eway_bill_ref", "E-way bill ref", "WB", "last_seq_ewb"),
 			new ModuleDef("payment_receipt", "Payment Receipt", "RCPT", null),
 			new ModuleDef("temp_invoice", "Temp Invoice", "TEMP", "last_temp_invoice_no"),
-			new ModuleDef("client", "Client", "CL", null));
+			new ModuleDef("client", "Client", "CL", null),
+			new ModuleDef("supplier", "Supplier", "SUP", null));
 
 	private NumberSequenceCatalog() {
 	}

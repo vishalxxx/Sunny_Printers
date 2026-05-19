@@ -42,6 +42,10 @@ public final class UniversalNumberAllocator {
 		return delegate.allocateClientCode(con);
 	}
 
+	public AllocatedNumber allocateSupplierCode(Connection con) throws Exception {
+		return delegate.allocateSupplierCode(con);
+	}
+
 	public AllocatedNumber allocateJobCode(Connection con) throws Exception {
 		return delegate.allocate(con, "job", LocalDate.now());
 	}
@@ -53,6 +57,10 @@ public final class UniversalNumberAllocator {
 
 	public Optional<AllocatedNumber> tryAllocatePermanentClientCode(Connection con) throws Exception {
 		return delegate.tryAllocatePermanentClientCode(con);
+	}
+
+	public Optional<AllocatedNumber> tryAllocatePermanentSupplierCode(Connection con) throws Exception {
+		return delegate.tryAllocatePermanentSupplierCode(con);
 	}
 
 	public Optional<AllocatedNumber> tryAllocatePermanentJobCode(Connection con) throws Exception {

@@ -680,7 +680,7 @@ public class AddJobController implements utils.DirtySupport {
 			selectedClient = null;
 			
 			resetUploadView();
-			MainController.getInstance().openCenterDashboard();
+			MainController.getInstance().loadViewJob();
 
 		} catch (Exception e) {
 			if (con != null) { try { con.rollback(); } catch (Exception ex) {} }

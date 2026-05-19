@@ -193,9 +193,16 @@
 
 /* ===================== LIST VIEW & CARDS ===================== */
 
+.client-list-view,
+.client-list-view .virtual-flow,
+.client-list-view .scroll-pane,
+.client-list-view .scroll-pane > .viewport {
+    -fx-background-color: transparent !important;
+    -fx-background: transparent !important;
+    -fx-border-color: transparent !important;
+}
+
 .client-list-view {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
     -fx-padding: 10 0;
 }
 

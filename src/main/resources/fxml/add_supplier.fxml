@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
+<?import javafx.geometry.Insets?>
+
+<ScrollPane fitToWidth="true" stylesheets="@../css/theme.css, @../css/add_supplier.css" styleClass="add-supplier-root, center-area"
+    xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1"
+    fx:controller="controller.AddSupplierController">
+    
+    <VBox spacing="15" alignment="TOP_LEFT" fillWidth="true" styleClass="app-page-shell">
+        
+        <!-- BREADCRUMBS -->
+        <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container, supplier-breadcrumb-row" spacing="8" alignment="CENTER_LEFT" />
+        
+        <!-- MAIN CONTENT (Split Left and Right columns) -->
+        <GridPane hgap="20" vgap="20">
+            <columnConstraints>
+                <ColumnConstraints percentWidth="68" hgrow="ALWAYS" />
+                <ColumnConstraints percentWidth="32" hgrow="NEVER" />
+            </columnConstraints>
+            
+            <!-- LEFT COLUMN (Cards) -->
+            <VBox spacing="20" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                
+                <!-- BASIC INFORMATION -->
+                <VBox styleClass="supplier-card">
+                    <HBox styleClass="supplier-card-header">
+                        <Region styleClass="card-icon-supplier, icon-basic-info" />
+                        <Label text="Basic Information" styleClass="supplier-card-title" />
+                    </HBox>
+                    
+                    <GridPane hgap="15" vgap="12">
+                        <columnConstraints>
+                            <ColumnConstraints percentWidth="50" hgrow="ALWAYS" />
+                            <ColumnConstraints percentWidth="50" hgrow="ALWAYS" />
+                        </columnConstraints>
+                        
+                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                            <Label text="Supplier Name *" styleClass="supplier-field-label" />
+                            <TextField fx:id="supplierNameField" styleClass="supplier-input-field" promptText="Enter supplier name" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                            <Label text="Supplier Code (Auto)" styleClass="supplier-field-label" />
+                            <TextField fx:id="supplierCodeField" styleClass="supplier-input-field" disable="true" text="SUP-0042" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                            <Label text="Business Name" styleClass="supplier-field-label" />
+                            <TextField fx:id="businessNameField" styleClass="supplier-input-field" promptText="Enter company or trade name" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                            <Label text="GSTIN" styleClass="supplier-field-label" />
+                            <TextField fx:id="gstinField" styleClass="supplier-input-field" promptText="22AAAAA0000A1Z5" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                            <Label text="Mobile Number" styleClass="supplier-field-label" />
+                            <TextField fx:id="mobileField" styleClass="supplier-input-field" promptText="+91 99999 99999" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                            <Label text="Phone Number" styleClass="supplier-field-label" />
+                            <TextField fx:id="phoneField" styleClass="supplier-input-field" promptText="Landline (optional)" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="0" GridPane.rowIndex="3">
+                            <Label text="Email" styleClass="supplier-field-label" />
+                            <TextField fx:id="emailField" styleClass="supplier-input-field" promptText="email@business.com" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                            <Label text="Website" styleClass="supplier-field-label" />
+                            <TextField fx:id="websiteField" styleClass="supplier-input-field" promptText="https://example.com" maxWidth="Infinity" />
+                        </VBox>
+                    </GridPane>
+                </VBox>
+                
+                <!-- ADDRESS INFORMATION -->
+                <VBox styleClass="supplier-card">
+                    <HBox styleClass="supplier-card-header">
+                        <Region styleClass="card-icon-supplier, icon-address-info" />
+                        <Label text="Address Information" styleClass="supplier-card-title" />
+                    </HBox>
+                    
+                    <GridPane hgap="15" vgap="12">
+                        <columnConstraints>
+                            <ColumnConstraints percentWidth="50" hgrow="ALWAYS" />
+                            <ColumnConstraints percentWidth="50" hgrow="ALWAYS" />
+                        </columnConstraints>
+                        
+                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
+                            <Label text="Address" styleClass="supplier-field-label" />
+                            <TextArea fx:id="addressField" styleClass="supplier-textarea-field" promptText="Enter full address details" prefHeight="65" wrapText="true" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                            <Label text="State" styleClass="supplier-field-label" />
+                            <ComboBox fx:id="stateCombo" styleClass="supplier-combo-field" promptText="Select State" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                            <Label text="City" styleClass="supplier-field-label" />
+                            <ComboBox fx:id="cityCombo" styleClass="supplier-combo-field" promptText="Select City" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                            <Label text="Pincode" styleClass="supplier-field-label" />
+                            <TextField fx:id="pincodeField" styleClass="supplier-input-field" promptText="e.g. 110001" maxWidth="Infinity" />
+                        </VBox>
+                    </GridPane>
+                </VBox>
+                
+                <!-- ADDITIONAL INFORMATION -->
+                <VBox styleClass="supplier-card">
+                    <HBox styleClass="supplier-card-header">
+                        <Region styleClass="card-icon-supplier, icon-additional-info" />
+                        <Label text="Additional Information" styleClass="supplier-card-title" />
+                    </HBox>
+                    
+                    <GridPane hgap="15" vgap="12">
+                        <columnConstraints>
+                            <ColumnConstraints percentWidth="50" hgrow="ALWAYS" />
+                            <ColumnConstraints percentWidth="50" hgrow="ALWAYS" />
+                        </columnConstraints>
+                        
+                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                            <Label text="Supplier Type" styleClass="supplier-field-label" />
+                            <ComboBox fx:id="supplierTypeCombo" styleClass="supplier-combo-field" promptText="Select Type" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                            <Label text="Payment Terms" styleClass="supplier-field-label" />
+                            <ComboBox fx:id="paymentTermsCombo" styleClass="supplier-combo-field" promptText="Select Terms" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                            <Label text="Credit Limit (₹)" styleClass="supplier-field-label" />
+                            <TextField fx:id="creditLimitField" styleClass="supplier-input-field" text="0.00" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="2">
+                            <Label text="Notes" styleClass="supplier-field-label" />
+                            <TextArea fx:id="notesField" styleClass="supplier-textarea-field" promptText="Add internal comments or specific instruction..." prefHeight="65" wrapText="true" maxWidth="Infinity" />
+                        </VBox>
+                    </GridPane>
+                </VBox>
+            </VBox>
+            
+            <!-- RIGHT COLUMN (Action Buttons & Overview) -->
+            <VBox spacing="20" GridPane.columnIndex="1" GridPane.rowIndex="0" alignment="TOP_CENTER">
+                
+                <!-- ROW OF BUTTONS (Top of Right Panel) -->
+                <HBox spacing="10" alignment="CENTER_RIGHT" fillHeight="false">
+                    <Button text="Cancel" styleClass="btn-cancel-supplier" onAction="#handleCancel" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+                    <Button text="Save Supplier" styleClass="btn-save-supplier" onAction="#handleSaveSupplier" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+                </HBox>
+                
+                <!-- SUPPLIER OVERVIEW CARD -->
+                <VBox styleClass="supplier-overview-card">
+                    <Label text="Supplier Overview" styleClass="quick-info-title" maxWidth="Infinity" />
+                    
+                    <!-- Logo Upload Section -->
+                    <VBox spacing="10" alignment="CENTER">
+                        <VBox styleClass="supplier-avatar-container">
+                            <Region styleClass="supplier-avatar-icon" />
+                        </VBox>
+                        <Label text="No image uploaded" styleClass="avatar-placeholder-text" />
+                        <Button text="Upload Logo" styleClass="btn-upload-logo" onAction="#handleUploadLogo" />
+                    </VBox>
+                    
+                    <Separator style="-fx-background-color: #F4EAE0;" />
+                    
+                    <!-- Quick Details -->
+                    <VBox spacing="12" fillWidth="true">
+                        <HBox styleClass="quick-info-row">
+                            <Label text="Status:" styleClass="quick-info-label" />
+                            <Label text="Active" styleClass="pill-active-supplier" />
+                        </HBox>
+                        
+                        <HBox styleClass="quick-info-row">
+                            <Label text="Created By:" styleClass="quick-info-label" />
+                            <Label fx:id="lblCreatedBy" text="robox" styleClass="quick-info-value" />
+                        </HBox>
+                        
+                        <HBox styleClass="quick-info-row">
+                            <Label text="Created On:" styleClass="quick-info-label" />
+                            <Label fx:id="lblCreatedOn" text="18 May 2026" styleClass="quick-info-value" />
+                        </HBox>
+                        
+                        <HBox styleClass="quick-info-row">
+                            <Label text="Last Updated:" styleClass="quick-info-label" />
+                            <Label fx:id="lblLastUpdated" text="-" styleClass="quick-info-value" />
+                        </HBox>
+                    </VBox>
+                </VBox>
+            </VBox>
+        </GridPane>
+    </VBox>
+</ScrollPane>

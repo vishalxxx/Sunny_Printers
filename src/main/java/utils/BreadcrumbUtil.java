@@ -46,6 +46,9 @@ public final class BreadcrumbUtil {
 		m.put("/fxml/payment_history.fxml", new SidebarEntry("Payments", "Payment History"));
 		// Ledger
 		m.put("/fxml/client_ledger.fxml", new SidebarEntry("Ledger", "Client Ledger"));
+		// Suppliers
+		m.put("/fxml/view_supplier.fxml", new SidebarEntry("Suppliers", "View Suppliers"));
+		m.put("/fxml/add_supplier.fxml", new SidebarEntry("Suppliers", "Add Supplier"));
 		// Settings
 		m.put("/fxml/general_settings.fxml", new SidebarEntry("Settings", "General Settings"));
 		m.put("/fxml/bank_settings.fxml", new SidebarEntry("Settings", "Bank Details"));

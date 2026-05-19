@@ -521,7 +521,11 @@ public class ViewInvoicesController {
 
                 {
                     VBox.setVgrow(nameLabel, Priority.NEVER);
+                    HBox.setHgrow(box, Priority.ALWAYS);
+                    box.setMaxWidth(Double.MAX_VALUE);
                     nameLabel.getStyleClass().add("vi-client-name");
+                    nameLabel.setWrapText(true);
+                    nameLabel.maxWidthProperty().bind(colClient.widthProperty().subtract(10));
                     emailLabel.getStyleClass().add("vi-client-email");
                     box.setAlignment(Pos.CENTER_LEFT);
                 }

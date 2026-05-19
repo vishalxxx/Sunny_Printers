@@ -82,6 +82,10 @@ public class NumberSequenceAllocationService {
 		return allocate(con, "client", LocalDate.now());
 	}
 
+	public AllocatedNumber allocateSupplierCode(Connection con) throws Exception {
+		return allocate(con, "supplier", LocalDate.now());
+	}
+
 	/**
 	 * Allocates from Supabase {@code number_sequences} only (no TEMP-* fallback).
 	 * Used when promoting offline clients after connectivity returns.
@@ -112,6 +116,10 @@ public class NumberSequenceAllocationService {
 
 	public Optional<AllocatedNumber> tryAllocatePermanentClientCode(Connection con) throws Exception {
 		return tryAllocatePermanent(con, "client", LocalDate.now());
+	}
+
+	public Optional<AllocatedNumber> tryAllocatePermanentSupplierCode(Connection con) throws Exception {
+		return tryAllocatePermanent(con, "supplier", LocalDate.now());
 	}
 
 	public String allocateJobCode(Connection con) throws Exception {

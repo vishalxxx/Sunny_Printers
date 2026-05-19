@@ -224,8 +224,8 @@ public class ViewInvoiceJobsController {
                     setGraphic(null);
                 } else {
                     javafx.scene.layout.HBox container = new javafx.scene.layout.HBox(12);
-                    container.setAlignment(javafx.geometry.Pos.CENTER); // Centered content
-                    setStyle("-fx-alignment: CENTER;"); // Center in cell
+                    container.setAlignment(javafx.geometry.Pos.CENTER_LEFT); // Left alignment for nice wrapping
+                    setStyle("-fx-alignment: CENTER_LEFT;"); // Center left in cell
 
                     // Icon (No background, larger size)
                     javafx.scene.shape.SVGPath icon = new javafx.scene.shape.SVGPath();
@@ -235,8 +235,14 @@ public class ViewInvoiceJobsController {
 
                     javafx.scene.layout.VBox textNodes = new javafx.scene.layout.VBox(2);
                     textNodes.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                    javafx.scene.layout.HBox.setHgrow(textNodes, javafx.scene.layout.Priority.ALWAYS);
+                    textNodes.setMaxWidth(Double.MAX_VALUE);
+
                     Label lblTitle = new Label(item);
                     lblTitle.setStyle("-fx-font-weight: 800; -fx-text-fill: #3E312D; -fx-font-size: 13px;");
+                    lblTitle.setWrapText(true);
+                    lblTitle.maxWidthProperty().bind(col.widthProperty().subtract(60));
+
                     Label lblSub = new Label("Printing Job");
                     lblSub.setStyle("-fx-text-fill: #A7A69D; -fx-font-size: 11px;");
                     textNodes.getChildren().addAll(lblTitle, lblSub);
@@ -325,9 +331,11 @@ public class ViewInvoiceJobsController {
                 if (empty || item == null || item.isBlank()) {
                     setText("—");
                     setStyle("-fx-text-fill: #A7A69D; -fx-alignment: CENTER;");
+                    setWrapText(false);
                 } else {
                     setText(item);
                     setStyle("-fx-text-fill: #3E312D; -fx-font-size: 12px; -fx-alignment: CENTER;");
+                    setWrapText(true);
                 }
             }
         });
@@ -356,7 +364,7 @@ public class ViewInvoiceJobsController {
 
         jobsTable.setItems(tableData);
         jobsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        jobsTable.setFixedCellSize(72); // Optimal editorial density
+        jobsTable.setFixedCellSize(80); // Optimal editorial density for wrapping
     }
 
     private Button createCircularBtn(String path, String color) {

@@ -131,6 +131,13 @@
     -fx-background-color: white;
 }
 
+.form-textarea .scroll-pane,
+.form-textarea .scroll-pane .viewport,
+.form-textarea .scroll-pane .content {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+}
+
 /* --- TOGGLE SWITCH (Stitch Style) --- */
 .switch-label {
     -fx-text-fill: #5D6D7E; /* Slate grey from image */

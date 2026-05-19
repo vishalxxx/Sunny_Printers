@@ -23,6 +23,24 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javafx.application.Platform;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Properties;
+import jakarta.mail.Authenticator;
+import jakarta.mail.Message;
+import jakarta.mail.PasswordAuthentication;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
+import model.EmailSettings;
+import repository.EmailSettingsRepository;
+import model.Supplier;
+import utils.DBConnection;
+import repository.ClientRepository;
 import service.InvoiceMasterService;
 import model.InvoiceMaster;
 
@@ -619,7 +637,7 @@ public class ViewJobsController {
             private final VBox box = new VBox(0);
             private final StackPane amountShell = new StackPane();
             private final Label amount = new Label();
-            private final HBox metaBox = new HBox(4);
+            private final javafx.scene.layout.FlowPane metaBox = new javafx.scene.layout.FlowPane();
             private final Label invPrefix = new Label("Invoice:");
             private final Hyperlink invLink = new Hyperlink();
             private final Label separator = new Label("|");
@@ -651,10 +669,12 @@ public class ViewJobsController {
                 imgPrefix.setMinWidth(Region.USE_PREF_SIZE);
                 imgLink.setMinWidth(Region.USE_PREF_SIZE);
                 
+                metaBox.setHgap(4);
+                metaBox.setVgap(2);
+                metaBox.setPrefWrapLength(140);
                 metaBox.getChildren().addAll(invPrefix, invLink, separator, imgPrefix, imgLink);
                 metaBox.setAlignment(Pos.CENTER_LEFT);
-                metaBox.setFillHeight(false);
-                metaBox.setMaxWidth(Region.USE_PREF_SIZE);
+                metaBox.setMaxWidth(Double.MAX_VALUE);
                 box.getChildren().addAll(amount, metaBox);
                 /* CENTER_LEFT: left-align ₹ + invoice row; vertically center that stack in the cell when row is tall */
                 box.setAlignment(Pos.CENTER_LEFT);
@@ -816,6 +836,10 @@ public class ViewJobsController {
                 eBtn.setGraphic(createIcon("M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z", "#FA8C16"));
                 eBtn.setOnAction(e -> openEditJobScreen(job));
 
+                Button mailBtn = new Button(); mailBtn.getStyleClass().addAll("row-action-btn", "row-btn-purple");
+                mailBtn.setGraphic(createIcon("M2 21l21-9L2 3v7l15 2-15 2z", "#722ED1"));
+                mailBtn.setOnAction(e -> handleSendMailPopup(job));
+
                 Button mBtn = new Button(); mBtn.getStyleClass().addAll("row-action-btn", "row-btn-gray");
                 mBtn.setGraphic(createIcon("M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z", "#5B4F47"));
                 
@@ -824,11 +848,303 @@ public class ViewJobsController {
                 if (!statusMsg.contains("cancel")) {
                     root.getChildren().add(eBtn);
                 }
+                root.getChildren().add(mailBtn);
                 root.getChildren().add(mBtn);
                 useGraphicOnlyCell(this);
                 setGraphic(root);
             }
         });
+        jobsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+    }
+
+    public static class MailRecipient {
+        private final String type;
+        private final String businessName;
+        private final String name;
+        private final String email;
+        private final String phone;
+
+        public MailRecipient(String type, String businessName, String name, String email, String phone) {
+            this.type = type;
+            this.businessName = businessName;
+            this.name = name;
+            this.email = email;
+            this.phone = phone;
+        }
+
+        public String getType() { return type; }
+        public String getBusinessName() { return businessName; }
+        public String getName() { return name; }
+        public String getEmail() { return email; }
+        public String getPhone() { return phone; }
+    }
+
+    private void handleSendMailPopup(Job job) {
+        if (job == null) return;
+        
+        Client client = null;
+        try {
+            ClientRepository clientRepo = new ClientRepository();
+            client = clientRepo.findByUuid(job.getClientUuid());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        
+        List<model.Supplier> suppliers = new ArrayList<>();
+        String sql = "SELECT * FROM suppliers WHERE IFNULL(is_deleted,0) = 0 ORDER BY business_name ASC";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                model.Supplier s = new model.Supplier();
+                s.setUuid(rs.getString("uuid"));
+                s.setName(rs.getString("name"));
+                s.setbusinessName(rs.getString("business_name"));
+                s.setType(rs.getString("type"));
+                s.setPhone(rs.getString("phone"));
+                s.setAddress(rs.getString("address"));
+                s.setGstNumber(rs.getString("gst_number"));
+                suppliers.add(s);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        
+        ObservableList<MailRecipient> recipients = FXCollections.observableArrayList();
+        if (client != null) {
+            recipients.add(new MailRecipient("Client (Owner)", 
+                client.getBusinessName() != null ? client.getBusinessName() : "", 
+                client.getClientName() != null ? client.getClientName() : "", 
+                client.getEmail() != null ? client.getEmail() : "", 
+                client.getPhone() != null ? client.getPhone() : ""));
+        }
+        for (model.Supplier s : suppliers) {
+            recipients.add(new MailRecipient("Supplier (" + (s.getType() != null ? s.getType() : "") + ")", 
+                s.getbusinessName() != null ? s.getbusinessName() : "", 
+                s.getName() != null ? s.getName() : "", 
+                "", 
+                s.getPhone() != null ? s.getPhone() : ""));
+        }
+        
+        Stage stage = new Stage(StageStyle.TRANSPARENT);
+        stage.initModality(Modality.APPLICATION_MODAL);
+        
+        VBox root = new VBox(15);
+        root.setStyle("-fx-background-color: #FAF6F0; -fx-background-radius: 16; -fx-padding: 24; " +
+                      "-fx-border-width: 1; -fx-border-color: #EEECE8; -fx-border-radius: 16;" +
+                      "-fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.15), 30, 0, 0, 15);");
+        root.setMinWidth(600);
+        root.setMaxWidth(700);
+        
+        // Header
+        HBox header = new HBox();
+        header.setAlignment(Pos.CENTER_LEFT);
+        VBox titleBox = new VBox(2);
+        Label idLbl = new Label("EMAIL NOTIFICATION");
+        idLbl.setStyle("-fx-text-fill: #CD7B4E; -fx-font-weight: 800; -fx-font-size: 11px; -fx-letter-spacing: 0.1em;");
+        Label titleLbl = new Label("Send Email for " + job.getJobTitle());
+        titleLbl.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 800; -fx-font-size: 18px; -fx-font-family: 'Inter';");
+        titleBox.getChildren().addAll(idLbl, titleLbl);
+        
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        
+        Button closeBtn = new Button("✕");
+        closeBtn.getStyleClass().add("view-clear-btn");
+        closeBtn.setStyle("-fx-min-width: 28; -fx-min-height: 28; -fx-font-size: 12px; -fx-padding: 0;");
+        closeBtn.setOnAction(e -> stage.close());
+        header.getChildren().addAll(titleBox, spacer, closeBtn);
+        
+        // Table label
+        Label tableLabel = new Label("Select Recipient (Client or Supplier):");
+        tableLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700; -fx-font-size: 12px;");
+        
+        // TableView for recipients
+        TableView<MailRecipient> table = new TableView<>();
+        table.getStyleClass().add("job-details-popup-table");
+        table.setPrefHeight(150);
+        
+        TableColumn<MailRecipient, String> typeCol = new TableColumn<>("Role / Type");
+        typeCol.setCellValueFactory(new PropertyValueFactory<>("type"));
+        typeCol.setPrefWidth(120);
+        
+        TableColumn<MailRecipient, String> bNameCol = new TableColumn<>("Business Name");
+        bNameCol.setCellValueFactory(new PropertyValueFactory<>("businessName"));
+        bNameCol.setPrefWidth(150);
+        
+        TableColumn<MailRecipient, String> nameCol = new TableColumn<>("Contact Name");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+        nameCol.setPrefWidth(120);
+        
+        TableColumn<MailRecipient, String> emailCol = new TableColumn<>("Email Address");
+        emailCol.setCellValueFactory(new PropertyValueFactory<>("email"));
+        emailCol.setPrefWidth(130);
+        
+        table.getColumns().addAll(typeCol, bNameCol, nameCol, emailCol);
+        table.setItems(recipients);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        
+        // Form Fields
+        Label toLabel = new Label("To Email:");
+        toLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700;");
+        TextField toEmailField = new TextField();
+        toEmailField.setPromptText("Enter recipient email address...");
+        toEmailField.getStyleClass().add("text-field");
+        
+        Label subjectLabel = new Label("Subject:");
+        subjectLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700;");
+        TextField subjectField = new TextField("Sunny Printers: Update for Job - " + job.getJobTitle());
+        subjectField.getStyleClass().add("text-field");
+        
+        Label messageLabel = new Label("Message:");
+        messageLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700;");
+        TextArea messageArea = new TextArea();
+        messageArea.setPrefRowCount(6);
+        messageArea.setWrapText(true);
+        messageArea.getStyleClass().add("text-area");
+        
+        // Add listener to table
+        table.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+            if (newSel != null) {
+                toEmailField.setText(newSel.getEmail() != null ? newSel.getEmail() : "");
+                
+                String salutation = newSel.getBusinessName() != null && !newSel.getBusinessName().isEmpty() 
+                    ? newSel.getBusinessName() 
+                    : (newSel.getName() != null ? newSel.getName() : "Team");
+                    
+                String customBody = "Dear " + salutation + ",\n\n"
+                                  + "Here is an update regarding the job \"" + job.getJobTitle() + "\" (" + job.getJobNo() + "):\n\n"
+                                  + "• Status: " + job.getStatus() + "\n"
+                                  + "• Description: " + (job.getDescription() != null ? job.getDescription() : "N/A") + "\n"
+                                  + "• Total Cost: Rs. " + String.format("%.2f", job.getJobTotal() != null ? job.getJobTotal() : 0.0) + "\n\n"
+                                  + "Please feel free to contact us if you have any questions or require any adjustments.\n\n"
+                                  + "Best Regards,\n"
+                                  + "Sunny Printers Team";
+                messageArea.setText(customBody);
+            }
+        });
+        
+        // Default select first item
+        if (!recipients.isEmpty()) {
+            table.getSelectionModel().selectFirst();
+        }
+        
+        // Check email configuration
+        boolean configOk = false;
+        String warningMsg = "";
+        try {
+            EmailSettingsRepository emailRepo = new EmailSettingsRepository();
+            EmailSettings settings = emailRepo.load();
+            if (settings.getSenderEmail() != null && !settings.getSenderEmail().isBlank()) {
+                configOk = true;
+            } else {
+                warningMsg = "⚠ SMTP Sender settings not configured in Settings screen!";
+            }
+        } catch (Exception ex) {
+            warningMsg = "⚠ Error loading SMTP settings: " + ex.getMessage();
+        }
+        
+        Label statusInfoLabel = new Label(configOk ? "SMTP Configured" : warningMsg);
+        statusInfoLabel.setStyle(configOk 
+            ? "-fx-text-fill: #228B22; -fx-font-weight: 600; -fx-font-size: 11px;" 
+            : "-fx-text-fill: #F5222D; -fx-font-weight: 700; -fx-font-size: 11px;");
+        
+        Button sendBtn = new Button("Send Email");
+        sendBtn.getStyleClass().add("row-action-btn-primary");
+        sendBtn.setGraphic(createIcon("M2 21l21-9L2 3v7l15 2-15 2z", "white"));
+        sendBtn.setDisable(!configOk);
+        
+        sendBtn.setOnAction(e -> {
+            String toEmail = toEmailField.getText().trim();
+            String subject = subjectField.getText().trim();
+            String messageBody = messageArea.getText();
+            
+            if (toEmail.isEmpty()) {
+                toast("❌ Please enter a recipient email address!");
+                return;
+            }
+            if (!toEmail.contains("@")) {
+                toast("❌ Please enter a valid email address!");
+                return;
+            }
+            
+            sendBtn.setDisable(true);
+            sendBtn.setText("Sending...");
+            
+            new Thread(() -> {
+                try {
+                    EmailSettingsRepository repo = new EmailSettingsRepository();
+                    EmailSettings settings = repo.load();
+                    
+                    String smtpHost = settings.getSmtpHost();
+                    String smtpPort = settings.getSmtpPort();
+                    String senderEmail = settings.getSenderEmail();
+                    String senderPassword = settings.getSenderPassword();
+                    
+                    Properties props = new Properties();
+                    props.put("mail.smtp.auth", "true");
+                    props.put("mail.smtp.starttls.enable", "true");
+                    props.put("mail.smtp.host", smtpHost);
+                    props.put("mail.smtp.port", smtpPort);
+                    
+                    Session session = Session.getInstance(props, new Authenticator() {
+                        @Override
+                        protected PasswordAuthentication getPasswordAuthentication() {
+                            return new PasswordAuthentication(senderEmail, senderPassword);
+                        }
+                    });
+                    
+                    Message message = new MimeMessage(session);
+                    message.setFrom(new InternetAddress(senderEmail, "Sunny Printers"));
+                    message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
+                    message.setSubject(subject);
+                    message.setContent(messageBody.replace("\n", "<br>"), "text/html; charset=utf-8");
+                    
+                    Transport.send(message);
+                    
+                    Platform.runLater(() -> {
+                        toast("✅ Email sent successfully!");
+                        stage.close();
+                    });
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    Platform.runLater(() -> {
+                        toast("❌ Failed to send email: " + ex.getMessage());
+                        sendBtn.setDisable(false);
+                        sendBtn.setText("Send Email");
+                    });
+                }
+            }).start();
+        });
+        
+        Button cancelBtn = new Button("Cancel");
+        cancelBtn.getStyleClass().add("view-clear-btn");
+        cancelBtn.setOnAction(e -> stage.close());
+        
+        HBox actionRow = new HBox(10);
+        actionRow.setAlignment(Pos.CENTER_RIGHT);
+        actionRow.getChildren().addAll(statusInfoLabel, cancelBtn, sendBtn);
+        
+        VBox formBox = new VBox(8);
+        formBox.getChildren().addAll(
+            toLabel, toEmailField,
+            subjectLabel, subjectField,
+            messageLabel, messageArea
+        );
+        
+        root.getChildren().addAll(header, tableLabel, table, formBox, actionRow);
+        
+        Scene scene = new Scene(root);
+        scene.setFill(Color.TRANSPARENT);
+        
+        // Apply styling stylesheets
+        String themeUrl = getClass().getResource("/css/theme.css").toExternalForm();
+        scene.getStylesheets().add(themeUrl);
+        String viewJobCss = getClass().getResource("/css/view_job.css").toExternalForm();
+        scene.getStylesheets().add(viewJobCss);
+        
+        stage.setScene(scene);
+        stage.showAndWait();
     }
 
     private void handleStartActionForJob(Job job) {
@@ -946,10 +1262,12 @@ public class ViewJobsController {
         headVal.setStyle("-fx-font-weight: 700; -fx-text-fill: " + colorHex + "; -fx-font-size: 12px;");
         headRow.getChildren().addAll(headPrefix, headVal);
 
-        /* HBox keeps the full child trail on one row; FlowPane wrapped long draft trails. */
-        HBox breadcrumbPane = new HBox(4);
+        /* FlowPane wraps long child trails gracefully so they are fully visible */
+        javafx.scene.layout.FlowPane breadcrumbPane = new javafx.scene.layout.FlowPane();
+        breadcrumbPane.setHgap(4);
+        breadcrumbPane.setVgap(4);
+        breadcrumbPane.setPrefWrapLength(320);
         breadcrumbPane.setAlignment(Pos.CENTER_LEFT);
-        breadcrumbPane.setFillHeight(false);
         breadcrumbPane.setMaxWidth(Double.MAX_VALUE);
         int curIdx = JobWorkflow.indexOfChild(major, effective);
         if (curIdx < 0) curIdx = 0;

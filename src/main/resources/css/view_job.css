@@ -84,7 +84,7 @@
     -fx-table-header-border-color: transparent;
     -fx-border-color: #EEECE8; -fx-border-width: 1 0 1 0;
     /* One knob for row height vs. status block (stepper + child panel) */
-    -fx-fixed-cell-size: 106;
+    -fx-fixed-cell-size: 120;
 }
 
 .jobs-table-premium .column-header-background { -fx-background-color: #FAF6F0; -fx-border-color: #EEECE8; -fx-border-width: 0 0 1 0; }
@@ -115,7 +115,6 @@
 
 .jobs-table-premium .table-cell { -fx-padding: 0 4 0 4; -fx-alignment: center; -fx-border-color: transparent;
     -fx-graphic-text-gap: 0;
-    -fx-content-display: graphic-only;
 }
 
 /* Status & Progress: symmetric vertical insets; center graphic so slack is top + bottom, not bottom-only */
@@ -856,7 +855,7 @@
     -fx-table-cell-border-color: transparent;
     -fx-table-header-border-color: transparent;
     -fx-border-color: transparent;
-    -fx-fixed-cell-size: 60;
+    -fx-fixed-cell-size: 80;
 }
 
 .invoice-jobs-table-premium .column-header-background {

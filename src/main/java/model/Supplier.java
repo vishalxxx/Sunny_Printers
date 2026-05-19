@@ -2,12 +2,38 @@ package model;
 
 public class Supplier {
 	private String uuid;
+	private String supplierCode;
 	private String name;
 	private String type; // CTP, Paper, Binding, Lamination...
 	private String phone;
 	private String address;
 	private String gstNumber;
 	private String businessName;
+	private String createdByUserUuid;
+	private String updatedByUserUuid;
+
+	public String getCreatedByUserUuid() {
+		return createdByUserUuid;
+	}
+
+	public void setCreatedByUserUuid(String createdByUserUuid) {
+		this.createdByUserUuid = createdByUserUuid;
+	}
+
+	public String getUpdatedByUserUuid() {
+		return updatedByUserUuid;
+	}
+
+	public void setUpdatedByUserUuid(String updatedByUserUuid) {
+		this.updatedByUserUuid = updatedByUserUuid;
+	}
+	public String getSupplierCode() {
+		return supplierCode;
+	}
+
+	public void setSupplierCode(String supplierCode) {
+		this.supplierCode = supplierCode;
+	}
 
 	public Supplier() {
 	}

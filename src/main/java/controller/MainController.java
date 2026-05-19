@@ -321,6 +321,8 @@ public class MainController implements Initializable {
 	private VBox ledgerSubmenu;
 	@FXML
 	private VBox settingsSubmenu;
+	@FXML
+	private VBox suppliersSubmenu;
 
 	// Accordion Headers (Buttons)
 	@FXML
@@ -335,6 +337,8 @@ public class MainController implements Initializable {
 	private Button ledgerBtn;
 	@FXML
 	private Button settingsBtn;
+	@FXML
+	private Button suppliersBtn;
 	@FXML
 	private Button dashboardBtn;
 
@@ -365,6 +369,10 @@ public class MainController implements Initializable {
 	private Button taxMasterSubBtn;
 	@FXML
 	private Button userSettingsSubBtn;
+	@FXML
+	private Button viewSuppliersSubBtn;
+	@FXML
+	private Button addSupplierSubBtn;
 
 	// Chevrons
 	@FXML
@@ -379,6 +387,8 @@ public class MainController implements Initializable {
 	private Region ledgerChevron;
 	@FXML
 	private Region settingsChevron;
+	@FXML
+	private Region suppliersChevron;
 
 	// ScrollPanes
 	@FXML
@@ -1262,6 +1272,8 @@ public class MainController implements Initializable {
 			case "/fxml/record_payment.fxml" -> "Record Payment";
 			case "/fxml/payment_history.fxml" -> "Payment History";
 			case "/fxml/client_ledger.fxml" -> "Client Ledger";
+			case "/fxml/add_supplier.fxml" -> "Add Supplier";
+			case "/fxml/view_supplier.fxml" -> "View Suppliers";
 			case "/fxml/general_settings.fxml" -> "General Settings";
 			case "/fxml/user_settings.fxml" -> "User Settings";
 			case "/fxml/invoice_settings.fxml" -> "Invoice Settings";
@@ -1360,11 +1372,11 @@ public class MainController implements Initializable {
 	}
 
 	public void collapseAllSubmenus(boolean animate) {
-		VBox[] submenus = { jobsSubmenu, clientsSubmenu, billingSubmenu, paymentSubmenu, ledgerSubmenu,
+		VBox[] submenus = { jobsSubmenu, clientsSubmenu, suppliersSubmenu, billingSubmenu, paymentSubmenu, ledgerSubmenu,
 				settingsSubmenu };
-		Region[] chevrons = { jobsChevron, clientsChevron, billingChevron, paymentChevron, ledgerChevron,
+		Region[] chevrons = { jobsChevron, clientsChevron, suppliersChevron, billingChevron, paymentChevron, ledgerChevron,
 				settingsChevron };
-		Button[] btns = { jobsBtn, clientsBtn, billingBtn, paymentBtn, ledgerBtn, settingsBtn };
+		Button[] btns = { jobsBtn, clientsBtn, suppliersBtn, billingBtn, paymentBtn, ledgerBtn, settingsBtn };
 
 		for (int i = 0; i < submenus.length; i++) {
 			VBox sub = submenus[i];
@@ -1387,7 +1399,7 @@ public class MainController implements Initializable {
 	}
 
 	private void resetSelectionStyles() {
-		Button[] buttons = { jobsBtn, clientsBtn, billingBtn, paymentBtn, ledgerBtn, settingsBtn, dashboardBtn };
+		Button[] buttons = { jobsBtn, clientsBtn, suppliersBtn, billingBtn, paymentBtn, ledgerBtn, settingsBtn, dashboardBtn };
 		for (Button b : buttons) {
 			if (b != null)
 				b.getStyleClass().remove("sidebar-btn-active");
@@ -1559,6 +1571,24 @@ public class MainController implements Initializable {
 			centerHeaderTitle.setText(header);
 			centerHeaderTitle.setVisible(true);
 			centerHeaderTitle.setManaged(true);
+		} else if ("/fxml/add_supplier.fxml".equals(fxmlPath)) {
+			utils.NavigationManager.NavState cur = utils.NavigationManager.getInstance().getCurrentState();
+			String header = "Add Supplier";
+			if (cur != null && cur.getTitle() != null && !cur.getTitle().isBlank()) {
+				header = cur.getTitle();
+			}
+			centerHeaderTitle.setText(header);
+			centerHeaderTitle.setVisible(true);
+			centerHeaderTitle.setManaged(true);
+		} else if ("/fxml/view_supplier.fxml".equals(fxmlPath)) {
+			utils.NavigationManager.NavState cur = utils.NavigationManager.getInstance().getCurrentState();
+			String header = "View Suppliers";
+			if (cur != null && cur.getTitle() != null && !cur.getTitle().isBlank()) {
+				header = cur.getTitle();
+			}
+			centerHeaderTitle.setText(header);
+			centerHeaderTitle.setVisible(true);
+			centerHeaderTitle.setManaged(true);
 		} else if ("/fxml/view_invoice_jobs.fxml".equals(fxmlPath)) {
 			utils.NavigationManager.NavState cur = utils.NavigationManager.getInstance().getCurrentState();
 			String header = "View Invoice Jobs";
@@ -1632,6 +1662,11 @@ public class MainController implements Initializable {
 	@FXML
 	public void showSettingSubmenu() {
 		toggleSubmenu(settingsSubmenu, settingsChevron, settingsBtn, this::loadGeneralSettings);
+	}
+
+	@FXML
+	public void showSuppliersSubmenu() {
+		toggleSubmenu(suppliersSubmenu, suppliersChevron, suppliersBtn, this::loadViewSuppliers);
 	}
 
 	private VBox findSidebarById(String id) {
@@ -1836,6 +1871,55 @@ public class MainController implements Initializable {
 		loadCenterScreen("/fxml/view_client.fxml",
 				"Loading Client Table...",
 				"Please wait");
+	}
+
+	@FXML
+	public void loadViewSuppliers() {
+		highlightActiveMenu(suppliersBtn);
+		highlightSubmenu(viewSuppliersSubBtn);
+		loadCenterScreen("/fxml/view_supplier.fxml",
+				"Loading Suppliers...",
+				"Please wait");
+	}
+
+	@FXML
+	public void loadAddSupplier() {
+		highlightActiveMenu(suppliersBtn);
+		highlightSubmenu(addSupplierSubBtn);
+		loadCenterScreen("/fxml/add_supplier.fxml",
+				"Loading Supplier Form...",
+				"Please wait");
+	}
+
+	public void loadEditSupplier(model.Supplier supplier) {
+		if (supplier == null)
+			return;
+		highlightActiveMenu(suppliersBtn);
+		try {
+			FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/add_supplier.fxml"));
+			Parent view = loader.load();
+			AddSupplierController controller = loader.getController();
+			controller.setSupplierData(supplier);
+
+			String themeUrl = getClass().getResource("/css/theme.css").toExternalForm();
+			if (!view.getStylesheets().contains(themeUrl)) {
+				view.getStylesheets().add(0, themeUrl);
+			}
+
+			centerContentHost.getChildren().setAll(view);
+			if (pageTitle != null) {
+				pageTitle.setVisible(true);
+				pageTitle.setManaged(true);
+				setPageTitle("Edit Supplier");
+			}
+
+			utils.NavigationManager.getInstance().push("/fxml/add_supplier.fxml", "Edit Supplier", supplier.getName(),
+					suppliersSubmenu.getId());
+			utils.NavigationManager.getInstance().updateCurrentState(view, controller);
+			updateCenterHeaderTitle("/fxml/add_supplier.fxml");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	@FXML

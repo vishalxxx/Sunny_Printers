@@ -61,15 +61,32 @@ public class DatabaseInitializer {
             stmt.execute("""
                     CREATE TABLE IF NOT EXISTS suppliers (
                         uuid TEXT PRIMARY KEY NOT NULL,
+                        supplier_code TEXT DEFAULT '',
                         name TEXT NOT NULL DEFAULT '',
                         business_name TEXT DEFAULT '',
                         type TEXT NOT NULL DEFAULT '',
                         phone TEXT DEFAULT '',
                         address TEXT DEFAULT '',
                         gst_number TEXT DEFAULT '',
+                        created_by_user_uuid TEXT DEFAULT NULL,
+                        updated_by_user_uuid TEXT DEFAULT NULL,
                         %s
                     );
                     """.formatted(SYNC_COLUMNS));
+            try {
+                if (!columnExists(conn, "suppliers", "supplier_code")) {
+                    stmt.execute("ALTER TABLE suppliers ADD COLUMN supplier_code TEXT DEFAULT '';");
+                    System.out.println("✔ Migration: Added supplier_code column to suppliers table.");
+                }
+                if (!columnExists(conn, "suppliers", "created_by_user_uuid")) {
+                    stmt.execute("ALTER TABLE suppliers ADD COLUMN created_by_user_uuid TEXT DEFAULT NULL;");
+                }
+                if (!columnExists(conn, "suppliers", "updated_by_user_uuid")) {
+                    stmt.execute("ALTER TABLE suppliers ADD COLUMN updated_by_user_uuid TEXT DEFAULT NULL;");
+                }
+            } catch (Exception e) {
+                System.err.println("Migration failed: adding supplier_code to suppliers: " + e.getMessage());
+            }
             try {
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_suppliers_type ON suppliers(type);");
             } catch (Exception ignored) {
@@ -2173,12 +2190,14 @@ public class DatabaseInitializer {
             stmt.execute("""
                     CREATE TABLE suppliers (
                         uuid TEXT PRIMARY KEY NOT NULL,
+                        supplier_code TEXT DEFAULT '',
                         name TEXT NOT NULL DEFAULT '',
                         business_name TEXT DEFAULT '',
                         type TEXT NOT NULL DEFAULT '',
                         phone TEXT DEFAULT '',
-                        address TEXT DEFAULT '',
                         gst_number TEXT DEFAULT '',
+                        created_by_user_uuid TEXT DEFAULT NULL,
+                        updated_by_user_uuid TEXT DEFAULT NULL,
                         sync_status TEXT DEFAULT 'PENDING',
                         sync_version INTEGER DEFAULT 1,
                         is_deleted INTEGER DEFAULT 0,
@@ -2191,10 +2210,10 @@ public class DatabaseInitializer {
                     """);
             boolean hasCreatedAt = columnExists(conn, "suppliers_old", "created_at");
             String insertSql = """
-                    INSERT INTO suppliers (uuid, name, business_name, type, phone, address, gst_number %s)
+                    INSERT INTO suppliers (uuid, supplier_code, name, business_name, type, phone, address, gst_number, created_by_user_uuid, updated_by_user_uuid %s)
                     SELECT 
                         lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
-                        name, business_name, type, phone, address, gst_number %s
+                        '', name, business_name, type, phone, address, gst_number, NULL, NULL %s
                     FROM suppliers_old;
                     """.formatted(hasCreatedAt ? ", created_at" : "", hasCreatedAt ? ", created_at" : "");
             stmt.execute(insertSql);
@@ -3161,12 +3180,15 @@ public class DatabaseInitializer {
         stmt.execute("""
                 CREATE TABLE suppliers (
                     uuid TEXT PRIMARY KEY NOT NULL,
+                    supplier_code TEXT DEFAULT '',
                     name TEXT NOT NULL DEFAULT '',
                     business_name TEXT DEFAULT '',
                     type TEXT NOT NULL DEFAULT '',
                     phone TEXT DEFAULT '',
                     address TEXT DEFAULT '',
                     gst_number TEXT DEFAULT '',
+                    created_by_user_uuid TEXT DEFAULT NULL,
+                    updated_by_user_uuid TEXT DEFAULT NULL,
                     sync_status TEXT DEFAULT 'PENDING',
                     sync_version INTEGER DEFAULT 1,
                     is_deleted INTEGER DEFAULT 0,
@@ -3179,12 +3201,14 @@ public class DatabaseInitializer {
                 """);
         stmt.execute("""
                 INSERT INTO suppliers (
-                    uuid, name, business_name, type, phone, address, gst_number,
+                    uuid, supplier_code, name, business_name, type, phone, address, gst_number,
+                    created_by_user_uuid, updated_by_user_uuid,
                     sync_status, sync_version, is_deleted, is_active, created_at, updated_at, synced_at, deleted_at
                 )
                 SELECT
                     COALESCE(NULLIF(TRIM(old.uuid), ''), lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))),
-                    name, business_name, type, phone, address, gst_number,
+                    COALESCE(old.supplier_code, ''), name, business_name, type, phone, address, gst_number,
+                    NULL, NULL,
                     COALESCE(sync_status, 'PENDING'), COALESCE(sync_version, 1),
                     COALESCE(is_deleted, 0), COALESCE(is_active, 1),
                     COALESCE(created_at, datetime('now')), COALESCE(updated_at, datetime('now')),
