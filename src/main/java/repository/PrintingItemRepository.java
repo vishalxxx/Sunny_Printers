@@ -107,7 +107,16 @@ public class PrintingItemRepository {
     /* ================= DELETE ================= */
 
     public void deleteByJobItemUuid(Connection con, String jobItemUuid) {
-        String sql = "UPDATE printing_items SET is_deleted = 1, updated_at = datetime('now'), sync_status = 'PENDING' WHERE job_item_uuid = ?";
+        model.User current = utils.SessionManager.getInstance().getCurrentUser();
+        boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
+
+        String sql;
+        if (isAdmin) {
+            sql = "DELETE FROM printing_items WHERE job_item_uuid = ?";
+        } else {
+            sql = "UPDATE printing_items SET is_deleted = 1, updated_at = datetime('now'), sync_status = 'PENDING' WHERE job_item_uuid = ?";
+        }
+
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, jobItemUuid);
             ps.executeUpdate();

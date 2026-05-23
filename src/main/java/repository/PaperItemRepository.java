@@ -20,8 +20,8 @@ public class PaperItemRepository {
 
         String sql = """
             INSERT INTO paper_items
-            (uuid, job_item_uuid, qty, units, size, gsm, type, source, notes, amount, sync_status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', datetime('now'), datetime('now'))
+            (uuid, job_item_uuid, qty, units, size, gsm, type, source, supplier_uuid, notes, amount, sync_status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', datetime('now'), datetime('now'))
         """;
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -33,8 +33,9 @@ public class PaperItemRepository {
             ps.setString(6, p.getGsm());
             ps.setString(7, p.getType());
             ps.setString(8, p.getSource());
-            ps.setString(9, p.getNotes());
-            ps.setDouble(10, p.getAmount());
+            ps.setString(9, p.getSupplierUuid());
+            ps.setString(10, p.getNotes());
+            ps.setDouble(11, p.getAmount());
             ps.executeUpdate();
         } catch (Exception e) {
             throw new RuntimeException("Failed to save paper item", e);
@@ -46,7 +47,7 @@ public class PaperItemRepository {
        ===================================================== */
     public Paper findByJobItemUuid(String jobItemUuid) {
         String sql = """
-            SELECT uuid, job_item_uuid, qty, units, size, gsm, type, source, notes, amount, sync_status, sync_version, created_at, updated_at
+            SELECT uuid, job_item_uuid, qty, units, size, gsm, type, source, supplier_uuid, notes, amount, sync_status, sync_version, created_at, updated_at
             FROM paper_items
             WHERE job_item_uuid = ? AND COALESCE(is_deleted, 0) = 0
         """;
@@ -65,6 +66,7 @@ public class PaperItemRepository {
                     p.setGsm(rs.getString("gsm"));
                     p.setType(rs.getString("type"));
                     p.setSource(rs.getString("source"));
+                    p.setSupplierUuid(rs.getString("supplier_uuid"));
                     p.setNotes(rs.getString("notes"));
                     p.setAmount(rs.getDouble("amount"));
                     p.setSyncStatus(rs.getString("sync_status"));
@@ -87,7 +89,7 @@ public class PaperItemRepository {
         String sql = """
             UPDATE paper_items
             SET qty = ?, units = ?, size = ?, gsm = ?, type = ?,
-                source = ?, notes = ?, amount = ?, updated_at = datetime('now'), sync_status = 'PENDING'
+                source = ?, supplier_uuid = ?, notes = ?, amount = ?, updated_at = datetime('now'), sync_status = 'PENDING'
             WHERE job_item_uuid = ?
         """;
 
@@ -98,9 +100,10 @@ public class PaperItemRepository {
             ps.setString(4, p.getGsm());
             ps.setString(5, p.getType());
             ps.setString(6, p.getSource());
-            ps.setString(7, p.getNotes());
-            ps.setDouble(8, p.getAmount());
-            ps.setString(9, p.getJobItemUuid());
+            ps.setString(7, p.getSupplierUuid());
+            ps.setString(8, p.getNotes());
+            ps.setDouble(9, p.getAmount());
+            ps.setString(10, p.getJobItemUuid());
             ps.executeUpdate();
         } catch (Exception e) {
             throw new RuntimeException("Failed to update paper item", e);
@@ -111,7 +114,16 @@ public class PaperItemRepository {
        DELETE (standalone)
        ===================================================== */
     public void deleteByJobItemUuid(Connection con, String jobItemUuid) {
-        String sql = "UPDATE paper_items SET is_deleted = 1, updated_at = datetime('now'), sync_status = 'PENDING' WHERE job_item_uuid = ?";
+        model.User current = utils.SessionManager.getInstance().getCurrentUser();
+        boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
+
+        String sql;
+        if (isAdmin) {
+            sql = "DELETE FROM paper_items WHERE job_item_uuid = ?";
+        } else {
+            sql = "UPDATE paper_items SET is_deleted = 1, updated_at = datetime('now'), sync_status = 'PENDING' WHERE job_item_uuid = ?";
+        }
+
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, jobItemUuid);
             ps.executeUpdate();

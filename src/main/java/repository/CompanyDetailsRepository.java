@@ -95,9 +95,52 @@ public class CompanyDetailsRepository {
 	}
 
 	public void delete(Connection con, int id) throws Exception {
-		try (PreparedStatement ps = con.prepareStatement("DELETE FROM company_details WHERE id = ?")) {
+		String uuid = null;
+		try (PreparedStatement ps = con.prepareStatement("SELECT uuid FROM company_details WHERE id = ?")) {
 			ps.setInt(1, id);
-			ps.executeUpdate();
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) uuid = rs.getString(1);
+			}
+		}
+
+		model.User current = utils.SessionManager.getInstance().getCurrentUser();
+		boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
+
+		if (isAdmin) {
+			try (PreparedStatement ps = con.prepareStatement("DELETE FROM company_details WHERE id = ?")) {
+				ps.setInt(1, id);
+				ps.executeUpdate();
+			}
+		} else {
+			try (PreparedStatement ps = con.prepareStatement(
+					"UPDATE company_details SET is_deleted = 1, is_active = 0, deleted_at = datetime('now'), sync_status = 'PENDING', updated_at = datetime('now') WHERE id = ?")) {
+				ps.setInt(1, id);
+				ps.executeUpdate();
+			}
+		}
+		service.sync.UniversalSyncEngine.scheduleSyncAsync();
+
+		if (uuid != null && !uuid.isBlank()) {
+			final String finalUuid = uuid;
+			api.supabase.SupabaseGate.restClientIfConfigured().ifPresent(http -> java.util.concurrent.CompletableFuture.runAsync(() -> {
+				try {
+					String v = java.net.URLEncoder.encode(finalUuid.trim(), java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
+					if (isAdmin) {
+						http.delete(api.supabase.SupabaseEndpoints.COMPANY_DETAILS, "uuid=eq." + v);
+					} else {
+						com.google.gson.JsonObject body = new com.google.gson.JsonObject();
+						body.addProperty("uuid", finalUuid.trim());
+						body.addProperty("is_deleted", 1);
+						body.addProperty("is_active", 0);
+						body.addProperty("sync_status", "SYNCED");
+						body.addProperty("synced_at", java.time.Instant.now().toString());
+						body.addProperty("deleted_at", java.time.Instant.now().toString());
+						http.patchJson(api.supabase.SupabaseEndpoints.COMPANY_DETAILS, "uuid=eq." + v, body.toString(), "return=minimal");
+					}
+				} catch (Exception ex) {
+					System.err.println("[Supabase company_details] remote delete/patch failed for id=" + id + ": " + ex.getMessage());
+				}
+			}));
 		}
 	}
 

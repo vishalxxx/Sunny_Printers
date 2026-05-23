@@ -82,17 +82,29 @@
                     <Label text="Business &amp; Tax Info" styleClass="card-title" />
                 </HBox>
 
-                <HBox spacing="20">
-                    <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
-                        <Label text="GST NUMBER" styleClass="field-label" />
-                        <TextField fx:id="gstField" styleClass="form-input"
-                            promptText="22AAAAA0000A1Z5" />
-                    </VBox>
-                    <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
-                        <Label text="PAN NUMBER" styleClass="field-label" />
-                        <TextField fx:id="panField" styleClass="form-input" promptText="ABCDE1234F" />
-                    </VBox>
-                </HBox>
+                <VBox spacing="12">
+                    <HBox spacing="20">
+                        <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
+                            <Label text="GST NUMBER" styleClass="field-label" />
+                            <TextField fx:id="gstField" styleClass="form-input"
+                                promptText="22AAAAA0000A1Z5" />
+                        </VBox>
+                        <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
+                            <Label text="PAN NUMBER" styleClass="field-label" />
+                            <TextField fx:id="panField" styleClass="form-input" promptText="ABCDE1234F" />
+                        </VBox>
+                    </HBox>
+                    <HBox spacing="20">
+                        <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
+                            <Label text="CREDIT LIMIT" styleClass="field-label" />
+                            <TextField fx:id="creditLimitField" styleClass="form-input" promptText="0.0" />
+                        </VBox>
+                        <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
+                            <Label text="OPENING BALANCE" styleClass="field-label" />
+                            <TextField fx:id="openingBalanceField" styleClass="form-input" promptText="0.0" />
+                        </VBox>
+                    </HBox>
+                </VBox>
             </VBox>
 
             <!-- ADDRESS DETAILS -->

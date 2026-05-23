@@ -63,8 +63,8 @@
                         </VBox>
                         
                         <VBox styleClass="supplier-field-container" GridPane.columnIndex="1" GridPane.rowIndex="2">
-                            <Label text="Phone Number" styleClass="supplier-field-label" />
-                            <TextField fx:id="phoneField" styleClass="supplier-input-field" promptText="Landline (optional)" maxWidth="Infinity" />
+                            <Label text="Alt Mobile" styleClass="supplier-field-label" />
+                            <TextField fx:id="phoneField" styleClass="supplier-input-field" promptText="Landline / Alternate" maxWidth="Infinity" />
                         </VBox>
                         
                         <VBox styleClass="supplier-field-container" GridPane.columnIndex="0" GridPane.rowIndex="3">

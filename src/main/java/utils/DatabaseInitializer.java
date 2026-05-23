@@ -56,6 +56,7 @@ public class DatabaseInitializer {
             ensurePaymentsUuid(conn, stmt);
             ensureInvoiceAdjustmentsUuid(conn, stmt);
             ensureDocumentNumberMappingsTable(conn, stmt);
+            ensurePaperItemsSupplierColumns(conn, stmt);
 
             // ================== SUPPLIERS TABLE ==================
             stmt.execute("""
@@ -84,8 +85,35 @@ public class DatabaseInitializer {
                 if (!columnExists(conn, "suppliers", "updated_by_user_uuid")) {
                     stmt.execute("ALTER TABLE suppliers ADD COLUMN updated_by_user_uuid TEXT DEFAULT NULL;");
                 }
+                if (!columnExists(conn, "suppliers", "mobile")) {
+                    stmt.execute("ALTER TABLE suppliers ADD COLUMN mobile TEXT DEFAULT '';");
+                }
+                if (!columnExists(conn, "suppliers", "email")) {
+                    stmt.execute("ALTER TABLE suppliers ADD COLUMN email TEXT DEFAULT '';");
+                }
+                if (!columnExists(conn, "suppliers", "website")) {
+                    stmt.execute("ALTER TABLE suppliers ADD COLUMN website TEXT DEFAULT '';");
+                }
+                if (!columnExists(conn, "suppliers", "state")) {
+                    stmt.execute("ALTER TABLE suppliers ADD COLUMN state TEXT DEFAULT '';");
+                }
+                if (!columnExists(conn, "suppliers", "city")) {
+                    stmt.execute("ALTER TABLE suppliers ADD COLUMN city TEXT DEFAULT '';");
+                }
+                if (!columnExists(conn, "suppliers", "pincode")) {
+                    stmt.execute("ALTER TABLE suppliers ADD COLUMN pincode TEXT DEFAULT '';");
+                }
+                if (!columnExists(conn, "suppliers", "payment_terms")) {
+                    stmt.execute("ALTER TABLE suppliers ADD COLUMN payment_terms TEXT DEFAULT '';");
+                }
+                if (!columnExists(conn, "suppliers", "credit_limit")) {
+                    stmt.execute("ALTER TABLE suppliers ADD COLUMN credit_limit REAL DEFAULT 0;");
+                }
+                if (!columnExists(conn, "suppliers", "notes")) {
+                    stmt.execute("ALTER TABLE suppliers ADD COLUMN notes TEXT DEFAULT '';");
+                }
             } catch (Exception e) {
-                System.err.println("Migration failed: adding supplier_code to suppliers: " + e.getMessage());
+                System.err.println("Migration failed: adding new columns to suppliers: " + e.getMessage());
             }
             try {
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_suppliers_type ON suppliers(type);");
@@ -487,10 +515,13 @@ public class DatabaseInitializer {
                     gsm TEXT,
                     type TEXT,
                     source TEXT,
+                    supplier_uuid TEXT,
+                    supplier_name TEXT,
                     notes TEXT,
                     amount REAL DEFAULT 0,
                     %s,
-                    FOREIGN KEY (job_item_uuid) REFERENCES job_items(uuid) ON DELETE CASCADE
+                    FOREIGN KEY (job_item_uuid) REFERENCES job_items(uuid) ON DELETE CASCADE,
+                    FOREIGN KEY (supplier_uuid) REFERENCES suppliers(uuid)
                 );
             """.formatted(SYNC_COLUMNS));
 
@@ -762,7 +793,9 @@ public class DatabaseInitializer {
                 updated_at TEXT DEFAULT (datetime('now')),
                 synced_at TEXT DEFAULT NULL,
                 deleted_at TEXT DEFAULT NULL,
-                notes TEXT DEFAULT ''
+                notes TEXT DEFAULT '',
+                created_by_user_uuid TEXT DEFAULT NULL,
+                updated_by_user_uuid TEXT DEFAULT NULL
             )
             """;
 
@@ -837,6 +870,23 @@ public class DatabaseInitializer {
             migrateClientsToUuidPrimaryKey(conn, stmt);
         }
         ensureUniqueSqliteClientCodeConstraint(conn, stmt);
+        
+        if (!columnExists(conn, "clients", "created_by_user_uuid")) {
+            stmt.execute("ALTER TABLE clients ADD COLUMN created_by_user_uuid TEXT DEFAULT NULL;");
+            System.out.println("✔ Migration: Added created_by_user_uuid column to clients table.");
+        }
+        if (!columnExists(conn, "clients", "credit_limit")) {
+            stmt.execute("ALTER TABLE clients ADD COLUMN credit_limit REAL DEFAULT 0;");
+            System.out.println("✔ Migration: Added credit_limit column to clients table.");
+        }
+        if (!columnExists(conn, "clients", "opening_balance")) {
+            stmt.execute("ALTER TABLE clients ADD COLUMN opening_balance REAL DEFAULT 0;");
+            System.out.println("✔ Migration: Added opening_balance column to clients table.");
+        }
+        if (!columnExists(conn, "clients", "updated_by_user_uuid")) {
+            stmt.execute("ALTER TABLE clients ADD COLUMN updated_by_user_uuid TEXT DEFAULT NULL;");
+            System.out.println("✔ Migration: Added updated_by_user_uuid column to clients table.");
+        }
     }
 
     /** Canonical {@code jobs} shape: UUID v7 primary key. */
@@ -1385,7 +1435,9 @@ public class DatabaseInitializer {
                         updated_at TEXT DEFAULT (datetime('now')),
                         synced_at TEXT DEFAULT NULL,
                         deleted_at TEXT DEFAULT NULL,
-                        notes TEXT DEFAULT ''
+                        notes TEXT DEFAULT '',
+                        created_by_user_uuid TEXT DEFAULT NULL,
+                        updated_by_user_uuid TEXT DEFAULT NULL
                     )
                     """);
             stmt.execute("""
@@ -1394,14 +1446,14 @@ public class DatabaseInitializer {
                         gstin, pan_number, billing_address, shipping_address,
                         client_type, price_category, credit_limit, payment_terms, opening_balance, balance_type,
                         is_active, notes, sync_status, sync_version, is_deleted, deleted_at,
-                        created_at, updated_at, synced_at
+                        created_at, updated_at, synced_at, created_by_user_uuid, updated_by_user_uuid
                     )
                     SELECT
                         uuid, client_code, client_name, business_name, mobile, alternate_mobile, email,
                         gstin, pan_number, billing_address, shipping_address,
                         client_type, price_category, credit_limit, payment_terms, opening_balance, balance_type,
                         is_active, notes, sync_status, sync_version, is_deleted, deleted_at,
-                        created_at, updated_at, synced_at
+                        created_at, updated_at, synced_at, NULL, NULL
                     FROM clients
                     """);
             stmt.execute("DROP TABLE clients");
@@ -2270,6 +2322,28 @@ public class DatabaseInitializer {
             stmt.execute(
                     "CREATE INDEX IF NOT EXISTS idx_dnm_permanent ON document_number_mappings(permanent_number);");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_dnm_entity ON document_number_mappings(entity_type, entity_uuid);");
+        } catch (Exception ignored) {
+        }
+    }
+
+    /**
+     * Ensure paper_items table has supplier_uuid and supplier_name columns.
+     */
+    private static void ensurePaperItemsSupplierColumns(Connection conn, Statement stmt) throws Exception {
+        if (!tableExists(conn, "paper_items")) return;
+        
+        if (!columnExists(conn, "paper_items", "supplier_uuid")) {
+            System.out.println("✔ Migration: Adding supplier_uuid to paper_items...");
+            stmt.execute("ALTER TABLE paper_items ADD COLUMN supplier_uuid TEXT;");
+        }
+        
+        if (!columnExists(conn, "paper_items", "supplier_name")) {
+            System.out.println("✔ Migration: Adding supplier_name to paper_items...");
+            stmt.execute("ALTER TABLE paper_items ADD COLUMN supplier_name TEXT;");
+        }
+        
+        try {
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_paper_items_supplier_uuid ON paper_items(supplier_uuid);");
         } catch (Exception ignored) {
         }
     }

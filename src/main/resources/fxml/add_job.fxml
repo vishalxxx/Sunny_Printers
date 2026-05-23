@@ -293,7 +293,12 @@
                         </HBox>
                     </VBox>
 
-                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="3">
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                        <Label text="SUPPLIER" styleClass="field-heading-sm"/>
+                        <ComboBox fx:id="paperSupplierCombo" promptText="Select Supplier" styleClass="card-combo" maxWidth="Infinity"/>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="3" GridPane.columnSpan="3">
                         <Label text="PRODUCTION NOTES" styleClass="field-heading-sm"/>
                         <TextArea fx:id="paperNotesArea" promptText="Specify any additional paper requirements..." styleClass="card-textarea" wrapText="true" prefHeight="60"/>
                     </VBox>

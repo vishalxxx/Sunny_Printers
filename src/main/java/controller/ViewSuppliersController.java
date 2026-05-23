@@ -81,6 +81,7 @@ public class ViewSuppliersController implements Initializable {
                 || s.getName().toLowerCase().contains(keyword)
                 || (s.getbusinessName() != null && s.getbusinessName().toLowerCase().contains(keyword))
                 || (s.getPhone() != null && s.getPhone().contains(keyword))
+                || (s.getMobile() != null && s.getMobile().contains(keyword))
                 || (s.getGstNumber() != null && s.getGstNumber().toLowerCase().contains(keyword));
 
             boolean matchesType = selectedType.equals("All Types") 
@@ -172,6 +173,9 @@ public class ViewSuppliersController implements Initializable {
         private final Label lblType = new Label();
         private final StackPane typeBox = new StackPane(lblType);
         
+        private final Label lblDeleted = new Label("DELETED");
+        private final StackPane deletedBox = new StackPane(lblDeleted);
+        
         private final Label lblPhoneVal = new Label();
         private final VBox phoneBox = new VBox(2, new Label("PHONE"), lblPhoneVal);
         
@@ -183,6 +187,7 @@ public class ViewSuppliersController implements Initializable {
         
         private final Button btnEdit = new Button("Edit Profile");
         private final Button btnDelete = new Button("Delete");
+        private final Button btnRevive = new Button("Revive");
 
         public SupplierCardCell() {
             super();
@@ -203,6 +208,12 @@ public class ViewSuppliersController implements Initializable {
             lblType.getStyleClass().add("client-status-text");
             typeBox.getStyleClass().addAll("client-status-box", "status-preferred");
             typeBox.setMinWidth(90);
+            
+            lblDeleted.setStyle("-fx-text-fill: #e53935; -fx-font-weight: bold; -fx-font-size: 11px;");
+            deletedBox.setStyle("-fx-background-color: #ffebee; -fx-background-radius: 4; -fx-padding: 4 8 4 8;");
+            deletedBox.setMinWidth(80);
+            deletedBox.setVisible(false);
+            deletedBox.setManaged(false);
             
             ((Label)phoneBox.getChildren().get(0)).getStyleClass().add("client-stat-label");
             lblPhoneVal.getStyleClass().add("client-stat-value");
@@ -227,13 +238,16 @@ public class ViewSuppliersController implements Initializable {
             btnDelete.getStyleClass().add("view-clients-delete-btn");
             btnDelete.setOnAction(e -> confirmAndDeleteSupplier(getItem()));
 
-            HBox actionButtons = new HBox(8, btnEdit, btnDelete);
+            btnRevive.getStyleClass().add("action-btn-ghost");
+            btnRevive.setOnAction(e -> confirmAndReviveSupplier(getItem()));
+
+            HBox actionButtons = new HBox(8, btnEdit, btnRevive, btnDelete);
             actionButtons.setAlignment(Pos.CENTER_RIGHT);
 
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);
 
-            root.getChildren().addAll(iconBox, nameBox, spacer, typeBox, phoneBox, gstBox, addressBox, actionButtons);
+            root.getChildren().addAll(iconBox, nameBox, spacer, deletedBox, typeBox, phoneBox, gstBox, addressBox, actionButtons);
         }
 
         @Override
@@ -249,8 +263,25 @@ public class ViewSuppliersController implements Initializable {
                     code = supplier.getUuid() != null && supplier.getUuid().length() > 8 ? supplier.getUuid().substring(0, 8).toUpperCase() : supplier.getUuid();
                 }
                 lblBusiness.setText(code + " | " + supplier.getName());
+                if (supplier.isDeleted()) {
+                    deletedBox.setVisible(true);
+                    deletedBox.setManaged(true);
+                    btnDelete.setVisible(false);
+                    btnDelete.setManaged(false);
+                    btnRevive.setVisible(true);
+                    btnRevive.setManaged(true);
+                } else {
+                    deletedBox.setVisible(false);
+                    deletedBox.setManaged(false);
+                    btnDelete.setVisible(true);
+                    btnDelete.setManaged(true);
+                    btnRevive.setVisible(false);
+                    btnRevive.setManaged(false);
+                }
                 lblType.setText(supplier.getType());
-                lblPhoneVal.setText(supplier.getPhone().isEmpty() ? "N/A" : supplier.getPhone());
+                lblType.setStyle("");
+                String primaryPhone = (supplier.getMobile() != null && !supplier.getMobile().isEmpty()) ? supplier.getMobile() : (supplier.getPhone() != null ? supplier.getPhone() : "");
+                lblPhoneVal.setText(primaryPhone.isEmpty() ? "N/A" : primaryPhone);
                 lblGstVal.setText(supplier.getGstNumber().isEmpty() ? "N/A" : supplier.getGstNumber());
                 lblAddressVal.setText(supplier.getAddress().isEmpty() ? "No Address Details" : supplier.getAddress());
                 
@@ -288,6 +319,35 @@ public class ViewSuppliersController implements Initializable {
             } catch (Exception e) {
                 e.printStackTrace();
                 Toast.show((Stage) supplierListView.getScene().getWindow(), "Failed to delete supplier.");
+            }
+        }
+    }
+
+    private void confirmAndReviveSupplier(Supplier s) {
+        if (s == null) return;
+        
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Revive Supplier");
+        alert.setHeaderText("Revive " + s.getName() + "?");
+        alert.setContentText("This will restore the supplier making it visible to all users.");
+        alert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO);
+
+        DialogPane pane = alert.getDialogPane();
+        pane.getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+        pane.getStyleClass().add("atelier-alert");
+        
+        java.util.Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.YES) {
+            try {
+                supplierService.reviveSupplier(s.getUuid());
+                s.setDeleted(false);
+                s.setActive(true);
+                supplierListView.refresh();
+                updateKpis();
+                Toast.show((Stage) supplierListView.getScene().getWindow(), "Supplier revived successfully!");
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.show((Stage) supplierListView.getScene().getWindow(), "Failed to revive supplier.");
             }
         }
     }

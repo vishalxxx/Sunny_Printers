@@ -261,6 +261,8 @@ public class AddJobController implements utils.DirtySupport {
 	@FXML
 	private ComboBox<String> paperTypeCombo;
 	@FXML
+	private ComboBox<Supplier> paperSupplierCombo;
+	@FXML
 	private TextArea paperNotesArea;
 	@FXML
 	private TextField paperAmountField;
@@ -332,6 +334,18 @@ public class AddJobController implements utils.DirtySupport {
 		if (currentStep < 6) {
 			currentStep++;
 			updateStepUI();
+		}
+	}
+
+	private void markStepCompleted(int stepIndex) {
+		if (stepButtons[stepIndex] != null) {
+			try {
+				javafx.scene.layout.StackPane sp = (javafx.scene.layout.StackPane) stepButtons[stepIndex].getChildren().get(0);
+				javafx.scene.control.Label lbl = (javafx.scene.control.Label) sp.getChildren().get(1);
+				lbl.setText("✔");
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -725,9 +739,11 @@ public class AddJobController implements utils.DirtySupport {
 
 		pendingItems.add(p);
 		toast("Printing Added ✅");
+		markStepCompleted(1);
 		clearPrintingFields();
 		updateItemCount();
 		updateFormState();
+		handleNextStep();
 	}
 
 	private void clearPrintingFields() {
@@ -763,7 +779,6 @@ public class AddJobController implements utils.DirtySupport {
 		Supplier supplier = ctpSupplierCombo.getValue();
 		if (supplier != null) {
 			c.setSupplierUuid(supplier.getUuid());
-			c.setSupplierName(supplier.getName());
 		}
 
 		try {
@@ -778,9 +793,11 @@ public class AddJobController implements utils.DirtySupport {
 
 		pendingItems.add(c);
 		toast("CTP Plate Added ✅");
+		markStepCompleted(2);
 		clearCtpFields();
 		updateItemCount();
 		updateFormState();
+		handleNextStep();
 	}
 
 	private void clearCtpFields() {
@@ -818,6 +835,11 @@ public class AddJobController implements utils.DirtySupport {
 			source = "Client";
 		p.setSource(source);
 
+		Supplier supplier = paperSupplierCombo.getValue();
+		if (supplier != null) {
+			p.setSupplierUuid(supplier.getUuid());
+		}
+
 		try {
 			if (paperAmountField.getText() != null && !paperAmountField.getText().isBlank()) {
 				String amountStr = paperAmountField.getText().replace(",", "");
@@ -830,9 +852,11 @@ public class AddJobController implements utils.DirtySupport {
 
 		pendingItems.add(p);
 		toast("Paper Added ✅");
+		markStepCompleted(3);
 		clearPaperFields();
 		updateItemCount();
 		updateFormState();
+		handleNextStep();
 	}
 
 	private void clearPaperFields() {
@@ -841,6 +865,7 @@ public class AddJobController implements utils.DirtySupport {
 		paperSizeCombo.setValue(null);
 		paperGsmCombo.setValue(null);
 		paperTypeCombo.setValue(null);
+		paperSupplierCombo.setValue(null);
 		paperNotesArea.clear();
 		paperAmountField.clear();
 		paperOurRadio.setSelected(true);
@@ -884,9 +909,11 @@ public class AddJobController implements utils.DirtySupport {
 
 		pendingItems.add(b);
 		toast("Binding Added ✅");
+		markStepCompleted(4);
 		clearBindingFields();
 		updateItemCount();
 		updateFormState();
+		handleNextStep();
 	}
 
 	private void clearBindingFields() {
@@ -928,9 +955,11 @@ public class AddJobController implements utils.DirtySupport {
 
 		pendingItems.add(l);
 		toast("Lamination Added ✅");
+		markStepCompleted(5);
 		clearLaminationFields();
 		updateItemCount();
 		updateFormState();
+		handleNextStep();
 	}
 
 	private void clearLaminationFields() {
@@ -1036,6 +1065,7 @@ public class AddJobController implements utils.DirtySupport {
 		paperNotesArea.textProperty().addListener((a, b, c) -> validate.run());
 		paperUnitsCombo.valueProperty().addListener((a, b, c) -> validate.run());
 		paperSizeCombo.valueProperty().addListener((a, b, c) -> validate.run());
+		paperSupplierCombo.valueProperty().addListener((a, b, c) -> validate.run());
 
 		validate.run();
 	}
@@ -1303,6 +1333,24 @@ public class AddJobController implements utils.DirtySupport {
 		});
 
 		ctpSupplierCombo.setButtonCell(new ListCell<>() {
+			@Override
+			protected void updateItem(Supplier s, boolean empty) {
+				super.updateItem(s, empty);
+				setText(empty || s == null ? null : s.getbusinessName() + " | " + s.getName());
+			}
+		});
+
+		paperSupplierCombo.getItems().setAll(supplierService.getSuppliersByType("Paper"));
+
+		paperSupplierCombo.setCellFactory(cb -> new ListCell<>() {
+			@Override
+			protected void updateItem(Supplier s, boolean empty) {
+				super.updateItem(s, empty);
+				setText(empty || s == null ? null : s.getbusinessName() + " | " + s.getName());
+			}
+		});
+
+		paperSupplierCombo.setButtonCell(new ListCell<>() {
 			@Override
 			protected void updateItem(Supplier s, boolean empty) {
 				super.updateItem(s, empty);

@@ -7,6 +7,9 @@ public class Paper implements Serializable {
 
     private String uuid;
     private String jobItemUuid;
+    
+    private String supplierUuid;
+    
     private int qty;          // optional
     private String units;     // Sheet/Rim/Bundle/Kg...
     private String size;      // 12x18 / 13x19 ...
@@ -31,6 +34,7 @@ public class Paper implements Serializable {
         Paper p = new Paper();
         p.setUuid(this.uuid);
         p.setJobItemUuid(this.jobItemUuid);
+        p.setSupplierUuid(this.supplierUuid);
         p.setQty(this.qty);
         p.setUnits(this.units);
         p.setSize(this.size);
@@ -76,6 +80,8 @@ public class Paper implements Serializable {
     public String getJobItemUuid() { return jobItemUuid; }
     public void setJobItemUuid(String jobItemUuid) { this.jobItemUuid = jobItemUuid; }
 
+    public String getSupplierUuid() { return supplierUuid; }
+    public void setSupplierUuid(String supplierUuid) { this.supplierUuid = supplierUuid; }
 
 	private transient boolean isNew;
     private transient boolean isUpdated;
@@ -126,6 +132,7 @@ public class Paper implements Serializable {
         o.setAmount(this.getAmount());
         o.setSource(this.getSource());
         o.setNotes(this.getNotes());
+        o.setSupplierUuid(this.getSupplierUuid());
 
         this.originalSnapshot = o;
     }
@@ -141,7 +148,8 @@ public class Paper implements Serializable {
             || !java.util.Objects.equals(getType(), originalSnapshot.getType())
             || getAmount() != originalSnapshot.getAmount()
             || !java.util.Objects.equals(getSource(), originalSnapshot.getSource())
-            || !java.util.Objects.equals(getNotes(), originalSnapshot.getNotes());
+            || !java.util.Objects.equals(getNotes(), originalSnapshot.getNotes())
+            || !java.util.Objects.equals(getSupplierUuid(), originalSnapshot.getSupplierUuid());
     }
 
     public boolean isSameAsOriginal() {
@@ -154,7 +162,8 @@ public class Paper implements Serializable {
             && Objects.equals(type, originalSnapshot.type)
             && Objects.equals(source, originalSnapshot.source)
             && Objects.equals(notes, originalSnapshot.notes)
-            && Double.compare(amount, originalSnapshot.amount) == 0;
+            && Double.compare(amount, originalSnapshot.amount) == 0
+            && Objects.equals(supplierUuid, originalSnapshot.supplierUuid);
     }
 
     public void resetFlags() {

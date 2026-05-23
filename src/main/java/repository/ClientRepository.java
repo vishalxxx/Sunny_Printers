@@ -12,12 +12,14 @@ import java.util.concurrent.CompletableFuture;
 import api.supabase.SupabaseGate;
 import api.supabase.clients.ClientsSupabaseApi;
 import model.Client;
+import model.User;
 import service.NumberSequenceAllocationService.AllocatedNumber;
 import service.sync.UniversalNumberAllocator;
 import service.sync.UniversalSyncEngine;
 import utils.ClientIdentifiers;
 import utils.DBConnection;
 import utils.DocumentNumbering;
+import utils.SessionManager;
 
 public class ClientRepository {
 
@@ -33,14 +35,16 @@ public class ClientRepository {
 		c.setBalanceType(nz(rs, "balance_type"));
 		c.setSyncStatus(nz(rs, "sync_status"));
 		c.setSyncVersion(rs.getInt("sync_version"));
-		c.setIsDeleted(rs.getInt("is_deleted"));
-		c.setIsActive(rs.getInt("is_active"));
+		c.setIsDeleted(rs.getInt("is_deleted") != 0);
+		c.setIsActive(rs.getInt("is_active") != 0);
 		c.setCreatedAt(nz(rs, "created_at"));
 		c.setUpdatedAt(nz(rs, "updated_at"));
 		c.setSyncedAt(nz(rs, "synced_at"));
 		c.setDeletedAt(nz(rs, "deleted_at"));
 		c.setCreditLimit(rs.getDouble("credit_limit"));
 		c.setOpeningBalance(rs.getDouble("opening_balance"));
+		c.setCreatedByUserUuid(nz(rs, "created_by_user_uuid"));
+		c.setUpdatedByUserUuid(nz(rs, "updated_by_user_uuid"));
 		return c;
 	}
 
@@ -50,13 +54,21 @@ public class ClientRepository {
 	}
 
 	public boolean save(Client client) throws Exception {
+		String userUuid = null;
+		if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+			userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+		}
+		client.setCreatedByUserUuid(userUuid);
+		client.setUpdatedByUserUuid(userUuid);
+
 		String sql = """
 				INSERT INTO clients (
 				  uuid, client_code, client_name, business_name, mobile, alternate_mobile, email,
 				  gstin, pan_number, billing_address, shipping_address,
 				  client_type, price_category, credit_limit, payment_terms, opening_balance, balance_type,
-				  is_active, notes, sync_status, sync_version, is_deleted, deleted_at
-				) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+				  is_active, notes, sync_status, sync_version, is_deleted, deleted_at,
+				  created_by_user_uuid, updated_by_user_uuid
+				) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 				""";
 		try (Connection conn = DBConnection.getConnection();
 				PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -106,12 +118,14 @@ public class ClientRepository {
 			ps.setString(i++, nz(client.getPaymentTerms()));
 			ps.setDouble(i++, client.getOpeningBalance());
 			ps.setString(i++, nz(client.getBalanceType()));
-			ps.setInt(i++, client.getIsActive() > 0 ? client.getIsActive() : 1);
+			ps.setInt(i++, client.isActive() ? 1 : 1);
 			ps.setString(i++, nz(client.getNotes()));
 			ps.setString(i++, nz(client.getSyncStatus()));
 			ps.setInt(i++, client.getSyncVersion());
 			ps.setInt(i++, 0);
 			ps.setNull(i++, Types.VARCHAR);
+			ps.setString(i++, nz(client.getCreatedByUserUuid()));
+			ps.setString(i++, nz(client.getUpdatedByUserUuid()));
 			int n = ps.executeUpdate();
 			if (n > 0) {
 				if (!DocumentNumbering.isTemporaryNumber(client.getClientCode())) {
@@ -131,8 +145,14 @@ public class ClientRepository {
 	}
 
 	public List<Client> findAllSortedById() {
+		model.User current = utils.SessionManager.getInstance().getCurrentUser();
+		boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
+
 		List<Client> list = new ArrayList<>();
-		String sql = """
+		String sql = isAdmin ? """
+				SELECT * FROM clients
+				ORDER BY created_at ASC, uuid ASC
+				""" : """
 				SELECT * FROM clients
 				WHERE IFNULL(is_deleted,0)=0 AND IFNULL(is_active,1)=1
 				ORDER BY created_at ASC, uuid ASC
@@ -173,8 +193,17 @@ public class ClientRepository {
 	}
 
 	public List<Client> search(String keyword) {
+		model.User current = utils.SessionManager.getInstance().getCurrentUser();
+		boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
+
 		List<Client> list = new ArrayList<>();
-		String sql = """
+		String sql = isAdmin ? """
+				SELECT * FROM clients WHERE (
+				  uuid LIKE ? OR client_code LIKE ? OR business_name LIKE ? OR client_name LIKE ?
+				  OR mobile LIKE ? OR alternate_mobile LIKE ? OR email LIKE ? OR gstin LIKE ?
+				  OR pan_number LIKE ? OR billing_address LIKE ? OR shipping_address LIKE ?
+				) ORDER BY business_name ASC
+				""" : """
 				SELECT * FROM clients WHERE IFNULL(is_deleted,0)=0 AND IFNULL(is_active,1)=1 AND (
 				  uuid LIKE ? OR client_code LIKE ? OR business_name LIKE ? OR client_name LIKE ?
 				  OR mobile LIKE ? OR alternate_mobile LIKE ? OR email LIKE ? OR gstin LIKE ?
@@ -202,16 +231,53 @@ public class ClientRepository {
 		if (clientUuid == null || clientUuid.isBlank()) {
 			return false;
 		}
-		String sql = """
-				UPDATE clients SET is_deleted=1, is_active=0, deleted_at=datetime('now'),
-				sync_status='PENDING', updated_at=datetime('now') WHERE uuid=? AND IFNULL(is_deleted,0)=0
-				""";
+		
+		model.User current = utils.SessionManager.getInstance().getCurrentUser();
+		boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
+
+		String sql;
+		if (isAdmin) {
+			sql = "DELETE FROM clients WHERE uuid = ?";
+		} else {
+			sql = """
+					UPDATE clients SET is_deleted=1, is_active=0, deleted_at=datetime('now'),
+					sync_status='PENDING', updated_at=datetime('now') WHERE uuid=? AND IFNULL(is_deleted,0)=0
+					""";
+		}
+
 		try (Connection conn = DBConnection.getConnection();
 				PreparedStatement ps = conn.prepareStatement(sql)) {
 			ps.setString(1, clientUuid.trim());
 			boolean ok = ps.executeUpdate() > 0;
 			if (ok) {
 				deleteClientOnSupabaseAsync(clientUuid.trim());
+			}
+			return ok;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	public boolean reviveByUuid(String clientUuid) {
+		if (clientUuid == null || clientUuid.isBlank()) {
+			return false;
+		}
+
+		String sql = """
+				UPDATE clients SET is_deleted=0, is_active=1, deleted_at=NULL,
+				sync_status='PENDING', updated_at=datetime('now') WHERE uuid=?
+				""";
+
+		try (Connection conn = DBConnection.getConnection();
+				PreparedStatement ps = conn.prepareStatement(sql)) {
+			ps.setString(1, clientUuid.trim());
+			boolean ok = ps.executeUpdate() > 0;
+			if (ok) {
+				Client local = findByUuid(clientUuid.trim());
+				if (local != null) {
+					pushClientToSupabaseAsync(local, true, null);
+				}
 			}
 			return ok;
 		} catch (Exception e) {
@@ -316,11 +382,18 @@ public class ClientRepository {
 
 	public boolean update(Client client) {
 		Client before = findByUuid(client.getClientUuid());
+		String userUuid = null;
+		if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+			userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+		}
+		client.setUpdatedByUserUuid(userUuid);
+
 		String sql = """
 				UPDATE clients SET client_name=?, business_name=?, mobile=?, alternate_mobile=?,
 				email=?, gstin=?, pan_number=?, billing_address=?, shipping_address=?,
 				client_type=?, price_category=?, credit_limit=?, payment_terms=?, opening_balance=?, balance_type=?,
-				notes=?, sync_status='PENDING', sync_version=?, updated_at=datetime('now') WHERE uuid=?
+				notes=?, sync_status='PENDING', sync_version=?, updated_at=datetime('now'),
+				updated_by_user_uuid=? WHERE uuid=?
 				""";
 		try (Connection conn = DBConnection.getConnection();
 				PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -342,6 +415,7 @@ public class ClientRepository {
 			ps.setString(i++, nz(client.getBalanceType()));
 			ps.setString(i++, nz(client.getNotes()));
 			ps.setInt(i++, client.getSyncVersion() + 1);
+			ps.setString(i++, nz(client.getUpdatedByUserUuid()));
 			ps.setString(i++, client.getClientUuid());
 			boolean ok = ps.executeUpdate() > 0;
 			if (ok) {
@@ -387,7 +461,24 @@ public class ClientRepository {
 		}
 		SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
 			try {
-				new ClientsSupabaseApi(http).deleteByClientUuid(clientUuid);
+				User current = SessionManager.getInstance().getCurrentUser();
+				boolean isAdmin = current != null && current.getRole() != null
+						&& "ADMIN".equalsIgnoreCase(current.getRole());
+				if (isAdmin) {
+					// Admins may remove the remote row entirely
+					new ClientsSupabaseApi(http).deleteByClientUuid(clientUuid);
+				} else {
+					// Non-admin users: perform a soft-delete remotely by PATCHing the deleted fields
+					Client local = new ClientRepository().findByUuid(clientUuid);
+					if (local != null) {
+						local.setIsDeleted(true);
+						local.setIsActive(false);
+						if (local.getDeletedAt() == null || local.getDeletedAt().isBlank()) {
+							local.setDeletedAt(java.time.Instant.now().toString());
+						}
+						new ClientsSupabaseApi(http).patchUpdate(local, null);
+					}
+				}
 				markClientSyncedLocally(clientUuid);
 			} catch (Exception ex) {
 				System.err.println("[Supabase clients] delete failed for uuid=" + clientUuid + ": " + ex.getMessage());

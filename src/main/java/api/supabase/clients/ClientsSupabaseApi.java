@@ -19,7 +19,8 @@ import api.supabase.SupabaseRestClient;
 import model.Client;
 
 /**
- * PostgREST for {@code clients}. Upsert merges on {@code uuid} (same column name as SQLite). Local {@code id} is never sent.
+ * PostgREST for {@code clients}. Upsert merges on {@code uuid} (same column
+ * name as SQLite). Local {@code id} is never sent.
  */
 public final class ClientsSupabaseApi {
 
@@ -64,8 +65,10 @@ public final class ClientsSupabaseApi {
 	}
 
 	/**
-	 * PostgREST PATCH by {@code uuid}. Body always includes {@code uuid}; other fields only when changed
-	 * vs {@code before}. Local SQLite {@code id} is never sent. Falls back to {@link #upsert(Client)} when uuid is missing.
+	 * PostgREST PATCH by {@code uuid}. Body always includes {@code uuid}; other
+	 * fields only when changed
+	 * vs {@code before}. Local SQLite {@code id} is never sent. Falls back to
+	 * {@link #upsert(Client)} when uuid is missing.
 	 */
 	public void patchUpdate(Client after, Client before) throws IOException, InterruptedException {
 		if (after == null || !after.hasClientUuid()) {
@@ -91,7 +94,8 @@ public final class ClientsSupabaseApi {
 	}
 
 	/**
-	 * Deletes the remote row by stable {@code client_uuid} (never local SQLite {@code id}).
+	 * Deletes the remote row by stable {@code client_uuid} (never local SQLite
+	 * {@code id}).
 	 */
 	public void deleteByClientUuid(String clientUuid) throws IOException, InterruptedException {
 		if (clientUuid == null || clientUuid.isBlank()) {
@@ -106,7 +110,10 @@ public final class ClientsSupabaseApi {
 		throw new IOException("HTTP " + code + " " + res.body());
 	}
 
-	/** PostgREST body for upsert/PATCH: all {@code public.clients} columns except local-only {@code id}. */
+	/**
+	 * PostgREST body for upsert/PATCH: all {@code public.clients} columns except
+	 * local-only {@code id}.
+	 */
 	private static JsonObject toRemoteRow(Client c) {
 		JsonObject o = new JsonObject();
 		o.addProperty(COL_UUID, c.getClientUuid());
@@ -126,10 +133,10 @@ public final class ClientsSupabaseApi {
 		o.addProperty("payment_terms", nz(c.getPaymentTerms()));
 		o.addProperty("opening_balance", c.getOpeningBalance());
 		o.addProperty("balance_type", nz(c.getBalanceType()));
-		o.addProperty("is_active", c.getIsActive() > 0 ? 1 : 0);
+		o.addProperty("is_active", c.isActive());
 		o.addProperty("notes", nz(c.getNotes()));
 		o.addProperty("sync_version", c.getSyncVersion());
-		o.addProperty("is_deleted", c.getIsDeleted());
+		o.addProperty("is_deleted", c.isDeleted());
 		String deletedAt = c.getDeletedAt();
 		if (deletedAt == null || deletedAt.isBlank()) {
 			o.add("deleted_at", JsonNull.INSTANCE);
@@ -144,10 +151,15 @@ public final class ClientsSupabaseApi {
 		if (updatedAt != null && !updatedAt.isBlank()) {
 			o.addProperty("updated_at", updatedAt);
 		}
+		o.addProperty("created_by_user_uuid", nz(c.getCreatedByUserUuid()));
+		o.addProperty("updated_by_user_uuid", nz(c.getUpdatedByUserUuid()));
 		return o;
 	}
 
-	/** PATCH body: changed remote columns only (no {@code id}; {@code uuid} added by {@link #patchUpdate}). */
+	/**
+	 * PATCH body: changed remote columns only (no {@code id}; {@code uuid} added by
+	 * {@link #patchUpdate}).
+	 */
 	private static JsonObject toRemotePatchDelta(Client after, Client before) {
 		JsonObject o = new JsonObject();
 		putStrIfChanged(o, "client_code", after.getClientCode(), before.getClientCode());
@@ -166,15 +178,15 @@ public final class ClientsSupabaseApi {
 		putStrIfChanged(o, "payment_terms", after.getPaymentTerms(), before.getPaymentTerms());
 		putDblIfChanged(o, "opening_balance", after.getOpeningBalance(), before.getOpeningBalance());
 		putStrIfChanged(o, "balance_type", after.getBalanceType(), before.getBalanceType());
-		int afterActive = after.getIsActive() > 0 ? 1 : 0;
-		int beforeActive = before.getIsActive() > 0 ? 1 : 0;
-		putIntIfChanged(o, "is_active", afterActive, beforeActive);
+		putBoolIfChanged(o, "is_active", after.isActive(), before.isActive());
 		putStrIfChanged(o, "notes", after.getNotes(), before.getNotes());
 		putIntIfChanged(o, "sync_version", after.getSyncVersion(), before.getSyncVersion());
-		putIntIfChanged(o, "is_deleted", after.getIsDeleted(), before.getIsDeleted());
+		putBoolIfChanged(o, "is_deleted", after.isDeleted(), before.isDeleted());
 		putDeletedAtIfChanged(o, after.getDeletedAt(), before.getDeletedAt());
 		putStrIfChanged(o, "created_at", after.getCreatedAt(), before.getCreatedAt());
 		putStrIfChanged(o, "updated_at", after.getUpdatedAt(), before.getUpdatedAt());
+		putStrIfChanged(o, "created_by_user_uuid", after.getCreatedByUserUuid(), before.getCreatedByUserUuid());
+		putStrIfChanged(o, "updated_by_user_uuid", after.getUpdatedByUserUuid(), before.getUpdatedByUserUuid());
 		return o;
 	}
 
@@ -194,6 +206,12 @@ public final class ClientsSupabaseApi {
 
 	private static void putDblIfChanged(JsonObject o, String key, double after, double before) {
 		if (Double.compare(after, before) != 0) {
+			o.addProperty(key, after);
+		}
+	}
+
+	private static void putBoolIfChanged(JsonObject o, String key, boolean after, boolean before) {
+		if (after != before) {
 			o.addProperty(key, after);
 		}
 	}
@@ -249,12 +267,14 @@ public final class ClientsSupabaseApi {
 			c.setBalanceType(jstr(o, "balance_type"));
 			c.setSyncStatus(jstr(o, "sync_status"));
 			c.setSyncVersion(jint(o, "sync_version"));
-			c.setIsDeleted(jint(o, "is_deleted"));
-			c.setIsActive(jint(o, "is_active") == 0 ? 0 : 1);
+			c.setIsDeleted(jbool(o, "is_deleted"));
+			c.setIsActive(jbool(o, "is_active"));
 			c.setDeletedAt(jstr(o, "deleted_at"));
 			c.setCreatedAt(jstr(o, "created_at"));
 			c.setUpdatedAt(jstr(o, "updated_at"));
 			c.setSyncedAt(jstr(o, "synced_at"));
+			c.setCreatedByUserUuid(jstr(o, "created_by_user_uuid"));
+			c.setUpdatedByUserUuid(jstr(o, "updated_by_user_uuid"));
 			if (o.has("credit_limit") && !o.get("credit_limit").isJsonNull()) {
 				c.setCreditLimit(o.get("credit_limit").getAsDouble());
 			}
@@ -286,5 +306,28 @@ public final class ClientsSupabaseApi {
 			return 0;
 		}
 		return o.get(key).getAsInt();
+	}
+
+	private static boolean jbool(JsonObject o, String key) {
+		if (!o.has(key) || o.get(key).isJsonNull()) {
+			return false;
+		}
+		try {
+			com.google.gson.JsonElement el = o.get(key);
+			if (el.isJsonPrimitive()) {
+				com.google.gson.JsonPrimitive prim = el.getAsJsonPrimitive();
+				if (prim.isBoolean()) {
+					return prim.getAsBoolean();
+				}
+				if (prim.isNumber()) {
+					return prim.getAsInt() != 0;
+				}
+				if (prim.isString()) {
+					String s = prim.getAsString();
+					return "true".equalsIgnoreCase(s) || "1".equals(s);
+				}
+			}
+		} catch (Exception ignored) {}
+		return false;
 	}
 }

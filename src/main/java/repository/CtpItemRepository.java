@@ -20,8 +20,8 @@ public class CtpItemRepository {
         String sql = """
             INSERT INTO ctp_items
             (uuid, job_item_uuid, qty, plate_size, gauge, backing,
-             color, supplier_uuid, supplier_name, notes, amount, sync_status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', datetime('now'), datetime('now'))
+             color, supplier_uuid, notes, amount, sync_status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', datetime('now'), datetime('now'))
         """;
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -33,9 +33,8 @@ public class CtpItemRepository {
             ps.setString(6, c.getBacking());
             ps.setString(7, c.getColor());
             ps.setString(8, c.getSupplierUuid());
-            ps.setString(9, c.getSupplierName());
-            ps.setString(10, c.getNotes());
-            ps.setDouble(11, c.getAmount());
+            ps.setString(9, c.getNotes());
+            ps.setDouble(10, c.getAmount());
             ps.executeUpdate();
         } catch (Exception e) {
             throw new RuntimeException("Failed to save CTP item", e);
@@ -46,7 +45,7 @@ public class CtpItemRepository {
 
     public CtpPlate findByJobItemUuid(String jobItemUuid) {
         String sql = """
-            SELECT uuid, job_item_uuid, qty, plate_size, gauge, backing, color, supplier_uuid, supplier_name, notes, amount, sync_status, sync_version, created_at, updated_at
+            SELECT uuid, job_item_uuid, qty, plate_size, gauge, backing, color, supplier_uuid, notes, amount, sync_status, sync_version, created_at, updated_at
             FROM ctp_items
             WHERE job_item_uuid = ? AND COALESCE(is_deleted, 0) = 0
         """;
@@ -65,7 +64,6 @@ public class CtpItemRepository {
                     c.setBacking(rs.getString("backing"));
                     c.setColor(rs.getString("color"));
                     c.setSupplierUuid(rs.getString("supplier_uuid"));
-                    c.setSupplierName(rs.getString("supplier_name"));
                     c.setNotes(rs.getString("notes"));
                     c.setAmount(rs.getDouble("amount"));
                     c.setSyncStatus(rs.getString("sync_status"));
@@ -87,7 +85,7 @@ public class CtpItemRepository {
         String sql = """
             UPDATE ctp_items
             SET qty=?, plate_size=?, gauge=?, backing=?,
-                color=?, supplier_uuid=?, supplier_name=?,
+                color=?, supplier_uuid=?,
                 notes=?, amount=?, updated_at=datetime('now'), sync_status='PENDING'
             WHERE job_item_uuid=?
         """;
@@ -99,10 +97,9 @@ public class CtpItemRepository {
             ps.setString(4, c.getBacking());
             ps.setString(5, c.getColor());
             ps.setString(6, c.getSupplierUuid());
-            ps.setString(7, c.getSupplierName());
-            ps.setString(8, c.getNotes());
-            ps.setDouble(9, c.getAmount());
-            ps.setString(10, c.getJobItemUuid());
+            ps.setString(7, c.getNotes());
+            ps.setDouble(8, c.getAmount());
+            ps.setString(9, c.getJobItemUuid());
             ps.executeUpdate();
         } catch (Exception e) {
             throw new RuntimeException("Failed to update CTP item", e);
@@ -112,7 +109,16 @@ public class CtpItemRepository {
     /* ================= DELETE ================= */
 
     public void deleteByJobItemUuid(Connection con, String jobItemUuid) {
-        String sql = "UPDATE ctp_items SET is_deleted = 1, updated_at = datetime('now'), sync_status = 'PENDING' WHERE job_item_uuid = ?";
+        model.User current = utils.SessionManager.getInstance().getCurrentUser();
+        boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
+
+        String sql;
+        if (isAdmin) {
+            sql = "DELETE FROM ctp_items WHERE job_item_uuid = ?";
+        } else {
+            sql = "UPDATE ctp_items SET is_deleted = 1, updated_at = datetime('now'), sync_status = 'PENDING' WHERE job_item_uuid = ?";
+        }
+
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, jobItemUuid);
             ps.executeUpdate();

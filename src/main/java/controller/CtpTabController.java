@@ -60,7 +60,7 @@ public class CtpTabController {
     @FXML
     private void initialize() {
 
-        supplierCol.setCellValueFactory(new PropertyValueFactory<>("supplierName"));
+        supplierCol.setCellValueFactory(new PropertyValueFactory<>("supplierUuid"));
         qtyCol.setCellValueFactory(new PropertyValueFactory<>("qty"));
         plateSizeCol.setCellValueFactory(new PropertyValueFactory<>("plateSize"));
         gaugeCol.setCellValueFactory(new PropertyValueFactory<>("gauge"));
@@ -270,7 +270,7 @@ public class CtpTabController {
     /* ================= HELPERS ================= */
 
     private void fillFromEditor(CtpPlate p) {
-        p.setSupplierName(supplierField.getValue());
+        p.setSupplierUuid(supplierField.getValue());
         p.setQty(parseInt(qtyField.getText()));
         p.setPlateSize(plateSizeField.getValue());
         p.setGauge(gaugeField.getValue());
@@ -284,7 +284,7 @@ public class CtpTabController {
         selectedItem = p;
         originalSnapshot = p.copy();
 
-        supplierField.setValue(p.getSupplierName());
+        supplierField.setValue(p.getSupplierUuid());
         qtyField.setText(String.valueOf(p.getQty()));
         plateSizeField.setValue(p.getPlateSize());
         gaugeField.setValue(p.getGauge());
@@ -300,7 +300,7 @@ public class CtpTabController {
         if (selectedItem == null || originalSnapshot == null) return false;
 
         return parseInt(qtyField.getText()) != originalSnapshot.getQty()
-                || !equals(supplierField.getValue(), originalSnapshot.getSupplierName())
+                || !equals(supplierField.getValue(), originalSnapshot.getSupplierUuid())
                 || !equals(plateSizeField.getValue(), originalSnapshot.getPlateSize())
                 || !equals(gaugeField.getValue(), originalSnapshot.getGauge())
                 || !equals(backingField.getValue(), originalSnapshot.getBacking())

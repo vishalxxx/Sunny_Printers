@@ -3,6 +3,10 @@
    Applied to every screen by MainController.
    ============================================================ */
 
+.root {
+    -fx-font-weight: 600;
+}
+
 /* Shared back icon (used in breadcrumbs) */
 .back-icon {
     -fx-shape: 'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z';
@@ -71,7 +75,7 @@
 .page-subheading {
     -fx-font-family: 'Inter';
     -fx-font-size: 13px;
-    -fx-font-weight: 500;
+    -fx-font-weight: 600;
     -fx-text-fill: #8E7B71;
     -fx-padding: 0 0 10 0;
 }
@@ -110,7 +114,7 @@
     -fx-font-family: 'Inter', 'Segoe UI', sans-serif;
     -fx-text-fill: #A39890;
     -fx-font-size: 9.5px;
-    -fx-font-weight: 500;
+    -fx-font-weight: 600;
     -fx-letter-spacing: 0.02em;
 }
 
@@ -454,7 +458,7 @@
     -fx-padding: 0 10;
     -fx-text-fill: #3E312D;
     -fx-font-size: 13px;
-    -fx-font-weight: 500;
+    -fx-font-weight: 600;
     -fx-effect: none;
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
@@ -490,7 +494,7 @@
     -fx-text-fill: #3E312D;
     -fx-font-size: 13px;
     -fx-font-family: 'Inter';
-    -fx-font-weight: 500;
+    -fx-font-weight: 600;
     -fx-font-style: normal;
     -fx-effect: none;
     -fx-cursor: hand;
@@ -509,7 +513,7 @@
     -fx-padding: 0 10;
     -fx-text-fill: #3E312D;
     -fx-font-size: 13px;
-    -fx-font-weight: 500;
+    -fx-font-weight: 600;
 }
 
 .taste-combo {
@@ -523,7 +527,7 @@
     -fx-text-fill: #3E312D;
     -fx-font-size: 13px;
     -fx-font-family: 'Inter';
-    -fx-font-weight: 500;
+    -fx-font-weight: 600;
     -fx-cursor: hand;
 }
 
@@ -726,6 +730,7 @@
     -fx-text-fill: #3E312D;
     -fx-font-family: 'Inter';
     -fx-font-size: 13px;
+    -fx-font-weight: 600;
     -fx-font-style: normal;
     -fx-background-radius: 8;
 }

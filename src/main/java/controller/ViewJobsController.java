@@ -141,6 +141,7 @@ public class ViewJobsController {
     private int currentPage = 1;
     private final int pageSize = 20;
     private final ObservableList<Job> pagedItems = FXCollections.observableArrayList();
+    private boolean wasInvalidSelection = false;
 
 
     private final ObservableList<Job> selectedJobs = FXCollections.observableArrayList();
@@ -261,28 +262,62 @@ public class ViewJobsController {
         if (selected.isEmpty()) {
             bulkActionBarContainer.setVisible(false);
             bulkActionBarContainer.setManaged(false);
+            wasInvalidSelection = false;
         } else {
             bulkActionBarContainer.setVisible(true);
             bulkActionBarContainer.setManaged(true);
             selectionCountLabel.setText(selected.size() + " jobs selected");
             
-            // Calculate eligible counts
-            long draftCount = selected.stream().filter(j -> "Draft".equalsIgnoreCase(j.getStatus())).count();
-            long processingCount = selected.stream().filter(j -> "In Progress".equalsIgnoreCase(j.getStatus())).count();
-            long completedCount = selected.stream().filter(j -> "Completed".equalsIgnoreCase(j.getStatus())).count();
-            long anyButCancelled = selected.stream().filter(j -> !"Cancelled".equalsIgnoreCase(j.getStatus())).count();
-            
-            bulkStartBtn.setText("Start Processing ("+draftCount+")");
-            bulkStartBtn.setDisable(draftCount == 0);
-            
-            bulkCompleteBtn.setText("Mark Completed ("+processingCount+")");
-            bulkCompleteBtn.setDisable(processingCount == 0);
-            
-            bulkInvoiceBtn.setText("Generate Invoice ("+completedCount+")");
-            bulkInvoiceBtn.setDisable(completedCount == 0);
-            
-            bulkCancelBtn.setText("Cancel Job ("+anyButCancelled+")");
-            bulkCancelBtn.setDisable(anyButCancelled == 0);
+            java.util.Set<String> uniqueStatuses = selected.stream()
+                    .map(j -> j.getStatus() == null ? "" : j.getStatus().trim().toLowerCase())
+                    .collect(Collectors.toSet());
+
+            if (uniqueStatuses.size() > 1) {
+                // Hide all top action buttons
+                bulkStartBtn.setVisible(false);
+                bulkStartBtn.setManaged(false);
+                bulkCompleteBtn.setVisible(false);
+                bulkCompleteBtn.setManaged(false);
+                bulkInvoiceBtn.setVisible(false);
+                bulkInvoiceBtn.setManaged(false);
+                bulkCancelBtn.setVisible(false);
+                bulkCancelBtn.setManaged(false);
+
+                if (!wasInvalidSelection) {
+                    toast("Different status jobs can't be moved ❌");
+                    wasInvalidSelection = true;
+                }
+            } else {
+                wasInvalidSelection = false;
+
+                // Show all top action buttons
+                bulkStartBtn.setVisible(true);
+                bulkStartBtn.setManaged(true);
+                bulkCompleteBtn.setVisible(true);
+                bulkCompleteBtn.setManaged(true);
+                bulkInvoiceBtn.setVisible(true);
+                bulkInvoiceBtn.setManaged(true);
+                bulkCancelBtn.setVisible(true);
+                bulkCancelBtn.setManaged(true);
+
+                // Calculate eligible counts
+                long draftCount = selected.stream().filter(j -> "Draft".equalsIgnoreCase(j.getStatus())).count();
+                long processingCount = selected.stream().filter(j -> "In Progress".equalsIgnoreCase(j.getStatus())).count();
+                long completedCount = selected.stream().filter(j -> "Completed".equalsIgnoreCase(j.getStatus())).count();
+                long anyButCancelled = selected.stream().filter(j -> !"Cancelled".equalsIgnoreCase(j.getStatus())).count();
+
+                bulkStartBtn.setText("Start Processing ("+draftCount+")");
+                bulkStartBtn.setDisable(draftCount == 0);
+
+                bulkCompleteBtn.setText("Mark Completed ("+processingCount+")");
+                bulkCompleteBtn.setDisable(processingCount == 0);
+
+                bulkInvoiceBtn.setText("Generate Invoice ("+completedCount+")");
+                bulkInvoiceBtn.setDisable(completedCount == 0);
+
+                bulkCancelBtn.setText("Cancel Job ("+anyButCancelled+")");
+                bulkCancelBtn.setDisable(anyButCancelled == 0);
+            }
         }
     }
 
@@ -297,6 +332,11 @@ public class ViewJobsController {
 
     @FXML
     private void handleCloseBulk() {
+        for (Job job : jobsTable.getItems()) {
+            if (job.isSelected()) {
+                job.selectedProperty().set(false);
+            }
+        }
         jobsTable.getSelectionModel().clearSelection();
         updateBulkActionBar();
     }
@@ -325,7 +365,9 @@ public class ViewJobsController {
 
     @FXML
     private void handleInvoiceAction() {
-        List<Job> selected = jobsTable.getSelectionModel().getSelectedItems();
+        List<Job> selected = jobsTable.getItems().stream()
+                .filter(Job::isSelected)
+                .collect(Collectors.toList());
         if (selected.isEmpty()) return;
         
         Job first = selected.get(0);
@@ -340,6 +382,9 @@ public class ViewJobsController {
             toast("Bulk Invoicing coming soon! Please select one job.");
             return;
         }
+        
+        first.selectedProperty().set(false);
+        updateBulkActionBar();
         
         handleInvoicedRequest(first);
     }
@@ -359,17 +404,21 @@ public class ViewJobsController {
     }
 
     private void processBulkStatusUpdate(String status, String successMsg) {
-        List<Job> selected = new java.util.ArrayList<>(jobsTable.getSelectionModel().getSelectedItems());
+        List<Job> selected = jobsTable.getItems().stream()
+                .filter(Job::isSelected)
+                .collect(Collectors.toList());
         if (selected.isEmpty()) return;
 
         for (Job job : selected) {
             jobService.updateJobStatus(job.getUuid(), status);
             job.setStatus(status);
             applyDefaultChildForNewMajor(job, status);
+            job.selectedProperty().set(false);
         }
         jobsTable.refresh();
         toast(successMsg);
         jobsTable.getSelectionModel().clearSelection();
+        updateBulkActionBar();
     }
     
     private void handleInvoicedRequest(Job job) {
@@ -828,10 +877,6 @@ public class ViewJobsController {
                     primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-muted");
                 }
                 
-                Button vBtn = new Button(); vBtn.getStyleClass().addAll("row-action-btn", "row-btn-blue");
-                vBtn.setGraphic(createIcon("M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z", "#1890FF"));
-                vBtn.setOnAction(e -> showJobDetails(job));
-                
                 Button eBtn = new Button(); eBtn.getStyleClass().addAll("row-action-btn", "row-btn-orange");
                 eBtn.setGraphic(createIcon("M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z", "#FA8C16"));
                 eBtn.setOnAction(e -> openEditJobScreen(job));
@@ -839,17 +884,12 @@ public class ViewJobsController {
                 Button mailBtn = new Button(); mailBtn.getStyleClass().addAll("row-action-btn", "row-btn-purple");
                 mailBtn.setGraphic(createIcon("M2 21l21-9L2 3v7l15 2-15 2z", "#722ED1"));
                 mailBtn.setOnAction(e -> handleSendMailPopup(job));
-
-                Button mBtn = new Button(); mBtn.getStyleClass().addAll("row-action-btn", "row-btn-gray");
-                mBtn.setGraphic(createIcon("M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z", "#5B4F47"));
                 
                 root.getChildren().add(primaryBtn);
-                root.getChildren().add(vBtn);
                 if (!statusMsg.contains("cancel")) {
                     root.getChildren().add(eBtn);
                 }
                 root.getChildren().add(mailBtn);
-                root.getChildren().add(mBtn);
                 useGraphicOnlyCell(this);
                 setGraphic(root);
             }
@@ -1946,42 +1986,15 @@ public class ViewJobsController {
                 return;
             }
             
-            Stage previewStage = new Stage(StageStyle.TRANSPARENT);
-            previewStage.initModality(Modality.APPLICATION_MODAL);
-            
-            Image image = new Image(file.toURI().toString());
-            ImageView imageView = new ImageView(image);
-            imageView.setPreserveRatio(true);
-            
-            // Limit preview size
-            imageView.setFitWidth(800);
-            imageView.setFitHeight(600);
-            
-            StackPane root = new StackPane(imageView);
-            root.setStyle("-fx-background-color: rgba(0,0,0,0.85); -fx-background-radius: 12; -fx-padding: 20;");
-            
-            // Close button
-            Button closeBtn = new Button("✕");
-            closeBtn.setStyle("-fx-background-color: #F5222D; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 50; -fx-min-width: 30; -fx-min-height: 30;");
-            StackPane.setAlignment(closeBtn, Pos.TOP_RIGHT);
-            closeBtn.setOnAction(e -> previewStage.close());
-            
-            root.getChildren().add(closeBtn);
-            
-            Scene scene = new Scene(root);
-            scene.setFill(null);
-            previewStage.setScene(scene);
-            
-            // Close on clicking outside
-            root.setOnMouseClicked(e -> {
-                if (e.getTarget() == root) previewStage.close();
-            });
-            
-            previewStage.show();
+            if (java.awt.Desktop.isDesktopSupported()) {
+                java.awt.Desktop.getDesktop().open(file);
+            } else {
+                toast("Desktop not supported. Cannot open image ❌");
+            }
             
         } catch (Exception e) {
             e.printStackTrace();
-            toast("Failed to load image preview ❌");
+            toast("Failed to open image ❌");
         }
     }
 

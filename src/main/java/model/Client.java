@@ -34,8 +34,11 @@ public class Client {
 	private double creditLimit;
 	private double openingBalance;
 	private int syncVersion = 1;
-	private int isDeleted;
-	private int isActive = 1;
+	private boolean isDeleted;
+	private boolean isActive = true;
+
+	private StringProperty createdByUserUuid = new SimpleStringProperty("");
+	private StringProperty updatedByUserUuid = new SimpleStringProperty("");
 
 	// UI Transient Metrics
 	private double ltv;
@@ -100,11 +103,11 @@ public class Client {
 		return clientCode;
 	}
 
-	public int getIsActive() {
+	public boolean isActive() {
 		return isActive;
 	}
 
-	public void setIsActive(int isActive) {
+	public void setIsActive(boolean isActive) {
 		this.isActive = isActive;
 	}
 
@@ -124,11 +127,11 @@ public class Client {
 		this.syncVersion = syncVersion;
 	}
 
-	public int getIsDeleted() {
+	public boolean isDeleted() {
 		return isDeleted;
 	}
 
-	public void setIsDeleted(int isDeleted) {
+	public void setIsDeleted(boolean isDeleted) {
 		this.isDeleted = isDeleted;
 	}
 
@@ -350,5 +353,29 @@ public class Client {
 
 	public void setInsight(String insight) {
 		this.insight = insight;
+	}
+
+	public String getCreatedByUserUuid() {
+		return createdByUserUuid.get();
+	}
+
+	public void setCreatedByUserUuid(String v) {
+		createdByUserUuid.set(v != null ? v : "");
+	}
+
+	public StringProperty createdByUserUuidProperty() {
+		return createdByUserUuid;
+	}
+
+	public String getUpdatedByUserUuid() {
+		return updatedByUserUuid.get();
+	}
+
+	public void setUpdatedByUserUuid(String v) {
+		updatedByUserUuid.set(v != null ? v : "");
+	}
+
+	public StringProperty updatedByUserUuidProperty() {
+		return updatedByUserUuid;
 	}
 }

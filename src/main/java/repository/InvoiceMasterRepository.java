@@ -253,15 +253,57 @@ public class InvoiceMasterRepository {
      * =========================================================
      */
     public void deleteInvoice(Connection con, String invoiceUuid) throws Exception {
-        String sql = "DELETE FROM invoice_master WHERE uuid = ?";
-        try (PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, invoiceUuid);
-            ps.executeUpdate();
+        if (invoiceUuid == null || invoiceUuid.isBlank()) {
+            return;
+        }
+        model.User current = utils.SessionManager.getInstance().getCurrentUser();
+        boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
+        if (isAdmin) {
+            String sql = "DELETE FROM invoice_master WHERE uuid = ?";
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, invoiceUuid);
+                ps.executeUpdate();
+            }
+            deleteInvoiceOnSupabaseAsync(invoiceUuid);
+        } else {
+            String sql = "UPDATE invoice_master SET is_deleted = 1, is_active = 0, deleted_at = datetime('now'), sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, invoiceUuid);
+                ps.executeUpdate();
+            }
+            deleteInvoiceOnSupabaseAsync(invoiceUuid);
         }
     }
     
     /** Legacy alias. */
     public void deleteInvoice(Connection con, int id) throws Exception {}
+
+    private static void deleteInvoiceOnSupabaseAsync(String invoiceUuid) {
+        if (invoiceUuid == null || invoiceUuid.isBlank()) {
+            return;
+        }
+        api.supabase.SupabaseGate.restClientIfConfigured().ifPresent(http -> java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                model.User current = utils.SessionManager.getInstance().getCurrentUser();
+                boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
+                String v = java.net.URLEncoder.encode(invoiceUuid.trim(), java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
+                if (isAdmin) {
+                    http.delete(api.supabase.SupabaseEndpoints.INVOICE_MASTER, "uuid=eq." + v);
+                } else {
+                    com.google.gson.JsonObject body = new com.google.gson.JsonObject();
+                    body.addProperty("uuid", invoiceUuid.trim());
+                    body.addProperty("is_deleted", 1);
+                    body.addProperty("is_active", 0);
+                    body.addProperty("sync_status", "SYNCED");
+                    body.addProperty("synced_at", java.time.Instant.now().toString());
+                    body.add("deleted_at", com.google.gson.JsonNull.INSTANCE);
+                    http.patchJson(api.supabase.SupabaseEndpoints.INVOICE_MASTER, "uuid=eq." + v, body.toString(), "return=minimal");
+                }
+            } catch (Exception ex) {
+                System.err.println("[Supabase invoices] remote delete/patch failed for uuid=" + invoiceUuid + ": " + ex.getMessage());
+            }
+        }));
+    }
 
     /*
      * =========================================================

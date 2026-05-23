@@ -25,7 +25,7 @@ public class ClientFormController implements Initializable {
 	private EditFormBaseline editBaseline;
 
 	private record EditFormBaseline(String businessName, String clientName, String phone, String altPhone, String email,
-			String gst, String pan, String billing, String shipping, String notes) {
+			String gst, String pan, String billing, String shipping, String notes, double creditLimit, double openingBalance) {
 	}
 
 	@FXML
@@ -55,6 +55,10 @@ public class ClientFormController implements Initializable {
 	private TextField gstField;
 	@FXML
 	private TextField panField;
+	@FXML
+	private TextField creditLimitField;
+	@FXML
+	private TextField openingBalanceField;
 
 	@FXML
 	private TextArea billingAddressField;
@@ -122,7 +126,7 @@ public class ClientFormController implements Initializable {
 		editBaseline = new EditFormBaseline(nz(client.getBusinessName()), nz(client.getClientName()),
 				nz(client.getPhone()), nz(client.getAltPhone()), nz(client.getEmail()), nz(client.getGst()),
 				nz(client.getPan()), nz(client.getBillingAddress()), nz(client.getShippingAddress()),
-				nz(client.getNotes()));
+				nz(client.getNotes()), client.getCreditLimit(), client.getOpeningBalance());
 		if (formShell != null) {
 			formShell.getStyleClass().remove("client-form--add");
 		}
@@ -151,6 +155,8 @@ public class ClientFormController implements Initializable {
 		emailField.setText(client.getEmail());
 		gstField.setText(client.getGst());
 		panField.setText(client.getPan());
+		creditLimitField.setText(String.valueOf(client.getCreditLimit()));
+		openingBalanceField.setText(String.valueOf(client.getOpeningBalance()));
 		billingAddressField.setText(client.getBillingAddress());
 		shippingAddressField.setText(client.getShippingAddress());
 		notesField.setText(client.getNotes());
@@ -173,6 +179,10 @@ public class ClientFormController implements Initializable {
 		String curBill = nz(billingAddressField.getText());
 		String curShip = (syncAddressToggle != null && syncAddressToggle.isSelected()) ? curBill
 				: nz(shippingAddressField.getText());
+		double cl = 0;
+		try { cl = Double.parseDouble(creditLimitField.getText()); } catch (Exception ignored) {}
+		double ob = 0;
+		try { ob = Double.parseDouble(openingBalanceField.getText()); } catch (Exception ignored) {}
 		return nz(businessNameField.getText()).equals(editBaseline.businessName())
 				&& nz(clientNameField.getText()).equals(editBaseline.clientName())
 				&& nz(phoneField.getText()).equals(editBaseline.phone())
@@ -180,7 +190,9 @@ public class ClientFormController implements Initializable {
 				&& nz(emailField.getText()).equals(editBaseline.email())
 				&& nz(gstField.getText()).equals(editBaseline.gst()) && nz(panField.getText()).equals(editBaseline.pan())
 				&& curBill.equals(editBaseline.billing()) && curShip.equals(editBaseline.shipping())
-				&& nz(notesField.getText()).equals(editBaseline.notes());
+				&& nz(notesField.getText()).equals(editBaseline.notes())
+				&& Double.compare(cl, editBaseline.creditLimit()) == 0
+				&& Double.compare(ob, editBaseline.openingBalance()) == 0;
 	}
 
 	private void applyAddressSyncUiFromLoadedAddresses() {
@@ -221,6 +233,8 @@ public class ClientFormController implements Initializable {
 		emailField.clear();
 		gstField.clear();
 		panField.clear();
+		creditLimitField.setText("0.0");
+		openingBalanceField.setText("0.0");
 		billingAddressField.clear();
 		shippingAddressField.clear();
 		notesField.clear();
@@ -259,6 +273,16 @@ public class ClientFormController implements Initializable {
 		selectedClient.emailProperty().set(emailField.getText());
 		selectedClient.gstProperty().set(gstField.getText());
 		selectedClient.panProperty().set(panField.getText());
+		try {
+			selectedClient.setCreditLimit(Double.parseDouble(creditLimitField.getText()));
+		} catch (Exception e) {
+			selectedClient.setCreditLimit(0);
+		}
+		try {
+			selectedClient.setOpeningBalance(Double.parseDouble(openingBalanceField.getText()));
+		} catch (Exception e) {
+			selectedClient.setOpeningBalance(0);
+		}
 		String billing = billingAddressField.getText() == null ? "" : billingAddressField.getText();
 		selectedClient.billingAddressProperty().set(billing);
 		if (syncAddressToggle != null && syncAddressToggle.isSelected()) {

@@ -261,9 +261,20 @@ public class InvoiceMasterService {
         if (jobUuid == null || jobUuid.isBlank()) {
             return;
         }
-        try (java.sql.PreparedStatement ps = con.prepareStatement(
-                "DELETE FROM invoice_job_mapping WHERE job_uuid = ?"
-                        + (invoiceUuid != null && !invoiceUuid.isBlank() ? " AND invoice_uuid = ?" : ""))) {
+
+        model.User current = utils.SessionManager.getInstance().getCurrentUser();
+        boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
+
+        String sql;
+        if (isAdmin) {
+            sql = "DELETE FROM invoice_job_mapping WHERE job_uuid = ?"
+                    + (invoiceUuid != null && !invoiceUuid.isBlank() ? " AND invoice_uuid = ?" : "");
+        } else {
+            sql = "UPDATE invoice_job_mapping SET is_deleted = 1, sync_status = 'PENDING', updated_at = datetime('now') WHERE job_uuid = ?"
+                    + (invoiceUuid != null && !invoiceUuid.isBlank() ? " AND invoice_uuid = ?" : "");
+        }
+
+        try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, jobUuid.trim());
             if (invoiceUuid != null && !invoiceUuid.isBlank()) {
                 ps.setString(2, invoiceUuid.trim());
@@ -289,20 +300,19 @@ public class InvoiceMasterService {
 
     public void deleteEmptyInvoices(java.sql.Connection con) {
         // Keep drafts that still have jobs linked even when mapping insert failed earlier.
-        String sql = """
-            DELETE FROM invoice_master
-            WHERE status = 'DRAFT'
-              AND invoice_no LIKE 'TEMP-%'
-              AND uuid NOT IN (
-                SELECT invoice_uuid FROM invoice_job_mapping
-                WHERE invoice_uuid IS NOT NULL AND TRIM(invoice_uuid) <> ''
-                UNION
-                SELECT invoice_uuid FROM jobs
-                WHERE invoice_uuid IS NOT NULL AND TRIM(invoice_uuid) <> ''
-              )
-        """;
-        try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.executeUpdate();
+        // Find UUIDs that should be removed and call repository delete (which handles sync)
+        String selectSql = "SELECT uuid FROM invoice_master WHERE status = 'DRAFT' AND invoice_no LIKE 'TEMP-%' AND uuid NOT IN (SELECT invoice_uuid FROM invoice_job_mapping WHERE invoice_uuid IS NOT NULL AND TRIM(invoice_uuid) <> '' UNION SELECT invoice_uuid FROM jobs WHERE invoice_uuid IS NOT NULL AND TRIM(invoice_uuid) <> '')";
+        try (java.sql.PreparedStatement ps = con.prepareStatement(selectSql);
+             java.sql.ResultSet rs = ps.executeQuery()) {
+            java.util.List<String> uuids = new java.util.ArrayList<>();
+            while (rs.next()) uuids.add(rs.getString(1));
+            for (String u : uuids) {
+                try {
+                    repo.deleteInvoice(con, u);
+                } catch (Exception ex) {
+                    System.err.println("Failed to delete empty invoice " + u + ": " + ex.getMessage());
+                }
+            }
         } catch (Exception e) {
             System.err.println("Failed to cleanup empty invoices: " + e.getMessage());
         }
@@ -312,8 +322,19 @@ public class InvoiceMasterService {
         if (invoiceUuid == null || invoiceUuid.isBlank()) {
             return;
         }
+
+        model.User current = utils.SessionManager.getInstance().getCurrentUser();
+        boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
+
         String updateJobsSql = "UPDATE jobs SET invoice_uuid = NULL, status = 'Completed' WHERE invoice_uuid = ?";
-        String deleteMappingSql = "DELETE FROM invoice_job_mapping WHERE invoice_uuid = ?";
+        
+        String deleteMappingSql;
+        if (isAdmin) {
+            deleteMappingSql = "DELETE FROM invoice_job_mapping WHERE invoice_uuid = ?";
+        } else {
+            deleteMappingSql = "UPDATE invoice_job_mapping SET is_deleted = 1, sync_status = 'PENDING', updated_at = datetime('now') WHERE invoice_uuid = ?";
+        }
+
         try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql);
              java.sql.PreparedStatement psDelMap = con.prepareStatement(deleteMappingSql)) {
 

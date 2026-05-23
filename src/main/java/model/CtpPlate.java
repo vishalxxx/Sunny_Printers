@@ -11,7 +11,6 @@ public class CtpPlate implements Serializable {
     private String jobItemUuid;
 
     private String supplierUuid;
-    private String supplierName;
 
     /* ================= DATA ================= */
 
@@ -51,7 +50,6 @@ public class CtpPlate implements Serializable {
         c.uuid = this.uuid;
         c.jobItemUuid = this.jobItemUuid;
         c.supplierUuid = this.supplierUuid;
-        c.supplierName = this.supplierName;
         c.qty = this.qty;
         c.plateSize = this.plateSize;
         c.gauge = this.gauge;
@@ -73,7 +71,6 @@ public class CtpPlate implements Serializable {
         if (originalSnapshot == null) return true; // new item
 
         return qty != originalSnapshot.qty
-            || !Objects.equals(supplierName, originalSnapshot.supplierName)
             || !Objects.equals(plateSize, originalSnapshot.plateSize)
             || !Objects.equals(gauge, originalSnapshot.gauge)
             || !Objects.equals(backing, originalSnapshot.backing)
@@ -87,7 +84,6 @@ public class CtpPlate implements Serializable {
         if (originalSnapshot == null) return false;
 
         return qty == originalSnapshot.qty
-            && Objects.equals(supplierName, originalSnapshot.supplierName)
             && Objects.equals(plateSize, originalSnapshot.plateSize)
             && Objects.equals(gauge, originalSnapshot.gauge)
             && Objects.equals(backing, originalSnapshot.backing)
@@ -123,9 +119,6 @@ public class CtpPlate implements Serializable {
 
     public String getSupplierUuid() { return supplierUuid; }
     public void setSupplierUuid(String supplierUuid) { this.supplierUuid = supplierUuid; }
-
-    public String getSupplierName() { return supplierName; }
-    public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
 
     public int getQty() { return qty; }
     public void setQty(int qty) { this.qty = qty; }

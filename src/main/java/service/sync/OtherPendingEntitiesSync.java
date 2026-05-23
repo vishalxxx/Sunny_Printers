@@ -81,6 +81,25 @@ public final class OtherPendingEntitiesSync {
 						if ("invoice_job_mapping".equals(def.sqliteTable())) {
 							row = filterJsonColumns(row, INVOICE_JOB_MAPPING_REMOTE_COLS);
 						}
+						if ("paper_items".equals(def.sqliteTable()) || "ctp_items".equals(def.sqliteTable())) {
+							row.remove("supplier_name");
+						}
+						// Convert SQLite 0/1 integers to actual JSON booleans for is_deleted and is_active
+						for (String boolCol : new String[]{"is_deleted", "is_active"}) {
+							if (row.has(boolCol) && !row.get(boolCol).isJsonNull()) {
+								try {
+									com.google.gson.JsonElement el = row.get(boolCol);
+									if (el.isJsonPrimitive()) {
+										com.google.gson.JsonPrimitive prim = el.getAsJsonPrimitive();
+										if (prim.isNumber()) {
+											row.addProperty(boolCol, prim.getAsInt() != 0);
+										} else if (prim.isString()) {
+											row.addProperty(boolCol, "true".equalsIgnoreCase(prim.getAsString()) || "1".equals(prim.getAsString()));
+										}
+									}
+								} catch (Exception ignored) {}
+							}
+						}
 						row.addProperty("sync_status", "SYNCED");
 						row.addProperty("synced_at", java.time.Instant.now().toString());
 						upsertRow(http, def.endpoint(), def.uuidColumn(), row);

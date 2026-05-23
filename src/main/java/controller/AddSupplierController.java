@@ -104,9 +104,18 @@ public class AddSupplierController implements Initializable {
         supplierCodeField.setText(code);
         businessNameField.setText(s.getbusinessName());
         gstinField.setText(s.getGstNumber());
-        mobileField.setText(s.getPhone());
+        mobileField.setText(s.getMobile());
+        phoneField.setText(s.getPhone());
+        emailField.setText(s.getEmail());
+        websiteField.setText(s.getWebsite());
         addressField.setText(s.getAddress());
+        stateCombo.setValue(s.getState());
+        cityCombo.setValue(s.getCity());
+        pincodeField.setText(s.getPincode());
         supplierTypeCombo.setValue(s.getType());
+        paymentTermsCombo.setValue(s.getPaymentTerms());
+        creditLimitField.setText(String.valueOf(s.getCreditLimit()));
+        notesField.setText(s.getNotes());
         
         lblLastUpdated.setText(java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy")));
     }
@@ -158,9 +167,24 @@ public class AddSupplierController implements Initializable {
         selectedSupplier.setSupplierCode(supplierCodeField.getText() == null ? "" : supplierCodeField.getText().trim());
         selectedSupplier.setbusinessName(businessNameField.getText() == null ? "" : businessNameField.getText().trim());
         selectedSupplier.setGstNumber(gstinField.getText() == null ? "" : gstinField.getText().trim());
-        selectedSupplier.setPhone(mobileField.getText() == null ? "" : mobileField.getText().trim());
+        selectedSupplier.setMobile(mobileField.getText() == null ? "" : mobileField.getText().trim());
+        selectedSupplier.setPhone(phoneField.getText() == null ? "" : phoneField.getText().trim());
+        selectedSupplier.setEmail(emailField.getText() == null ? "" : emailField.getText().trim());
+        selectedSupplier.setWebsite(websiteField.getText() == null ? "" : websiteField.getText().trim());
         selectedSupplier.setAddress(addressField.getText() == null ? "" : addressField.getText().trim());
+        selectedSupplier.setState(stateCombo.getValue() == null ? "" : stateCombo.getValue());
+        selectedSupplier.setCity(cityCombo.getValue() == null ? "" : cityCombo.getValue());
+        selectedSupplier.setPincode(pincodeField.getText() == null ? "" : pincodeField.getText().trim());
         selectedSupplier.setType(supplierTypeCombo.getValue() == null ? "Other" : supplierTypeCombo.getValue());
+        selectedSupplier.setPaymentTerms(paymentTermsCombo.getValue() == null ? "" : paymentTermsCombo.getValue());
+        
+        try {
+            double cl = Double.parseDouble(creditLimitField.getText() == null || creditLimitField.getText().isBlank() ? "0" : creditLimitField.getText().trim());
+            selectedSupplier.setCreditLimit(cl);
+        } catch (NumberFormatException e) {
+            selectedSupplier.setCreditLimit(0);
+        }
+        selectedSupplier.setNotes(notesField.getText() == null ? "" : notesField.getText().trim());
         
         try {
             if (isEdit) {

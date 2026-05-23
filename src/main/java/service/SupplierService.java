@@ -7,15 +7,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 import model.Supplier;
+import model.User;
 import utils.DBConnection;
+import api.supabase.SupabaseGate;
+import api.supabase.SupabaseEndpoints;
+import api.supabase.SupabaseRestClient;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
+import utils.SessionManager;
 
 public class SupplierService {
 
 	public void addSupplier(Supplier s) {
 		String sql = """
 				    INSERT INTO suppliers
-				    (uuid, supplier_code, name, business_name, type, phone, address, gst_number, created_by_user_uuid, updated_by_user_uuid)
-				    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				    (uuid, supplier_code, name, business_name, type, phone, address, gst_number, created_by_user_uuid, updated_by_user_uuid,
+				     mobile, email, website, state, city, pincode, payment_terms, credit_limit, notes)
+				    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 				""";
 
 		try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -50,6 +62,15 @@ public class SupplierService {
 			}
 			stmt.setString(9, userUuid);
 			stmt.setString(10, userUuid);
+			stmt.setString(11, s.getMobile());
+			stmt.setString(12, s.getEmail());
+			stmt.setString(13, s.getWebsite());
+			stmt.setString(14, s.getState());
+			stmt.setString(15, s.getCity());
+			stmt.setString(16, s.getPincode());
+			stmt.setString(17, s.getPaymentTerms());
+			stmt.setDouble(18, s.getCreditLimit());
+			stmt.setString(19, s.getNotes());
 
 			stmt.executeUpdate();
 			service.sync.UniversalSyncEngine.scheduleSyncAsync();
@@ -61,13 +82,25 @@ public class SupplierService {
 	public List<Supplier> getSuppliersByType(String type) {
 
 		List<Supplier> list = new ArrayList<>();
+		User current = SessionManager.getInstance().getCurrentUser();
+		boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
 
-		String sql = """
+		String sql;
+		if (isAdmin) {
+			sql = """
 				    SELECT *
 				    FROM suppliers
 				    WHERE type = ?
 				    ORDER BY business_name
 				""";
+		} else {
+			sql = """
+				    SELECT *
+				    FROM suppliers
+				    WHERE type = ? AND is_deleted = 0
+				    ORDER BY business_name
+				""";
+		}
 
 		try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -86,6 +119,17 @@ public class SupplierService {
 				s.setGstNumber(rs.getString("gst_number"));
 				s.setCreatedByUserUuid(rs.getString("created_by_user_uuid"));
 				s.setUpdatedByUserUuid(rs.getString("updated_by_user_uuid"));
+				s.setDeleted(rs.getInt("is_deleted") == 1);
+				s.setActive(rs.getInt("is_active") == 1);
+				s.setMobile(rs.getString("mobile"));
+				s.setEmail(rs.getString("email"));
+				s.setWebsite(rs.getString("website"));
+				s.setState(rs.getString("state"));
+				s.setCity(rs.getString("city"));
+				s.setPincode(rs.getString("pincode"));
+				s.setPaymentTerms(rs.getString("payment_terms"));
+				s.setCreditLimit(rs.getDouble("credit_limit"));
+				s.setNotes(rs.getString("notes"));
 
 				list.add(s);
 			}
@@ -99,11 +143,24 @@ public class SupplierService {
 
 	public List<Supplier> getAllSuppliers() {
 		List<Supplier> list = new ArrayList<>();
-		String sql = """
+		User current = SessionManager.getInstance().getCurrentUser();
+		boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
+
+		String sql;
+		if (isAdmin) {
+			sql = """
 				    SELECT *
 				    FROM suppliers
 				    ORDER BY business_name
 				""";
+		} else {
+			sql = """
+				    SELECT *
+				    FROM suppliers
+				    WHERE is_deleted = 0
+				    ORDER BY business_name
+				""";
+		}
 
 		try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 			ResultSet rs = stmt.executeQuery();
@@ -119,6 +176,17 @@ public class SupplierService {
 				s.setGstNumber(rs.getString("gst_number"));
 				s.setCreatedByUserUuid(rs.getString("created_by_user_uuid"));
 				s.setUpdatedByUserUuid(rs.getString("updated_by_user_uuid"));
+				s.setDeleted(rs.getInt("is_deleted") == 1);
+				s.setActive(rs.getInt("is_active") == 1);
+				s.setMobile(rs.getString("mobile"));
+				s.setEmail(rs.getString("email"));
+				s.setWebsite(rs.getString("website"));
+				s.setState(rs.getString("state"));
+				s.setCity(rs.getString("city"));
+				s.setPincode(rs.getString("pincode"));
+				s.setPaymentTerms(rs.getString("payment_terms"));
+				s.setCreditLimit(rs.getDouble("credit_limit"));
+				s.setNotes(rs.getString("notes"));
 				list.add(s);
 			}
 		} catch (Exception e) {
@@ -130,7 +198,8 @@ public class SupplierService {
 	public void updateSupplier(Supplier s) {
 		String sql = """
 				    UPDATE suppliers
-				    SET supplier_code = ?, name = ?, business_name = ?, type = ?, phone = ?, address = ?, gst_number = ?, updated_by_user_uuid = ?
+				    SET supplier_code = ?, name = ?, business_name = ?, type = ?, phone = ?, address = ?, gst_number = ?, updated_by_user_uuid = ?,
+				        mobile = ?, email = ?, website = ?, state = ?, city = ?, pincode = ?, payment_terms = ?, credit_limit = ?, notes = ?
 				    WHERE uuid = ?
 				""";
 
@@ -148,7 +217,16 @@ public class SupplierService {
 			    userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
 			}
 			stmt.setString(8, userUuid);
-			stmt.setString(9, s.getUuid());
+			stmt.setString(9, s.getMobile());
+			stmt.setString(10, s.getEmail());
+			stmt.setString(11, s.getWebsite());
+			stmt.setString(12, s.getState());
+			stmt.setString(13, s.getCity());
+			stmt.setString(14, s.getPincode());
+			stmt.setString(15, s.getPaymentTerms());
+			stmt.setDouble(16, s.getCreditLimit());
+			stmt.setString(17, s.getNotes());
+			stmt.setString(18, s.getUuid());
 			stmt.executeUpdate();
 			service.sync.UniversalSyncEngine.scheduleSyncAsync();
 		} catch (Exception e) {
@@ -157,13 +235,85 @@ public class SupplierService {
 	}
 
 	public void deleteSupplier(String uuid) {
-		String sql = "DELETE FROM suppliers WHERE uuid = ?";
-		try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-			stmt.setString(1, uuid);
-			stmt.executeUpdate();
-			service.sync.UniversalSyncEngine.scheduleSyncAsync();
-		} catch (Exception e) {
-			e.printStackTrace();
+		if (uuid == null || uuid.isBlank()) {
+			return;
+		}
+		User current = SessionManager.getInstance().getCurrentUser();
+		boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
+		if (isAdmin) {
+			String sql = "DELETE FROM suppliers WHERE uuid = ?";
+			try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+				stmt.setString(1, uuid);
+				stmt.executeUpdate();
+				service.sync.UniversalSyncEngine.scheduleSyncAsync();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
+				try {
+					String v = URLEncoder.encode(uuid.trim(), StandardCharsets.UTF_8).replace("+", "%20");
+					http.delete(SupabaseEndpoints.SUPPLIERS, "uuid=eq." + v);
+				} catch (Exception ex) {
+					System.err.println("[Supabase suppliers] remote delete failed for uuid=" + uuid + ": " + ex.getMessage());
+				}
+			}));
+		} else {
+			String sql = "UPDATE suppliers SET is_deleted = 1, is_active = 0, deleted_at = datetime('now'), sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+			try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+				stmt.setString(1, uuid);
+				stmt.executeUpdate();
+				service.sync.UniversalSyncEngine.scheduleSyncAsync();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
+				try {
+					JsonObject body = new JsonObject();
+					body.addProperty("uuid", uuid.trim());
+					body.addProperty("is_deleted", 1);
+					body.addProperty("is_active", 0);
+					body.addProperty("sync_status", "SYNCED");
+					body.addProperty("synced_at", Instant.now().toString());
+					body.addProperty("deleted_at", Instant.now().toString());
+					String v = URLEncoder.encode(uuid.trim(), StandardCharsets.UTF_8).replace("+", "%20");
+					http.patchJson(SupabaseEndpoints.SUPPLIERS, "uuid=eq." + v, body.toString(), "return=minimal");
+				} catch (Exception ex) {
+					System.err.println("[Supabase suppliers] remote soft-delete failed for uuid=" + uuid + ": " + ex.getMessage());
+				}
+			}));
+		}
+	}
+
+	public void reviveSupplier(String uuid) {
+		if (uuid == null || uuid.isBlank()) {
+			return;
+		}
+		User current = SessionManager.getInstance().getCurrentUser();
+		boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
+		if (isAdmin) {
+			String sql = "UPDATE suppliers SET is_deleted = 0, is_active = 1, deleted_at = NULL, sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+			try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+				stmt.setString(1, uuid);
+				stmt.executeUpdate();
+				service.sync.UniversalSyncEngine.scheduleSyncAsync();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
+				try {
+					JsonObject body = new JsonObject();
+					body.addProperty("uuid", uuid.trim());
+					body.addProperty("is_deleted", 0);
+					body.addProperty("is_active", 1);
+					body.addProperty("sync_status", "SYNCED");
+					body.addProperty("synced_at", Instant.now().toString());
+					body.add("deleted_at", JsonNull.INSTANCE);
+					String v = URLEncoder.encode(uuid.trim(), StandardCharsets.UTF_8).replace("+", "%20");
+					http.patchJson(SupabaseEndpoints.SUPPLIERS, "uuid=eq." + v, body.toString(), "return=minimal");
+				} catch (Exception ex) {
+					System.err.println("[Supabase suppliers] remote revive failed for uuid=" + uuid + ": " + ex.getMessage());
+				}
+			}));
 		}
 	}
 }
