@@ -151,8 +151,8 @@ public final class ClientsSupabaseApi {
 		if (updatedAt != null && !updatedAt.isBlank()) {
 			o.addProperty("updated_at", updatedAt);
 		}
-		o.addProperty("created_by_user_uuid", nz(c.getCreatedByUserUuid()));
-		o.addProperty("updated_by_user_uuid", nz(c.getUpdatedByUserUuid()));
+		addUuidOrNull(o, "created_by_user_uuid", c.getCreatedByUserUuid());
+		addUuidOrNull(o, "updated_by_user_uuid", c.getUpdatedByUserUuid());
 		return o;
 	}
 
@@ -185,8 +185,8 @@ public final class ClientsSupabaseApi {
 		putDeletedAtIfChanged(o, after.getDeletedAt(), before.getDeletedAt());
 		putStrIfChanged(o, "created_at", after.getCreatedAt(), before.getCreatedAt());
 		putStrIfChanged(o, "updated_at", after.getUpdatedAt(), before.getUpdatedAt());
-		putStrIfChanged(o, "created_by_user_uuid", after.getCreatedByUserUuid(), before.getCreatedByUserUuid());
-		putStrIfChanged(o, "updated_by_user_uuid", after.getUpdatedByUserUuid(), before.getUpdatedByUserUuid());
+		putUuidIfChanged(o, "created_by_user_uuid", after.getCreatedByUserUuid(), before.getCreatedByUserUuid());
+		putUuidIfChanged(o, "updated_by_user_uuid", after.getUpdatedByUserUuid(), before.getUpdatedByUserUuid());
 		return o;
 	}
 
@@ -195,6 +195,26 @@ public final class ClientsSupabaseApi {
 		String b = nz(before);
 		if (!a.equals(b)) {
 			o.addProperty(key, a);
+		}
+	}
+
+	private static void addUuidOrNull(JsonObject o, String key, String val) {
+		if (val == null || val.trim().isEmpty()) {
+			o.add(key, JsonNull.INSTANCE);
+		} else {
+			o.addProperty(key, val.trim());
+		}
+	}
+
+	private static void putUuidIfChanged(JsonObject o, String key, String after, String before) {
+		String a = after == null || after.trim().isEmpty() ? null : after.trim();
+		String b = before == null || before.trim().isEmpty() ? null : before.trim();
+		if ((a == null && b != null) || (a != null && !a.equals(b))) {
+			if (a == null) {
+				o.add(key, JsonNull.INSTANCE);
+			} else {
+				o.addProperty(key, a);
+			}
 		}
 	}
 

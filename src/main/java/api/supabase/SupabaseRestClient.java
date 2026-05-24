@@ -142,6 +142,18 @@ public final class SupabaseRestClient {
 		return send(b.build());
 	}
 
+	public HttpResponse<String> postJsonRaw(String pathSegment, String jsonBody, String preferHeader)
+			throws IOException, InterruptedException {
+		URI uri = URI.create(restV1Base + pathSegment);
+		HttpRequest.Builder b = HttpRequest.newBuilder(uri)
+				.POST(HttpRequest.BodyPublishers.ofString(jsonBody == null ? "" : jsonBody))
+				.header("Content-Type", "application/json")
+				.timeout(REQUEST_TIMEOUT);
+		applyDefaultHeaders(b);
+		b.header("Prefer", preferHeader == null || preferHeader.isBlank() ? "return=minimal" : preferHeader);
+		return send(b.build());
+	}
+
 	private void applyDefaultHeaders(HttpRequest.Builder b) {
 		b.header("apikey", anonKey);
 		String auth = bearerToken != null ? bearerToken : anonKey;

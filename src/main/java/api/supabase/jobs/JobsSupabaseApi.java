@@ -45,7 +45,7 @@ public final class JobsSupabaseApi {
 	private static JsonObject toRemoteRow(Job job) {
 		JsonObject o = new JsonObject();
 		o.addProperty(COL_UUID, job.getUuid().trim());
-		o.addProperty("client_uuid", nz(job.getClientUuid()));
+		addNullableUuid(o, "client_uuid", job.getClientUuid());
 		addNullableUuid(o, "invoice_uuid", job.getInvoiceUuid());
 		o.addProperty("job_code", nz(job.getJobCode()));
 		o.addProperty("job_title", nz(job.getJobTitle()));
@@ -65,6 +65,8 @@ public final class JobsSupabaseApi {
 		o.addProperty("sync_version", Math.max(1, job.getSyncVersion()));
 		addTimestampOrNull(o, "created_at", job.getCreatedAt());
 		addTimestampOrNull(o, "updated_at", job.getUpdatedAt());
+		addNullableUuid(o, "created_by_user_uuid", job.getCreatedByUserUuid());
+		addNullableUuid(o, "updated_by_user_uuid", job.getUpdatedByUserUuid());
 		return o;
 	}
 

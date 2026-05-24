@@ -50,7 +50,12 @@ public class InvoiceMasterService {
             if (series == null) {
                 series = MasterDocumentSeries.GST_INVOICE;
             }
-            AllocatedNumber allocated = numberAllocator.allocateInvoiceNumber(con, series, invoice.getInvoiceDate());
+            AllocatedNumber allocated;
+            if (series == MasterDocumentSeries.PROFORMA_INVOICE) {
+                allocated = service.sync.UniversalTemporaryNumberEngine.getInstance().allocateTemporary(con, "proforma_invoice");
+            } else {
+                allocated = numberAllocator.allocateInvoiceNumber(con, series, invoice.getInvoiceDate());
+            }
             String invoiceNo = allocated.value();
             invoice.setInvoiceNo(invoiceNo);
 
@@ -109,7 +114,12 @@ public class InvoiceMasterService {
             if (series == null) {
                 series = MasterDocumentSeries.GST_INVOICE;
             }
-            AllocatedNumber allocated = numberAllocator.allocateInvoiceNumber(con, series, invoice.getInvoiceDate());
+            AllocatedNumber allocated;
+            if (series == MasterDocumentSeries.PROFORMA_INVOICE) {
+                allocated = service.sync.UniversalTemporaryNumberEngine.getInstance().allocateTemporary(con, "proforma_invoice");
+            } else {
+                allocated = numberAllocator.allocateInvoiceNumber(con, series, invoice.getInvoiceDate());
+            }
             String invoiceNo = allocated.value();
             invoice.setInvoiceNo(invoiceNo);
 
@@ -578,7 +588,7 @@ public class InvoiceMasterService {
         if (invoiceUuid == null || invoiceUuid.isBlank()) {
             return;
         }
-        String sql = "UPDATE jobs SET status = ? WHERE invoice_uuid = ?";
+        String sql = "UPDATE jobs SET status = ?, sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now') WHERE invoice_uuid = ?";
         try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, status);
             ps.setString(2, invoiceUuid);

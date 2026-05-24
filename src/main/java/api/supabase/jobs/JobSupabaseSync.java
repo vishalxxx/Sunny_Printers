@@ -15,6 +15,7 @@ import repository.ClientRepository;
 import repository.InvoiceMasterRepository;
 import repository.JobRepository;
 import utils.DBConnection;
+import utils.DocumentNumbering;
 
 /** Fire-and-forget dual-write of jobs to Supabase when configured. */
 public final class JobSupabaseSync {
@@ -56,8 +57,12 @@ public final class JobSupabaseSync {
 				try (Connection con = DBConnection.getConnection()) {
 					InvoiceMaster inv = new InvoiceMasterRepository().findByUuid(con, savedInvoiceUuid.trim());
 					if (inv != null) {
-						new InvoicesSupabaseApi(http).upsert(inv);
-						markInvoiceSyncedLocally(savedInvoiceUuid.trim());
+						if (DocumentNumbering.isTemporaryNumber(inv.getInvoiceNo())) {
+							job.setInvoiceUuid(null);
+						} else {
+							new InvoicesSupabaseApi(http).upsert(inv);
+							markInvoiceSyncedLocally(savedInvoiceUuid.trim());
+						}
 					} else {
 						System.err.println("[JobSupabaseSync] job " + job.getUuid()
 								+ ": invoice " + savedInvoiceUuid + " missing locally");

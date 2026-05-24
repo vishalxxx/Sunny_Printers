@@ -63,6 +63,10 @@ public final class UniversalNumberAllocator {
 		return delegate.tryAllocatePermanentSupplierCode(con);
 	}
 
+	public Optional<AllocatedNumber> tryAllocatePermanentPaymentReceiptNo(Connection con, LocalDate refDate) throws Exception {
+		return delegate.tryAllocatePermanentPaymentReceiptNo(con, refDate);
+	}
+
 	public Optional<AllocatedNumber> tryAllocatePermanentJobCode(Connection con) throws Exception {
 		return delegate.tryAllocatePermanent(con, "job", LocalDate.now());
 	}

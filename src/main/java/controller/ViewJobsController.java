@@ -850,46 +850,63 @@ public class ViewJobsController {
                 root.getChildren().clear();
                 
                 String statusMsg = job.getStatus() != null ? job.getStatus().toLowerCase() : "";
+                boolean isCancelled = statusMsg.contains("cancel");
+                boolean isInvoiced = statusMsg.contains("invoice") || statusMsg.contains("invoic");
+                
                 Button primaryBtn = new Button();
                 primaryBtn.setMinHeight(24);
                 primaryBtn.setMaxHeight(24);
                 primaryBtn.setPrefHeight(24);
                 primaryBtn.setPadding(new Insets(2, 8, 2, 8));
                 
-                if (statusMsg.contains("draft") || statusMsg.contains("created")) {
-                    primaryBtn.setText("Start Processing");
-                    primaryBtn.getStyleClass().setAll("row-action-btn-primary");
-                    primaryBtn.setGraphic(createIcon("M8 5v14l11-7z", "white"));
-                    primaryBtn.setOnAction(e -> handleStartActionForJob(job));
-                } else if (statusMsg.contains("progress")) {
-                    primaryBtn.setText("Mark Completed");
-                    primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-green");
-                    primaryBtn.setGraphic(createIcon("M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z", "white"));
-                    primaryBtn.setOnAction(e -> handleCompleteActionForJob(job));
-                } else if (statusMsg.contains("completed")) {
-                    primaryBtn.setText("Generate Invoice");
-                    primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-purple");
-                    primaryBtn.setGraphic(createIcon("M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z", "white"));
-                    primaryBtn.setOnAction(e -> handleInvoicedRequest(job));
-                } else {
-                    primaryBtn.setText("No Actions");
-                    primaryBtn.setDisable(true);
-                    primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-muted");
+                if (!isInvoiced) {
+                    if (statusMsg.contains("draft") || statusMsg.contains("created")) {
+                        primaryBtn.setText("Start Processing");
+                        primaryBtn.getStyleClass().setAll("row-action-btn-primary");
+                        primaryBtn.setGraphic(createIcon("M8 5v14l11-7z", "white"));
+                        primaryBtn.setOnAction(e -> handleStartActionForJob(job));
+                    } else if (statusMsg.contains("progress")) {
+                        primaryBtn.setText("Mark Completed");
+                        primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-green");
+                        primaryBtn.setGraphic(createIcon("M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z", "white"));
+                        primaryBtn.setOnAction(e -> handleCompleteActionForJob(job));
+                    } else if (statusMsg.contains("completed")) {
+                        primaryBtn.setText("Generate Invoice");
+                        primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-purple");
+                        primaryBtn.setGraphic(createIcon("M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z", "white"));
+                        primaryBtn.setOnAction(e -> handleInvoicedRequest(job));
+                    } else {
+                        primaryBtn.setText("No Actions");
+                        primaryBtn.setDisable(true);
+                        primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-muted");
+                    }
                 }
                 
                 Button eBtn = new Button(); eBtn.getStyleClass().addAll("row-action-btn", "row-btn-orange");
                 eBtn.setGraphic(createIcon("M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z", "#FA8C16"));
                 eBtn.setOnAction(e -> openEditJobScreen(job));
+                eBtn.setTooltip(new Tooltip("Edit Job"));
 
                 Button mailBtn = new Button(); mailBtn.getStyleClass().addAll("row-action-btn", "row-btn-purple");
                 mailBtn.setGraphic(createIcon("M2 21l21-9L2 3v7l15 2-15 2z", "#722ED1"));
                 mailBtn.setOnAction(e -> handleSendMailPopup(job));
+                mailBtn.setTooltip(new Tooltip("Send Email"));
+
+                Button cancelBtn = new Button(); cancelBtn.getStyleClass().addAll("row-action-btn", "row-btn-red");
+                cancelBtn.setGraphic(createIcon("M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z", "#F5222D"));
+                cancelBtn.setOnAction(e -> handleCancelActionForJob(job));
+                cancelBtn.setTooltip(new Tooltip("Cancel Job"));
                 
-                root.getChildren().add(primaryBtn);
-                if (!statusMsg.contains("cancel")) {
+                if (!isInvoiced) {
+                    root.getChildren().add(primaryBtn);
+                }
+                if (!isCancelled) {
                     root.getChildren().add(eBtn);
                 }
                 root.getChildren().add(mailBtn);
+                if (!isCancelled && !isInvoiced) {
+                    root.getChildren().add(cancelBtn);
+                }
                 useGraphicOnlyCell(this);
                 setGraphic(root);
             }
@@ -970,9 +987,7 @@ public class ViewJobsController {
         stage.initModality(Modality.APPLICATION_MODAL);
         
         VBox root = new VBox(15);
-        root.setStyle("-fx-background-color: #FAF6F0; -fx-background-radius: 16; -fx-padding: 24; " +
-                      "-fx-border-width: 1; -fx-border-color: #EEECE8; -fx-border-radius: 16;" +
-                      "-fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.15), 30, 0, 0, 15);");
+        root.getStyleClass().add("mail-popup-root");
         root.setMinWidth(600);
         root.setMaxWidth(700);
         
@@ -1001,7 +1016,7 @@ public class ViewJobsController {
         
         // TableView for recipients
         TableView<MailRecipient> table = new TableView<>();
-        table.getStyleClass().add("job-details-popup-table");
+        table.getStyleClass().add("mail-popup-table");
         table.setPrefHeight(150);
         
         TableColumn<MailRecipient, String> typeCol = new TableColumn<>("Role / Type");
@@ -1029,19 +1044,19 @@ public class ViewJobsController {
         toLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700;");
         TextField toEmailField = new TextField();
         toEmailField.setPromptText("Enter recipient email address...");
-        toEmailField.getStyleClass().add("text-field");
+        toEmailField.getStyleClass().add("mail-field");
         
         Label subjectLabel = new Label("Subject:");
         subjectLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700;");
         TextField subjectField = new TextField("Sunny Printers: Update for Job - " + job.getJobTitle());
-        subjectField.getStyleClass().add("text-field");
+        subjectField.getStyleClass().add("mail-field");
         
         Label messageLabel = new Label("Message:");
         messageLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700;");
         TextArea messageArea = new TextArea();
         messageArea.setPrefRowCount(6);
         messageArea.setWrapText(true);
-        messageArea.getStyleClass().add("text-area");
+        messageArea.getStyleClass().add("mail-area");
         
         // Add listener to table
         table.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
@@ -1090,7 +1105,7 @@ public class ViewJobsController {
             : "-fx-text-fill: #F5222D; -fx-font-weight: 700; -fx-font-size: 11px;");
         
         Button sendBtn = new Button("Send Email");
-        sendBtn.getStyleClass().add("row-action-btn-primary");
+        sendBtn.getStyleClass().add("finish-btn-premium");
         sendBtn.setGraphic(createIcon("M2 21l21-9L2 3v7l15 2-15 2z", "white"));
         sendBtn.setDisable(!configOk);
         
@@ -1158,7 +1173,7 @@ public class ViewJobsController {
         });
         
         Button cancelBtn = new Button("Cancel");
-        cancelBtn.getStyleClass().add("view-clear-btn");
+        cancelBtn.getStyleClass().add("cancel-btn");
         cancelBtn.setOnAction(e -> stage.close());
         
         HBox actionRow = new HBox(10);

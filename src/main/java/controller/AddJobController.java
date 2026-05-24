@@ -672,10 +672,20 @@ public class AddJobController implements utils.DirtySupport {
 				java.io.File targetFile = new java.io.File(dir, newFileName);
 				java.nio.file.Files.copy(selectedImageFile.toPath(), targetFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 				String relativePath = "Images/" + newFileName;
-				String updateImgQuery = "UPDATE jobs SET image_path = ? WHERE uuid = ?";
+				String userUuid = null;
+				if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+					userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+				}
+				String updateImgQuery = """
+						UPDATE jobs SET image_path = ?, sync_status = 'PENDING',
+						updated_at = datetime('now'), sync_version = sync_version + 1,
+						updated_by_user_uuid = ?
+						WHERE uuid = ?
+						""";
 				try (java.sql.PreparedStatement ps = con.prepareStatement(updateImgQuery)) {
 					ps.setString(1, relativePath);
-					ps.setString(2, jobUuid);
+					ps.setString(2, userUuid);
+					ps.setString(3, jobUuid);
 					ps.executeUpdate();
 				}
 				currentJob.setImagePath(relativePath);

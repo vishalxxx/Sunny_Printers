@@ -291,7 +291,7 @@ public class ClientRepository {
 		String sql = """
 				SELECT * FROM clients
 				WHERE IFNULL(is_deleted, 0) = 0
-				  AND UPPER(TRIM(COALESCE(sync_status, ''))) IN ('', 'PENDING')
+				  AND UPPER(TRIM(COALESCE(sync_status, ''))) IN ('', 'PENDING', 'WAITING_DEPENDENCY')
 				  AND client_code NOT LIKE 'TEMP-%'
 				ORDER BY created_at ASC
 				""";

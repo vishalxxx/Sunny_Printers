@@ -16,6 +16,8 @@ import com.google.gson.JsonParser;
 import api.supabase.SupabaseEndpoints;
 import api.supabase.SupabaseRestClient;
 import model.NumberSequence;
+import model.User;
+import utils.SessionManager;
 
 public final class NumberSequencesSupabaseApi {
 
@@ -51,7 +53,49 @@ public final class NumberSequencesSupabaseApi {
 		return rows.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(rows.get(0));
 	}
 
+	public NumberSequence incrementAtomic(String sequenceKey, String financialYear) throws IOException, InterruptedException {
+		if (sequenceKey == null || sequenceKey.isBlank()) {
+			throw new IllegalArgumentException("sequenceKey cannot be null or empty");
+		}
+		if (financialYear == null || financialYear.isBlank()) {
+			throw new IllegalArgumentException("financialYear cannot be null or empty");
+		}
+		JsonObject payload = new JsonObject();
+		payload.addProperty("seq_key", sequenceKey.trim());
+		payload.addProperty("ref_fy", financialYear.trim());
+
+		HttpResponse<String> res = http.postJsonRaw("rpc/increment_number_sequence", payload.toString(), "return=representation");
+		int code = res.statusCode();
+		System.out.println("[NumberSequencesSupabaseApi] raw RPC response for " + sequenceKey + ": " + res.body());
+		if (code < 200 || code >= 300) {
+			throw new IOException("HTTP " + code + " " + res.body());
+		}
+		long newNumber = Long.parseLong(res.body().trim());
+
+		NumberSequence row = new NumberSequence();
+		row.setSequenceKey(sequenceKey.trim());
+		row.setCurrentNumber(newNumber);
+		row.setFinancialYear(financialYear.trim());
+		row.setDigitWidth(4);
+		row.setPrefix("");
+		row.setDisplayName(sequenceKey.trim());
+		return row;
+	}
+
+
+	private boolean isCurrentUserAdmin() {
+		try {
+			User current = SessionManager.getInstance().getCurrentUser();
+			return current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
 	public NumberSequence incrementAndPersist(NumberSequence row) throws IOException, InterruptedException {
+		if (!isCurrentUserAdmin()) {
+			throw new SecurityException("Only admin is allowed to push number sequences to Supabase.");
+		}
 		if (row == null || row.getSequenceKey() == null || row.getSequenceKey().isBlank()) {
 			throw new IllegalArgumentException("sequence row");
 		}
@@ -108,6 +152,9 @@ public final class NumberSequencesSupabaseApi {
 	}
 
 	public void upsertAll(List<NumberSequence> rows) throws IOException, InterruptedException {
+		if (!isCurrentUserAdmin()) {
+			throw new SecurityException("Only admin is allowed to push number sequences to Supabase.");
+		}
 		if (rows == null || rows.isEmpty()) {
 			return;
 		}

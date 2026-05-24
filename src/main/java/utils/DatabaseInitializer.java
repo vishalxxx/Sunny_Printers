@@ -915,6 +915,8 @@ public class DatabaseInitializer {
                 updated_at TEXT DEFAULT (datetime('now')),
                 synced_at TEXT DEFAULT NULL,
                 deleted_at TEXT DEFAULT NULL,
+                created_by_user_uuid TEXT DEFAULT NULL,
+                updated_by_user_uuid TEXT DEFAULT NULL,
                 FOREIGN KEY (client_uuid) REFERENCES clients(uuid)
             )
             """;
@@ -1138,6 +1140,14 @@ public class DatabaseInitializer {
         try {
             stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_jobs_job_code ON jobs(job_code)");
         } catch (Exception ignored) {
+        }
+        if (!columnExists(conn, "jobs", "created_by_user_uuid")) {
+            stmt.execute("ALTER TABLE jobs ADD COLUMN created_by_user_uuid TEXT DEFAULT NULL;");
+            System.out.println("✔ Migration: Added created_by_user_uuid column to jobs table.");
+        }
+        if (!columnExists(conn, "jobs", "updated_by_user_uuid")) {
+            stmt.execute("ALTER TABLE jobs ADD COLUMN updated_by_user_uuid TEXT DEFAULT NULL;");
+            System.out.println("✔ Migration: Added updated_by_user_uuid column to jobs table.");
         }
     }
 

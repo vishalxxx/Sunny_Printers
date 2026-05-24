@@ -22,6 +22,7 @@ public class JobRepository {
             j.uuid, j.job_code, j.client_uuid, j.job_title, j.job_date, j.job_type, j.description,
             j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_uuid,
             j.amount, j.job_number_mode, j.delivery_date, j.is_deleted, j.is_active, j.sync_status, j.sync_version,
+            j.created_by_user_uuid, j.updated_by_user_uuid,
             (SELECT invoice_no FROM invoice_master inv WHERE inv.uuid = j.invoice_uuid) AS invoice_no,
             (SELECT status FROM invoice_master inv WHERE inv.uuid = j.invoice_uuid) AS invoice_status,
             (SELECT COALESCE(SUM(ji.amount), 0) FROM job_items ji
@@ -50,14 +51,22 @@ public class JobRepository {
             throw new SQLException("Failed to allocate job_code", e);
         }
         String syncStatus = tempCode || DocumentNumbering.isTemporaryNumber(code) ? "PENDING" : "PENDING";
+        
+        String userUuid = null;
+        if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+            userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+        }
+
         String sql = """
-                INSERT INTO jobs (uuid, client_uuid, job_code, status, sync_status)
-                VALUES (?, '', ?, 'DRAFT', ?)
+                INSERT INTO jobs (uuid, client_uuid, job_code, status, sync_status, created_by_user_uuid, updated_by_user_uuid)
+                VALUES (?, '', ?, 'DRAFT', ?, ?, ?)
                 """;
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, uuid);
             ps.setString(2, code);
             ps.setString(3, syncStatus);
+            ps.setString(4, userUuid);
+            ps.setString(5, userUuid);
             ps.executeUpdate();
         }
         Job job = new Job();
@@ -65,6 +74,8 @@ public class JobRepository {
         job.setJobCode(code);
         job.setStatus("DRAFT");
         job.setSyncStatus(syncStatus);
+        job.setCreatedByUserUuid(userUuid);
+        job.setUpdatedByUserUuid(userUuid);
         return job;
     }
 
@@ -82,10 +93,18 @@ public class JobRepository {
                 throw new SQLException("Failed to allocate job_code", e);
             }
         }
+        String userUuid = null;
+        if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+            userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+        }
+        job.setCreatedByUserUuid(userUuid);
+        job.setUpdatedByUserUuid(userUuid);
+
         String sql = """
                 INSERT INTO jobs (
-                  uuid, client_uuid, job_code, job_title, job_date, status, image_path, remarks, job_type, description
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                  uuid, client_uuid, job_code, job_title, job_date, status, image_path, remarks, job_type, description,
+                  created_by_user_uuid, updated_by_user_uuid
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, uuid);
@@ -102,6 +121,8 @@ public class JobRepository {
             ps.setString(8, job.getRemarks());
             ps.setString(9, job.getJobType());
             ps.setString(10, job.getDescription());
+            ps.setString(11, userUuid);
+            ps.setString(12, userUuid);
             ps.executeUpdate();
         }
         job.setUuid(uuid);
@@ -310,6 +331,10 @@ public class JobRepository {
             job.setSyncVersion(rs.getInt("sync_version"));
             job.setIsDeleted(rs.getInt("is_deleted"));
             job.setIsActive(rs.getInt("is_active"));
+        } catch (SQLException ignore) {}
+        try {
+            job.setCreatedByUserUuid(rs.getString("created_by_user_uuid"));
+            job.setUpdatedByUserUuid(rs.getString("updated_by_user_uuid"));
         } catch (SQLException ignore) {}
 
         String invUuid = rs.getString("invoice_uuid");
@@ -752,14 +777,24 @@ public class JobRepository {
     }
 
     public void updateChildStatus(Connection con, String jobUuid, String childStatus) throws SQLException {
-        String sql = "UPDATE jobs SET child_status = ? WHERE uuid = ?";
+        String userUuid = null;
+        if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+            userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+        }
+        String sql = """
+                UPDATE jobs SET child_status = ?, sync_status = 'PENDING',
+                updated_at = datetime('now'), sync_version = sync_version + 1,
+                updated_by_user_uuid = ?
+                WHERE uuid = ?
+                """;
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             if (childStatus == null || childStatus.isBlank()) {
                 ps.setNull(1, Types.VARCHAR);
             } else {
                 ps.setString(1, childStatus);
             }
-            ps.setString(2, jobUuid);
+            ps.setString(2, userUuid);
+            ps.setString(3, jobUuid);
             ps.executeUpdate();
         }
     }
@@ -770,12 +805,13 @@ public class JobRepository {
                 SELECT j.uuid, j.job_code, j.client_uuid, j.job_title, j.job_date, j.job_type, j.description,
                        j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_uuid,
                        j.amount, j.job_number_mode, j.delivery_date, j.is_deleted, j.is_active, j.sync_status, j.sync_version,
+                       j.created_by_user_uuid, j.updated_by_user_uuid,
                        NULL AS invoice_no, NULL AS invoice_status, """
                 + JOB_ITEMS_TOTAL_SUBQUERY + " AS job_total\n"
                 + """
                 FROM jobs j
                 WHERE IFNULL(j.is_deleted, 0) = 0
-                  AND UPPER(TRIM(COALESCE(j.sync_status, ''))) IN ('', 'PENDING')
+                  AND UPPER(TRIM(COALESCE(j.sync_status, ''))) IN ('', 'PENDING', 'WAITING_DEPENDENCY')
                   AND j.job_code NOT LIKE 'TEMP-%'
                 ORDER BY j.created_at ASC
                 """;

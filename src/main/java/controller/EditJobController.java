@@ -340,10 +340,20 @@ public class EditJobController implements utils.DirtySupport {
             // Save Job Remarks and Image
             JobService js = new JobService();
             if (jobRemarksArea.getText() != null && !jobRemarksArea.getText().equals(currentJob.getRemarks())) {
-                String updateQuery = "UPDATE jobs SET remarks = ? WHERE uuid = ?";
+                String userUuid = null;
+                if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+                    userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+                }
+                String updateQuery = """
+                        UPDATE jobs SET remarks = ?, sync_status = 'PENDING',
+                        updated_at = datetime('now'), sync_version = sync_version + 1,
+                        updated_by_user_uuid = ?
+                        WHERE uuid = ?
+                        """;
                 try (java.sql.PreparedStatement ps = con.prepareStatement(updateQuery)) {
                     ps.setString(1, jobRemarksArea.getText());
-                    ps.setString(2, currentJob.getUuid());
+                    ps.setString(2, userUuid);
+                    ps.setString(3, currentJob.getUuid());
                     ps.executeUpdate();
                 }
                 currentJob.setRemarks(jobRemarksArea.getText());
@@ -362,10 +372,20 @@ public class EditJobController implements utils.DirtySupport {
                 Files.copy(selectedImageFile.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 String relativePath = "Images/" + newFileName;
                 
-                String updateImgQuery = "UPDATE jobs SET image_path = ? WHERE uuid = ?";
+                String userUuid = null;
+                if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+                    userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+                }
+                String updateImgQuery = """
+                        UPDATE jobs SET image_path = ?, sync_status = 'PENDING',
+                        updated_at = datetime('now'), sync_version = sync_version + 1,
+                        updated_by_user_uuid = ?
+                        WHERE uuid = ?
+                        """;
                 try (java.sql.PreparedStatement ps = con.prepareStatement(updateImgQuery)) {
                     ps.setString(1, relativePath);
-                    ps.setString(2, currentJob.getUuid());
+                    ps.setString(2, userUuid);
+                    ps.setString(3, currentJob.getUuid());
                     ps.executeUpdate();
                 }
                 currentJob.setImagePath(relativePath);

@@ -10,8 +10,10 @@ import model.Job;
 import model.JobItem;
 import model.Paper;
 import model.Printing;
+import model.Supplier;
 import repository.PaperItemRepository;
 import service.JobItemService;
+import service.SupplierService;
 import utils.DeleteConfirmationDialog;
 
 import java.util.List;
@@ -43,6 +45,9 @@ public class PaperTabController {
 	private TableColumn<Paper, String> sourceCol;
 
 	@FXML
+	private TableColumn<Paper, String> supplierCol;
+
+	@FXML
 	private TableColumn<Paper, String> notesCol;
 
 	@FXML
@@ -67,6 +72,8 @@ public class PaperTabController {
 	private ComboBox<String> gsmField;
 	@FXML
 	private ComboBox<String> typeField;
+	@FXML
+	private ComboBox<Supplier> supplierField;
 
 	@FXML
 	private RadioButton ourRadio;
@@ -90,6 +97,8 @@ public class PaperTabController {
 
 	private final JobItemService jobItemService = new JobItemService();
 	private final PaperItemRepository paperRepo = new PaperItemRepository();
+	private final SupplierService supplierService = new SupplierService();
+	private final java.util.Map<String, String> supplierNameMap = new java.util.HashMap<>();
 
 	@FXML
 	private Button deleteBtn;
@@ -112,8 +121,40 @@ public class PaperTabController {
 		gsmCol.setCellValueFactory(new PropertyValueFactory<>("gsm"));
 		typeCol.setCellValueFactory(new PropertyValueFactory<>("type"));
 		sourceCol.setCellValueFactory(new PropertyValueFactory<>("source"));
+		supplierCol.setCellValueFactory(new PropertyValueFactory<>("supplierUuid"));
 		amountCol.setCellValueFactory(new PropertyValueFactory<>("amount"));
 		notesCol.setCellValueFactory(new PropertyValueFactory<>("notes"));
+
+		supplierCol.setCellFactory(col -> new TableCell<Paper, String>() {
+			@Override
+			protected void updateItem(String item, boolean empty) {
+				super.updateItem(item, empty);
+				if (empty || item == null) {
+					setText(null);
+					setGraphic(null);
+				} else {
+					String name = supplierNameMap.get(item.trim().toLowerCase());
+					setText(name != null ? name : item);
+					setGraphic(null);
+				}
+			}
+		});
+
+		supplierField.setCellFactory(cb -> new ListCell<Supplier>() {
+			@Override
+			protected void updateItem(Supplier s, boolean empty) {
+				super.updateItem(s, empty);
+				setText(empty || s == null ? null : s.getbusinessName() + " | " + s.getName());
+			}
+		});
+
+		supplierField.setButtonCell(new ListCell<Supplier>() {
+			@Override
+			protected void updateItem(Supplier s, boolean empty) {
+				super.updateItem(s, empty);
+				setText(empty || s == null ? null : s.getbusinessName());
+			}
+		});
 
 		// Enable horizontal scroll
 		paperTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
@@ -124,6 +165,7 @@ public class PaperTabController {
 		gsmCol.setPrefWidth(90);
 		typeCol.setPrefWidth(160);
 		sourceCol.setPrefWidth(110);
+		supplierCol.setPrefWidth(140);
 		amountCol.setPrefWidth(130);
 		notesCol.setPrefWidth(130);
 
@@ -244,6 +286,7 @@ public class PaperTabController {
 		sizeField.valueProperty().addListener(changeListener);
 		gsmField.valueProperty().addListener(changeListener);
 		typeField.valueProperty().addListener(changeListener);
+		supplierField.valueProperty().addListener(changeListener);
 		notesField.textProperty().addListener(changeListener);
 		amountField.textProperty().addListener(changeListener);
 
@@ -257,6 +300,18 @@ public class PaperTabController {
 	 */
 
 	public void loadForJob(Job job) {
+		supplierNameMap.clear();
+		for (Supplier s : supplierService.getAllSuppliers()) {
+			String displayName = s.getbusinessName();
+			if (displayName == null || displayName.isBlank()) {
+				displayName = s.getName();
+			}
+			if (s.getUuid() != null) {
+				supplierNameMap.put(s.getUuid().trim().toLowerCase(), displayName);
+			}
+		}
+		supplierField.getItems().setAll(supplierService.getSuppliersByType("Paper"));
+
 		this.currentJob = job;
 		paperTable.getItems().clear();
 
@@ -288,6 +343,7 @@ public class PaperTabController {
         sizeField.setDisable(isLocked);
         gsmField.setDisable(isLocked);
         typeField.setDisable(isLocked);
+        supplierField.setDisable(isLocked);
         amountField.setDisable(isLocked);
         ourRadio.setDisable(isLocked);
         clientRadio.setDisable(isLocked);
@@ -317,6 +373,10 @@ public class PaperTabController {
 		sizeField.setValue(p.getSize());
 		gsmField.setValue(p.getGsm());
 		typeField.setValue(p.getType());
+		Supplier found = supplierField.getItems().stream()
+				.filter(s -> s.getUuid().equals(p.getSupplierUuid()))
+				.findFirst().orElse(null);
+		supplierField.setValue(found);
 		notesField.setText(p.getNotes());
 		amountField.setText(String.valueOf(p.getAmount()));
 
@@ -331,6 +391,8 @@ public class PaperTabController {
 		if (selectedItem == null || originalSnapshot == null)
 			return false;
 
+		String currentSupplierUuid = supplierField.getValue() != null ? supplierField.getValue().getUuid() : null;
+
 		return parseInt(qtyField.getText()) != originalSnapshot.getQty()
 				|| !equals(unitsField.getValue(), originalSnapshot.getUnits())
 				|| !equals(sizeField.getValue(), originalSnapshot.getSize())
@@ -338,7 +400,8 @@ public class PaperTabController {
 				|| !equals(typeField.getValue(), originalSnapshot.getType())
 				|| !equals(notesField.getText(), originalSnapshot.getNotes())
 				|| parseDouble(amountField.getText()) != originalSnapshot.getAmount()
-				|| !equals(ourRadio.isSelected() ? "OUR" : "CLIENT", originalSnapshot.getSource());
+				|| !equals(ourRadio.isSelected() ? "OUR" : "CLIENT", originalSnapshot.getSource())
+				|| !equals(currentSupplierUuid, originalSnapshot.getSupplierUuid());
 	}
 
 	private boolean equals(Object a, Object b) {
@@ -365,6 +428,7 @@ public class PaperTabController {
 			p.setSize(sizeField.getValue());
 			p.setGsm(gsmField.getValue());
 			p.setType(typeField.getValue());
+			p.setSupplierUuid(supplierField.getValue() != null ? supplierField.getValue().getUuid() : null);
 			p.setNotes(notesField.getText());
 			p.setAmount(parseDouble(amountField.getText()));
 			p.setSource(ourRadio.isSelected() ? "OUR" : "CLIENT");
@@ -383,6 +447,7 @@ public class PaperTabController {
 			selectedItem.setSize(sizeField.getValue());
 			selectedItem.setGsm(gsmField.getValue());
 			selectedItem.setType(typeField.getValue());
+			selectedItem.setSupplierUuid(supplierField.getValue() != null ? supplierField.getValue().getUuid() : null);
 			selectedItem.setNotes(notesField.getText());
 			selectedItem.setAmount(parseDouble(amountField.getText()));
 			selectedItem.setSource(ourRadio.isSelected() ? "OUR" : "CLIENT");
@@ -428,6 +493,7 @@ public class PaperTabController {
 		sizeField.setValue(null);
 		gsmField.setValue(null);
 		typeField.setValue(null);
+		supplierField.setValue(null);
 		notesField.clear();
 		amountField.clear();
 		ourRadio.setSelected(true);

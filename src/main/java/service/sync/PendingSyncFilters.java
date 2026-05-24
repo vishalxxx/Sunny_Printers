@@ -4,7 +4,7 @@ package service.sync;
 public final class PendingSyncFilters {
 
 	public static final String PENDING_STATUS =
-			"UPPER(TRIM(COALESCE(sync_status, ''))) IN ('', 'PENDING')";
+			"UPPER(TRIM(COALESCE(sync_status, ''))) IN ('', 'PENDING', 'WAITING_DEPENDENCY')";
 
 	public static final String NOT_DELETED = "IFNULL(is_deleted, 0) = 0";
 

@@ -31,6 +31,8 @@ public class Job {
 	private String createdAt;
 	private String updatedAt;
 	private String syncedAt;
+	private String createdByUserUuid;
+	private String updatedByUserUuid;
 
 	private String clientBusinessName;
 	private String invoiceNo;
@@ -282,5 +284,21 @@ public class Job {
 
 	public void setSelected(boolean val) {
 		this.selected.set(val);
+	}
+
+	public String getCreatedByUserUuid() {
+		return createdByUserUuid;
+	}
+
+	public void setCreatedByUserUuid(String createdByUserUuid) {
+		this.createdByUserUuid = createdByUserUuid;
+	}
+
+	public String getUpdatedByUserUuid() {
+		return updatedByUserUuid;
+	}
+
+	public void setUpdatedByUserUuid(String updatedByUserUuid) {
+		this.updatedByUserUuid = updatedByUserUuid;
 	}
 }

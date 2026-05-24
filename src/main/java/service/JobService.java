@@ -35,10 +35,20 @@ public class JobService {
 		}
 		try (Connection con = DBConnection.getConnection()) {
 			con.setAutoCommit(false);
-			String sql = "UPDATE jobs SET client_uuid = ? WHERE uuid = ?";
+			String userUuid = null;
+			if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+				userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+			}
+			String sql = """
+					UPDATE jobs SET client_uuid = ?, sync_status = 'PENDING',
+					updated_at = datetime('now'), sync_version = sync_version + 1,
+					updated_by_user_uuid = ?
+					WHERE uuid = ?
+					""";
 			try (PreparedStatement ps = con.prepareStatement(sql)) {
 				ps.setString(1, clientUuid);
-				ps.setString(2, job.getUuid());
+				ps.setString(2, userUuid);
+				ps.setString(3, job.getUuid());
 				ps.executeUpdate();
 			}
 			con.commit();
@@ -57,9 +67,14 @@ public class JobService {
 		}
 		try (Connection con = DBConnection.getConnection()) {
 			con.setAutoCommit(false);
+			String userUuid = null;
+			if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+				userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+			}
 			String sql = """
 					UPDATE jobs SET job_title = ?, job_date = ?, sync_status = 'PENDING',
-					updated_at = datetime('now'), sync_version = sync_version + 1
+					updated_at = datetime('now'), sync_version = sync_version + 1,
+					updated_by_user_uuid = ?
 					WHERE uuid = ?
 					""";
 			try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -69,7 +84,8 @@ public class JobService {
 				} else {
 					ps.setNull(2, java.sql.Types.VARCHAR);
 				}
-				ps.setString(3, jobUuid.trim());
+				ps.setString(3, userUuid);
+				ps.setString(4, jobUuid.trim());
 				ps.executeUpdate();
 			}
 			con.commit();
@@ -84,10 +100,20 @@ public class JobService {
 		}
 		try (Connection con = DBConnection.getConnection()) {
 			con.setAutoCommit(false);
-			String sql = "UPDATE jobs SET image_path = ? WHERE uuid = ?";
+			String userUuid = null;
+			if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+				userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+			}
+			String sql = """
+					UPDATE jobs SET image_path = ?, sync_status = 'PENDING',
+					updated_at = datetime('now'), sync_version = sync_version + 1,
+					updated_by_user_uuid = ?
+					WHERE uuid = ?
+					""";
 			try (PreparedStatement ps = con.prepareStatement(sql)) {
 				ps.setString(1, imagePath);
-				ps.setString(2, jobUuid.trim());
+				ps.setString(2, userUuid);
+				ps.setString(3, jobUuid.trim());
 				ps.executeUpdate();
 			}
 			con.commit();
@@ -130,14 +156,20 @@ public class JobService {
 		}
 		try (Connection con = DBConnection.getConnection()) {
 			con.setAutoCommit(false);
+			String userUuid = null;
+			if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+				userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+			}
 			String sql = """
 					UPDATE jobs SET status = ?, sync_status = 'PENDING',
-					updated_at = datetime('now'), sync_version = sync_version + 1
+					updated_at = datetime('now'), sync_version = sync_version + 1,
+					updated_by_user_uuid = ?
 					WHERE uuid = ?
 					""";
 			try (PreparedStatement ps = con.prepareStatement(sql)) {
 				ps.setString(1, status);
-				ps.setString(2, jobUuid.trim());
+				ps.setString(2, userUuid);
+				ps.setString(3, jobUuid.trim());
 				ps.executeUpdate();
 			}
 			con.commit();

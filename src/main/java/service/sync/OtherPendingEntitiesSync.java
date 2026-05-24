@@ -22,7 +22,7 @@ public final class OtherPendingEntitiesSync {
 
 	private static final Set<SupabaseEndpoints> REMOTE_UNAVAILABLE = ConcurrentHashMap.newKeySet();
 
-	private record TableDef(String sqliteTable, SupabaseEndpoints endpoint, String uuidColumn,
+	public static record TableDef(String sqliteTable, SupabaseEndpoints endpoint, String uuidColumn,
 			boolean skipTempCodeColumn) {
 	}
 
@@ -55,7 +55,7 @@ public final class OtherPendingEntitiesSync {
 		return total;
 	}
 
-	private static int syncTable(SupabaseRestClient http, TableDef def, SyncReport report) {
+	public static int syncTable(SupabaseRestClient http, TableDef def, SyncReport report) {
 		if (REMOTE_UNAVAILABLE.contains(def.endpoint())) {
 			return 0;
 		}
@@ -109,7 +109,11 @@ public final class OtherPendingEntitiesSync {
 						if (markRemoteUnavailableIfMissing(def.endpoint(), e.getMessage())) {
 							break;
 						}
-						report.failures++;
+						if (UniversalSyncEngine.isForeignKeyFailure(e)) {
+							UniversalSyncEngine.markTableWaitingDependency(def.sqliteTable(), def.uuidColumn(), uuid);
+						} else {
+							report.failures++;
+						}
 						System.err.println("[OtherPendingEntitiesSync] " + def.sqliteTable() + " " + uuid + ": "
 								+ e.getMessage());
 					}
@@ -132,6 +136,9 @@ public final class OtherPendingEntitiesSync {
 			sql.append(" AND ").append(PendingSyncFilters.NOT_DELETED);
 		}
 		sql.append(" AND ").append(PendingSyncFilters.PENDING_STATUS);
+		if (columnExists(conn, table, "invoice_uuid")) {
+			sql.append(" AND (invoice_uuid IS NULL OR invoice_uuid = '' OR invoice_uuid NOT IN (SELECT uuid FROM invoice_master WHERE invoice_no LIKE 'TEMP-%'))");
+		}
 		sql.append(extra);
 		if (columnExists(conn, table, "created_at")) {
 			sql.append(" ORDER BY created_at ASC");
@@ -203,7 +210,18 @@ public final class OtherPendingEntitiesSync {
 			case Types.FLOAT, Types.REAL, Types.DOUBLE, Types.NUMERIC, Types.DECIMAL ->
 				o.addProperty(col, rs.getDouble(i));
 			case Types.BOOLEAN, Types.BIT -> o.addProperty(col, rs.getBoolean(i));
-			default -> o.addProperty(col, rs.getString(i));
+			default -> {
+				String s = rs.getString(i);
+				if (s != null && col.toLowerCase().contains("uuid")) {
+					if (s.trim().isEmpty()) {
+						o.add(col, JsonNull.INSTANCE);
+					} else {
+						o.addProperty(col, s.trim());
+					}
+				} else {
+					o.addProperty(col, s);
+				}
+			}
 			}
 		}
 		return o;

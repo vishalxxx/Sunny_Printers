@@ -56,22 +56,33 @@ public class NumberSequenceAllocationService {
 	public AllocatedNumber allocate(Connection con, String sequenceKey, LocalDate refDate) throws Exception {
 		LocalDate d = refDate != null ? refDate : LocalDate.now();
 		String key = sequenceKey.trim();
-		Optional<NumberSequence> remoteRow = fetchRemoteRow(key);
+		String fy = DocumentNumbering.financialYearLabel(d);
+		Optional<NumberSequence> rowOpt = incrementRemoteAtomic(key, fy);
 
-		if (remoteRow.isPresent()) {
-			NumberSequence row = remoteRow.get();
-			alignFinancialYear(row, d);
-			long next = row.getCurrentNumber() + 1;
-			row.setCurrentNumber(next);
-			persistRemoteIncrement(row);
-			mirrorLocal(con, row);
-			mirrorLegacySettings(con, key, next, row.getDigitWidth(), row.getFinancialYear());
+		if (rowOpt.isPresent()) {
+			NumberSequence row = rowOpt.get();
+			long next = row.getCurrentNumber();
+
+			NumberSequence localRow = numberSeqRepo.findByKey(con, key);
+			if (localRow == null) {
+				localRow = new NumberSequence();
+				localRow.setSequenceKey(key);
+				localRow.setDisplayName(key);
+				localRow.setPrefix("");
+				localRow.setDigitWidth(4);
+			}
+			localRow.setCurrentNumber(next);
+			localRow.setFinancialYear(row.getFinancialYear());
+
+			mirrorLocal(con, localRow);
+			mirrorLegacySettings(con, key, next, localRow.getDigitWidth(), localRow.getFinancialYear());
+
 			String cp = DocumentNumbering.companyPrefixFromTradeName(CompanyProfile.getName());
-			int pad = Math.max(1, row.getDigitWidth());
-			String fy = row.getFinancialYear() != null && !row.getFinancialYear().isBlank()
-					? row.getFinancialYear()
-					: DocumentNumbering.financialYearLabel(d);
-			String formatted = DocumentNumbering.formatMasterLine(cp, row.getPrefix(), fy, next, pad);
+			int pad = Math.max(1, localRow.getDigitWidth());
+			String rowFy = localRow.getFinancialYear() != null && !localRow.getFinancialYear().isBlank()
+					? localRow.getFinancialYear()
+					: fy;
+			String formatted = DocumentNumbering.formatMasterLine(cp, localRow.getPrefix(), rowFy, next, pad);
 			return new AllocatedNumber(formatted, false);
 		}
 
@@ -94,23 +105,34 @@ public class NumberSequenceAllocationService {
 			throws Exception {
 		LocalDate d = refDate != null ? refDate : LocalDate.now();
 		String key = sequenceKey.trim();
-		Optional<NumberSequence> remoteRow = fetchRemoteRow(key);
-		if (remoteRow.isEmpty()) {
+		String fy = DocumentNumbering.financialYearLabel(d);
+		Optional<NumberSequence> rowOpt = incrementRemoteAtomic(key, fy);
+		if (rowOpt.isEmpty()) {
 			return Optional.empty();
 		}
-		NumberSequence row = remoteRow.get();
-		alignFinancialYear(row, d);
-		long next = row.getCurrentNumber() + 1;
-		row.setCurrentNumber(next);
-		persistRemoteIncrement(row);
-		mirrorLocal(con, row);
-		mirrorLegacySettings(con, key, next, row.getDigitWidth(), row.getFinancialYear());
+		NumberSequence row = rowOpt.get();
+		long next = row.getCurrentNumber();
+
+		NumberSequence localRow = numberSeqRepo.findByKey(con, key);
+		if (localRow == null) {
+			localRow = new NumberSequence();
+			localRow.setSequenceKey(key);
+			localRow.setDisplayName(key);
+			localRow.setPrefix("");
+			localRow.setDigitWidth(4);
+		}
+		localRow.setCurrentNumber(next);
+		localRow.setFinancialYear(row.getFinancialYear());
+
+		mirrorLocal(con, localRow);
+		mirrorLegacySettings(con, key, next, localRow.getDigitWidth(), localRow.getFinancialYear());
+
 		String cp = DocumentNumbering.companyPrefixFromTradeName(CompanyProfile.getName());
-		int pad = Math.max(1, row.getDigitWidth());
-		String fy = row.getFinancialYear() != null && !row.getFinancialYear().isBlank()
-				? row.getFinancialYear()
-				: DocumentNumbering.financialYearLabel(d);
-		String formatted = DocumentNumbering.formatMasterLine(cp, row.getPrefix(), fy, next, pad);
+		int pad = Math.max(1, localRow.getDigitWidth());
+		String rowFy = localRow.getFinancialYear() != null && !localRow.getFinancialYear().isBlank()
+				? localRow.getFinancialYear()
+				: fy;
+		String formatted = DocumentNumbering.formatMasterLine(cp, localRow.getPrefix(), rowFy, next, pad);
 		return Optional.of(new AllocatedNumber(formatted, false));
 	}
 
@@ -120,6 +142,10 @@ public class NumberSequenceAllocationService {
 
 	public Optional<AllocatedNumber> tryAllocatePermanentSupplierCode(Connection con) throws Exception {
 		return tryAllocatePermanent(con, "supplier", LocalDate.now());
+	}
+
+	public Optional<AllocatedNumber> tryAllocatePermanentPaymentReceiptNo(Connection con, LocalDate paymentDate) throws Exception {
+		return tryAllocatePermanent(con, "payment_receipt", paymentDate);
 	}
 
 	public String allocateJobCode(Connection con) throws Exception {
@@ -184,23 +210,14 @@ public class NumberSequenceAllocationService {
 		return null;
 	}
 
-	private Optional<NumberSequence> fetchRemoteRow(String sequenceKey) {
+	private Optional<NumberSequence> incrementRemoteAtomic(String sequenceKey, String financialYear) {
 		return SupabaseGate.restClientIfConfigured().flatMap(http -> {
 			try {
-				return new NumberSequencesSupabaseApi(http).fetchByKey(sequenceKey);
+				NumberSequence row = new NumberSequencesSupabaseApi(http).incrementAtomic(sequenceKey, financialYear);
+				return Optional.of(row);
 			} catch (Exception e) {
-				System.err.println("[number_sequences] remote read failed for " + sequenceKey + ": " + e.getMessage());
+				System.err.println("[number_sequences] remote atomic increment failed for " + sequenceKey + ": " + e.getMessage());
 				return Optional.empty();
-			}
-		});
-	}
-
-	private void persistRemoteIncrement(NumberSequence row) {
-		SupabaseGate.restClientIfConfigured().ifPresent(http -> {
-			try {
-				new NumberSequencesSupabaseApi(http).upsertAll(java.util.List.of(row));
-			} catch (Exception e) {
-				System.err.println("[number_sequences] remote write failed: " + e.getMessage());
 			}
 		});
 	}

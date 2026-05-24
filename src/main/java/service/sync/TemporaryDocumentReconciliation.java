@@ -48,8 +48,10 @@ public final class TemporaryDocumentReconciliation {
 			con.setAutoCommit(false);
 			try {
 				total += reconcileClients(con);
+				total += reconcileSuppliers(con);
 				total += reconcileJobs(con);
 				total += reconcileInvoices(con);
+				total += reconcilePayments(con);
 				con.commit();
 			} catch (Exception e) {
 				con.rollback();
@@ -213,6 +215,7 @@ public final class TemporaryDocumentReconciliation {
 				SELECT uuid, invoice_no, document_series, invoice_date FROM invoice_master
 				WHERE IFNULL(is_deleted, 0) = 0
 				  AND invoice_no LIKE 'TEMP-%'
+				  AND (document_series <> 'PROFORMA_INVOICE' OR status = 'FINAL')
 				""");
 				var rs = ps.executeQuery()) {
 			while (rs.next()) {
@@ -239,6 +242,169 @@ public final class TemporaryDocumentReconciliation {
 		return java.time.LocalDate.now();
 	}
 
+	private int reconcileSuppliers(Connection con) throws Exception {
+		List<SupplierRow> rows = loadTempSuppliers(con);
+		int n = 0;
+		for (SupplierRow row : rows) {
+			if (promoteSupplier(con, row)) {
+				n++;
+			}
+		}
+		return n;
+	}
+
+	private boolean promoteSupplier(Connection con, SupplierRow row) throws Exception {
+		Optional<AllocatedNumber> permanent = allocator.tryAllocatePermanentSupplierCode(con);
+		if (permanent.isEmpty()) {
+			return false;
+		}
+		String newCode = permanent.get().value();
+		if (supplierCodeInUse(con, newCode, row.uuid)) {
+			return false;
+		}
+		try (var ps = con.prepareStatement("""
+				UPDATE suppliers SET supplier_code = ?, sync_status = 'PENDING',
+				sync_version = sync_version + 1, updated_at = datetime('now')
+				WHERE uuid = ?
+				""")) {
+			ps.setString(1, newCode);
+			ps.setString(2, row.uuid);
+			ps.executeUpdate();
+		}
+		mappingRepo.recordPromotion(con, DocumentNumberEntityType.SUPPLIER, row.uuid, "supplier", row.code, newCode,
+				DocumentNumberMapping.SOURCE_REMOTE);
+		System.out.println("[TemporaryDocumentReconciliation] supplier " + row.uuid + ": " + row.code + " -> " + newCode);
+		return true;
+	}
+
+	private static boolean supplierCodeInUse(Connection con, String code, String excludeUuid) throws Exception {
+		if (code == null || code.isBlank()) {
+			return false;
+		}
+		String sql = excludeUuid != null && !excludeUuid.isBlank()
+				? "SELECT 1 FROM suppliers WHERE supplier_code = ? AND uuid <> ? LIMIT 1"
+				: "SELECT 1 FROM suppliers WHERE supplier_code = ? LIMIT 1";
+		try (var ps = con.prepareStatement(sql)) {
+			ps.setString(1, code.trim());
+			if (excludeUuid != null && !excludeUuid.isBlank()) {
+				ps.setString(2, excludeUuid.trim());
+			}
+			try (var rs = ps.executeQuery()) {
+				return rs.next();
+			}
+		}
+	}
+
+	private static List<SupplierRow> loadTempSuppliers(Connection con) throws Exception {
+		List<SupplierRow> list = new ArrayList<>();
+		try (var ps = con.prepareStatement("""
+				SELECT uuid, supplier_code FROM suppliers
+				WHERE IFNULL(is_deleted, 0) = 0 AND supplier_code LIKE 'TEMP-%'
+				""");
+				var rs = ps.executeQuery()) {
+			while (rs.next()) {
+				list.add(new SupplierRow(rs.getString(1), rs.getString(2)));
+			}
+		}
+		return list;
+	}
+
+	private int reconcilePayments(Connection con) throws Exception {
+		List<PaymentRow> rows = loadTempPayments(con);
+		int n = 0;
+		for (PaymentRow row : rows) {
+			if (promotePayment(con, row)) {
+				n++;
+			}
+		}
+		return n;
+	}
+
+	private boolean promotePayment(Connection con, PaymentRow row) throws Exception {
+		Optional<AllocatedNumber> permanent = allocator.tryAllocatePermanentPaymentReceiptNo(con, row.paymentDate);
+		if (permanent.isEmpty()) {
+			return false;
+		}
+		String newNo = permanent.get().value();
+		if (paymentReceiptNoInUse(con, newNo, row.uuid)) {
+			return false;
+		}
+		
+		// Update payment_details
+		try (var ps = con.prepareStatement("""
+				UPDATE payment_details SET field_value = ?, sync_status = 'PENDING',
+				updated_at = datetime('now')
+				WHERE payment_uuid = ? AND field_key = 'receipt_no'
+				""")) {
+			ps.setString(1, newNo);
+			ps.setString(2, row.uuid);
+			ps.executeUpdate();
+		}
+		
+		// Update payments
+		try (var ps = con.prepareStatement("""
+				UPDATE payments SET sync_status = 'PENDING',
+				sync_version = sync_version + 1, updated_at = datetime('now')
+				WHERE uuid = ?
+				""")) {
+			ps.setString(1, row.uuid);
+			ps.executeUpdate();
+		}
+		
+		mappingRepo.recordPromotion(con, DocumentNumberEntityType.PAYMENT, row.uuid, "payment_receipt", row.code, newNo,
+				DocumentNumberMapping.SOURCE_REMOTE);
+		System.out.println("[TemporaryDocumentReconciliation] payment receipt " + row.uuid + ": " + row.code + " -> " + newNo);
+		return true;
+	}
+
+	private static boolean paymentReceiptNoInUse(Connection con, String receiptNo, String excludePaymentUuid) throws Exception {
+		if (receiptNo == null || receiptNo.isBlank()) {
+			return false;
+		}
+		String sql = excludePaymentUuid != null && !excludePaymentUuid.isBlank()
+				? "SELECT 1 FROM payment_details WHERE field_key = 'receipt_no' AND field_value = ? AND payment_uuid <> ? LIMIT 1"
+				: "SELECT 1 FROM payment_details WHERE field_key = 'receipt_no' AND field_value = ? LIMIT 1";
+		try (var ps = con.prepareStatement(sql)) {
+			ps.setString(1, receiptNo.trim());
+			if (excludePaymentUuid != null && !excludePaymentUuid.isBlank()) {
+				ps.setString(2, excludePaymentUuid.trim());
+			}
+			try (var rs = ps.executeQuery()) {
+				return rs.next();
+			}
+		}
+	}
+
+	private static List<PaymentRow> loadTempPayments(Connection con) throws Exception {
+		List<PaymentRow> list = new ArrayList<>();
+		try (var ps = con.prepareStatement("""
+				SELECT p.uuid, p.payment_date, pd.field_value FROM payments p
+				JOIN payment_details pd ON p.uuid = pd.payment_uuid
+				WHERE IFNULL(p.is_deleted, 0) = 0
+				  AND pd.field_key = 'receipt_no'
+				  AND pd.field_value LIKE 'TEMP-%'
+				""");
+				var rs = ps.executeQuery()) {
+			while (rs.next()) {
+				list.add(new PaymentRow(
+						rs.getString(1),
+						parsePaymentDate(rs.getString(2)),
+						rs.getString(3)));
+			}
+		}
+		return list;
+	}
+
+	private static java.time.LocalDate parsePaymentDate(String raw) {
+		return parseInvoiceDate(raw);
+	}
+
 	private record InvoiceRow(String uuid, String code, String documentSeries, java.time.LocalDate invoiceDate) {
+	}
+
+	private record SupplierRow(String uuid, String code) {
+	}
+
+	private record PaymentRow(String uuid, java.time.LocalDate paymentDate, String code) {
 	}
 }

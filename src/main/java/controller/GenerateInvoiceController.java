@@ -199,7 +199,7 @@ public class GenerateInvoiceController {
     }
 
     private MasterDocumentSeries selectedDocumentSeriesForGeneration() {
-        return MasterDocumentSeries.GST_INVOICE;
+        return MasterDocumentSeries.PROFORMA_INVOICE;
     }
 
     private final ClientService clientService = new ClientService();

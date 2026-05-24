@@ -279,7 +279,7 @@ public class SystemSettingsController implements Initializable, utils.DirtySuppo
 			formatAllSeriesSpinners();
 			updateFinancialYearField();
 			refreshKpiStrip();
-			NumberSequenceSupabaseSync.syncLocalToRemoteIfChangedAsync();
+			NumberSequenceSupabaseSync.syncRemoteToLocalAsync();
 		} catch (Exception e) {
 			showError("Failed to load system settings", e);
 		}
@@ -429,7 +429,13 @@ public class SystemSettingsController implements Initializable, utils.DirtySuppo
 				con.commit();
 				settings = s;
 				updateFinancialYearField();
-				NumberSequenceSupabaseSync.forceSyncLocalToRemoteAsync();
+				model.User currentUser = utils.SessionManager.getInstance().getCurrentUser();
+				boolean isAdminUser = currentUser != null && currentUser.getRole() != null && "ADMIN".equalsIgnoreCase(currentUser.getRole());
+				if (isAdminUser) {
+					NumberSequenceSupabaseSync.syncLocalToRemoteAsync();
+				} else {
+					NumberSequenceSupabaseSync.syncRemoteToLocalAsync();
+				}
 				showInfo("Configuration saved.");
 			} catch (Exception e) {
 				con.rollback();

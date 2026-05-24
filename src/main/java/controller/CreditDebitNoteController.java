@@ -359,14 +359,16 @@ public class CreditDebitNoteController {
                 String noteNo = settingsService.allocateNextMasterNumber(con, series, noteDateEffective);
 
                 // 2. Save to invoice_adjustments
-                String sqlInsert = "INSERT INTO invoice_adjustments (invoice_uuid, type, note_no, amount, reason, date) VALUES (?, ?, ?, ?, ?, ?)";
+                String noteUuid = utils.ClientIdentifiers.newUuidString();
+                String sqlInsert = "INSERT INTO invoice_adjustments (uuid, invoice_uuid, type, note_no, amount, reason, date) VALUES (?, ?, ?, ?, ?, ?, ?)";
                 try (java.sql.PreparedStatement ps = con.prepareStatement(sqlInsert)) {
-                    ps.setString(1, selectedInvoice.getUuid());
-                    ps.setString(2, noteType);
-                    ps.setString(3, noteNo);
-                    ps.setDouble(4, amount);
-                    ps.setString(5, reasonField.getText());
-                    ps.setString(6, datePicker.getValue() == null ? LocalDate.now().toString() : datePicker.getValue().toString());
+                    ps.setString(1, noteUuid);
+                    ps.setString(2, selectedInvoice.getUuid());
+                    ps.setString(3, noteType);
+                    ps.setString(4, noteNo);
+                    ps.setDouble(5, amount);
+                    ps.setString(6, reasonField.getText());
+                    ps.setString(7, datePicker.getValue() == null ? LocalDate.now().toString() : datePicker.getValue().toString());
                     ps.executeUpdate();
                 }
 

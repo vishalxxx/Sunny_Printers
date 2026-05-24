@@ -440,8 +440,149 @@ public class ClientLedgerController implements Initializable {
     }
 
     @FXML
-    private void onExport() {
-        System.out.println("Export button clicked");
+    private void onExport(javafx.event.ActionEvent event) {
+        ClientComboItem selected = clientCombo.getValue();
+        if (selected == null) {
+            utils.Toast.show((Stage) ledgerTable.getScene().getWindow(), "⚠ Select a client first!");
+            return;
+        }
+
+        javafx.scene.control.Button btn = (javafx.scene.control.Button) event.getSource();
+        javafx.scene.control.ContextMenu contextMenu = new javafx.scene.control.ContextMenu();
+        
+        javafx.scene.control.MenuItem pdfItem = new javafx.scene.control.MenuItem("Export as PDF");
+        pdfItem.setOnAction(e -> exportLedgerAsPDF());
+        
+        javafx.scene.control.MenuItem excelItem = new javafx.scene.control.MenuItem("Export as Excel");
+        excelItem.setOnAction(e -> exportLedgerAsExcel());
+        
+        contextMenu.getItems().addAll(pdfItem, excelItem);
+        contextMenu.show(btn, javafx.geometry.Side.BOTTOM, 0, 0);
+    }
+
+    @FXML
+    private void onPrint() {
+        ClientComboItem selected = clientCombo.getValue();
+        if (selected == null) {
+            utils.Toast.show((Stage) ledgerTable.getScene().getWindow(), "⚠ Select a client first!");
+            return;
+        }
+        try {
+            String clientName = selected.clientName;
+            String clientGst = gstLabel != null ? gstLabel.getText().replace("GST: ", "") : "";
+            String clientAddress = addressLabel != null ? addressLabel.getText() : "";
+            String clientPhone = phoneLabel != null ? phoneLabel.getText() : "";
+            String clientEmail = emailLabel != null ? emailLabel.getText() : "";
+            
+            LocalDate from = dateFrom.getValue();
+            LocalDate to = dateTo.getValue();
+            
+            double totalDebit = 0.0;
+            double totalCredit = 0.0;
+            for (LedgerEntry entry : ledgerData) {
+                if (entry.getDebit() != null) totalDebit += entry.getDebit();
+                if (entry.getCredit() != null) totalCredit += entry.getCredit();
+            }
+            double closingBalance = totalCredit - totalDebit;
+
+            java.io.File file = service.LedgerExportService.generatePdfLedger(
+                clientName, clientGst, clientAddress, clientPhone, clientEmail,
+                from, to, ledgerData, totalDebit, totalCredit, closingBalance,
+                true // isTemporary
+            );
+            
+            if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.PRINT)) {
+                java.awt.Desktop.getDesktop().print(file);
+            } else {
+                utils.Toast.show((Stage) ledgerTable.getScene().getWindow(), "Print not supported. Opening PDF.");
+                if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.OPEN)) {
+                    java.awt.Desktop.getDesktop().open(file);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            utils.Toast.show((Stage) ledgerTable.getScene().getWindow(), "❌ Failed to print: " + e.getMessage());
+        }
+    }
+
+    private void exportLedgerAsPDF() {
+        ClientComboItem selected = clientCombo.getValue();
+        if (selected == null) {
+            utils.Toast.show((Stage) ledgerTable.getScene().getWindow(), "⚠ Select a client first!");
+            return;
+        }
+        try {
+            String clientName = selected.clientName;
+            String clientGst = gstLabel != null ? gstLabel.getText().replace("GST: ", "") : "";
+            String clientAddress = addressLabel != null ? addressLabel.getText() : "";
+            String clientPhone = phoneLabel != null ? phoneLabel.getText() : "";
+            String clientEmail = emailLabel != null ? emailLabel.getText() : "";
+            
+            LocalDate from = dateFrom.getValue();
+            LocalDate to = dateTo.getValue();
+            
+            double totalDebit = 0.0;
+            double totalCredit = 0.0;
+            for (LedgerEntry entry : ledgerData) {
+                if (entry.getDebit() != null) totalDebit += entry.getDebit();
+                if (entry.getCredit() != null) totalCredit += entry.getCredit();
+            }
+            double closingBalance = totalCredit - totalDebit;
+
+            java.io.File file = service.LedgerExportService.generatePdfLedger(
+                clientName, clientGst, clientAddress, clientPhone, clientEmail,
+                from, to, ledgerData, totalDebit, totalCredit, closingBalance
+            );
+            
+            utils.Toast.show((Stage) ledgerTable.getScene().getWindow(), "Exported to PDF successfully! ✅");
+            
+            if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.OPEN)) {
+                java.awt.Desktop.getDesktop().open(file);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            utils.Toast.show((Stage) ledgerTable.getScene().getWindow(), "❌ Failed to export PDF: " + e.getMessage());
+        }
+    }
+
+    private void exportLedgerAsExcel() {
+        ClientComboItem selected = clientCombo.getValue();
+        if (selected == null) {
+            utils.Toast.show((Stage) ledgerTable.getScene().getWindow(), "⚠ Select a client first!");
+            return;
+        }
+        try {
+            String clientName = selected.clientName;
+            String clientGst = gstLabel != null ? gstLabel.getText().replace("GST: ", "") : "";
+            String clientAddress = addressLabel != null ? addressLabel.getText() : "";
+            String clientPhone = phoneLabel != null ? phoneLabel.getText() : "";
+            String clientEmail = emailLabel != null ? emailLabel.getText() : "";
+            
+            LocalDate from = dateFrom.getValue();
+            LocalDate to = dateTo.getValue();
+            
+            double totalDebit = 0.0;
+            double totalCredit = 0.0;
+            for (LedgerEntry entry : ledgerData) {
+                if (entry.getDebit() != null) totalDebit += entry.getDebit();
+                if (entry.getCredit() != null) totalCredit += entry.getCredit();
+            }
+            double closingBalance = totalCredit - totalDebit;
+
+            java.io.File file = service.LedgerExportService.generateExcelLedger(
+                clientName, clientGst, clientAddress, clientPhone, clientEmail,
+                from, to, ledgerData, totalDebit, totalCredit, closingBalance
+            );
+            
+            utils.Toast.show((Stage) ledgerTable.getScene().getWindow(), "Exported to Excel successfully! ✅");
+            
+            if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.OPEN)) {
+                java.awt.Desktop.getDesktop().open(file);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            utils.Toast.show((Stage) ledgerTable.getScene().getWindow(), "❌ Failed to export Excel: " + e.getMessage());
+        }
     }
 
     @FXML
@@ -535,12 +676,30 @@ public class ClientLedgerController implements Initializable {
         if (to != null)
             sql.append("AND p.payment_date <= ? ");
 
+        sql.append("UNION ALL ");
+
+        // Credit / Debit Notes (invoice_adjustments)
+        sql.append("SELECT adj.uuid as txn_id, adj.date as txn_date, ");
+        sql.append("adj.note_no || ' (Inv: ' || inv.invoice_no || ')' as ref, ");
+        sql.append("UPPER(adj.type) as type, ");
+        sql.append("'-' as mode, ");
+        sql.append("CASE WHEN adj.type = 'Credit Note' THEN adj.amount ELSE 0 END as debit, ");
+        sql.append("CASE WHEN adj.type = 'Debit Note' THEN adj.amount ELSE 0 END as credit, ");
+        sql.append("'SUCCESS' as status, '' as payment_status ");
+        sql.append("FROM invoice_adjustments adj ");
+        sql.append("JOIN invoice_master inv ON adj.invoice_uuid = inv.uuid ");
+        sql.append("WHERE inv.client_uuid = ? AND IFNULL(adj.is_deleted, 0) = 0 ");
+        if (from != null)
+            sql.append("AND adj.date >= ? ");
+        if (to != null)
+            sql.append("AND adj.date <= ? ");
+
         sql.append(") AS ledger_view ");
 
         if (rbInvoice != null && rbInvoice.isSelected()) {
-            sql.append("WHERE type = 'INVOICE' ");
+            sql.append("WHERE type IN ('INVOICE', 'DEBIT NOTE') ");
         } else if (rbPayment != null && rbPayment.isSelected()) {
-            sql.append("WHERE type = 'PAYMENT' ");
+            sql.append("WHERE type IN ('PAYMENT', 'REFUND', 'CREDIT NOTE') ");
         }
 
         sql.append("ORDER BY txn_date");
@@ -562,6 +721,13 @@ public class ClientLedgerController implements Initializable {
                 ps.setString(idx++, to.toString());
 
             // Payments params
+            ps.setString(idx++, clientUuid);
+            if (from != null)
+                ps.setString(idx++, from.toString());
+            if (to != null)
+                ps.setString(idx++, to.toString());
+
+            // Credit/Debit Notes params
             ps.setString(idx++, clientUuid);
             if (from != null)
                 ps.setString(idx++, from.toString());

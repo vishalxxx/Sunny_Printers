@@ -341,6 +341,7 @@
 .row-btn-blue:hover   { -fx-background-color: #E6F7FF; -fx-border-color: #1890FF; }
 .row-btn-orange:hover { -fx-background-color: #FFF1E6; -fx-border-color: #FA8C16; }
 .row-btn-gray:hover   { -fx-background-color: #F5F5F5; -fx-border-color: #8B7E74; }
+.row-btn-red:hover    { -fx-background-color: #FFF1F0; -fx-border-color: #F5222D; }
 
 /* --- 4. ATELIER PAGINATION --- */
 /* ===================== FOOTER / PAGINATION ===================== */
@@ -1208,5 +1209,124 @@
 .job-details-popup-table .placeholder .label {
     -fx-text-fill: #8B7E74;
     -fx-font-size: 13px;
+}
+
+/* ===================== MAIL POPUP STYLING ===================== */
+.mail-popup-root {
+    -fx-background-color: #FAF6F0;
+    -fx-background-radius: 16px;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 16px;
+    -fx-padding: 24px;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.18), 35, 0, 0, 15);
+}
+
+.mail-popup-table {
+    -fx-background-color: white;
+    -fx-background-radius: 12px;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 12px;
+    -fx-padding: 2px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.02), 8, 0, 0, 3);
+}
+
+.mail-popup-table .column-header-background {
+    -fx-background-color: #FAF9F6;
+    -fx-background-radius: 10px 10px 0 0;
+    -fx-border-color: #F1ECE6;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.mail-popup-table .column-header {
+    -fx-background-color: transparent;
+    -fx-size: 38px;
+    -fx-padding: 0 12px;
+    -fx-border-width: 0;
+}
+
+.mail-popup-table .column-header .label {
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter', system;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-text-transform: uppercase;
+    -fx-opacity: 0.85;
+}
+
+.mail-popup-table .table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent #F4EFEA transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-cell-size: 40px;
+    -fx-cursor: hand;
+}
+
+.mail-popup-table .table-row-cell:hover {
+    -fx-background-color: #FAF6F0;
+}
+
+.mail-popup-table .table-row-cell:selected {
+    -fx-background-color: #FFF2E8;
+    -fx-border-color: transparent transparent #FFD596 transparent;
+}
+
+.mail-popup-table .table-cell {
+    -fx-padding: 0 12px;
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter', system;
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+}
+
+.mail-popup-table .table-row-cell:selected .table-cell {
+    -fx-text-fill: #CD7B4E;
+    -fx-font-weight: 700;
+}
+
+/* Mail Fields Styling */
+.mail-field {
+    -fx-background-color: white;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 8px 12px;
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter', system;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.mail-field:focused {
+    -fx-border-color: #CD7B4E;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.12), 10, 0, 0, 0);
+}
+
+.mail-area {
+    -fx-background-color: white;
+    -fx-control-inner-background: white;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 8px 12px;
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter', system;
+    -fx-font-size: 13px;
+}
+
+.mail-area .content {
+    -fx-background-color: white !important;
+}
+
+.mail-area:focused {
+    -fx-border-color: #CD7B4E;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.12), 10, 0, 0, 0);
+}
+
+.mail-area:focused .content {
+    -fx-background-color: white !important;
 }
 
