@@ -39,6 +39,7 @@ public class PaymentHistoryController implements Initializable {
     @FXML private TableColumn<PaymentRow, String> colClient;
     @FXML private TableColumn<PaymentRow, String> colType;
     @FXML private TableColumn<PaymentRow, String> colInvoiceRef;
+    @FXML private TableColumn<PaymentRow, String> colReceiptNo;
     @FXML private TableColumn<PaymentRow, String> colMethod;
     @FXML private TableColumn<PaymentRow, String> colAmount;
     @FXML private TableColumn<PaymentRow, String> colReference;
@@ -81,6 +82,7 @@ public class PaymentHistoryController implements Initializable {
         colClient.setCellValueFactory(cell -> cell.getValue().clientProperty());
         colType.setCellValueFactory(cell -> cell.getValue().typeProperty());
         colInvoiceRef.setCellValueFactory(cell -> cell.getValue().invoiceRefProperty());
+        colReceiptNo.setCellValueFactory(cell -> cell.getValue().receiptNoProperty());
         colMethod.setCellValueFactory(cell -> cell.getValue().methodProperty());
         colAmount.setCellValueFactory(cell -> cell.getValue().amountProperty());
         colReference.setCellValueFactory(cell -> cell.getValue().referenceProperty());
@@ -218,6 +220,7 @@ public class PaymentHistoryController implements Initializable {
                     (SELECT GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid),
                     CASE WHEN p.type = 'Refund' THEN 'Advance Refund' ELSE 'Advance' END
                 ) as invoice_ref,
+                (SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'receipt_no') as receipt_no,
                 p.method, 
                 p.amount,
                 CASE p.method
@@ -275,6 +278,7 @@ public class PaymentHistoryController implements Initializable {
                 
                 String typeStr = rs.getString("type");
                 String invRef = rs.getString("invoice_ref");
+                String receiptNo = rs.getString("receipt_no");
                 String method = rs.getString("method");
                 double amount = rs.getDouble("amount");
                 String ref = rs.getString("reference");
@@ -285,6 +289,7 @@ public class PaymentHistoryController implements Initializable {
                     clientDisplay,
                     typeStr,
                     invRef,
+                    receiptNo,
                     method,
                     amount,
                     ref
@@ -378,12 +383,13 @@ public class PaymentHistoryController implements Initializable {
         private final SimpleStringProperty client;
         private final SimpleStringProperty type;
         private final SimpleStringProperty invoiceRef;
+        private final SimpleStringProperty receiptNo;
         private final SimpleStringProperty method;
         private final SimpleStringProperty amount;
         private final SimpleStringProperty reference;
         private final BigDecimal amountRaw;
  
-        public PaymentRow(String id, String date, String client, String typeStr, String invRef, String method, double amount, String reference) {
+        public PaymentRow(String id, String date, String client, String typeStr, String invRef, String receiptNo, String method, double amount, String reference) {
             this.id = id;
             String formattedDate = "";
             if (date != null && !date.isBlank()) {
@@ -398,6 +404,7 @@ public class PaymentHistoryController implements Initializable {
             this.client = new SimpleStringProperty(client != null ? client : "");
             this.type = new SimpleStringProperty(typeStr != null ? typeStr.toUpperCase() : "PAYMENT");
             this.invoiceRef = new SimpleStringProperty(invRef != null ? invRef : "");
+            this.receiptNo = new SimpleStringProperty(receiptNo != null ? receiptNo : "");
             this.method = new SimpleStringProperty(method != null ? method : "");
             this.amountRaw = BigDecimal.valueOf(amount);
             this.amount = new SimpleStringProperty(currencyFormat.format(amount));
@@ -409,6 +416,7 @@ public class PaymentHistoryController implements Initializable {
         public String getClient() { return client.get(); }
         public String getType() { return type.get(); }
         public String getInvoiceRef() { return invoiceRef.get(); }
+        public String getReceiptNo() { return receiptNo.get(); }
         public String getMethod() { return method.get(); }
         public String getAmount() { return amount.get(); }
         public String getReference() { return reference.get(); }
@@ -418,6 +426,7 @@ public class PaymentHistoryController implements Initializable {
         public SimpleStringProperty clientProperty() { return client; }
         public SimpleStringProperty typeProperty() { return type; }
         public SimpleStringProperty invoiceRefProperty() { return invoiceRef; }
+        public SimpleStringProperty receiptNoProperty() { return receiptNo; }
         public SimpleStringProperty methodProperty() { return method; }
         public SimpleStringProperty amountProperty() { return amount; }
         public SimpleStringProperty referenceProperty() { return reference; }

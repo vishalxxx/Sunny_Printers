@@ -156,10 +156,11 @@
                         </Button>
                     </HBox>
 
-                    <TableView fx:id="ledgerTable" styleClass="cl-ledger-table" VBox.vgrow="ALWAYS">
+                        <TableView fx:id="ledgerTable" styleClass="cl-ledger-table" VBox.vgrow="ALWAYS">
                         <columns>
                             <TableColumn fx:id="colDate" text="DATE" prefWidth="100"/>
-                            <TableColumn fx:id="colRef" text="REFERENCE" prefWidth="350"/>
+                            <TableColumn fx:id="colRef" text="REFERENCE" prefWidth="280"/>
+                            <TableColumn fx:id="colReceiptNo" text="RECEIPT NO" prefWidth="130"/>
                             <TableColumn fx:id="colType" text="TYPE" prefWidth="100"/>
                             <TableColumn fx:id="colMode" text="MODE" prefWidth="100"/>
                             <TableColumn fx:id="colDebit" text="DEBIT (-)" prefWidth="110" styleClass="amount-column"/>

@@ -89,6 +89,8 @@ public class ClientLedgerController implements Initializable {
     @FXML
     private TableColumn<LedgerEntry, String> colRef;
     @FXML
+    private TableColumn<LedgerEntry, String> colReceiptNo;
+    @FXML
     private TableColumn<LedgerEntry, String> colType;
     @FXML
     private TableColumn<LedgerEntry, String> colMode;
@@ -225,6 +227,7 @@ public class ClientLedgerController implements Initializable {
     private void setupTable() {
         colDate.setCellValueFactory(new PropertyValueFactory<>("date"));
         colRef.setCellValueFactory(new PropertyValueFactory<>("reference"));
+        colReceiptNo.setCellValueFactory(new PropertyValueFactory<>("receiptNo"));
 
         // Custom cell factory to wrap text
         colRef.setCellFactory(tc -> {
@@ -653,10 +656,10 @@ public class ClientLedgerController implements Initializable {
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT * FROM (");
 
-        // Invoices
+        // Invoices — no receipt_no, use NULL placeholder
         sql.append("SELECT uuid as txn_id, invoice_date as txn_date, invoice_no as ref, 'INVOICE' as type, ");
         sql.append("'-' as mode, ");
-        sql.append("0 as debit, amount as credit, status, payment_status ");
+        sql.append("0 as debit, amount as credit, status, payment_status, NULL as receipt_no ");
         sql.append("FROM invoice_master WHERE client_uuid = ? ");
         if (from != null)
             sql.append("AND invoice_date >= ? ");
@@ -673,7 +676,8 @@ public class ClientLedgerController implements Initializable {
         sql.append(") as ref, ");
         sql.append("UPPER(p.type) as type, ");
         sql.append("p.method as mode, ");
-        sql.append("p.amount as debit, 0 as credit, 'SUCCESS' as status, '' as payment_status ");
+        sql.append("p.amount as debit, 0 as credit, 'SUCCESS' as status, '' as payment_status, ");
+        sql.append("(SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'receipt_no') as receipt_no ");
         sql.append("FROM payments p WHERE p.client_uuid = ? ");
         if (from != null)
             sql.append("AND p.payment_date >= ? ");
@@ -682,14 +686,14 @@ public class ClientLedgerController implements Initializable {
 
         sql.append("UNION ALL ");
 
-        // Credit / Debit Notes (invoice_adjustments)
+        // Credit / Debit Notes (invoice_adjustments) — no receipt_no
         sql.append("SELECT adj.uuid as txn_id, adj.date as txn_date, ");
         sql.append("adj.note_no || ' (Inv: ' || inv.invoice_no || ')' as ref, ");
         sql.append("UPPER(adj.type) as type, ");
         sql.append("'-' as mode, ");
         sql.append("CASE WHEN adj.type = 'Credit Note' THEN adj.amount ELSE 0 END as debit, ");
         sql.append("CASE WHEN adj.type = 'Debit Note' THEN adj.amount ELSE 0 END as credit, ");
-        sql.append("'SUCCESS' as status, '' as payment_status ");
+        sql.append("'SUCCESS' as status, '' as payment_status, NULL as receipt_no ");
         sql.append("FROM invoice_adjustments adj ");
         sql.append("JOIN invoice_master inv ON adj.invoice_uuid = inv.uuid ");
         sql.append("WHERE inv.client_uuid = ? AND IFNULL(adj.is_deleted, 0) = 0 ");
@@ -778,6 +782,8 @@ public class ClientLedgerController implements Initializable {
                     }
                 } catch (Exception e) {}
 
+                String receiptNo = rs.getString("receipt_no");
+
                 ledgerData.add(new LedgerEntry(
                         rs.getString("txn_id"),
                         formattedDate,
@@ -787,7 +793,8 @@ public class ClientLedgerController implements Initializable {
                         debit > 0 ? debit : null,
                         credit > 0 ? credit : null,
                         runningBalance,
-                        finalStatus));
+                        finalStatus,
+                        receiptNo));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -862,9 +869,10 @@ public class ClientLedgerController implements Initializable {
         Double credit;
         Double balance;
         String status;
+        String receiptNo;
 
         public LedgerEntry(String txnUuid, String date, String reference, String type, String mode, Double debit, Double credit,
-                Double balance, String status) {
+                Double balance, String status, String receiptNo) {
             this.txnUuid = txnUuid;
             this.date = date;
             this.reference = reference;
@@ -874,6 +882,7 @@ public class ClientLedgerController implements Initializable {
             this.credit = credit;
             this.balance = balance;
             this.status = status;
+            this.receiptNo = receiptNo;
         }
 
         public String getTxnUuid() { return txnUuid; }
@@ -908,6 +917,10 @@ public class ClientLedgerController implements Initializable {
 
         public String getStatus() {
             return status;
+        }
+
+        public String getReceiptNo() {
+            return receiptNo != null ? receiptNo : "";
         }
     }
 
