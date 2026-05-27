@@ -110,6 +110,12 @@ public class ViewClientsController implements Initializable {
         updateMetrics();
 	}
 
+	public void refresh() {
+		masterList.setAll(repo.findAllSortedById());
+		calculateAnalytics();
+		applyFilters();
+	}
+
     @FXML
     private void handleBack(javafx.event.Event e) {
         MainController.getInstance().handleBack(e);

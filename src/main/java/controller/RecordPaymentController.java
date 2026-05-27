@@ -952,6 +952,10 @@ public class RecordPaymentController implements Initializable {
                 });
             });
 
+            if (invoiceTable != null) {
+                invoiceTable.refresh();
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -1516,5 +1520,11 @@ public class RecordPaymentController implements Initializable {
         public void setDate(String date) { this.date = date; }
         public double getAmount() { return amount; }
         public void setAmount(double amount) { this.amount = amount; }
+    }
+
+    public void refresh() {
+        javafx.application.Platform.runLater(() -> {
+            loadOutstandingInvoicesForSelectedClient();
+        });
     }
 }

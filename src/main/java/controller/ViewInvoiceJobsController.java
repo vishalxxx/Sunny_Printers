@@ -1150,6 +1150,49 @@ public class ViewInvoiceJobsController {
         MainController.getInstance().handleBack(null);
     }
 
+    public void refresh() {
+        Platform.runLater(() -> {
+            if (currentEditInvoice != null) {
+                InvoiceMaster updated = invoiceMasterService.getInvoiceById(currentEditInvoice.getUuid());
+                if (updated != null) {
+                    currentEditInvoice = updated;
+                    
+                    isUpdating = true;
+                    try {
+                        String clientUuid = updated.getClientId();
+                        if (clientUuid != null) {
+                            List<InvoiceMaster> invoices = invoiceMasterService.getInvoicesByClientId(clientUuid);
+                            invoiceComboBox.getItems().setAll(invoices);
+                        }
+                        invoiceComboBox.setValue(updated);
+                    } finally {
+                        isUpdating = false;
+                    }
+
+                    populateInvoiceDetails(updated);
+
+                    // Re-load jobs
+                    Thread thread = new Thread(() -> {
+                        try {
+                            List<Job> jobs = jobService.getJobsByInvoice(updated);
+                            Platform.runLater(() -> {
+                                tableData.setAll(jobs);
+                                resultLabel.setText("Showing " + jobs.size() + " jobs");
+                            });
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+                    thread.start();
+                }
+            } else {
+                if (clientComboBox.getValue() != null) {
+                    onClientSelected(clientComboBox.getValue());
+                }
+            }
+        });
+    }
+
     private void syncPopupWidth(ComboBox<?> comboBox) {
         comboBox.showingProperty().addListener((obs, wasShowing, isShowing) -> {
             if (isShowing) {

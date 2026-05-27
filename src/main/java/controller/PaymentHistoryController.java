@@ -298,11 +298,18 @@ public class PaymentHistoryController implements Initializable {
             paymentsTable.setItems(sortedList);
 
             refreshTotal();
+            if (paymentsTable != null) {
+                paymentsTable.refresh();
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("Failed to load payment history: " + e.getMessage());
         }
+    }
+
+    public void refresh() {
+        loadPaymentData();
     }
 
     private void setupSearchFilter() {

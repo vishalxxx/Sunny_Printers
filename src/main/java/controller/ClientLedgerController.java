@@ -434,6 +434,10 @@ public class ClientLedgerController implements Initializable {
         }
     }
 
+    public void refresh() {
+        loadLedgerData();
+    }
+
     @FXML
     private void onFilter() {
         loadLedgerData();
@@ -792,6 +796,9 @@ public class ClientLedgerController implements Initializable {
         updateFooterTotals(totalDebit, totalCredit);
         updateRecordCount();
         updateTableHeight();
+        if (ledgerTable != null) {
+            ledgerTable.refresh();
+        }
     }
 
     private void updateFooterTotals(double debit, double credit) {

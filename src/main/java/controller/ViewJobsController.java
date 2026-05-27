@@ -1715,6 +1715,14 @@ public class ViewJobsController {
     // =========================================================
     // ✅ LOAD DATA
     // =========================================================
+    public void refresh() {
+        if (clientComboBox != null && clientComboBox.getValue() != null) {
+            loadJobsBySelectedClient();
+        } else {
+            loadAllJobs();
+        }
+    }
+
     public void loadAllJobs() {
         CompletableFuture
                 .supplyAsync(jobService::getAllJobs, dataLoadExecutor)

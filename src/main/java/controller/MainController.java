@@ -178,6 +178,26 @@ public class MainController implements Initializable {
 		return instance;
 	}
 
+	public void refreshActiveScreen() {
+		Platform.runLater(() -> {
+			try {
+				if (currentController == null) {
+					return;
+				}
+				System.out.println("[MainController] Refreshing active screen: " + currentController.getClass().getName());
+				try {
+					java.lang.reflect.Method refreshMethod = currentController.getClass().getMethod("refresh");
+					refreshMethod.invoke(currentController);
+					System.out.println("[MainController] Screen refreshed successfully via refresh()");
+				} catch (NoSuchMethodException e) {
+					System.out.println("[MainController] Screen has no public refresh() method: " + currentController.getClass().getSimpleName());
+				}
+			} catch (Exception ex) {
+				System.err.println("[MainController] Failed to refresh active screen: " + ex.getMessage());
+			}
+		});
+	}
+
 	public void setCenterContent(Parent view) {
 		centerContentHost.getChildren().setAll(view);
 		utils.NavigationManager.NavState cur = utils.NavigationManager.getInstance().getCurrentState();
@@ -436,6 +456,7 @@ public class MainController implements Initializable {
 
 		loadDashboardData();
 		service.sync.ConnectivitySyncWatcher.start();
+		api.supabase.sequences.NumberSequenceSupabaseSync.syncRemoteToLocalAsync();
 		service.sync.UniversalSyncEngine.scheduleSyncAsync();
 
 		if (mainSearchBox != null && mainSearchField != null) {

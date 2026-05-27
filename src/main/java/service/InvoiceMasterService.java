@@ -558,15 +558,36 @@ public class InvoiceMasterService {
                 resolvedNo = currentNo;
             } else {
                 MasterDocumentSeries series = inv.resolveDocumentSeries();
-                var permanent = numberAllocator.tryAllocatePermanentInvoice(con, series, inv.getInvoiceDate());
-                if (permanent.isPresent()) {
-                    resolvedNo = permanent.get().value();
-                } else {
-                    if (currentNo != null && DocumentNumbering.isTemporaryNumber(currentNo)) {
-                        resolvedNo = currentNo;
+                if (series == MasterDocumentSeries.PROFORMA_INVOICE) {
+                    if (api.supabase.SupabaseReachability.isReachable()) {
+                        if (!numberAllocator.isRemoteReachable("proforma_invoice")) {
+                            throw new RuntimeException("Cannot finalize: Supabase number sequence endpoint for Proforma Invoice is not accessible.");
+                        }
+                        var permanent = numberAllocator.tryAllocatePermanentInvoice(con, series, inv.getInvoiceDate());
+                        if (permanent.isPresent()) {
+                            resolvedNo = permanent.get().value();
+                        } else {
+                            throw new RuntimeException("Cannot finalize: Failed to allocate a permanent Proforma Invoice number from Supabase.");
+                        }
                     } else {
-                        AllocatedNumber fallback = numberAllocator.allocateInvoiceNumber(con, series, inv.getInvoiceDate());
-                        resolvedNo = fallback.value();
+                        if (currentNo != null && DocumentNumbering.isTemporaryNumber(currentNo)) {
+                            resolvedNo = currentNo;
+                        } else {
+                            AllocatedNumber fallback = service.sync.UniversalTemporaryNumberEngine.getInstance().allocateTemporary(con, "proforma_invoice");
+                            resolvedNo = fallback.value();
+                        }
+                    }
+                } else {
+                    var permanent = numberAllocator.tryAllocatePermanentInvoice(con, series, inv.getInvoiceDate());
+                    if (permanent.isPresent()) {
+                        resolvedNo = permanent.get().value();
+                    } else {
+                        if (currentNo != null && DocumentNumbering.isTemporaryNumber(currentNo)) {
+                            resolvedNo = currentNo;
+                        } else {
+                            AllocatedNumber fallback = numberAllocator.allocateInvoiceNumber(con, series, inv.getInvoiceDate());
+                            resolvedNo = fallback.value();
+                        }
                     }
                 }
             }

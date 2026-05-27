@@ -1157,6 +1157,9 @@ public class ViewInvoicesController {
             if (from < to) {
                 tablePageItems.addAll(fullInvoiceResults.subList(from, to));
             }
+            if (invoiceTable != null) {
+                invoiceTable.refresh();
+            }
             return;
         }
         int total = fullInvoiceResults.size();
@@ -1173,6 +1176,9 @@ public class ViewInvoicesController {
         int fromDisplay = total == 0 ? 0 : from + 1;
         paginationInfoLabel.setText(String.format("Showing %d to %d of %d invoices", fromDisplay, to, total));
         rebuildPaginationControls(pages);
+        if (invoiceTable != null) {
+            invoiceTable.refresh();
+        }
     }
 
     private void pageChange(int newIndex) {

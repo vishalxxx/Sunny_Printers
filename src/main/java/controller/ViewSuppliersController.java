@@ -150,6 +150,10 @@ public class ViewSuppliersController implements Initializable {
         lblActiveSuppliers.setText(String.valueOf(total)); // Assuming registered suppliers are active
     }
 
+    public void refresh() {
+        loadSuppliersData();
+    }
+
     @FXML
     private void handleBack() {
         MainController.getInstance().handleBack(null);

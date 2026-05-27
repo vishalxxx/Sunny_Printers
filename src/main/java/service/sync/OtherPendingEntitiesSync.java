@@ -30,6 +30,10 @@ public final class OtherPendingEntitiesSync {
 			"uuid", "invoice_uuid", "job_uuid", "sync_status", "sync_version",
 			"is_deleted", "is_active", "created_at", "updated_at", "synced_at");
 
+	private static final Set<String> DOCUMENT_NUMBER_MAPPINGS_REMOTE_COLS = Set.of(
+			"uuid", "entity_type", "entity_uuid", "sequence_key",
+			"temporary_number", "permanent_number", "allocation_source", "created_at");
+
 	private static final List<TableDef> ORDER = List.of(
 			new TableDef("job_items", SupabaseEndpoints.JOB_ITEMS, "uuid", false),
 			new TableDef("printing_items", SupabaseEndpoints.PRINTING_ITEMS, "uuid", false),
@@ -42,7 +46,8 @@ public final class OtherPendingEntitiesSync {
 			new TableDef("payment_allocations", SupabaseEndpoints.PAYMENT_ALLOCATIONS, "uuid", false),
 			new TableDef("payment_details", SupabaseEndpoints.PAYMENT_DETAILS, "uuid", false),
 			new TableDef("suppliers", SupabaseEndpoints.SUPPLIERS, "uuid", false),
-			new TableDef("users", SupabaseEndpoints.USERS, "uuid", false));
+			new TableDef("users", SupabaseEndpoints.USERS, "uuid", false),
+			new TableDef("document_number_mappings", SupabaseEndpoints.DOCUMENT_NUMBER_MAPPINGS, "uuid", false));
 
 	private OtherPendingEntitiesSync() {
 	}
@@ -76,10 +81,34 @@ public final class OtherPendingEntitiesSync {
 					if (uuid == null || uuid.isBlank()) {
 						continue;
 					}
+					// Skip child items if parent job/job_item is not synced locally
+					if ("job_items".equals(def.sqliteTable())) {
+						String jobUuid = rs.getString("job_uuid");
+						if (!isParentSynced(conn, "jobs", jobUuid)) {
+							UniversalSyncEngine.markTableWaitingDependency(def.sqliteTable(), def.uuidColumn(), uuid);
+							continue;
+						}
+					} else if (isJobItemDetailTable(def.sqliteTable())) {
+						String jobItemUuid = rs.getString("job_item_uuid");
+						if (!isParentSynced(conn, "job_items", jobItemUuid)) {
+							UniversalSyncEngine.markTableWaitingDependency(def.sqliteTable(), def.uuidColumn(), uuid);
+							continue;
+						}
+					}
+
 					try {
+						String originalSyncStatus = null;
+						try {
+							originalSyncStatus = rs.getString("sync_status");
+						} catch (Exception ignored) {}
+						boolean wasWaiting = "WAITING_DEPENDENCY".equalsIgnoreCase(originalSyncStatus);
+
 						JsonObject row = rowToJson(rs);
 						if ("invoice_job_mapping".equals(def.sqliteTable())) {
 							row = filterJsonColumns(row, INVOICE_JOB_MAPPING_REMOTE_COLS);
+						}
+						if ("document_number_mappings".equals(def.sqliteTable())) {
+							row = filterJsonColumns(row, DOCUMENT_NUMBER_MAPPINGS_REMOTE_COLS);
 						}
 						if ("paper_items".equals(def.sqliteTable()) || "ctp_items".equals(def.sqliteTable())) {
 							row.remove("supplier_name");
@@ -105,6 +134,9 @@ public final class OtherPendingEntitiesSync {
 						upsertRow(http, def.endpoint(), def.uuidColumn(), row);
 						markSynced(def.sqliteTable(), def.uuidColumn(), uuid);
 						synced++;
+						if (wasWaiting) {
+							System.out.println("[UniversalSyncEngine] Dependency resolved: successfully synced " + def.sqliteTable() + " row " + uuid);
+						}
 					} catch (Exception e) {
 						if (markRemoteUnavailableIfMissing(def.endpoint(), e.getMessage())) {
 							break;
@@ -252,5 +284,32 @@ public final class OtherPendingEntitiesSync {
 			ps.executeUpdate();
 		} catch (Exception ignored) {
 		}
+	}
+
+	private static boolean isParentSynced(Connection conn, String parentTable, String parentUuid) {
+		if (parentUuid == null || parentUuid.isBlank()) {
+			return false;
+		}
+		String sql = "SELECT sync_status FROM " + parentTable + " WHERE uuid = ?";
+		try (PreparedStatement ps = conn.prepareStatement(sql)) {
+			ps.setString(1, parentUuid.trim());
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) {
+					String status = rs.getString(1);
+					return "SYNCED".equalsIgnoreCase(status);
+				}
+			}
+		} catch (Exception e) {
+			System.err.println("[OtherPendingEntitiesSync] Error checking parent sync status for " + parentTable + " " + parentUuid + ": " + e.getMessage());
+		}
+		return false;
+	}
+
+	private static boolean isJobItemDetailTable(String table) {
+		return "printing_items".equals(table)
+				|| "paper_items".equals(table)
+				|| "binding_items".equals(table)
+				|| "lamination_items".equals(table)
+				|| "ctp_items".equals(table);
 	}
 }

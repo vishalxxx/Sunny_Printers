@@ -45,18 +45,12 @@ public final class TemporaryDocumentReconciliation {
 	private int reconcile() throws Exception {
 		int total = 0;
 		try (Connection con = DBConnection.getConnection()) {
-			con.setAutoCommit(false);
-			try {
-				total += reconcileClients(con);
-				total += reconcileSuppliers(con);
-				total += reconcileJobs(con);
-				total += reconcileInvoices(con);
-				total += reconcilePayments(con);
-				con.commit();
-			} catch (Exception e) {
-				con.rollback();
-				throw e;
-			}
+			con.setAutoCommit(true);
+			total += reconcileClients(con);
+			total += reconcileSuppliers(con);
+			total += reconcileJobs(con);
+			total += reconcileInvoices(con);
+			total += reconcilePayments(con);
 		}
 		return total;
 	}
@@ -95,12 +89,24 @@ public final class TemporaryDocumentReconciliation {
 	}
 
 	private boolean promoteClient(Connection con, ClientRow row) throws Exception {
-		Optional<AllocatedNumber> permanent = allocator.tryAllocatePermanentClientCode(con);
-		if (permanent.isEmpty()) {
-			return false;
+		Optional<DocumentNumberMapping> existing = mappingRepo.findByEntity(DocumentNumberEntityType.CLIENT, row.uuid);
+		String newCode;
+		if (existing.isPresent()) {
+			newCode = existing.get().getPermanentNumber();
+			System.out.println("[TemporaryDocumentReconciliation] Client mapping reused: " + row.uuid + " (" + row.code + " -> " + newCode + ")");
+		} else {
+			Optional<AllocatedNumber> permanent = allocator.tryAllocatePermanentClientCode(con);
+			if (permanent.isEmpty()) {
+				return false;
+			}
+			newCode = permanent.get().value();
+			mappingRepo.recordPromotion(con, DocumentNumberEntityType.CLIENT, row.uuid, "client", row.code, newCode,
+					DocumentNumberMapping.SOURCE_REMOTE);
+			System.out.println("[TemporaryDocumentReconciliation] Client reconciliation success: allocated " + newCode + " for " + row.uuid);
 		}
-		String newCode = permanent.get().value();
+
 		if (ClientIdentifiers.clientCodeInUse(con, newCode, row.uuid)) {
+			System.out.println("[TemporaryDocumentReconciliation] Client code " + newCode + " is already in use, skipping update...");
 			return false;
 		}
 		try (var ps = con.prepareStatement("""
@@ -112,19 +118,28 @@ public final class TemporaryDocumentReconciliation {
 			ps.setString(2, row.uuid);
 			ps.executeUpdate();
 		}
-		mappingRepo.recordPromotion(con, DocumentNumberEntityType.CLIENT, row.uuid, "client", row.code, newCode,
-				DocumentNumberMapping.SOURCE_REMOTE);
-		System.out.println("[TemporaryDocumentReconciliation] client " + row.uuid + ": " + row.code + " -> " + newCode);
 		return true;
 	}
 
 	private boolean promoteJob(Connection con, JobRow row) throws Exception {
-		Optional<AllocatedNumber> permanent = allocator.tryAllocatePermanentJobCode(con);
-		if (permanent.isEmpty()) {
-			return false;
+		Optional<DocumentNumberMapping> existing = mappingRepo.findByEntity(DocumentNumberEntityType.JOB, row.uuid);
+		String newCode;
+		if (existing.isPresent()) {
+			newCode = existing.get().getPermanentNumber();
+			System.out.println("[TemporaryDocumentReconciliation] Job mapping reused: " + row.uuid + " (" + row.code + " -> " + newCode + ")");
+		} else {
+			Optional<AllocatedNumber> permanent = allocator.tryAllocatePermanentJobCode(con);
+			if (permanent.isEmpty()) {
+				return false;
+			}
+			newCode = permanent.get().value();
+			mappingRepo.recordPromotion(con, DocumentNumberEntityType.JOB, row.uuid, "job", row.code, newCode,
+					DocumentNumberMapping.SOURCE_REMOTE);
+			System.out.println("[TemporaryDocumentReconciliation] Job reconciliation success: allocated " + newCode + " for " + row.uuid);
 		}
-		String newCode = permanent.get().value();
+
 		if (JobIdentifiers.jobCodeExists(con, newCode)) {
+			System.out.println("[TemporaryDocumentReconciliation] Job code " + newCode + " is already in use, skipping update...");
 			return false;
 		}
 		try (var ps = con.prepareStatement("""
@@ -136,31 +151,37 @@ public final class TemporaryDocumentReconciliation {
 			ps.setString(2, row.uuid);
 			ps.executeUpdate();
 		}
-		mappingRepo.recordPromotion(con, DocumentNumberEntityType.JOB, row.uuid, "job", row.code, newCode,
-				DocumentNumberMapping.SOURCE_REMOTE);
-		System.out.println("[TemporaryDocumentReconciliation] job " + row.uuid + ": " + row.code + " -> " + newCode);
 		return true;
 	}
 
 	private boolean promoteInvoice(Connection con, InvoiceRow row) throws Exception {
 		MasterDocumentSeries series = resolveInvoiceSeries(row.documentSeries());
-		Optional<AllocatedNumber> permanent = allocator.tryAllocatePermanentInvoice(con, series, row.invoiceDate());
-		if (permanent.isEmpty()) {
-			return false;
-		}
-		String newNo = permanent.get().value();
-		if (InvoiceIdentifiers.invoiceNoInUse(con, newNo, row.uuid())) {
-			return false;
-		}
-		invoiceRepo.updateInvoiceNo(con, row.uuid(), newNo);
 		String sequenceKey = utils.NumberSequenceCatalog.moduleNameFor(series);
 		if (sequenceKey == null) {
 			sequenceKey = "gst_invoice";
 		}
-		mappingRepo.recordPromotion(con, DocumentNumberEntityType.INVOICE, row.uuid(), sequenceKey, row.code(), newNo,
-				DocumentNumberMapping.SOURCE_REMOTE);
-		System.out.println("[TemporaryDocumentReconciliation] invoice " + row.uuid() + ": " + row.code() + " -> "
-				+ newNo);
+
+		Optional<DocumentNumberMapping> existing = mappingRepo.findByEntity(DocumentNumberEntityType.INVOICE, row.uuid());
+		String newNo;
+		if (existing.isPresent()) {
+			newNo = existing.get().getPermanentNumber();
+			System.out.println("[TemporaryDocumentReconciliation] Invoice mapping reused: " + row.uuid() + " (" + row.code() + " -> " + newNo + ")");
+		} else {
+			Optional<AllocatedNumber> permanent = allocator.tryAllocatePermanentInvoice(con, series, row.invoiceDate());
+			if (permanent.isEmpty()) {
+				return false;
+			}
+			newNo = permanent.get().value();
+			mappingRepo.recordPromotion(con, DocumentNumberEntityType.INVOICE, row.uuid(), sequenceKey, row.code(), newNo,
+					DocumentNumberMapping.SOURCE_REMOTE);
+			System.out.println("[TemporaryDocumentReconciliation] Invoice reconciliation success: allocated " + newNo + " for " + row.uuid());
+		}
+
+		if (InvoiceIdentifiers.invoiceNoInUse(con, newNo, row.uuid())) {
+			System.out.println("[TemporaryDocumentReconciliation] Invoice number " + newNo + " is already in use, skipping update...");
+			return false;
+		}
+		invoiceRepo.updateInvoiceNo(con, row.uuid(), newNo);
 		return true;
 	}
 
@@ -254,12 +275,24 @@ public final class TemporaryDocumentReconciliation {
 	}
 
 	private boolean promoteSupplier(Connection con, SupplierRow row) throws Exception {
-		Optional<AllocatedNumber> permanent = allocator.tryAllocatePermanentSupplierCode(con);
-		if (permanent.isEmpty()) {
-			return false;
+		Optional<DocumentNumberMapping> existing = mappingRepo.findByEntity(DocumentNumberEntityType.SUPPLIER, row.uuid);
+		String newCode;
+		if (existing.isPresent()) {
+			newCode = existing.get().getPermanentNumber();
+			System.out.println("[TemporaryDocumentReconciliation] Supplier mapping reused: " + row.uuid + " (" + row.code + " -> " + newCode + ")");
+		} else {
+			Optional<AllocatedNumber> permanent = allocator.tryAllocatePermanentSupplierCode(con);
+			if (permanent.isEmpty()) {
+				return false;
+			}
+			newCode = permanent.get().value();
+			mappingRepo.recordPromotion(con, DocumentNumberEntityType.SUPPLIER, row.uuid, "supplier", row.code, newCode,
+					DocumentNumberMapping.SOURCE_REMOTE);
+			System.out.println("[TemporaryDocumentReconciliation] Supplier reconciliation success: allocated " + newCode + " for " + row.uuid);
 		}
-		String newCode = permanent.get().value();
+
 		if (supplierCodeInUse(con, newCode, row.uuid)) {
+			System.out.println("[TemporaryDocumentReconciliation] Supplier code " + newCode + " is already in use, skipping update...");
 			return false;
 		}
 		try (var ps = con.prepareStatement("""
@@ -271,9 +304,6 @@ public final class TemporaryDocumentReconciliation {
 			ps.setString(2, row.uuid);
 			ps.executeUpdate();
 		}
-		mappingRepo.recordPromotion(con, DocumentNumberEntityType.SUPPLIER, row.uuid, "supplier", row.code, newCode,
-				DocumentNumberMapping.SOURCE_REMOTE);
-		System.out.println("[TemporaryDocumentReconciliation] supplier " + row.uuid + ": " + row.code + " -> " + newCode);
 		return true;
 	}
 
@@ -321,12 +351,24 @@ public final class TemporaryDocumentReconciliation {
 	}
 
 	private boolean promotePayment(Connection con, PaymentRow row) throws Exception {
-		Optional<AllocatedNumber> permanent = allocator.tryAllocatePermanentPaymentReceiptNo(con, row.paymentDate);
-		if (permanent.isEmpty()) {
-			return false;
+		Optional<DocumentNumberMapping> existing = mappingRepo.findByEntity(DocumentNumberEntityType.PAYMENT, row.uuid);
+		String newNo;
+		if (existing.isPresent()) {
+			newNo = existing.get().getPermanentNumber();
+			System.out.println("[TemporaryDocumentReconciliation] Payment mapping reused: " + row.uuid + " (" + row.code + " -> " + newNo + ")");
+		} else {
+			Optional<AllocatedNumber> permanent = allocator.tryAllocatePermanentPaymentReceiptNo(con, row.paymentDate);
+			if (permanent.isEmpty()) {
+				return false;
+			}
+			newNo = permanent.get().value();
+			mappingRepo.recordPromotion(con, DocumentNumberEntityType.PAYMENT, row.uuid, "payment_receipt", row.code, newNo,
+					DocumentNumberMapping.SOURCE_REMOTE);
+			System.out.println("[TemporaryDocumentReconciliation] Payment reconciliation success: allocated " + newNo + " for " + row.uuid);
 		}
-		String newNo = permanent.get().value();
+
 		if (paymentReceiptNoInUse(con, newNo, row.uuid)) {
+			System.out.println("[TemporaryDocumentReconciliation] Payment receipt number " + newNo + " is already in use, skipping update...");
 			return false;
 		}
 		
@@ -350,10 +392,6 @@ public final class TemporaryDocumentReconciliation {
 			ps.setString(1, row.uuid);
 			ps.executeUpdate();
 		}
-		
-		mappingRepo.recordPromotion(con, DocumentNumberEntityType.PAYMENT, row.uuid, "payment_receipt", row.code, newNo,
-				DocumentNumberMapping.SOURCE_REMOTE);
-		System.out.println("[TemporaryDocumentReconciliation] payment receipt " + row.uuid + ": " + row.code + " -> " + newNo);
 		return true;
 	}
 

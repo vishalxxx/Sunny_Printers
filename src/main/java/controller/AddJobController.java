@@ -634,8 +634,28 @@ public class AddJobController implements utils.DirtySupport {
 			return;
 		}
 
+		// 1. Validate all child items first. If validation fails, stop save immediately.
+		try {
+			for (Object item : pendingItems) {
+				if (item instanceof model.Printing p) {
+					if (p.getAmount() <= 0) throw new IllegalArgumentException("Printing amount required");
+				} else if (item instanceof model.Paper p) {
+					if (p.getAmount() <= 0) throw new IllegalArgumentException("Paper amount required");
+				} else if (item instanceof model.Binding b) {
+					if (b.getAmount() <= 0) throw new IllegalArgumentException("Binding amount required");
+				} else if (item instanceof model.Lamination l) {
+					if (l.getAmount() <= 0) throw new IllegalArgumentException("Lamination amount required");
+				} else if (item instanceof model.CtpPlate ctp) {
+					if (ctp.getQty() <= 0) throw new IllegalArgumentException("CTP qty required");
+					if (ctp.getAmount() <= 0) throw new IllegalArgumentException("CTP amount required");
+				}
+			}
+		} catch (IllegalArgumentException e) {
+			toast("❌ Validation failed: " + e.getMessage());
+			return;
+		}
+
 		String title = jobName.getText().trim();
-		JobService js = new JobService();
 
 		java.sql.Connection con = null;
 		try {
@@ -652,8 +672,28 @@ public class AddJobController implements utils.DirtySupport {
 				currentJob = jobRepo.insertJob(con, currentJob);
 				jobUuid = currentJob.getUuid();
 			} else {
-				js.updateJobDetails(jobUuid, title, date);
-				js.updateJobStatus(jobUuid, "Created");
+				// Update job details and status in the same transaction
+				String userUuid = null;
+				if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+					userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+				}
+				String updateSql = """
+						UPDATE jobs SET job_title = ?, job_date = ?, status = 'Created', sync_status = 'PENDING',
+						updated_at = datetime('now'), sync_version = sync_version + 1,
+						updated_by_user_uuid = ?
+						WHERE uuid = ?
+						""";
+				try (java.sql.PreparedStatement ps = con.prepareStatement(updateSql)) {
+					ps.setString(1, title);
+					if (date != null) {
+						ps.setString(2, date.toString());
+					} else {
+						ps.setNull(2, java.sql.Types.VARCHAR);
+					}
+					ps.setString(3, userUuid);
+					ps.setString(4, jobUuid);
+					ps.executeUpdate();
+				}
 			}
 
 			JobItemService transJis = new JobItemService(con);

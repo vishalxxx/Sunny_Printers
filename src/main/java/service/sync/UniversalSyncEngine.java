@@ -28,6 +28,7 @@ import api.supabase.payments.PaymentsSupabaseApi;
 
 import api.supabase.sequences.NumberSequenceSupabaseSync;
 import api.supabase.SupabaseEndpoints;
+import controller.MainController;
 
 import model.Client;
 
@@ -92,31 +93,28 @@ public final class UniversalSyncEngine {
 
 
 	public static void scheduleSyncAsync() {
-
 		if (SupabaseGate.restClientIfConfigured().isEmpty()) {
-
 			return;
-
 		}
-
 		CompletableFuture.runAsync(() -> {
-
 			if (!SupabaseReachability.isReachable()) {
-
 				return;
-
 			}
-
 			SyncReport report = syncAllPending();
-
-			if (report.totalSynced() > 0 || report.failures > 0 || report.pendingRemaining > 0) {
-
+			if (report.totalSynced() > 0 || report.failures > 0 || report.pendingRemaining > 0 || report.tempCodesPromoted > 0) {
 				System.out.println("[UniversalSyncEngine] " + report);
-
 			}
-
+			if (report.totalSynced() > 0 || report.tempCodesPromoted > 0) {
+				try {
+					MainController mc = MainController.getInstance();
+					if (mc != null) {
+						mc.refreshActiveScreen();
+					}
+				} catch (Exception e) {
+					System.err.println("[UniversalSyncEngine] Failed to trigger UI refresh: " + e.getMessage());
+				}
+			}
 		});
-
 	}
 
 
@@ -149,56 +147,105 @@ public final class UniversalSyncEngine {
 		try {
 			report.tempCodesPromoted = TemporaryDocumentReconciliation.reconcileAll();
 
-			// 1. users
-			report.othersSynced += OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("users", SupabaseEndpoints.USERS, "uuid", false), report);
+			// Perform up to 5 passes to resolve foreign key dependency chains (e.g. jobs -> job_items -> printing_items)
+			int pass = 1;
+			boolean progress = true;
+			while (progress && pass <= 5) {
+				progress = false;
+				int syncedThisPass = 0;
 
-			// 2. clients
-			report.clientsSynced = INSTANCE.syncPendingClients(http, report);
+				// 1. users
+				int usersSynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("users", SupabaseEndpoints.USERS, "uuid", false), report);
+				syncedThisPass += usersSynced;
+				report.othersSynced += usersSynced;
 
-			// 3. suppliers
-			report.othersSynced += OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("suppliers", SupabaseEndpoints.SUPPLIERS, "uuid", false), report);
+				// 2. clients
+				int clientsSynced = INSTANCE.syncPendingClients(http, report);
+				syncedThisPass += clientsSynced;
+				report.clientsSynced += clientsSynced;
 
-			// 4. number_sequences
-			report.numberSequencesSynced = NumberSequenceSupabaseSync.syncRemoteToLocal(http);
+				// 3. suppliers
+				int suppliersSynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("suppliers", SupabaseEndpoints.SUPPLIERS, "uuid", false), report);
+				syncedThisPass += suppliersSynced;
+				report.othersSynced += suppliersSynced;
 
-			// 5. jobs
-			report.jobsSynced = INSTANCE.syncPendingJobs(http, report);
 
-			// 6. invoice_master
-			report.invoicesSynced = INSTANCE.syncPendingInvoices(http, report);
+				// 5. jobs
+				int jobsSynced = INSTANCE.syncPendingJobs(http, report);
+				syncedThisPass += jobsSynced;
+				report.jobsSynced += jobsSynced;
 
-			// 7. payments
-			report.paymentsSynced = INSTANCE.syncPendingPayments(http, report);
+				// 6. invoice_master
+				int invoicesSynced = INSTANCE.syncPendingInvoices(http, report);
+				syncedThisPass += invoicesSynced;
+				report.invoicesSynced += invoicesSynced;
 
-			// 8. job_items
-			report.othersSynced += OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("job_items", SupabaseEndpoints.JOB_ITEMS, "uuid", false), report);
+				// 7. payments
+				int paymentsSynced = INSTANCE.syncPendingPayments(http, report);
+				syncedThisPass += paymentsSynced;
+				report.paymentsSynced += paymentsSynced;
 
-			// 9. invoice_job_mapping
-			report.othersSynced += OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("invoice_job_mapping", SupabaseEndpoints.INVOICE_JOB_MAPPING, "uuid", false), report);
+				// 8. job_items
+				int jobItemsSynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("job_items", SupabaseEndpoints.JOB_ITEMS, "uuid", false), report);
+				syncedThisPass += jobItemsSynced;
+				report.othersSynced += jobItemsSynced;
 
-			// 10. printing_items
-			report.othersSynced += OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("printing_items", SupabaseEndpoints.PRINTING_ITEMS, "uuid", false), report);
+				// 9. invoice_job_mapping
+				int mappingSynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("invoice_job_mapping", SupabaseEndpoints.INVOICE_JOB_MAPPING, "uuid", false), report);
+				syncedThisPass += mappingSynced;
+				report.othersSynced += mappingSynced;
 
-			// 11. paper_items
-			report.othersSynced += OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("paper_items", SupabaseEndpoints.PAPER_ITEMS, "uuid", false), report);
+				// 10. printing_items
+				int printingSynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("printing_items", SupabaseEndpoints.PRINTING_ITEMS, "uuid", false), report);
+				syncedThisPass += printingSynced;
+				report.othersSynced += printingSynced;
 
-			// 12. binding_items
-			report.othersSynced += OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("binding_items", SupabaseEndpoints.BINDING_ITEMS, "uuid", false), report);
+				// 11. paper_items
+				int paperSynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("paper_items", SupabaseEndpoints.PAPER_ITEMS, "uuid", false), report);
+				syncedThisPass += paperSynced;
+				report.othersSynced += paperSynced;
 
-			// 13. lamination_items
-			report.othersSynced += OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("lamination_items", SupabaseEndpoints.LAMINATION_ITEMS, "uuid", false), report);
+				// 12. binding_items
+				int bindingSynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("binding_items", SupabaseEndpoints.BINDING_ITEMS, "uuid", false), report);
+				syncedThisPass += bindingSynced;
+				report.othersSynced += bindingSynced;
 
-			// 14. ctp_items
-			report.othersSynced += OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("ctp_items", SupabaseEndpoints.CTP_ITEMS, "uuid", false), report);
+				// 13. lamination_items
+				int laminationSynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("lamination_items", SupabaseEndpoints.LAMINATION_ITEMS, "uuid", false), report);
+				syncedThisPass += laminationSynced;
+				report.othersSynced += laminationSynced;
 
-			// 15. invoice_adjustments
-			report.othersSynced += OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("invoice_adjustments", SupabaseEndpoints.INVOICE_ADJUSTMENTS, "uuid", true), report);
+				// 14. ctp_items
+				int ctpSynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("ctp_items", SupabaseEndpoints.CTP_ITEMS, "uuid", false), report);
+				syncedThisPass += ctpSynced;
+				report.othersSynced += ctpSynced;
 
-			// 16. payment_allocations
-			report.othersSynced += OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("payment_allocations", SupabaseEndpoints.PAYMENT_ALLOCATIONS, "uuid", false), report);
+				// 15. invoice_adjustments
+				int adjustmentsSynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("invoice_adjustments", SupabaseEndpoints.INVOICE_ADJUSTMENTS, "uuid", true), report);
+				syncedThisPass += adjustmentsSynced;
+				report.othersSynced += adjustmentsSynced;
 
-			// 17. payment_details
-			report.othersSynced += OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("payment_details", SupabaseEndpoints.PAYMENT_DETAILS, "uuid", false), report);
+				// 16. payment_allocations
+				int allocationsSynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("payment_allocations", SupabaseEndpoints.PAYMENT_ALLOCATIONS, "uuid", false), report);
+				syncedThisPass += allocationsSynced;
+				report.othersSynced += allocationsSynced;
+
+				// 17. payment_details
+				int detailsSynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("payment_details", SupabaseEndpoints.PAYMENT_DETAILS, "uuid", false), report);
+				syncedThisPass += detailsSynced;
+				report.othersSynced += detailsSynced;
+
+				// 18. document_number_mappings
+				int mappingsSynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("document_number_mappings", SupabaseEndpoints.DOCUMENT_NUMBER_MAPPINGS, "uuid", false), report);
+				syncedThisPass += mappingsSynced;
+				report.othersSynced += mappingsSynced;
+
+				if (syncedThisPass > 0) {
+					progress = true;
+					System.out.println("[UniversalSyncEngine] Sync pass " + pass + " successfully processed " + syncedThisPass + " rows.");
+				}
+				pass++;
+			}
 
 			report.pendingRemaining = countStillPending();
 		} catch (Exception e) {
@@ -322,185 +369,119 @@ public final class UniversalSyncEngine {
 
 
 	private int syncPendingClients(SupabaseRestClient http, SyncReport report) {
-
 		int synced = 0;
-
 		ClientsSupabaseApi api = new ClientsSupabaseApi(http);
-
 		for (Client client : clientRepo.findPendingForSync()) {
-
 			if (client == null || !client.hasClientUuid()) {
-
 				continue;
-
 			}
-
 			if (DocumentNumbering.isTemporaryNumber(client.getClientCode())) {
-
 				continue;
-
 			}
-
 			try {
-
+				boolean wasWaiting = "WAITING_DEPENDENCY".equalsIgnoreCase(client.getSyncStatus());
 				api.upsert(client);
-
 				markTableSynced("clients", client.getClientUuid());
-
 				synced++;
-
+				if (wasWaiting) {
+					System.out.println("[UniversalSyncEngine] Dependency resolved: successfully synced clients row " + client.getClientUuid() + " (" + client.getClientCode() + ")");
+				}
 			} catch (Exception e) {
-
 				if (isForeignKeyFailure(e)) {
 					markTableWaitingDependency("clients", "uuid", client.getClientUuid());
 				} else {
 					report.failures++;
 				}
-
 				System.err.println("[UniversalSyncEngine] client " + client.getClientUuid() + ": " + e.getMessage());
-
 			}
-
 		}
-
 		return synced;
-
 	}
 
-
-
 	private int syncPendingJobs(SupabaseRestClient http, SyncReport report) {
-
 		int synced = 0;
-
 		for (Job job : jobRepo.findPendingForSync()) {
-
 			if (job == null || !job.hasUuid()) {
-
 				continue;
-
 			}
-
 			if (DocumentNumbering.isTemporaryNumber(job.getJobCode())) {
-
 				continue;
-
 			}
-
 			try {
-
+				boolean wasWaiting = "WAITING_DEPENDENCY".equalsIgnoreCase(job.getSyncStatus());
 				JobSupabaseSync.upsertToRemote(http, job);
-
 				markTableSynced("jobs", job.getUuid());
-
 				synced++;
-
+				if (wasWaiting) {
+					System.out.println("[UniversalSyncEngine] Dependency resolved: successfully synced jobs row " + job.getUuid() + " (" + job.getJobCode() + ")");
+				}
 			} catch (Exception e) {
-
 				if (isForeignKeyFailure(e)) {
 					markTableWaitingDependency("jobs", "uuid", job.getUuid());
 				} else {
 					report.failures++;
 				}
-
 				System.err.println("[UniversalSyncEngine] job " + job.getUuid() + ": " + e.getMessage());
-
 			}
-
 		}
-
 		return synced;
-
 	}
 
-
-
 	private int syncPendingInvoices(SupabaseRestClient http, SyncReport report) {
-
 		int synced = 0;
-
 		InvoicesSupabaseApi api = new InvoicesSupabaseApi(http);
-
 		for (InvoiceMaster inv : invoiceRepo.findPendingForSync()) {
-
 			if (inv == null || inv.getUuid() == null || inv.getUuid().isBlank()) {
-
 				continue;
-
 			}
-
 			if (DocumentNumbering.isTemporaryNumber(inv.getInvoiceNo())) {
-
 				continue;
-
 			}
-
 			try {
-
+				boolean wasWaiting = "WAITING_DEPENDENCY".equalsIgnoreCase(inv.getSyncStatus());
 				api.upsert(inv);
-
 				markTableSynced("invoice_master", inv.getUuid());
-
 				synced++;
-
+				if (wasWaiting) {
+					System.out.println("[UniversalSyncEngine] Dependency resolved: successfully synced invoice_master row " + inv.getUuid() + " (" + inv.getInvoiceNo() + ")");
+				}
 			} catch (Exception e) {
-
 				if (isForeignKeyFailure(e)) {
 					markTableWaitingDependency("invoice_master", "uuid", inv.getUuid());
 				} else {
 					report.failures++;
 				}
-
 				System.err.println("[UniversalSyncEngine] invoice " + inv.getUuid() + ": " + e.getMessage());
-
 			}
-
 		}
-
 		return synced;
-
 	}
 
-
-
 	private int syncPendingPayments(SupabaseRestClient http, SyncReport report) {
-
 		int synced = 0;
-
 		PaymentsSupabaseApi api = new PaymentsSupabaseApi(http);
-
 		for (Payment payment : paymentRepo.findPendingForSync()) {
-
 			if (payment == null || payment.getUuid() == null || payment.getUuid().isBlank()) {
-
 				continue;
-
 			}
-
 			try {
-
+				boolean wasWaiting = "WAITING_DEPENDENCY".equalsIgnoreCase(payment.getSyncStatus());
 				api.upsert(payment);
-
 				markTableSynced("payments", payment.getUuid());
-
 				synced++;
-
+				if (wasWaiting) {
+					System.out.println("[UniversalSyncEngine] Dependency resolved: successfully synced payments row " + payment.getUuid());
+				}
 			} catch (Exception e) {
-
 				if (isForeignKeyFailure(e)) {
 					markTableWaitingDependency("payments", "uuid", payment.getUuid());
 				} else {
 					report.failures++;
 				}
-
 				System.err.println("[UniversalSyncEngine] payment " + payment.getUuid() + ": " + e.getMessage());
-
 			}
-
 		}
-
 		return synced;
-
 	}
 
 
@@ -534,8 +515,11 @@ public final class UniversalSyncEngine {
 			return false;
 		}
 		String msg = t.getMessage();
-		if (msg != null && msg.contains("23503")) {
-			return true;
+		if (msg != null) {
+			String lower = msg.toLowerCase();
+			if (lower.contains("23503") || lower.contains("foreign key") || lower.contains("foreign_key")) {
+				return true;
+			}
 		}
 		if (t.getCause() != null && t.getCause() != t) {
 			return isForeignKeyFailure(t.getCause());

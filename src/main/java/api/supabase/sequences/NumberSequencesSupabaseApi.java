@@ -66,11 +66,53 @@ public final class NumberSequencesSupabaseApi {
 
 		HttpResponse<String> res = http.postJsonRaw("rpc/increment_number_sequence", payload.toString(), "return=representation");
 		int code = res.statusCode();
-		System.out.println("[NumberSequencesSupabaseApi] raw RPC response for " + sequenceKey + ": " + res.body());
+		String body = res.body() != null ? res.body().trim() : "";
+		System.out.println("[NumberSequencesSupabaseApi] raw RPC response for " + sequenceKey + ": " + body);
 		if (code < 200 || code >= 300) {
-			throw new IOException("HTTP " + code + " " + res.body());
+			throw new IOException("HTTP " + code + " " + body);
 		}
-		long newNumber = Long.parseLong(res.body().trim());
+		
+		long newNumber = 0;
+		try {
+			JsonElement element = JsonParser.parseString(body);
+			if (element.isJsonArray()) {
+				JsonArray arr = element.getAsJsonArray();
+				if (arr.size() > 0) {
+					JsonElement first = arr.get(0);
+					if (first.isJsonObject()) {
+						JsonObject obj = first.getAsJsonObject();
+						if (obj.has("increment_number_sequence")) {
+							newNumber = obj.get("increment_number_sequence").getAsLong();
+						} else {
+							throw new IOException("Missing expected field 'increment_number_sequence' in response object");
+						}
+					} else if (first.isJsonPrimitive()) {
+						newNumber = first.getAsLong();
+					} else {
+						throw new IOException("Expected a JSON object or primitive as the first element in array");
+					}
+				} else {
+					throw new IOException("RPC returned empty array");
+				}
+			} else if (element.isJsonPrimitive()) {
+				newNumber = element.getAsLong();
+			} else if (element.isJsonObject()) {
+				JsonObject obj = element.getAsJsonObject();
+				if (obj.has("increment_number_sequence")) {
+					newNumber = obj.get("increment_number_sequence").getAsLong();
+				} else {
+					throw new IOException("Missing expected field 'increment_number_sequence' in response object");
+				}
+			} else {
+				throw new IOException("Unsupported JSON structure: " + body);
+			}
+		} catch (Exception ex) {
+			try {
+				newNumber = Long.parseLong(body);
+			} catch (NumberFormatException nfe) {
+				throw new IOException("Failed to parse sequence increment response as JSON or scalar: " + body, ex);
+			}
+		}
 
 		NumberSequence row = new NumberSequence();
 		row.setSequenceKey(sequenceKey.trim());

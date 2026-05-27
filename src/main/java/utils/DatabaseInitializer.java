@@ -1026,11 +1026,11 @@ public class DatabaseInitializer {
                 temporary_number TEXT NOT NULL,
                 permanent_number TEXT NOT NULL,
                 allocation_source TEXT NOT NULL DEFAULT 'remote',
-                created_at TEXT DEFAULT (datetime('now')),
+                %s,
                 UNIQUE (temporary_number),
                 UNIQUE (entity_type, entity_uuid)
             )
-            """;
+            """.formatted(SYNC_COLUMNS);
 
     private static final String JOB_ITEMS_DDL = """
             CREATE TABLE IF NOT EXISTS job_items (
@@ -2328,6 +2328,7 @@ public class DatabaseInitializer {
      */
     private static void ensureDocumentNumberMappingsTable(Connection conn, Statement stmt) throws Exception {
         stmt.execute(DOCUMENT_NUMBER_MAPPINGS_DDL);
+        ensureChildTableSyncColumns(conn, stmt, "document_number_mappings");
         try {
             stmt.execute(
                     "CREATE INDEX IF NOT EXISTS idx_dnm_permanent ON document_number_mappings(permanent_number);");
@@ -2412,10 +2413,16 @@ public class DatabaseInitializer {
         tryAddColumn(stmt, table, "sync_version", "INTEGER DEFAULT 1");
         tryAddColumn(stmt, table, "is_deleted", "INTEGER DEFAULT 0");
         tryAddColumn(stmt, table, "is_active", "INTEGER DEFAULT 1");
-        tryAddColumn(stmt, table, "created_at", "TEXT DEFAULT (datetime('now'))");
-        tryAddColumn(stmt, table, "updated_at", "TEXT DEFAULT (datetime('now'))");
-        tryAddColumn(stmt, table, "synced_at", "TEXT");
-        tryAddColumn(stmt, table, "deleted_at", "TEXT");
+        tryAddColumn(stmt, table, "created_at", "TEXT DEFAULT NULL");
+        tryAddColumn(stmt, table, "updated_at", "TEXT DEFAULT NULL");
+        tryAddColumn(stmt, table, "synced_at", "TEXT DEFAULT NULL");
+        tryAddColumn(stmt, table, "deleted_at", "TEXT DEFAULT NULL");
+
+        try {
+            stmt.execute("UPDATE " + table + " SET created_at = datetime('now') WHERE created_at IS NULL");
+            stmt.execute("UPDATE " + table + " SET updated_at = datetime('now') WHERE updated_at IS NULL");
+        } catch (Exception ignored) {
+        }
     }
 
     /**

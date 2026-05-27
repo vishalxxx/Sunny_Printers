@@ -303,6 +303,54 @@ public class EditJobController implements utils.DirtySupport {
 
         if (currentJob == null) return;
 
+        // 1. Validate all child items first. If validation fails, stop save immediately.
+        try {
+            if (paperTabController != null) {
+                for (Paper p : paperTabController.getItems()) {
+                    if (p.isNew() && p.isDeleted()) continue;
+                    if (!p.isDeleted() && p.getAmount() <= 0) {
+                        throw new IllegalArgumentException("Paper amount required");
+                    }
+                }
+            }
+            if (printingTabController != null) {
+                for (Printing p : printingTabController.getItems()) {
+                    if (p.isNew() && p.isDeleted()) continue;
+                    if (!p.isDeleted() && p.getAmount() <= 0) {
+                        throw new IllegalArgumentException("Printing amount required");
+                    }
+                }
+            }
+            if (bindingTabController != null) {
+                for (Binding b : bindingTabController.getItems()) {
+                    if (b.isNew() && b.isDeleted()) continue;
+                    if (!b.isDeleted() && b.getAmount() <= 0) {
+                        throw new IllegalArgumentException("Binding amount required");
+                    }
+                }
+            }
+            if (laminationTabController != null) {
+                for (Lamination l : laminationTabController.getItems()) {
+                    if (l.isNew() && l.isDeleted()) continue;
+                    if (!l.isDeleted() && l.getAmount() <= 0) {
+                        throw new IllegalArgumentException("Lamination amount required");
+                    }
+                }
+            }
+            if (ctpTabController != null) {
+                for (CtpPlate c : ctpTabController.getItems()) {
+                    if (c.isNew() && c.isDeleted()) continue;
+                    if (!c.isDeleted()) {
+                        if (c.getQty() <= 0) throw new IllegalArgumentException("CTP qty required");
+                        if (c.getAmount() <= 0) throw new IllegalArgumentException("CTP amount required");
+                    }
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            Toast.show((Stage) jobNumberLabel.getScene().getWindow(), "❌ Validation failed: " + e.getMessage());
+            return;
+        }
+
         boolean anythingSaved = false;
         Connection con = null;
         
@@ -312,33 +360,7 @@ public class EditJobController implements utils.DirtySupport {
             con.setAutoCommit(false);
             JobItemService jobItemService = new JobItemService(con);
 
-            if (paperTabController != null) {
-                paperTabController.commitEditor();
-                anythingSaved |= savePaperItems(con, jobItemService);
-            }
-
-            if (printingTabController != null) {
-                printingTabController.commitEditor();
-                anythingSaved |= savePrintingItems(con, jobItemService);
-            }
-
-            if (bindingTabController != null) {
-                bindingTabController.commitEditor();
-                anythingSaved |= saveBindingItems(con,jobItemService);
-            }
-
-            if (laminationTabController != null) {
-                laminationTabController.commitEditor();
-                anythingSaved |= saveLaminationItems(con, jobItemService);
-            }
-
-            if (ctpTabController != null) {
-                ctpTabController.commitEditor();
-                anythingSaved |= saveCtpItems(con,jobItemService);
-            }
-
-            // Save Job Remarks and Image
-            JobService js = new JobService();
+            // 2. Save Parent Job Updates first (remarks and image)
             if (jobRemarksArea.getText() != null && !jobRemarksArea.getText().equals(currentJob.getRemarks())) {
                 String userUuid = null;
                 if (utils.SessionManager.getInstance().getCurrentUser() != null) {
@@ -392,6 +414,32 @@ public class EditJobController implements utils.DirtySupport {
                 anythingSaved = true;
             }
 
+            // 3. Save Child Job Items next
+            if (paperTabController != null) {
+                paperTabController.commitEditor();
+                anythingSaved |= savePaperItems(con, jobItemService);
+            }
+
+            if (printingTabController != null) {
+                printingTabController.commitEditor();
+                anythingSaved |= savePrintingItems(con, jobItemService);
+            }
+
+            if (bindingTabController != null) {
+                bindingTabController.commitEditor();
+                anythingSaved |= saveBindingItems(con,jobItemService);
+            }
+
+            if (laminationTabController != null) {
+                laminationTabController.commitEditor();
+                anythingSaved |= saveLaminationItems(con, jobItemService);
+            }
+
+            if (ctpTabController != null) {
+                ctpTabController.commitEditor();
+                anythingSaved |= saveCtpItems(con,jobItemService);
+            }
+
             con.commit();
 
             Stage stage = (Stage) jobNumberLabel.getScene().getWindow();
@@ -441,7 +489,7 @@ public class EditJobController implements utils.DirtySupport {
             }
 
             if (p.isNew()) {
-                service.addJobItem(currentJob.getUuid(), p);
+                service.addJobItem(con, currentJob.getUuid(), p);
                 p.captureOriginal();
                 p.resetFlags();
                 changed = true;
@@ -479,7 +527,7 @@ public class EditJobController implements utils.DirtySupport {
             }
 
             if (p.isNew()) {
-                service.addJobItem(currentJob.getUuid(), p);
+                service.addJobItem(con, currentJob.getUuid(), p);
                 p.captureOriginal();
                 p.resetFlags();
                 changed = true;
@@ -516,7 +564,7 @@ public class EditJobController implements utils.DirtySupport {
             }
 
             if (b.isNew()) {
-                service.addJobItem(currentJob.getUuid(), b);
+                service.addJobItem(con, currentJob.getUuid(), b);
                 b.captureOriginal();
                 b.resetFlags();
                 changed = true;
@@ -553,7 +601,7 @@ public class EditJobController implements utils.DirtySupport {
             }
 
             if (l.isNew()) {
-                service.addJobItem(currentJob.getUuid(), l);
+                service.addJobItem(con, currentJob.getUuid(), l);
                 l.captureOriginal();
                 l.resetFlags();
                 changed = true;
@@ -590,7 +638,7 @@ public class EditJobController implements utils.DirtySupport {
             }
 
             if (c.isNew()) {
-                service.addJobItem(currentJob.getUuid(), c);
+                service.addJobItem(con, currentJob.getUuid(), c);
                 c.captureOriginal();
                 c.resetFlags();
                 changed = true;

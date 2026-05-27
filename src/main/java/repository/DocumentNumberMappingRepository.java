@@ -27,15 +27,17 @@ public class DocumentNumberMappingRepository {
 		try (PreparedStatement ps = con.prepareStatement("""
 				INSERT INTO document_number_mappings (
 				  uuid, entity_type, entity_uuid, sequence_key,
-				  temporary_number, permanent_number, allocation_source, created_at
-				) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+				  temporary_number, permanent_number, allocation_source, sync_status, sync_version, created_at, updated_at
+				) VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', 1, datetime('now'), datetime('now'))
 				ON CONFLICT(temporary_number) DO UPDATE SET
 				  entity_type = excluded.entity_type,
 				  entity_uuid = excluded.entity_uuid,
 				  sequence_key = excluded.sequence_key,
 				  permanent_number = excluded.permanent_number,
 				  allocation_source = excluded.allocation_source,
-				  created_at = datetime('now')
+				  sync_status = 'PENDING',
+				  sync_version = sync_version + 1,
+				  updated_at = datetime('now')
 				""")) {
 			ps.setString(1, ClientIdentifiers.newUuidV7String());
 			ps.setString(2, entityType.trim());
@@ -117,6 +119,14 @@ public class DocumentNumberMappingRepository {
 			e.printStackTrace();
 		}
 		return list;
+	}
+
+	public void recordPromotionImmediate(String entityType, String entityUuid, String sequenceKey,
+			String temporaryNumber, String permanentNumber, String allocationSource) throws Exception {
+		try (Connection con = DBConnection.getConnection()) {
+			con.setAutoCommit(true);
+			recordPromotion(con, entityType, entityUuid, sequenceKey, temporaryNumber, permanentNumber, allocationSource);
+		}
 	}
 
 	private static DocumentNumberMapping mapRow(ResultSet rs) throws Exception {

@@ -29,7 +29,8 @@ public enum SupabaseEndpoints {
 	COMPANY_DETAILS("company_details"),
 	HSN_SAC_MASTER("hsn_sac_master"),
 	USER_PROFILES("user_profiles"),
-	NUMBER_SEQUENCES("number_sequences");
+	NUMBER_SEQUENCES("number_sequences"),
+	DOCUMENT_NUMBER_MAPPINGS("document_number_mappings");
 
 	private final String pathSegment;
 
