@@ -46,9 +46,25 @@ public class GenerateGSTInvoiceController implements Initializable {
     @FXML private TextField txtVehicleDispatch;
     @FXML private TextField txtPoNo;
 
-    @FXML private ComboBox<model.Client> comboCompanyFrom;
+    @FXML private ComboBox<String>       comboCompanyFrom;
     @FXML private ComboBox<model.Client> comboShipTo;
     @FXML private ComboBox<model.Client> comboBillTo;
+
+    // Dynamic address labels — Company (From)
+    @FXML private Label lblCompanyAddress;
+    @FXML private Label lblCompanyGstin;
+    @FXML private Label lblCompanyState;
+    @FXML private Label lblCompanyEmail;
+
+    // Dynamic address labels — Ship To
+    @FXML private Label lblShipToAddress;
+    @FXML private Label lblShipToGstin;
+    @FXML private Label lblShipToState;
+
+    // Dynamic address labels — Bill To
+    @FXML private Label lblBillToAddress;
+    @FXML private Label lblBillToGstin;
+    @FXML private Label lblBillToState;
 
     @FXML private FlowPane flowJobsContainer;
 
@@ -60,8 +76,17 @@ public class GenerateGSTInvoiceController implements Initializable {
     @FXML private TableView<HsnSummaryRow> tableHsnSummary;
     @FXML private ComboBox<String> comboBankDetails;
 
+    // Invoice Summary labels
+    @FXML private Label lblTotalQty;
+    @FXML private Label lblTotalItems;
+    @FXML private Label lblTaxable;
+    @FXML private Label lblCgst;
+    @FXML private Label lblSgst;
+    @FXML private Label lblIgst;
+    @FXML private Label lblRoundOff;
     @FXML private Label lblGrandTotal;
-    @FXML private Label lblTotalInWords;
+    @FXML private Label lblGrandTotalWords;
+
     @FXML private Label lblTermsFooter;
 
     private final service.InvoiceMasterService invoiceService = new service.InvoiceMasterService();
@@ -268,53 +293,165 @@ public class GenerateGSTInvoiceController implements Initializable {
     }
 
     private void setupClientCombos() {
+        // ── Company (From) — single company from settings ─────────────────────
+        if (comboCompanyFrom != null) {
+            String companyName = utils.CompanyProfile.getName();
+            comboCompanyFrom.getItems().setAll(companyName);
+            comboCompanyFrom.getSelectionModel().selectFirst();
+        }
+        populateCompanyDetails();
+
+        // ── Shared client list ────────────────────────────────────────────────
         List<model.Client> clients = clientService.getAllClients();
+
+        // ── Bill To (Buyer) ────────────────────────────────────────────────────
         if (comboBillTo != null) {
             comboBillTo.getItems().setAll(clients);
             comboBillTo.setCellFactory(cb -> new ListCell<>() {
-                @Override
-                protected void updateItem(model.Client item, boolean empty) {
+                @Override protected void updateItem(model.Client item, boolean empty) {
                     super.updateItem(item, empty);
-                    if (empty || item == null) {
-                        setText(null);
-                    } else {
-                        String name = item.getBusinessName() != null && !item.getBusinessName().isBlank()
-                                ? item.getBusinessName()
-                                : item.getClientName();
-                        setText(name);
-                    }
+                    setText(empty || item == null ? null : clientDisplayName(item));
                 }
             });
             comboBillTo.setButtonCell(new ListCell<>() {
-                @Override
-                protected void updateItem(model.Client item, boolean empty) {
+                @Override protected void updateItem(model.Client item, boolean empty) {
                     super.updateItem(item, empty);
-                    if (empty || item == null) {
-                        setText("Select buyer");
-                    } else {
-                        String name = item.getBusinessName() != null && !item.getBusinessName().isBlank()
-                                ? item.getBusinessName()
-                                : item.getClientName();
-                        setText(name);
-                    }
+                    setText(empty || item == null ? "Select buyer" : clientDisplayName(item));
                 }
             });
             comboBillTo.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
                 if (newV != null) {
                     loadJobsForClient(newV.getClientUuid());
+                    populateBillToDetails(newV);
+                    // Auto-mirror to Ship To if nothing explicitly chosen there yet
+                    if (comboShipTo != null && comboShipTo.getValue() == null) {
+                        comboShipTo.setValue(newV);
+                    }
                 } else {
                     clearJobsBox();
+                    clearClientDetails(lblBillToAddress, lblBillToGstin, lblBillToState);
                 }
             });
         }
 
-        // For now, keep Company/ShipTo lists same as BillTo.
-        if (comboCompanyFrom != null) {
-            comboCompanyFrom.getItems().setAll(clients);
-        }
+        // ── Ship To (Consignee) ─────────────────────────────────────────────────
         if (comboShipTo != null) {
             comboShipTo.getItems().setAll(clients);
+            comboShipTo.setCellFactory(cb -> new ListCell<>() {
+                @Override protected void updateItem(model.Client item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : clientDisplayName(item));
+                }
+            });
+            comboShipTo.setButtonCell(new ListCell<>() {
+                @Override protected void updateItem(model.Client item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? "Select consignee" : clientDisplayName(item));
+                }
+            });
+            comboShipTo.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
+                if (newV != null) {
+                    populateShipToDetails(newV);
+                } else {
+                    clearClientDetails(lblShipToAddress, lblShipToGstin, lblShipToState);
+                }
+            });
         }
+    }
+
+    /** Fills the Company (From) address block from CompanyProfile settings. */
+    private void populateCompanyDetails() {
+        String gstin = utils.CompanyProfile.getGst();
+        String addr = utils.CompanyProfile.getAddress();
+        setLbl(lblCompanyAddress, addr);
+        setLbl(lblCompanyGstin,   gstin);
+        setLbl(lblCompanyState,   stateNameFromGstinOrAddress(gstin, addr));
+        setLbl(lblCompanyEmail,   utils.CompanyProfile.getEmail());
+    }
+
+    /** Fills Bill To address block and auto-sets Place of Supply from client GSTIN. */
+    private void populateBillToDetails(model.Client c) {
+        if (c == null) { clearClientDetails(lblBillToAddress, lblBillToGstin, lblBillToState); return; }
+        String gstin = c.getGst();
+        String addr = c.getBillingAddress();
+        setLbl(lblBillToAddress, addr);
+        setLbl(lblBillToGstin,   gstin);
+        String stateName = stateNameFromGstinOrAddress(gstin, addr);
+        setLbl(lblBillToState, stateName);
+        // Auto-set Place of Supply combo to match client state
+        if (comboPlaceOfSupply != null && stateName != null && !stateName.isBlank()) {
+            // Find the state code in parenthesis e.g. "(07)"
+            int idx = stateName.indexOf('(');
+            if (idx != -1 && idx + 3 <= stateName.length()) {
+                String code = stateName.substring(idx + 1, idx + 3);
+                comboPlaceOfSupply.getItems().stream()
+                        .filter(item -> item.contains("(" + code + ")"))
+                        .findFirst()
+                        .ifPresent(comboPlaceOfSupply::setValue);
+            }
+        }
+    }
+
+    /** Fills Ship To address block (prefers shipping address, falls back to billing). */
+    private void populateShipToDetails(model.Client c) {
+        if (c == null) { clearClientDetails(lblShipToAddress, lblShipToGstin, lblShipToState); return; }
+        String addr = c.getShippingAddress();
+        if (addr == null || addr.isBlank()) addr = c.getBillingAddress();
+        setLbl(lblShipToAddress, addr);
+        setLbl(lblShipToGstin,   c.getGst());
+        setLbl(lblShipToState,   stateNameFromGstinOrAddress(c.getGst(), addr));
+    }
+
+    private static void clearClientDetails(Label address, Label gstin, Label state) {
+        setLbl(address, ""); setLbl(gstin, ""); setLbl(state, "");
+    }
+
+    private static void setLbl(Label lbl, String text) {
+        if (lbl != null) lbl.setText(text != null ? text : "");
+    }
+
+    private static String clientDisplayName(model.Client c) {
+        if (c == null) return "";
+        String n = c.getBusinessName();
+        return (n != null && !n.isBlank()) ? n : c.getClientName();
+    }
+
+    private static final String[] ALL_STATES = {
+        "Jammu & Kashmir (01)", "Himachal Pradesh (02)", "Punjab (03)", "Chandigarh (04)",
+        "Uttarakhand (05)", "Haryana (06)", "Delhi (07)", "Rajasthan (08)", "Uttar Pradesh (09)",
+        "Bihar (10)", "Sikkim (11)", "Arunachal Pradesh (12)", "Nagaland (13)", "Manipur (14)",
+        "Mizoram (15)", "Tripura (16)", "Meghalaya (17)", "Assam (18)", "West Bengal (19)",
+        "Jharkhand (20)", "Odisha (21)", "Chhattisgarh (22)", "Madhya Pradesh (23)", "Gujarat (24)",
+        "Daman & Diu (25)", "Dadra & Nagar Haveli (26)", "Maharashtra (27)", "Karnataka (29)",
+        "Goa (30)", "Lakshadweep (31)", "Kerala (32)", "Tamil Nadu (33)", "Puducherry (34)",
+        "Andaman & Nicobar Islands (35)", "Telangana (36)", "Andhra Pradesh (New) (37)", "Ladakh (38)"
+    };
+
+    /** Maps the first 2 digits of a GSTIN to an Indian state name string. 
+     *  Falls back to text parsing from address if GSTIN is empty. */
+    private static String stateNameFromGstinOrAddress(String gstin, String address) {
+        if (gstin != null && gstin.trim().length() >= 2) {
+            String code = gstin.trim().substring(0, 2);
+            for (String s : ALL_STATES) {
+                if (s.contains("(" + code + ")")) return s;
+            }
+        }
+        
+        // Fallback: search address for known state names
+        if (address != null && !address.isBlank()) {
+            String upper = address.toUpperCase();
+            // Fast check for common abbreviations
+            if (upper.contains(" U.P") || upper.contains(" UP ") || upper.endsWith(" UP")) return "Uttar Pradesh (09)";
+            if (upper.contains(" M.P") || upper.contains(" MP ") || upper.endsWith(" MP")) return "Madhya Pradesh (23)";
+
+            for (String s : ALL_STATES) {
+                String name = s.substring(0, s.indexOf('(')).trim().toUpperCase();
+                if (upper.contains(name)) {
+                    return s;
+                }
+            }
+        }
+        return "";
     }
 
     private void setupJobsBox() {
@@ -352,31 +489,45 @@ public class GenerateGSTInvoiceController implements Initializable {
         }
 
         for (model.JobSummary js : jobs) {
-            VBox card = new VBox(4);
-            card.getStyleClass().add("gst-job-card");
-            card.setAlignment(Pos.TOP_LEFT);
+            HBox card = new HBox(10);
+            card.getStyleClass().add("gst-job-chip");
+            card.setAlignment(Pos.CENTER_LEFT);
 
             CheckBox cb = new CheckBox();
-            cb.getStyleClass().add("gst-job-check");
+            cb.getStyleClass().add("gst-job-check"); // FXML had radio but user asked for checkbox
             cb.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
                 if (isSelected) {
                     selectedJobUuids.add(js.getUuid());
-                    card.getStyleClass().add("gst-job-card-selected");
+                    card.getStyleClass().add("gst-job-chip-selected");
                 } else {
                     selectedJobUuids.remove(js.getUuid());
-                    card.getStyleClass().remove("gst-job-card-selected");
+                    card.getStyleClass().remove("gst-job-chip-selected");
                 }
                 refreshItemsTableFromSelectedJobs();
             });
 
+            // Clicking anywhere on the card toggles the checkbox
+            card.setOnMouseClicked(e -> {
+                javafx.scene.Node target = (javafx.scene.Node) e.getTarget();
+                while (target != null) {
+                    if (target == cb) return; // The CheckBox already handled its own click
+                    target = target.getParent();
+                }
+                cb.setSelected(!cb.isSelected());
+            });
+
+            VBox infoBox = new VBox(4);
             Label no = new Label(js.getJobNo());
             no.getStyleClass().add("gst-chip-title");
             Label title = new Label(js.getJobTitle());
             title.getStyleClass().add("gst-chip-sub");
             Label date = new Label("Completed: " + (js.getJobDate() != null ? js.getJobDate().format(JOB_DATE_FMT) : "—"));
             date.getStyleClass().add("gst-chip-meta");
+            Label status = new Label("Completed");
+            status.getStyleClass().add("gst-chip-status");
 
-            card.getChildren().addAll(cb, no, title, date);
+            infoBox.getChildren().addAll(no, title, date, status);
+            card.getChildren().addAll(cb, infoBox);
             flowJobsContainer.getChildren().add(card);
         }
     }
@@ -385,6 +536,7 @@ public class GenerateGSTInvoiceController implements Initializable {
         itemRows.clear();
         if (selectedJobUuids.isEmpty()) {
             hsnRows.clear();
+            refreshInvoiceSummary();
             return;
         }
 
@@ -429,6 +581,7 @@ public class GenerateGSTInvoiceController implements Initializable {
         }
 
         refreshHsnSummaryFromItemRows();
+        refreshInvoiceSummary();
     }
 
     @SuppressWarnings("unchecked")
@@ -490,6 +643,59 @@ public class GenerateGSTInvoiceController implements Initializable {
             ));
         }
     }
+
+    private void refreshInvoiceSummary() {
+        if (lblTaxable == null) return; // FXML not bound
+
+        int itemCount = itemRows.size();
+        long totalQty = 0;
+        double taxable = 0;
+        double cgst = 0;
+        double sgst = 0;
+        double igst = 0;
+        String commonUnit = null;
+
+        for (ItemRow r : itemRows) {
+            taxable += r.taxableRaw.get();
+            cgst += r.cgstRaw.get();
+            sgst += r.sgstRaw.get();
+            igst += r.igstRaw.get();
+            
+            try {
+                // Remove commas and parse
+                long qty = Long.parseLong(r.getQty().replace(",", "").trim());
+                totalQty += qty;
+            } catch (Exception e) {
+                // ignore
+            }
+            if (commonUnit == null) {
+                commonUnit = r.getUnit();
+            } else if (!commonUnit.equals(r.getUnit())) {
+                commonUnit = "MIXED";
+            }
+        }
+
+        double totalTax = cgst + sgst + igst;
+        double unroundedTotal = taxable + totalTax;
+        double grandTotal = Math.round(unroundedTotal);
+        double roundOff = grandTotal - unroundedTotal;
+
+        setLbl(lblTotalItems, String.valueOf(itemCount));
+        
+        String unitStr = (commonUnit == null || "MIXED".equals(commonUnit)) ? "UNITS" : commonUnit;
+        setLbl(lblTotalQty, String.format("%,d %s", totalQty, unitStr));
+
+        setLbl(lblTaxable, fmtMoney(taxable));
+        setLbl(lblCgst, cgst > 0 ? fmtMoney(cgst) : "—");
+        setLbl(lblSgst, sgst > 0 ? fmtMoney(sgst) : "—");
+        setLbl(lblIgst, igst > 0 ? fmtMoney(igst) : "—");
+        setLbl(lblRoundOff, fmtMoney(roundOff));
+        setLbl(lblGrandTotal, fmtMoney(grandTotal));
+
+        String words = utils.NumberToWords.convert((long) grandTotal);
+        setLbl(lblGrandTotalWords, "(INR " + words + " Only)");
+    }
+
 
     private boolean isIntraStateSupply() {
         String companyGst = utils.CompanyProfile.getGst();

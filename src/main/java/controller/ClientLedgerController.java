@@ -686,14 +686,14 @@ public class ClientLedgerController implements Initializable {
 
         sql.append("UNION ALL ");
 
-        // Credit / Debit Notes (invoice_adjustments) — no receipt_no
+        // Credit / Debit Notes (invoice_adjustments) — note_no in receipt_no col, invoice_no in ref col
         sql.append("SELECT adj.uuid as txn_id, adj.date as txn_date, ");
-        sql.append("adj.note_no || ' (Inv: ' || inv.invoice_no || ')' as ref, ");
+        sql.append("inv.invoice_no as ref, ");
         sql.append("UPPER(adj.type) as type, ");
         sql.append("'-' as mode, ");
         sql.append("CASE WHEN adj.type = 'Credit Note' THEN adj.amount ELSE 0 END as debit, ");
         sql.append("CASE WHEN adj.type = 'Debit Note' THEN adj.amount ELSE 0 END as credit, ");
-        sql.append("'SUCCESS' as status, '' as payment_status, NULL as receipt_no ");
+        sql.append("'SUCCESS' as status, '' as payment_status, adj.note_no as receipt_no ");
         sql.append("FROM invoice_adjustments adj ");
         sql.append("JOIN invoice_master inv ON adj.invoice_uuid = inv.uuid ");
         sql.append("WHERE inv.client_uuid = ? AND IFNULL(adj.is_deleted, 0) = 0 ");
