@@ -792,6 +792,10 @@
     -fx-border-width: 0;
 }
 
+.view-invoices-root .vi-invoice-table .table-row-cell .table-cell.vi-cell-center {
+    -fx-alignment: CENTER;
+}
+
 .view-invoices-root .vi-invoice-id { -fx-font-weight: 800; -fx-text-fill: #111827; -fx-font-size: 12px; }
 .view-invoices-root .vi-client-name { -fx-font-weight: 800; -fx-text-fill: #111827; -fx-font-size: 12px; }
 .view-invoices-root .vi-client-email { -fx-font-weight: 500; -fx-text-fill: #6B7280; -fx-font-size: 10px; }

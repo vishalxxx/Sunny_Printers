@@ -16,6 +16,7 @@ public class InvoiceJob {
 	private String unit;
 	private double ratePerUnit;
 	private String hsnSac;
+	private double gstRate;
 
 	private List<InvoiceLine> lines = new ArrayList<>();
 
@@ -102,6 +103,14 @@ public class InvoiceJob {
 
 	public void setHsnSac(String hsnSac) {
 		this.hsnSac = hsnSac;
+	}
+
+	public double getGstRate() {
+		return gstRate;
+	}
+
+	public void setGstRate(double gstRate) {
+		this.gstRate = gstRate;
 	}
 
 	public List<InvoiceLine> getLines() {

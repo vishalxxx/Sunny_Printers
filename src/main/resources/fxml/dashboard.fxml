@@ -100,11 +100,11 @@
                                         </graphic>
                                     </Button>
                                     <VBox fx:id="jobsSubmenu" visible="false" managed="false" spacing="5" styleClass="submenu-container">
-                                        <Button fx:id="addJobSubBtn" onAction="#loadAddJob" styleClass="submenu-btn" text="New Print Job">
-                                            <graphic><Region styleClass="sidebar-icon, icon-add" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
-                                        </Button>
                                         <Button fx:id="viewJobsSubBtn" onAction="#loadViewJob" styleClass="submenu-btn" text="View All Jobs">
                                             <graphic><Region styleClass="sidebar-icon, icon-dot"/></graphic>
+                                        </Button>
+                                        <Button fx:id="addJobSubBtn" onAction="#loadAddJob" styleClass="submenu-btn" text="New Print Job">
+                                            <graphic><Region styleClass="sidebar-icon, icon-add" style="-fx-background-color: #9CA3AF; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
                                         </Button>
                                     </VBox>
                                 </VBox>

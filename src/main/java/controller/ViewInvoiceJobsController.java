@@ -9,6 +9,8 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.input.MouseButton;
 
 import model.Client;
 import model.InvoiceMaster;
@@ -133,6 +135,23 @@ public class ViewInvoiceJobsController {
         // ✅ Double click to edit job
         jobsTable.setRowFactory(tv -> {
             TableRow<Job> row = new TableRow<>();
+            row.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
+                if (e.getButton() != MouseButton.PRIMARY || row.isEmpty() || jobsTable == null) {
+                    return;
+                }
+                if (e.isShiftDown() || e.isControlDown() || e.isShortcutDown()) {
+                    return;
+                }
+                Job item = row.getItem();
+                if (item != null) {
+                    int index = row.getIndex();
+                    if (jobsTable.getSelectionModel().isSelected(index)) {
+                        jobsTable.getSelectionModel().clearSelection(index);
+                    } else {
+                        jobsTable.getSelectionModel().clearAndSelect(index);
+                    }
+                }
+            });
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && (!row.isEmpty())) {
                     Job item = row.getItem();
@@ -182,7 +201,67 @@ public class ViewInvoiceJobsController {
     private void setupTable() {
         // ✅ Checkbox Column
         selectCol.setCellValueFactory(f -> f.getValue().selectedProperty());
-        selectCol.setCellFactory(javafx.scene.control.cell.CheckBoxTableCell.forTableColumn(selectCol));
+        selectCol.setCellFactory(col -> new TableCell<Job, Boolean>() {
+            private final CheckBox checkBox = new CheckBox();
+            private final javafx.beans.value.ChangeListener<Boolean> rowSelectionListener = (obs, oldVal, newVal) -> {
+                checkBox.setSelected(newVal != null && newVal);
+            };
+
+            {
+                checkBox.getStyleClass().add("vi-row-select-cb");
+                checkBox.setFocusTraversable(false);
+                checkBox.setMnemonicParsing(false);
+                
+                checkBox.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
+                    if (e.getButton() == MouseButton.PRIMARY) {
+                        e.consume();
+                        TableRow<?> row = getTableRow();
+                        if (row != null && !row.isEmpty()) {
+                            int index = row.getIndex();
+                            if (jobsTable != null) {
+                                jobsTable.requestFocus();
+                            }
+                            if (jobsTable.getSelectionModel().isSelected(index)) {
+                                jobsTable.getSelectionModel().clearSelection(index);
+                            } else {
+                                jobsTable.getSelectionModel().select(index);
+                            }
+                        }
+                    }
+                });
+                checkBox.addEventFilter(MouseEvent.MOUSE_RELEASED, MouseEvent::consume);
+                checkBox.addEventFilter(MouseEvent.MOUSE_CLICKED, MouseEvent::consume);
+
+                tableRowProperty().addListener((obs, oldRow, newRow) -> {
+                    if (oldRow != null) {
+                        oldRow.selectedProperty().removeListener(rowSelectionListener);
+                    }
+                    if (newRow != null) {
+                        newRow.selectedProperty().addListener(rowSelectionListener);
+                        checkBox.setSelected(newRow.isSelected());
+                    } else {
+                        checkBox.setSelected(false);
+                    }
+                });
+            }
+
+            @Override
+            protected void updateItem(Boolean item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    TableRow<?> row = getTableRow();
+                    if (row != null) {
+                        checkBox.setSelected(row.isSelected());
+                    } else {
+                        checkBox.setSelected(false);
+                    }
+                    setAlignment(javafx.geometry.Pos.CENTER);
+                    setGraphic(checkBox);
+                }
+            }
+        });
         selectCol.setEditable(true);
         jobsTable.setEditable(true);
 
@@ -328,7 +407,10 @@ public class ViewInvoiceJobsController {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null || item.isBlank()) {
+                if (empty) {
+                    setText(null);
+                    setGraphic(null);
+                } else if (item == null || item.isBlank()) {
                     setText("—");
                     setStyle("-fx-text-fill: #A7A69D; -fx-alignment: CENTER;");
                     setWrapText(false);
@@ -350,8 +432,24 @@ public class ViewInvoiceJobsController {
                 Button btnE = createCircularBtn("M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z", "#FA8C16");
                 Button btnM = createCircularBtn("M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z", "#A7A69D");
                 
-                btnV.setOnAction(e -> handleJobViewAction());
-                btnE.setOnAction(e -> handleJobEditAction());
+                btnV.setOnAction(e -> {
+                    TableRow<?> row = getTableRow();
+                    if (row != null && !row.isEmpty()) {
+                        Job rowJob = (Job) row.getItem();
+                        if (rowJob != null) {
+                            showJobDetails(rowJob);
+                        }
+                    }
+                });
+                btnE.setOnAction(e -> {
+                    TableRow<?> row = getTableRow();
+                    if (row != null && !row.isEmpty()) {
+                        Job rowJob = (Job) row.getItem();
+                        if (rowJob != null) {
+                            openEditJobScreen(rowJob);
+                        }
+                    }
+                });
                 
                 container.getChildren().addAll(btnV, btnE, btnM);
             }
@@ -362,8 +460,16 @@ public class ViewInvoiceJobsController {
             }
         });
 
+        jobsTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        jobsTable.getSelectionModel().getSelectedItems().addListener((javafx.collections.ListChangeListener.Change<? extends Job> c) -> {
+            for (Job job : tableData) {
+                if (job != null) {
+                    job.setSelected(jobsTable.getSelectionModel().getSelectedItems().contains(job));
+                }
+            }
+        });
         jobsTable.setItems(tableData);
-        jobsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        jobsTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         jobsTable.setFixedCellSize(80); // Optimal editorial density for wrapping
     }
 

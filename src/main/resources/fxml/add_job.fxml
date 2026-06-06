@@ -230,11 +230,19 @@
                         <ComboBox fx:id="ctpBackingCombo" promptText="Select Backing" styleClass="card-combo" maxWidth="Infinity"/>
                     </VBox>
                     <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                        <Label text="PLATE SOURCE" styleClass="field-heading-sm"/>
+                        <HBox spacing="15" alignment="CENTER_LEFT" VBox.vgrow="ALWAYS">
+                            <RadioButton fx:id="ctpOurRadio" text="Our Plate" styleClass="premium-radio" selected="true"/>
+                            <RadioButton fx:id="ctpClientRadio" text="Client Side" styleClass="premium-radio"/>
+                        </HBox>
+                    </VBox>
+
+                    <VBox fx:id="ctpSupplierBox" spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="2">
                         <Label text="SUPPLIER" styleClass="field-heading-sm"/>
                         <ComboBox fx:id="ctpSupplierCombo" promptText="Select Supplier" styleClass="card-combo" maxWidth="Infinity"/>
                     </VBox>
 
-                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="3">
+                    <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="3" GridPane.columnSpan="3">
                         <Label text="PRODUCTION NOTES" styleClass="field-heading-sm"/>
                         <TextArea fx:id="ctpNotesArea" promptText="Specify any additional CTP requirements..." styleClass="card-textarea" wrapText="true" prefHeight="60"/>
                     </VBox>

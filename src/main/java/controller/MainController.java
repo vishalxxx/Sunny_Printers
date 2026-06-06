@@ -492,7 +492,11 @@ public class MainController implements Initializable {
 			sidebarStack.setOnMouseEntered(e -> expandSidebar());
 
 			// ✅ Mouse exit collapse
-			sidebarStack.setOnMouseExited(e -> collapseSidebar());
+			sidebarStack.setOnMouseExited(e -> {
+				if (isMouseReallyExited(e)) {
+					collapseSidebar();
+				}
+			});
 
 			// Force layout update during animation to ensure center content shifts smoothly
 			sidebarStack.widthProperty().addListener((obs, oldV, newV) -> {
@@ -1332,6 +1336,17 @@ public class MainController implements Initializable {
 		sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
 
 		animateSidebarWidth(COLLAPSED_WIDTH);
+	}
+
+	private boolean isMouseReallyExited(MouseEvent event) {
+		if (sidebarStack == null) {
+			return true;
+		}
+		javafx.geometry.Bounds bounds = sidebarStack.localToScreen(sidebarStack.getBoundsInLocal());
+		if (bounds == null) {
+			return true;
+		}
+		return !bounds.contains(event.getScreenX(), event.getScreenY());
 	}
 
 	private void animateSidebarWidth(double width) {

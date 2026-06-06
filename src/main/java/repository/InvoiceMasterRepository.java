@@ -395,7 +395,7 @@ public class InvoiceMasterRepository {
      * FIND FILTERED INVOICES (FOR VIEW INVOICES SCREEN)
      * =========================================================
      */
-    public List<InvoiceMaster> findFiltered(Connection con, String clientId, String status, LocalDate start, LocalDate end, String invoiceNo) throws Exception {
+    public List<InvoiceMaster> findFiltered(Connection con, String clientId, String status, LocalDate start, LocalDate end, String invoiceNo, String documentSeries) throws Exception {
         StringBuilder sql = new StringBuilder("SELECT * FROM invoice_master WHERE is_void = 0");
         List<Object> params = new ArrayList<>();
 
@@ -421,6 +421,10 @@ public class InvoiceMasterRepository {
         if (end != null) {
             sql.append(" AND DATE(invoice_date) <= ?");
             params.add(toIso(end));
+        }
+        if (documentSeries != null && !documentSeries.equalsIgnoreCase("All") && !documentSeries.trim().isEmpty()) {
+            sql.append(" AND document_series = ?");
+            params.add(documentSeries.trim());
         }
 
         sql.append(" ORDER BY invoice_date DESC, uuid DESC");

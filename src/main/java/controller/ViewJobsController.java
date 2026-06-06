@@ -73,6 +73,8 @@ import javafx.scene.shape.SVGPath;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
 import javafx.scene.control.cell.CheckBoxTableCell;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.text.TextAlignment;
 
 public class ViewJobsController {
@@ -205,6 +207,7 @@ public class ViewJobsController {
         }
 
         jobsTable.getSelectionModel().getSelectedItems().addListener((javafx.collections.ListChangeListener<Job>) c -> {
+            syncSelectedPropertyFromModel();
             updateBulkActionBar();
         });
 
@@ -215,8 +218,6 @@ public class ViewJobsController {
 
         // Bind table to paged items instead of sortedData directly
         jobsTable.setItems(pagedItems);
-        // Variable row height (setFixedCellSize(0)) breaks TableView: rows can inflate to viewport height.
-        // Row height is set on the table in view_job.fxml (-fx-fixed-cell-size).
 
         // Listen to changes in sorted data to refresh pagination
         sortedData.addListener((javafx.collections.ListChangeListener<Job>) c -> {
@@ -226,19 +227,44 @@ public class ViewJobsController {
 
         ensureGoToPageField();
 
-        // ✅ Double click to view
+        // ✅ Row factory — same pattern as ViewInvoicesController:
+        //   MOUSE_PRESSED event filter handles single-click toggle.
+        //   Shift / Ctrl / Shortcut modifiers are forwarded to JavaFX's built-in
+        //   multi-selection (range select and individual toggle work natively).
+        //   Double-click opens job details.
         jobsTable.setRowFactory(tv -> {
             TableRow<Job> row = new TableRow<>();
+            row.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
+                if (e.getButton() != MouseButton.PRIMARY || row.isEmpty() || jobsTable == null) {
+                    return;
+                }
+                // Let JavaFX handle shift / ctrl range and toggle natively
+                if (e.isShiftDown() || e.isControlDown() || e.isShortcutDown()) {
+                    return;
+                }
+                Job item = row.getItem();
+                if (item != null) {
+                    int index = row.getIndex();
+                    if (jobsTable.getSelectionModel().isSelected(index)) {
+                        jobsTable.getSelectionModel().clearSelection(index);
+                    } else {
+                        jobsTable.getSelectionModel().clearAndSelect(index);
+                    }
+                    e.consume();
+                }
+            });
             row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && (!row.isEmpty())) {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
                     showJobDetails(row.getItem());
                 }
             });
             return row;
         });
-        
+
         utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null, () -> handleBack(null));
+
     }
+
 
     private void ensureGoToPageField() {
         if (goToPageField != null) {
@@ -255,33 +281,53 @@ public class ViewJobsController {
     // =========================================================
     // ✅ ACTION BAR LOGIC
     // =========================================================
+
+    /**
+     * Syncs job.selectedProperty() with what the TableView selection model actually has selected.
+     * Uses object identity (not index) so it is correct even when the table has a sort applied.
+     */
+    private void syncSelectedPropertyFromModel() {
+        java.util.Set<Job> selectedSet = new java.util.HashSet<>(jobsTable.getSelectionModel().getSelectedItems());
+        for (Job j : jobsTable.getItems()) {
+            if (j != null) j.selectedProperty().set(selectedSet.contains(j));
+        }
+    }
+
+
     private void updateBulkActionBar() {
         List<Job> selected = jobsTable.getItems().stream()
                 .filter(Job::isSelected)
                 .collect(Collectors.toList());
+
         if (selected.isEmpty()) {
-            bulkActionBarContainer.setVisible(false);
-            bulkActionBarContainer.setManaged(false);
             wasInvalidSelection = false;
+            selectionCountLabel.setText("0 jobs selected");
+            // Keep bar visible but disable all action buttons
+            bulkStartBtn.setVisible(true);   bulkStartBtn.setManaged(true);
+            bulkCompleteBtn.setVisible(true); bulkCompleteBtn.setManaged(true);
+            bulkInvoiceBtn.setVisible(true);  bulkInvoiceBtn.setManaged(true);
+            bulkCancelBtn.setVisible(true);   bulkCancelBtn.setManaged(true);
+            bulkStartBtn.setDisable(true);
+            bulkCompleteBtn.setDisable(true);
+            bulkInvoiceBtn.setDisable(true);
+            bulkCancelBtn.setDisable(true);
+            bulkStartBtn.setText("Start Processing");
+            bulkCompleteBtn.setText("Mark Completed");
+            bulkInvoiceBtn.setText("Generate Invoice");
+            bulkCancelBtn.setText("Cancel Job");
         } else {
-            bulkActionBarContainer.setVisible(true);
-            bulkActionBarContainer.setManaged(true);
-            selectionCountLabel.setText(selected.size() + " jobs selected");
-            
+            selectionCountLabel.setText(selected.size() + " job" + (selected.size() == 1 ? "" : "s") + " selected");
+
             java.util.Set<String> uniqueStatuses = selected.stream()
                     .map(j -> j.getStatus() == null ? "" : j.getStatus().trim().toLowerCase())
                     .collect(Collectors.toSet());
 
             if (uniqueStatuses.size() > 1) {
-                // Hide all top action buttons
-                bulkStartBtn.setVisible(false);
-                bulkStartBtn.setManaged(false);
-                bulkCompleteBtn.setVisible(false);
-                bulkCompleteBtn.setManaged(false);
-                bulkInvoiceBtn.setVisible(false);
-                bulkInvoiceBtn.setManaged(false);
-                bulkCancelBtn.setVisible(false);
-                bulkCancelBtn.setManaged(false);
+                // Mixed statuses — hide action buttons
+                bulkStartBtn.setVisible(false);   bulkStartBtn.setManaged(false);
+                bulkCompleteBtn.setVisible(false); bulkCompleteBtn.setManaged(false);
+                bulkInvoiceBtn.setVisible(false);  bulkInvoiceBtn.setManaged(false);
+                bulkCancelBtn.setVisible(false);   bulkCancelBtn.setManaged(false);
 
                 if (!wasInvalidSelection) {
                     toast("Different status jobs can't be moved ❌");
@@ -290,36 +336,31 @@ public class ViewJobsController {
             } else {
                 wasInvalidSelection = false;
 
-                // Show all top action buttons
-                bulkStartBtn.setVisible(true);
-                bulkStartBtn.setManaged(true);
-                bulkCompleteBtn.setVisible(true);
-                bulkCompleteBtn.setManaged(true);
-                bulkInvoiceBtn.setVisible(true);
-                bulkInvoiceBtn.setManaged(true);
-                bulkCancelBtn.setVisible(true);
-                bulkCancelBtn.setManaged(true);
+                bulkStartBtn.setVisible(true);   bulkStartBtn.setManaged(true);
+                bulkCompleteBtn.setVisible(true); bulkCompleteBtn.setManaged(true);
+                bulkInvoiceBtn.setVisible(true);  bulkInvoiceBtn.setManaged(true);
+                bulkCancelBtn.setVisible(true);   bulkCancelBtn.setManaged(true);
 
-                // Calculate eligible counts
-                long draftCount = selected.stream().filter(j -> "Draft".equalsIgnoreCase(j.getStatus())).count();
+                long draftCount      = selected.stream().filter(j -> "Draft".equalsIgnoreCase(j.getStatus())).count();
                 long processingCount = selected.stream().filter(j -> "In Progress".equalsIgnoreCase(j.getStatus())).count();
-                long completedCount = selected.stream().filter(j -> "Completed".equalsIgnoreCase(j.getStatus())).count();
+                long completedCount  = selected.stream().filter(j -> "Completed".equalsIgnoreCase(j.getStatus())).count();
                 long anyButCancelled = selected.stream().filter(j -> !"Cancelled".equalsIgnoreCase(j.getStatus())).count();
 
-                bulkStartBtn.setText("Start Processing ("+draftCount+")");
+                bulkStartBtn.setText("Start Processing (" + draftCount + ")");
                 bulkStartBtn.setDisable(draftCount == 0);
 
-                bulkCompleteBtn.setText("Mark Completed ("+processingCount+")");
+                bulkCompleteBtn.setText("Mark Completed (" + processingCount + ")");
                 bulkCompleteBtn.setDisable(processingCount == 0);
 
-                bulkInvoiceBtn.setText("Generate Invoice ("+completedCount+")");
+                bulkInvoiceBtn.setText("Generate Invoice (" + completedCount + ")");
                 bulkInvoiceBtn.setDisable(completedCount == 0);
 
-                bulkCancelBtn.setText("Cancel Job ("+anyButCancelled+")");
+                bulkCancelBtn.setText("Cancel Job (" + anyButCancelled + ")");
                 bulkCancelBtn.setDisable(anyButCancelled == 0);
             }
         }
     }
+
 
     @FXML private void clearFilters() {
         searchField.clear();
@@ -512,23 +553,54 @@ public class ViewJobsController {
     // ✅ TABLE SETUP
     // =========================================================
     private void setupTableColumns() {
-        // 1. SELECT COLUMN
-        selectCol.setCellValueFactory(cellData -> {
-            javafx.beans.property.BooleanProperty prop = cellData.getValue().selectedProperty();
-            // Listen for changes to the checkbox
-            prop.addListener((obs, old, val) -> updateBulkActionBar());
-            return prop;
-        });
+        // 1. SELECT COLUMN — same pattern as ViewInvoicesController but matching Boolean type
+        selectCol.setCellValueFactory(c -> new javafx.beans.property.SimpleBooleanProperty(false));
         selectCol.setCellFactory(col -> new TableCell<Job, Boolean>() {
-            private final javafx.scene.control.CheckBox checkBox = new javafx.scene.control.CheckBox();
+            private final CheckBox checkBox = new CheckBox();
             private final HBox box = new HBox(checkBox);
+            private final javafx.beans.value.ChangeListener<Boolean> rowSelectionListener =
+                    (obs, oldVal, newVal) -> checkBox.setSelected(newVal != null && newVal);
+
             {
                 getStyleClass().add("table-cell-job-select");
                 box.setAlignment(Pos.CENTER);
-                box.setFillHeight(false);
                 box.setPadding(TABLE_LEAD_COL_PADDING);
                 setAlignment(Pos.CENTER);
+                checkBox.setFocusTraversable(false);
+                checkBox.setMnemonicParsing(false);
+
+                // Checkbox click: toggle selection; consume all mouse events so they
+                // do NOT bubble up to the row's MOUSE_PRESSED event filter.
+                checkBox.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
+                    if (e.getButton() == MouseButton.PRIMARY) {
+                        e.consume();
+                        TableRow<?> tableRow = getTableRow();
+                        if (tableRow != null && !tableRow.isEmpty()) {
+                            int index = tableRow.getIndex();
+                            jobsTable.requestFocus();
+                            if (jobsTable.getSelectionModel().isSelected(index)) {
+                                jobsTable.getSelectionModel().clearSelection(index);
+                            } else {
+                                jobsTable.getSelectionModel().select(index);
+                            }
+                        }
+                    }
+                });
+                checkBox.addEventFilter(MouseEvent.MOUSE_RELEASED, MouseEvent::consume);
+                checkBox.addEventFilter(MouseEvent.MOUSE_CLICKED,  MouseEvent::consume);
+
+                // Keep checkbox in sync with the row's built-in selection state
+                tableRowProperty().addListener((obs, oldRow, newRow) -> {
+                    if (oldRow != null) oldRow.selectedProperty().removeListener(rowSelectionListener);
+                    if (newRow != null) {
+                        newRow.selectedProperty().addListener(rowSelectionListener);
+                        checkBox.setSelected(newRow.isSelected());
+                    } else {
+                        checkBox.setSelected(false);
+                    }
+                });
             }
+
             @Override
             protected void updateItem(Boolean item, boolean empty) {
                 super.updateItem(item, empty);
@@ -536,15 +608,14 @@ public class ViewJobsController {
                     setGraphic(null);
                     setText(null);
                 } else {
-                    Job job = (Job) getTableRow().getItem();
-                    checkBox.selectedProperty().unbindBidirectional(job.selectedProperty());
-                    checkBox.selectedProperty().bindBidirectional(job.selectedProperty());
+                    TableRow<?> row = getTableRow();
+                    checkBox.setSelected(row != null && row.isSelected());
                     useGraphicOnlyCell(this);
                     setGraphic(box);
                 }
             }
         });
-        jobsTable.setEditable(true);
+        // Table does not need to be editable for checkbox-driven selection
 
         // 2. JOB DETAILS COLUMN (Target Vision Alignment)
         jobDetailsCol.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<Job>(cellData.getValue()));

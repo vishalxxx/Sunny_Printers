@@ -122,7 +122,7 @@ public class PdfInvoiceService {
             table.addCell(centerCell("", boldFont));
             table.addCell(centerCell("", boldFont));
             table.addCell(rightBoldCell("GRAND TOTAL", boldFont));
-            table.addCell(rightBoldCell(String.format("%.2f", invoice.getGrandTotal()), boldFont));
+            table.addCell(rightBoldCell("Rs. " + String.format("%.2f", invoice.getGrandTotal()), boldFont));
 
             // ---- OUTER BORDER ----
 //            PdfPCell wrapper = new PdfPCell(table);
@@ -317,7 +317,7 @@ public class PdfInvoiceService {
         table.addCell(centerCell("", boldFont));
         table.addCell(centerCell("", boldFont));
         table.addCell(rightBoldCell("GRAND TOTAL", boldFont));
-        table.addCell(rightBoldCell(String.format("%.2f", invoice.getGrandTotal()), boldFont));
+        table.addCell(rightBoldCell("Rs. " + String.format("%.2f", invoice.getGrandTotal()), boldFont));
 
         // 🔹 Outer border
         table.setTableEvent((tbl, widths, heights, headerRows, rowStart, canvases) -> {

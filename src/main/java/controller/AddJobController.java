@@ -247,6 +247,13 @@ public class AddJobController implements utils.DirtySupport {
 	private ComboBox<Supplier> ctpSupplierCombo;
 	@FXML
 	private ComboBox<String> ctpColorCombo;
+	@FXML
+	private RadioButton ctpOurRadio;
+	@FXML
+	private RadioButton ctpClientRadio;
+	private ToggleGroup ctpSourceGroup;
+	@FXML
+	private VBox ctpSupplierBox;
 
 	/* ========================= PAPER ========================= */
 
@@ -476,6 +483,9 @@ public class AddJobController implements utils.DirtySupport {
 		jobDate.setValue(java.time.LocalDate.now());
 		clientCombo.getSelectionModel().clearSelection();
 		pendingItems.clear();
+		if (ctpOurRadio != null) {
+			ctpOurRadio.setSelected(true);
+		}
 
 		updateItemCount();
 		updateFormState();
@@ -827,7 +837,7 @@ public class AddJobController implements utils.DirtySupport {
 		c.setNotes(ctpNotesArea.getText());
 
 		Supplier supplier = ctpSupplierCombo.getValue();
-		if (supplier != null) {
+		if (ctpOurRadio.isSelected() && supplier != null && supplier.getUuid() != null && !supplier.getUuid().isBlank()) {
 			c.setSupplierUuid(supplier.getUuid());
 		}
 
@@ -859,6 +869,9 @@ public class AddJobController implements utils.DirtySupport {
 		ctpSupplierCombo.setValue(null);
 		ctpNotesArea.clear();
 		ctpAmountField.clear();
+		if (ctpOurRadio != null) {
+			ctpOurRadio.setSelected(true);
+		}
 	}
 
 	@FXML
@@ -886,7 +899,7 @@ public class AddJobController implements utils.DirtySupport {
 		p.setSource(source);
 
 		Supplier supplier = paperSupplierCombo.getValue();
-		if (supplier != null) {
+		if (supplier != null && supplier.getUuid() != null && !supplier.getUuid().isBlank()) {
 			p.setSupplierUuid(supplier.getUuid());
 		}
 
@@ -1298,6 +1311,17 @@ public class AddJobController implements utils.DirtySupport {
 		paperClientRadio.setToggleGroup(paperSourceGroup);
 		paperOurRadio.setSelected(true);
 
+		// ✅ CTP source
+		ctpSourceGroup = new ToggleGroup();
+		ctpOurRadio.setToggleGroup(ctpSourceGroup);
+		ctpClientRadio.setToggleGroup(ctpSourceGroup);
+		ctpOurRadio.setSelected(true);
+
+		if (ctpSupplierBox != null) {
+			ctpSupplierBox.visibleProperty().bind(ctpOurRadio.selectedProperty());
+			ctpSupplierBox.managedProperty().bind(ctpOurRadio.selectedProperty());
+		}
+
 		// ✅ side toggle
 		sideGroup = new ToggleGroup();
 		sideDoubleBtn.setToggleGroup(sideGroup);
@@ -1328,6 +1352,11 @@ public class AddJobController implements utils.DirtySupport {
 		if (addJobBtn != null) {
 			addJobBtn.setDisable(true);
 		}
+		setupTabTraversal(printNotesArea);
+		setupTabTraversal(ctpNotesArea);
+		setupTabTraversal(paperNotesArea);
+		setupTabTraversal(bindingNotesArea);
+		setupTabTraversal(lamNotesArea);
 
 		// ✅ initial lock state
 		updateFormState();
@@ -1342,43 +1371,56 @@ public class AddJobController implements utils.DirtySupport {
 	private void populateCombos() {
 		// Product type (top header)
 		if (productTypeCombo != null) {
-			productTypeCombo.getItems().setAll("Sticker", "Brochure", "Label", "Book");
+			productTypeCombo.getItems().setAll("Sticker / Brochure / Label / Book", "Sticker", "Brochure", "Label", "Book");
 		}
 
 		// Printing
-		printUnitsCombo.getItems().setAll("Copies", "Sets", "Rim", "Pkt", "Sheet");
-		printColorCombo.getItems().setAll("1", "2", "4", "4+4", "Spot", "Custom");
+		printUnitsCombo.getItems().setAll("Select Unit", "Copies", "Sets", "Rim", "Pkt", "Sheet");
+		printColorCombo.getItems().setAll("Select Color", "1", "2", "4", "4+4", "Spot", "Custom");
 		printCtpCombo.getItems().setAll("With CTP (Computer to Plate)", "Without CTP");
 
 		// CTP
-		ctpSizeCombo.getItems().setAll("23x36", "25x36", "19x25", "18x23", "15x20", "20x30", "10x15");
-		ctpGaugeCombo.getItems().setAll("0.15mm", "0.28mm", "0.30mm");
-		ctpColorCombo.getItems().setAll("CMYK (Full)", "Cyan", "Magenta", "Yellow", "Black", "Spot Color");
-		ctpBackingCombo.getItems().setAll("Paper Backing", "Plastic Backing", "None");
+		ctpSizeCombo.getItems().setAll("Select Size", "23x36", "25x36", "19x25", "18x23", "15x20", "20x30", "10x15");
+		ctpGaugeCombo.getItems().setAll("Select Gauge", "0.15mm", "0.28mm", "0.30mm");
+		ctpColorCombo.getItems().setAll("Select Color", "CMYK (Full)", "Cyan", "Magenta", "Yellow", "Black", "Spot Color");
+		ctpBackingCombo.getItems().setAll("Select Backing", "Paper Backing", "Plastic Backing", "None");
 
 		// Paper
-		paperUnitsCombo.getItems().setAll("Rim", "Sheet", "Pkt", "Kg");
-		paperSizeCombo.getItems().setAll("23x36", "25x36", "18x23", "20x30", "Custom");
-		paperGsmCombo.getItems().setAll("60", "70", "80", "90", "100", "130", "170", "210", "250", "300");
-		paperTypeCombo.getItems().setAll("Art Paper", "Art Card", "Maplitho", "Sunshine", "Chromo", "Mirror Coat", "Texture", "Bond");
+		paperUnitsCombo.getItems().setAll("Select Unit", "Rim", "Sheet", "Pkt", "Kg");
+		paperSizeCombo.getItems().setAll("Select Size", "23x36", "25x36", "18x23", "20x30", "Custom");
+		paperGsmCombo.getItems().setAll("Select GSM", "60", "70", "80", "90", "100", "130", "170", "210", "250", "300");
+		paperTypeCombo.getItems().setAll("Select Type", "Art Paper", "Art Card", "Maplitho", "Sunshine", "Chromo", "Mirror Coat", "Texture", "Bond");
 
 		// Binding
-		bindingProcessCombo.getItems().setAll("Center Pin", "Perfect Binding", "Hard Bound", "Spiral", "Wire-O", "Crease & Fold", "Cutting Only");
+		bindingProcessCombo.getItems().setAll("Select Binding", "Center Pin", "Perfect Binding", "Hard Bound", "Spiral", "Wire-O", "Crease & Fold", "Cutting Only");
 
 		// Lamination
-		lamUnitCombo.getItems().setAll("Sq. Inch", "Piece", "Sheet", "Meter");
-		lamTypeCombo.getItems().setAll("Gloss", "Matt", "Velvet", "Thermal Gloss", "Thermal Matt", "UV Coating");
-		lamSizeCombo.getItems().setAll("23x36", "25x36", "18x23", "20x30", "Custom");
+		lamUnitCombo.getItems().setAll("Select Unit", "Sq. Inch", "Piece", "Sheet", "Meter");
+		lamTypeCombo.getItems().setAll("Select Type", "Gloss", "Matt", "Velvet", "Thermal Gloss", "Thermal Matt", "UV Coating");
+		lamSizeCombo.getItems().setAll("Select Size", "23x36", "25x36", "18x23", "20x30", "Custom");
 	}
 
 	private void loadSuppliers() {
-		ctpSupplierCombo.getItems().setAll(supplierService.getSuppliersByType("CTP"));
+		java.util.List<Supplier> ctpSuppliers = new java.util.ArrayList<>();
+		Supplier selectCtpSupplier = new Supplier();
+		selectCtpSupplier.setUuid("");
+		selectCtpSupplier.setbusinessName("Select Supplier");
+		selectCtpSupplier.setName("");
+		ctpSuppliers.add(selectCtpSupplier);
+		ctpSuppliers.addAll(supplierService.getSuppliersByType("CTP"));
+		ctpSupplierCombo.getItems().setAll(ctpSuppliers);
 
 		ctpSupplierCombo.setCellFactory(cb -> new ListCell<>() {
 			@Override
 			protected void updateItem(Supplier s, boolean empty) {
 				super.updateItem(s, empty);
-				setText(empty || s == null ? null : s.getbusinessName() + " | " + s.getName());
+				if (empty || s == null) {
+					setText(null);
+				} else if (s.getUuid() == null || s.getUuid().isBlank()) {
+					setText("Select Supplier");
+				} else {
+					setText(s.getbusinessName() + " | " + s.getName());
+				}
 			}
 		});
 
@@ -1386,17 +1428,36 @@ public class AddJobController implements utils.DirtySupport {
 			@Override
 			protected void updateItem(Supplier s, boolean empty) {
 				super.updateItem(s, empty);
-				setText(empty || s == null ? null : s.getbusinessName() + " | " + s.getName());
+				if (empty || s == null) {
+					setText(null);
+				} else if (s.getUuid() == null || s.getUuid().isBlank()) {
+					setText("Select Supplier");
+				} else {
+					setText(s.getbusinessName() + " | " + s.getName());
+				}
 			}
 		});
 
-		paperSupplierCombo.getItems().setAll(supplierService.getSuppliersByType("Paper"));
+		java.util.List<Supplier> paperSuppliers = new java.util.ArrayList<>();
+		Supplier selectPaperSupplier = new Supplier();
+		selectPaperSupplier.setUuid("");
+		selectPaperSupplier.setbusinessName("Select Supplier");
+		selectPaperSupplier.setName("");
+		paperSuppliers.add(selectPaperSupplier);
+		paperSuppliers.addAll(supplierService.getSuppliersByType("Paper"));
+		paperSupplierCombo.getItems().setAll(paperSuppliers);
 
 		paperSupplierCombo.setCellFactory(cb -> new ListCell<>() {
 			@Override
 			protected void updateItem(Supplier s, boolean empty) {
 				super.updateItem(s, empty);
-				setText(empty || s == null ? null : s.getbusinessName() + " | " + s.getName());
+				if (empty || s == null) {
+					setText(null);
+				} else if (s.getUuid() == null || s.getUuid().isBlank()) {
+					setText("Select Supplier");
+				} else {
+					setText(s.getbusinessName() + " | " + s.getName());
+				}
 			}
 		});
 
@@ -1404,7 +1465,13 @@ public class AddJobController implements utils.DirtySupport {
 			@Override
 			protected void updateItem(Supplier s, boolean empty) {
 				super.updateItem(s, empty);
-				setText(empty || s == null ? null : s.getbusinessName() + " | " + s.getName());
+				if (empty || s == null) {
+					setText(null);
+				} else if (s.getUuid() == null || s.getUuid().isBlank()) {
+					setText("Select Supplier");
+				} else {
+					setText(s.getbusinessName() + " | " + s.getName());
+				}
 			}
 		});
 	}
@@ -1420,5 +1487,59 @@ public class AddJobController implements utils.DirtySupport {
 	private void toast(String message) {
 		Stage stage = (Stage) ((Node) clientCombo).getScene().getWindow();
 		utils.Toast.show(stage, message);
+	}
+
+	private void setupTabTraversal(TextArea textArea) {
+		if (textArea == null) return;
+		textArea.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+			if (event.getCode() == javafx.scene.input.KeyCode.TAB && !event.isControlDown() && !event.isAltDown()) {
+				event.consume();
+				javafx.scene.Scene scene = textArea.getScene();
+				if (scene != null) {
+					java.util.List<javafx.scene.Node> focusable = new java.util.ArrayList<>();
+					findFocusableNodes(scene.getRoot(), focusable);
+					if (!focusable.isEmpty()) {
+						int index = focusable.indexOf(textArea);
+						if (index >= 0) {
+							int nextIndex;
+							if (event.isShiftDown()) {
+								nextIndex = index - 1;
+								if (nextIndex < 0) {
+									nextIndex = focusable.size() - 1;
+								}
+							} else {
+								nextIndex = index + 1;
+								if (nextIndex >= focusable.size()) {
+									nextIndex = 0;
+								}
+							}
+							focusable.get(nextIndex).requestFocus();
+						}
+					}
+				}
+			}
+		});
+	}
+
+	private void findFocusableNodes(javafx.scene.Parent parent, java.util.List<javafx.scene.Node> result) {
+		for (javafx.scene.Node node : parent.getChildrenUnmodifiable()) {
+			if (node.isFocusTraversable() && isPhysicallyVisibleAndEnabled(node)) {
+				result.add(node);
+			}
+			if (node instanceof javafx.scene.Parent p) {
+				findFocusableNodes(p, result);
+			}
+		}
+	}
+
+	private boolean isPhysicallyVisibleAndEnabled(javafx.scene.Node node) {
+		javafx.scene.Node current = node;
+		while (current != null) {
+			if (!current.isVisible() || current.isDisable()) {
+				return false;
+			}
+			current = current.getParent();
+		}
+		return true;
 	}
 }

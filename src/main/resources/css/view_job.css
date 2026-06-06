@@ -892,6 +892,18 @@
 .invoice-jobs-table-premium .scroll-bar:vertical .thumb,
 .invoice-jobs-table-premium .scroll-bar:horizontal .thumb { -fx-background-color: #D8D2CC; -fx-background-radius: 999; }
 
+.invoice-jobs-table-premium .scroll-bar .increment-button,
+.invoice-jobs-table-premium .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+.invoice-jobs-table-premium .scroll-bar .increment-arrow,
+.invoice-jobs-table-premium .scroll-bar .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-shape: "";
+}
+
 /* Hide empty rows */
 .invoice-jobs-table-premium .table-row-cell:empty {
     -fx-background-color: transparent;
@@ -1033,6 +1045,13 @@
     -fx-background-color: #FAF9F6;
 }
 
+.invoice-jobs-table-premium .table-row-cell:selected,
+.invoice-jobs-table-premium .table-row-cell:filled:selected,
+.invoice-jobs-table-premium .table-row-cell:selected .table-cell,
+.invoice-jobs-table-premium .table-row-cell:filled:selected .table-cell {
+    -fx-background-color: #FFEDD5 !important;
+}
+
 .invoice-jobs-table-premium .table-cell {
     -fx-border-width: 0;
     -fx-padding: 0 16;
@@ -1157,7 +1176,7 @@
 
 .view-invoice-jobs-root .invoice-jobs-table-premium {
     /* key knob: more rows visible */
-    -fx-fixed-cell-size: 48;
+    -fx-fixed-cell-size: 80;
 }
 
 .view-invoice-jobs-root .invoice-jobs-table-premium .column-header {

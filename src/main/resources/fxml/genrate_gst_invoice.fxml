@@ -23,7 +23,10 @@
         <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8" />
 
         <!-- ===== Top Actions ===== -->
-        <HBox spacing="12" alignment="CENTER_RIGHT" style="-fx-padding: 10 0 10 0;">
+        <HBox spacing="12" alignment="CENTER_RIGHT" style="-fx-padding: 0 0 6 0;">
+            <VBox.margin>
+                <Insets top="-10"/>
+            </VBox.margin>
             <Button fx:id="btnSaveDraft" onAction="#handleSaveDraft" text="Save Draft" styleClass="action-btn-custom, btn-light-orange" prefWidth="120"/>
             <Button fx:id="btnGenerateInvoice" onAction="#handleGenerateInvoice" text="Generate Invoice" styleClass="action-btn-custom, btn-terracotta" prefWidth="150"/>
         </HBox>
@@ -298,13 +301,13 @@
                 <Button fx:id="btnClearAll" onAction="#handleClearAll" text="Clear All" styleClass="gst-btn-chip"/>
             </HBox>
 
-            <TableView fx:id="tableItems" styleClass="invoice-jobs-table-premium, gst-table" prefHeight="240">
+            <TableView fx:id="tableItems" styleClass="invoice-jobs-table-premium, gst-table" prefHeight="450">
                 <columnResizePolicy>
                     <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />
                 </columnResizePolicy>
                 <columns>
                     <TableColumn text="#" prefWidth="45"/>
-                    <TableColumn text="Description of Goods / Services" prefWidth="320"/>
+                    <TableColumn text="Description of Goods / Services" prefWidth="320" styleClass="gst-description-col"/>
                     <TableColumn text="HSN / SAC" prefWidth="100"/>
                     <TableColumn text="Qty" prefWidth="90"/>
                     <TableColumn text="Unit" prefWidth="80"/>
@@ -342,13 +345,13 @@
 
                 <VBox spacing="10" HBox.hgrow="ALWAYS" styleClass="gst-subcard">
                     <Label text="Tax Amount (in words)" styleClass="gst-subtitle"/>
-                    <Label text="INR Four Thousand Eight Hundred Seventy Eight and Forty Seven paise Only" wrapText="true" styleClass="gst-muted"/>
+                    <Label fx:id="lblTaxAmountWords" text="—" wrapText="true" styleClass="gst-tax-words"/>
                 </VBox>
             </HBox>
         </VBox>
 
         <HBox spacing="12">
-            <VBox spacing="10" HBox.hgrow="ALWAYS" styleClass="gst-card">
+            <VBox spacing="10" HBox.hgrow="ALWAYS" styleClass="gst-card" prefWidth="300">
                 <HBox alignment="CENTER_LEFT" spacing="10">
                     <Region styleClass="gst-card-icon, icon-terms"/>
                     <Label text="Terms &amp; Conditions" styleClass="gst-card-title"/>
@@ -356,7 +359,7 @@
                 <Label fx:id="lblTermsFooter" wrapText="true" styleClass="gst-muted"/>
             </VBox>
 
-            <VBox spacing="10" HBox.hgrow="ALWAYS" styleClass="gst-card">
+            <VBox spacing="10" HBox.hgrow="ALWAYS" styleClass="gst-card" prefWidth="300">
                 <HBox alignment="CENTER_LEFT" spacing="10">
                     <Region styleClass="gst-card-icon, icon-bank"/>
                     <Label text="Bank Details" styleClass="gst-card-title"/>

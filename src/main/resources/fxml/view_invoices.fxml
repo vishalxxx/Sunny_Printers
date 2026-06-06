@@ -62,6 +62,10 @@
                 <Label text="Invoice Status" styleClass="filter-label-taste"/>
                 <ComboBox fx:id="statusComboBox" promptText="All" styleClass="taste-combo" maxWidth="Infinity"/>
             </VBox>
+            <VBox spacing="4" minWidth="140">
+                <Label text="Document Type" styleClass="filter-label-taste"/>
+                <ComboBox fx:id="typeComboBox" promptText="All" styleClass="taste-combo" maxWidth="Infinity"/>
+            </VBox>
             <VBox spacing="4" minWidth="130">
                 <Label text="From Date" styleClass="filter-label-taste"/>
                 <DatePicker fx:id="startDatePicker" styleClass="taste-datepicker" maxWidth="Infinity" editable="false"/>
@@ -90,9 +94,9 @@
                             <TableColumn fx:id="colSelect" minWidth="44" maxWidth="44" prefWidth="44" resizable="false" styleClass="vi-chead-center" />
                             <TableColumn fx:id="colInvoiceNo" text="INVOICE ID" minWidth="120" prefWidth="150" />
                             <TableColumn fx:id="colClient" text="CLIENT" minWidth="200" prefWidth="280" />
-                            <TableColumn fx:id="colIssueDate" text="ISSUE DATE" minWidth="110" prefWidth="130" />
-                            <TableColumn fx:id="colDueDate" text="DUE DATE" minWidth="110" prefWidth="130" />
-                            <TableColumn fx:id="colAmount" text="AMOUNT" minWidth="120" prefWidth="140" styleClass="vi-chead-right" />
+                            <TableColumn fx:id="colIssueDate" text="ISSUE DATE" minWidth="110" prefWidth="130" styleClass="vi-chead-center" />
+                            <TableColumn fx:id="colDueDate" text="DUE DATE" minWidth="110" prefWidth="130" styleClass="vi-chead-center" />
+                            <TableColumn fx:id="colAmount" text="AMOUNT" minWidth="120" prefWidth="140" styleClass="vi-chead-center" />
                             <TableColumn fx:id="colStatus" text="STATUS" minWidth="100" prefWidth="120" styleClass="vi-chead-center" />
                             <TableColumn fx:id="colActions" text="ACTIONS" minWidth="64" maxWidth="90" prefWidth="80" resizable="false" styleClass="vi-chead-center" />
                         </columns>

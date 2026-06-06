@@ -47,7 +47,7 @@
     <Region prefHeight="8" /> <!-- Spacer -->
 
     <!-- 3. INTEGRATED BULK ACTION BAR (Anchored) -->
-    <VBox fx:id="bulkActionBarContainer" visible="false" managed="false" styleClass="bulk-bar-container">
+    <VBox fx:id="bulkActionBarContainer" visible="true" managed="true" styleClass="bulk-bar-container">
         <HBox fx:id="bulkActionBar" styleClass="bulk-bar-integrated" alignment="CENTER_LEFT" spacing="16">
             <VBox spacing="2">
                 <Label fx:id="selectionCountLabel" text="0 jobs selected" styleClass="bulk-count-label" />

@@ -31,63 +31,107 @@ import java.util.Set;
 
 public class GenerateGSTInvoiceController implements Initializable {
 
-    @FXML private Button btnSaveDraft;
-    @FXML private Button btnGenerateInvoice;
+    @FXML
+    private Button btnSaveDraft;
+    @FXML
+    private Button btnGenerateInvoice;
 
-    @FXML private HBox breadcrumbContainer;
-    @FXML private Button btnEditTerms;
-    
-    @FXML private TextField txtInvoiceNo;
-    @FXML private DatePicker dpInvoiceDate;
-    @FXML private ComboBox<String> comboPlaceOfSupply;
-    @FXML private ComboBox<String> comboReverseCharge;
-    @FXML private ComboBox<String> comboPaymentTerms;
-    @FXML private DatePicker dpDueDate;
-    @FXML private TextField txtVehicleDispatch;
-    @FXML private TextField txtPoNo;
+    @FXML
+    private HBox breadcrumbContainer;
+    @FXML
+    private Button btnEditTerms;
 
-    @FXML private ComboBox<String>       comboCompanyFrom;
-    @FXML private ComboBox<model.Client> comboShipTo;
-    @FXML private ComboBox<model.Client> comboBillTo;
+    @FXML
+    private TextField txtInvoiceNo;
+    @FXML
+    private DatePicker dpInvoiceDate;
+    @FXML
+    private ComboBox<String> comboPlaceOfSupply;
+    @FXML
+    private ComboBox<String> comboReverseCharge;
+    @FXML
+    private ComboBox<String> comboPaymentTerms;
+    @FXML
+    private DatePicker dpDueDate;
+    @FXML
+    private TextField txtVehicleDispatch;
+    @FXML
+    private TextField txtPoNo;
+
+    @FXML
+    private ComboBox<String> comboCompanyFrom;
+    @FXML
+    private ComboBox<model.Client> comboShipTo;
+    @FXML
+    private ComboBox<model.Client> comboBillTo;
 
     // Dynamic address labels — Company (From)
-    @FXML private Label lblCompanyAddress;
-    @FXML private Label lblCompanyGstin;
-    @FXML private Label lblCompanyState;
-    @FXML private Label lblCompanyEmail;
+    @FXML
+    private Label lblCompanyAddress;
+    @FXML
+    private Label lblCompanyGstin;
+    @FXML
+    private Label lblCompanyState;
+    @FXML
+    private Label lblCompanyEmail;
 
     // Dynamic address labels — Ship To
-    @FXML private Label lblShipToAddress;
-    @FXML private Label lblShipToGstin;
-    @FXML private Label lblShipToState;
+    @FXML
+    private Label lblShipToAddress;
+    @FXML
+    private Label lblShipToGstin;
+    @FXML
+    private Label lblShipToState;
 
     // Dynamic address labels — Bill To
-    @FXML private Label lblBillToAddress;
-    @FXML private Label lblBillToGstin;
-    @FXML private Label lblBillToState;
+    @FXML
+    private Label lblBillToAddress;
+    @FXML
+    private Label lblBillToGstin;
+    @FXML
+    private Label lblBillToState;
 
-    @FXML private FlowPane flowJobsContainer;
+    @FXML
+    private FlowPane flowJobsContainer;
 
-    @FXML private TableView<ItemRow> tableItems;
-    @FXML private Button btnAddItem;
-    @FXML private Button btnImportJob;
-    @FXML private Button btnClearAll;
+    @FXML
+    private TableView<ItemRow> tableItems;
+    @FXML
+    private Button btnAddItem;
+    @FXML
+    private Button btnImportJob;
+    @FXML
+    private Button btnClearAll;
 
-    @FXML private TableView<HsnSummaryRow> tableHsnSummary;
-    @FXML private ComboBox<String> comboBankDetails;
+    @FXML
+    private TableView<HsnSummaryRow> tableHsnSummary;
+    @FXML
+    private ComboBox<String> comboBankDetails;
 
     // Invoice Summary labels
-    @FXML private Label lblTotalQty;
-    @FXML private Label lblTotalItems;
-    @FXML private Label lblTaxable;
-    @FXML private Label lblCgst;
-    @FXML private Label lblSgst;
-    @FXML private Label lblIgst;
-    @FXML private Label lblRoundOff;
-    @FXML private Label lblGrandTotal;
-    @FXML private Label lblGrandTotalWords;
+    @FXML
+    private Label lblTotalQty;
+    @FXML
+    private Label lblTotalItems;
+    @FXML
+    private Label lblTaxable;
+    @FXML
+    private Label lblCgst;
+    @FXML
+    private Label lblSgst;
+    @FXML
+    private Label lblIgst;
+    @FXML
+    private Label lblRoundOff;
+    @FXML
+    private Label lblGrandTotal;
+    @FXML
+    private Label lblGrandTotalWords;
+    @FXML
+    private Label lblTaxAmountWords;
 
-    @FXML private Label lblTermsFooter;
+    @FXML
+    private Label lblTermsFooter;
 
     private final service.InvoiceMasterService invoiceService = new service.InvoiceMasterService();
     private final service.GstPdfInvoiceService pdfService = new service.GstPdfInvoiceService();
@@ -124,6 +168,10 @@ public class GenerateGSTInvoiceController implements Initializable {
         refreshInvoiceNoPreview();
     }
 
+    private String fmtMoney(double value) {
+        return String.format("₹ %,.2f", value);
+    }
+
     private void loadPrintingHsnOptions() {
         printingHsnOptions.clear();
         printingHsnInfoByCode.clear();
@@ -157,8 +205,7 @@ public class GenerateGSTInvoiceController implements Initializable {
                 "• GOODS ONCE SOLD WILL NOT BE TAKEN BACK.",
                 "• INTEREST @24% P.A WILL BE CHARGED IF THE AMOUNT IS NOT PAID ON DEMAND.",
                 "• ALL DISPUTES SUBJECT TO DELHI JURISDICTION.",
-                "• ONLY AFTER PRINTING THE PLATES WILL NOT BE RETURNED."
-        );
+                "• ONLY AFTER PRINTING THE PLATES WILL NOT BE RETURNED.");
         if (termsText.get() == null || termsText.get().isBlank()) {
             termsText.set(defaults);
         }
@@ -174,45 +221,257 @@ public class GenerateGSTInvoiceController implements Initializable {
         }
 
         tableItems.setItems(itemRows);
+        tableItems.setEditable(true);
 
         List<TableColumn<ItemRow, ?>> cols = (List<TableColumn<ItemRow, ?>>) (List<?>) tableItems.getColumns();
         if (cols == null || cols.isEmpty()) {
             return;
         }
 
-        // 0 #, 1 Description, 2 HSN/SAC, 3 Qty, 4 Unit, 5 Rate, 6 Taxable, 7 GST%, 8 CGST, 9 SGST, 10 IGST, 11 Total, 12 Action
-        if (cols.size() >= 1) ((TableColumn<ItemRow, Number>) cols.get(0)).setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getSlNo()));
-        if (cols.size() >= 2) ((TableColumn<ItemRow, String>) cols.get(1)).setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getDescription()));
-        if (cols.size() >= 3) ((TableColumn<ItemRow, String>) cols.get(2)).setCellValueFactory(c -> c.getValue().hsnSacProperty());
-        if (cols.size() >= 4) ((TableColumn<ItemRow, String>) cols.get(3)).setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getQty()));
-        if (cols.size() >= 5) ((TableColumn<ItemRow, String>) cols.get(4)).setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getUnit()));
-        if (cols.size() >= 6) ((TableColumn<ItemRow, String>) cols.get(5)).setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getRate()));
-        if (cols.size() >= 7) ((TableColumn<ItemRow, String>) cols.get(6)).setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getTaxable()));
-        if (cols.size() >= 8) ((TableColumn<ItemRow, String>) cols.get(7)).setCellValueFactory(c -> c.getValue().gstPercentProperty());
-        if (cols.size() >= 9) ((TableColumn<ItemRow, String>) cols.get(8)).setCellValueFactory(c -> c.getValue().cgstProperty());
-        if (cols.size() >= 10) ((TableColumn<ItemRow, String>) cols.get(9)).setCellValueFactory(c -> c.getValue().sgstProperty());
-        if (cols.size() >= 11) ((TableColumn<ItemRow, String>) cols.get(10)).setCellValueFactory(c -> c.getValue().igstProperty());
-        if (cols.size() >= 12) ((TableColumn<ItemRow, String>) cols.get(11)).setCellValueFactory(c -> c.getValue().totalProperty());
+        // 0 #, 1 Description, 2 HSN/SAC, 3 Qty, 4 Unit, 5 Rate, 6 Taxable, 7 GST%, 8
+        // CGST, 9 SGST, 10 IGST, 11 Total, 12 Action
+        if (cols.size() >= 1)
+            ((TableColumn<ItemRow, Number>) cols.get(0))
+                    .setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getSlNo()));
+        
+        if (cols.size() >= 2) {
+            TableColumn<ItemRow, String> col = (TableColumn<ItemRow, String>) cols.get(1);
+            col.setCellValueFactory(c -> c.getValue().descriptionProperty());
+            col.setCellFactory(tc -> {
+                return new javafx.scene.control.TableCell<>() {
+                    private javafx.scene.control.TextArea textArea;
+                    private javafx.scene.text.Text textNode;
 
-        // Enable editable HSN/SAC dropdown (column index 2)
+                    {
+                        getStyleClass().add("gst-description-col");
+                        getStyleClass().add("gst-editable-text-cell");
+                    }
+
+                    @Override
+                    public void startEdit() {
+                        if (!isEmpty()) {
+                            super.startEdit();
+                            if (textArea == null) {
+                                textArea = new javafx.scene.control.TextArea(getItem());
+                                textArea.setWrapText(true);
+                                textArea.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+                                    if (!isFocused) {
+                                        commitEdit(textArea.getText());
+                                    }
+                                });
+                            } else {
+                                textArea.setText(getItem());
+                            }
+                            double cellHeight = getHeight();
+                            double verticalPadding = getInsets().getTop() + getInsets().getBottom();
+                            textArea.setPrefHeight(Math.max(60, cellHeight - verticalPadding));
+                            setText(null);
+                            setGraphic(textArea);
+                            textArea.selectAll();
+                        }
+                    }
+
+                    @Override
+                    public void cancelEdit() {
+                        super.cancelEdit();
+                        setText(null);
+                        setGraphic(textNode);
+                    }
+
+                    @Override
+                    public void updateItem(String item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (empty || item == null) {
+                            setText(null);
+                            setGraphic(null);
+                        } else {
+                            if (textNode == null) {
+                                textNode = new javafx.scene.text.Text(item);
+                                textNode.wrappingWidthProperty().bind(getTableColumn().widthProperty().subtract(24));
+                                textNode.setLineSpacing(3.0);
+                                textNode.setStyle("-fx-fill: #3E312D; -fx-font-size: 11px;");
+                            } else {
+                                textNode.setText(item);
+                            }
+
+                            if (isEditing()) {
+                                if (textArea != null) {
+                                    textArea.setText(item);
+                                }
+                                setText(null);
+                                setGraphic(textArea);
+                            } else {
+                                setText(null);
+                                setGraphic(textNode);
+                            }
+                        }
+                    }
+                };
+            });
+            col.setOnEditCommit(ev -> {
+                ItemRow row = ev.getRowValue();
+                if (row != null) {
+                    row.setDescription(ev.getNewValue());
+                }
+            });
+            col.setEditable(true);
+        }
+        
         if (cols.size() >= 3) {
-            tableItems.setEditable(true);
             TableColumn<ItemRow, String> hsnCol = (TableColumn<ItemRow, String>) cols.get(2);
+            hsnCol.setCellValueFactory(c -> c.getValue().hsnSacProperty());
+            hsnCol.setCellFactory(tc -> {
+                ComboBoxTableCell<ItemRow, String> cell = new ComboBoxTableCell<>(printingHsnOptions) {
+                    {
+                        setOnMouseClicked(e -> {
+                            if (!isEmpty()) {
+                                getTableView().edit(getIndex(), getTableColumn());
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void startEdit() {
+                        super.startEdit();
+                        if (isEditing() && getGraphic() instanceof ComboBox<?> comboBox) {
+                            comboBox.show();
+                        }
+                    }
+
+                    @Override
+                    public void updateItem(String item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (empty || item == null) {
+                            setGraphic(null);
+                        } else if (!isEditing()) {
+                            HBox hbox = new HBox(5);
+                            hbox.setAlignment(Pos.CENTER);
+                            Label label = new Label(item);
+                            label.setStyle("-fx-text-fill: #3E312D; -fx-font-size: 12px; -fx-font-weight: 600;");
+                            javafx.scene.layout.Region arrow = new javafx.scene.layout.Region();
+                            arrow.setStyle("-fx-background-color: #8E7A6B; -fx-shape: 'M 0 0 L 4 4 L 8 0 Z'; -fx-min-width: 8; -fx-min-height: 5; -fx-max-width: 8; -fx-max-height: 5;");
+                            hbox.getChildren().addAll(label, arrow);
+                            setGraphic(hbox);
+                            setText(null);
+                        }
+                    }
+                };
+                cell.getStyleClass().add("gst-editable-combo-cell");
+                return cell;
+            });
             hsnCol.setEditable(true);
-            hsnCol.setCellFactory(ComboBoxTableCell.forTableColumn(printingHsnOptions));
             hsnCol.setOnEditCommit(ev -> {
                 ItemRow row = ev.getRowValue();
                 if (row == null) return;
-
                 String code = ev.getNewValue() != null ? ev.getNewValue().trim() : "—";
                 row.setHsnSac(code);
-
                 model.HsnSacInfo info = printingHsnInfoByCode.get(code);
                 double gstRate = info != null && info.getGstRate() > 0 ? info.getGstRate() : DEFAULT_GST_RATE;
                 row.recalcTaxes(gstRate, isIntraStateSupply());
                 refreshHsnSummaryFromItemRows();
+                refreshInvoiceSummary();
             });
         }
+        
+        if (cols.size() >= 4) {
+            TableColumn<ItemRow, String> col = (TableColumn<ItemRow, String>) cols.get(3);
+            col.setCellValueFactory(c -> c.getValue().qtyProperty());
+            col.setCellFactory(tc -> {
+                TableCell<ItemRow, String> cell = javafx.scene.control.cell.TextFieldTableCell.<ItemRow>forTableColumn().call(tc);
+                cell.getStyleClass().add("gst-editable-text-cell");
+                return cell;
+            });
+            col.setEditable(true);
+            col.setOnEditCommit(ev -> {
+                ItemRow row = ev.getRowValue();
+                if (row != null) {
+                    row.setQty(ev.getNewValue());
+                    refreshHsnSummaryFromItemRows();
+                    refreshInvoiceSummary();
+                }
+            });
+        }
+        
+        if (cols.size() >= 5) {
+            TableColumn<ItemRow, String> col = (TableColumn<ItemRow, String>) cols.get(4);
+            col.setCellValueFactory(c -> c.getValue().unitProperty());
+            col.setCellFactory(tc -> {
+                ComboBoxTableCell<ItemRow, String> cell = new ComboBoxTableCell<>(FXCollections.observableArrayList("PCS", "NOS", "PKTS", "BOX", "KGS")) {
+                    {
+                        setOnMouseClicked(e -> {
+                            if (!isEmpty()) {
+                                getTableView().edit(getIndex(), getTableColumn());
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void startEdit() {
+                        super.startEdit();
+                        if (isEditing() && getGraphic() instanceof ComboBox<?> comboBox) {
+                            comboBox.show();
+                        }
+                    }
+
+                    @Override
+                    public void updateItem(String item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (empty || item == null) {
+                            setGraphic(null);
+                        } else if (!isEditing()) {
+                            HBox hbox = new HBox(5);
+                            hbox.setAlignment(Pos.CENTER);
+                            Label label = new Label(item);
+                            label.setStyle("-fx-text-fill: #3E312D; -fx-font-size: 12px; -fx-font-weight: 600;");
+                            javafx.scene.layout.Region arrow = new javafx.scene.layout.Region();
+                            arrow.setStyle("-fx-background-color: #8E7A6B; -fx-shape: 'M 0 0 L 4 4 L 8 0 Z'; -fx-min-width: 8; -fx-min-height: 5; -fx-max-width: 8; -fx-max-height: 5;");
+                            hbox.getChildren().addAll(label, arrow);
+                            setGraphic(hbox);
+                            setText(null);
+                        }
+                    }
+                };
+                cell.getStyleClass().add("gst-editable-combo-cell");
+                return cell;
+            });
+            col.setEditable(true);
+            col.setOnEditCommit(ev -> {
+                ItemRow row = ev.getRowValue();
+                if (row != null) row.setUnit(ev.getNewValue());
+            });
+        }
+        
+        if (cols.size() >= 6) {
+            TableColumn<ItemRow, String> col = (TableColumn<ItemRow, String>) cols.get(5);
+            col.setCellValueFactory(c -> c.getValue().rateProperty());
+            col.setCellFactory(tc -> {
+                TableCell<ItemRow, String> cell = javafx.scene.control.cell.TextFieldTableCell.<ItemRow>forTableColumn().call(tc);
+                cell.getStyleClass().add("gst-editable-text-cell");
+                return cell;
+            });
+            col.setEditable(true);
+            col.setOnEditCommit(ev -> {
+                ItemRow row = ev.getRowValue();
+                if (row != null) {
+                    row.setRate(ev.getNewValue());
+                    refreshHsnSummaryFromItemRows();
+                    refreshInvoiceSummary();
+                }
+            });
+        }
+
+        if (cols.size() >= 7)
+            ((TableColumn<ItemRow, String>) cols.get(6)).setCellValueFactory(c -> c.getValue().taxableProperty());
+        if (cols.size() >= 8)
+            ((TableColumn<ItemRow, String>) cols.get(7)).setCellValueFactory(c -> c.getValue().gstPercentProperty());
+        if (cols.size() >= 9)
+            ((TableColumn<ItemRow, String>) cols.get(8)).setCellValueFactory(c -> c.getValue().cgstProperty());
+        if (cols.size() >= 10)
+            ((TableColumn<ItemRow, String>) cols.get(9)).setCellValueFactory(c -> c.getValue().sgstProperty());
+        if (cols.size() >= 11)
+            ((TableColumn<ItemRow, String>) cols.get(10)).setCellValueFactory(c -> c.getValue().igstProperty());
+        if (cols.size() >= 12)
+            ((TableColumn<ItemRow, String>) cols.get(11)).setCellValueFactory(c -> c.getValue().totalProperty());
     }
 
     private void setupInitialData() {
@@ -263,11 +522,13 @@ public class GenerateGSTInvoiceController implements Initializable {
     }
 
     private static int parsePaymentTermDays(String term) {
-        if (term == null) return 0;
+        if (term == null)
+            return 0;
         String t = term.trim().toLowerCase();
         // Accept: "30", "30 days", "Net 30", "NET30"
         String digits = t.replaceAll("[^0-9]", "");
-        if (digits.isBlank()) return 0;
+        if (digits.isBlank())
+            return 0;
         try {
             return Integer.parseInt(digits);
         } catch (NumberFormatException e) {
@@ -284,7 +545,8 @@ public class GenerateGSTInvoiceController implements Initializable {
                 : java.time.LocalDate.now();
         new Thread(() -> {
             try (Connection con = utils.DBConnection.getConnection()) {
-                String preview = settingsService.peekNextMasterNumberDisplay(con, model.MasterDocumentSeries.GST_INVOICE, d);
+                String preview = settingsService.peekNextMasterNumberDisplay(con,
+                        model.MasterDocumentSeries.GST_INVOICE, d);
                 javafx.application.Platform.runLater(() -> txtInvoiceNo.setText(preview));
             } catch (Exception e) {
                 javafx.application.Platform.runLater(() -> txtInvoiceNo.setText("--"));
@@ -308,13 +570,15 @@ public class GenerateGSTInvoiceController implements Initializable {
         if (comboBillTo != null) {
             comboBillTo.getItems().setAll(clients);
             comboBillTo.setCellFactory(cb -> new ListCell<>() {
-                @Override protected void updateItem(model.Client item, boolean empty) {
+                @Override
+                protected void updateItem(model.Client item, boolean empty) {
                     super.updateItem(item, empty);
                     setText(empty || item == null ? null : clientDisplayName(item));
                 }
             });
             comboBillTo.setButtonCell(new ListCell<>() {
-                @Override protected void updateItem(model.Client item, boolean empty) {
+                @Override
+                protected void updateItem(model.Client item, boolean empty) {
                     super.updateItem(item, empty);
                     setText(empty || item == null ? "Select buyer" : clientDisplayName(item));
                 }
@@ -338,13 +602,15 @@ public class GenerateGSTInvoiceController implements Initializable {
         if (comboShipTo != null) {
             comboShipTo.getItems().setAll(clients);
             comboShipTo.setCellFactory(cb -> new ListCell<>() {
-                @Override protected void updateItem(model.Client item, boolean empty) {
+                @Override
+                protected void updateItem(model.Client item, boolean empty) {
                     super.updateItem(item, empty);
                     setText(empty || item == null ? null : clientDisplayName(item));
                 }
             });
             comboShipTo.setButtonCell(new ListCell<>() {
-                @Override protected void updateItem(model.Client item, boolean empty) {
+                @Override
+                protected void updateItem(model.Client item, boolean empty) {
                     super.updateItem(item, empty);
                     setText(empty || item == null ? "Select consignee" : clientDisplayName(item));
                 }
@@ -364,18 +630,23 @@ public class GenerateGSTInvoiceController implements Initializable {
         String gstin = utils.CompanyProfile.getGst();
         String addr = utils.CompanyProfile.getAddress();
         setLbl(lblCompanyAddress, addr);
-        setLbl(lblCompanyGstin,   gstin);
-        setLbl(lblCompanyState,   stateNameFromGstinOrAddress(gstin, addr));
-        setLbl(lblCompanyEmail,   utils.CompanyProfile.getEmail());
+        setLbl(lblCompanyGstin, gstin);
+        setLbl(lblCompanyState, stateNameFromGstinOrAddress(gstin, addr));
+        setLbl(lblCompanyEmail, utils.CompanyProfile.getEmail());
     }
 
-    /** Fills Bill To address block and auto-sets Place of Supply from client GSTIN. */
+    /**
+     * Fills Bill To address block and auto-sets Place of Supply from client GSTIN.
+     */
     private void populateBillToDetails(model.Client c) {
-        if (c == null) { clearClientDetails(lblBillToAddress, lblBillToGstin, lblBillToState); return; }
+        if (c == null) {
+            clearClientDetails(lblBillToAddress, lblBillToGstin, lblBillToState);
+            return;
+        }
         String gstin = c.getGst();
         String addr = c.getBillingAddress();
         setLbl(lblBillToAddress, addr);
-        setLbl(lblBillToGstin,   gstin);
+        setLbl(lblBillToGstin, gstin);
         String stateName = stateNameFromGstinOrAddress(gstin, addr);
         setLbl(lblBillToState, stateName);
         // Auto-set Place of Supply combo to match client state
@@ -392,57 +663,73 @@ public class GenerateGSTInvoiceController implements Initializable {
         }
     }
 
-    /** Fills Ship To address block (prefers shipping address, falls back to billing). */
+    /**
+     * Fills Ship To address block (prefers shipping address, falls back to
+     * billing).
+     */
     private void populateShipToDetails(model.Client c) {
-        if (c == null) { clearClientDetails(lblShipToAddress, lblShipToGstin, lblShipToState); return; }
+        if (c == null) {
+            clearClientDetails(lblShipToAddress, lblShipToGstin, lblShipToState);
+            return;
+        }
         String addr = c.getShippingAddress();
-        if (addr == null || addr.isBlank()) addr = c.getBillingAddress();
+        if (addr == null || addr.isBlank())
+            addr = c.getBillingAddress();
         setLbl(lblShipToAddress, addr);
-        setLbl(lblShipToGstin,   c.getGst());
-        setLbl(lblShipToState,   stateNameFromGstinOrAddress(c.getGst(), addr));
+        setLbl(lblShipToGstin, c.getGst());
+        setLbl(lblShipToState, stateNameFromGstinOrAddress(c.getGst(), addr));
     }
 
     private static void clearClientDetails(Label address, Label gstin, Label state) {
-        setLbl(address, ""); setLbl(gstin, ""); setLbl(state, "");
+        setLbl(address, "");
+        setLbl(gstin, "");
+        setLbl(state, "");
     }
 
     private static void setLbl(Label lbl, String text) {
-        if (lbl != null) lbl.setText(text != null ? text : "");
+        if (lbl != null)
+            lbl.setText(text != null ? text : "");
     }
 
     private static String clientDisplayName(model.Client c) {
-        if (c == null) return "";
+        if (c == null)
+            return "";
         String n = c.getBusinessName();
         return (n != null && !n.isBlank()) ? n : c.getClientName();
     }
 
     private static final String[] ALL_STATES = {
-        "Jammu & Kashmir (01)", "Himachal Pradesh (02)", "Punjab (03)", "Chandigarh (04)",
-        "Uttarakhand (05)", "Haryana (06)", "Delhi (07)", "Rajasthan (08)", "Uttar Pradesh (09)",
-        "Bihar (10)", "Sikkim (11)", "Arunachal Pradesh (12)", "Nagaland (13)", "Manipur (14)",
-        "Mizoram (15)", "Tripura (16)", "Meghalaya (17)", "Assam (18)", "West Bengal (19)",
-        "Jharkhand (20)", "Odisha (21)", "Chhattisgarh (22)", "Madhya Pradesh (23)", "Gujarat (24)",
-        "Daman & Diu (25)", "Dadra & Nagar Haveli (26)", "Maharashtra (27)", "Karnataka (29)",
-        "Goa (30)", "Lakshadweep (31)", "Kerala (32)", "Tamil Nadu (33)", "Puducherry (34)",
-        "Andaman & Nicobar Islands (35)", "Telangana (36)", "Andhra Pradesh (New) (37)", "Ladakh (38)"
+            "Jammu & Kashmir (01)", "Himachal Pradesh (02)", "Punjab (03)", "Chandigarh (04)",
+            "Uttarakhand (05)", "Haryana (06)", "Delhi (07)", "Rajasthan (08)", "Uttar Pradesh (09)",
+            "Bihar (10)", "Sikkim (11)", "Arunachal Pradesh (12)", "Nagaland (13)", "Manipur (14)",
+            "Mizoram (15)", "Tripura (16)", "Meghalaya (17)", "Assam (18)", "West Bengal (19)",
+            "Jharkhand (20)", "Odisha (21)", "Chhattisgarh (22)", "Madhya Pradesh (23)", "Gujarat (24)",
+            "Daman & Diu (25)", "Dadra & Nagar Haveli (26)", "Maharashtra (27)", "Karnataka (29)",
+            "Goa (30)", "Lakshadweep (31)", "Kerala (32)", "Tamil Nadu (33)", "Puducherry (34)",
+            "Andaman & Nicobar Islands (35)", "Telangana (36)", "Andhra Pradesh (New) (37)", "Ladakh (38)"
     };
 
-    /** Maps the first 2 digits of a GSTIN to an Indian state name string. 
-     *  Falls back to text parsing from address if GSTIN is empty. */
+    /**
+     * Maps the first 2 digits of a GSTIN to an Indian state name string.
+     * Falls back to text parsing from address if GSTIN is empty.
+     */
     private static String stateNameFromGstinOrAddress(String gstin, String address) {
         if (gstin != null && gstin.trim().length() >= 2) {
             String code = gstin.trim().substring(0, 2);
             for (String s : ALL_STATES) {
-                if (s.contains("(" + code + ")")) return s;
+                if (s.contains("(" + code + ")"))
+                    return s;
             }
         }
-        
+
         // Fallback: search address for known state names
         if (address != null && !address.isBlank()) {
             String upper = address.toUpperCase();
             // Fast check for common abbreviations
-            if (upper.contains(" U.P") || upper.contains(" UP ") || upper.endsWith(" UP")) return "Uttar Pradesh (09)";
-            if (upper.contains(" M.P") || upper.contains(" MP ") || upper.endsWith(" MP")) return "Madhya Pradesh (23)";
+            if (upper.contains(" U.P") || upper.contains(" UP ") || upper.endsWith(" UP"))
+                return "Uttar Pradesh (09)";
+            if (upper.contains(" M.P") || upper.contains(" MP ") || upper.endsWith(" MP"))
+                return "Madhya Pradesh (23)";
 
             for (String s : ALL_STATES) {
                 String name = s.substring(0, s.indexOf('(')).trim().toUpperCase();
@@ -510,7 +797,8 @@ public class GenerateGSTInvoiceController implements Initializable {
             card.setOnMouseClicked(e -> {
                 javafx.scene.Node target = (javafx.scene.Node) e.getTarget();
                 while (target != null) {
-                    if (target == cb) return; // The CheckBox already handled its own click
+                    if (target == cb)
+                        return; // The CheckBox already handled its own click
                     target = target.getParent();
                 }
                 cb.setSelected(!cb.isSelected());
@@ -521,7 +809,8 @@ public class GenerateGSTInvoiceController implements Initializable {
             no.getStyleClass().add("gst-chip-title");
             Label title = new Label(js.getJobTitle());
             title.getStyleClass().add("gst-chip-sub");
-            Label date = new Label("Completed: " + (js.getJobDate() != null ? js.getJobDate().format(JOB_DATE_FMT) : "—"));
+            Label date = new Label(
+                    "Completed: " + (js.getJobDate() != null ? js.getJobDate().format(JOB_DATE_FMT) : "—"));
             date.getStyleClass().add("gst-chip-meta");
             Label status = new Label("Completed");
             status.getStyleClass().add("gst-chip-status");
@@ -548,36 +837,37 @@ public class GenerateGSTInvoiceController implements Initializable {
             }
 
             List<model.JobItem> items = jobItemService.getJobItems(js.getUuid());
-            if (items == null || items.isEmpty()) {
-                // fallback: single job row (previous behavior)
-                double taxable = jobService.getSumJobItemsAmountForJobUuids(List.of(js.getUuid()));
-                long qty = jobService.getTotalPrintingQtyForJobUuids(List.of(js.getUuid()));
-                double rate = qty > 0 ? (taxable / qty) : 0.0;
-                Taxes taxes = Taxes.compute(taxable, DEFAULT_GST_RATE, intraState);
-                itemRows.add(ItemRow.ofJob(sl++, js.getUuid(), js.getJobTitle(), "—", qty, "PCS", rate, taxable, taxes));
-                continue;
-            }
+            long qty = jobService.getTotalPrintingQtyForJobUuids(List.of(js.getUuid()));
+            double rate = 1.0;
+            String hsn = "—";
+            double gstRate = DEFAULT_GST_RATE;
 
-            for (model.JobItem ji : items) {
-                model.HsnSacInfo info = hsnSacService.lookup(ji);
-                String hsn = info != null && info.getHsnSac() != null && !info.getHsnSac().isBlank() ? info.getHsnSac() : "—";
-                double gstRate = info != null && info.getGstRate() > 0 ? info.getGstRate() : DEFAULT_GST_RATE;
-
-                QtyUnit qu = QtyUnit.resolveForJobItem(ji);
-                long qty = qu.qty;
-                String unit = qu.unit != null && !qu.unit.isBlank()
-                        ? qu.unit
-                        : (info != null ? info.getUnitDefault() : "PCS");
-                if (unit == null || unit.isBlank()) {
-                    unit = "PCS";
+            String combinedDesc = "PRINTING CHARGES TOWARDS\n    " + js.getJobTitle().toUpperCase();
+            if (items != null && !items.isEmpty()) {
+                String itemsText = items.stream()
+                        .map(model.JobItem::getDescription)
+                        .filter(d -> d != null && !d.isBlank())
+                        .map(d -> "    " + d.toUpperCase())
+                        .collect(java.util.stream.Collectors.joining("\n"));
+                if (!itemsText.isBlank()) {
+                    combinedDesc += "\n" + itemsText;
                 }
-
-                double taxable = ji.getAmount();
-                double rate = qty > 0 ? (taxable / qty) : 0.0;
-                Taxes taxes = Taxes.compute(taxable, gstRate, intraState);
-
-                itemRows.add(ItemRow.ofJob(sl++, js.getUuid(), ji.getDescription(), hsn, qty, unit, rate, taxable, taxes, gstRate));
+                
+                // Try to find the first valid HSN info to use as default
+                for (model.JobItem ji : items) {
+                    model.HsnSacInfo info = hsnSacService.lookup(ji);
+                    if (info != null && info.getHsnSac() != null && !info.getHsnSac().isBlank()) {
+                        hsn = info.getHsnSac();
+                        if (info.getGstRate() > 0) {
+                            gstRate = info.getGstRate();
+                        }
+                        break;
+                    }
+                }
             }
+            combinedDesc += "\n    COMPLETE-" + qty + " PCS";
+
+            itemRows.add(ItemRow.ofJob(sl++, js.getUuid(), combinedDesc, hsn, qty, "PCS", rate, gstRate, intraState));
         }
 
         refreshHsnSummaryFromItemRows();
@@ -591,19 +881,35 @@ public class GenerateGSTInvoiceController implements Initializable {
         }
 
         tableHsnSummary.setItems(hsnRows);
-        List<TableColumn<HsnSummaryRow, ?>> cols = (List<TableColumn<HsnSummaryRow, ?>>) (List<?>) tableHsnSummary.getColumns();
+        List<TableColumn<HsnSummaryRow, ?>> cols = (List<TableColumn<HsnSummaryRow, ?>>) (List<?>) tableHsnSummary
+                .getColumns();
         if (cols == null || cols.isEmpty()) {
             return;
         }
 
-        // FXML columns: 0 HSN/SAC, 1 Taxable Value, 2 GST%, 3 CGST, 4 SGST, 5 IGST, 6 Total Tax
-        if (cols.size() >= 1) ((TableColumn<HsnSummaryRow, String>) cols.get(0)).setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getHsnSac()));
-        if (cols.size() >= 2) ((TableColumn<HsnSummaryRow, String>) cols.get(1)).setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getTaxable()));
-        if (cols.size() >= 3) ((TableColumn<HsnSummaryRow, String>) cols.get(2)).setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getGstPercent()));
-        if (cols.size() >= 4) ((TableColumn<HsnSummaryRow, String>) cols.get(3)).setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getCgst()));
-        if (cols.size() >= 5) ((TableColumn<HsnSummaryRow, String>) cols.get(4)).setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getSgst()));
-        if (cols.size() >= 6) ((TableColumn<HsnSummaryRow, String>) cols.get(5)).setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getIgst()));
-        if (cols.size() >= 7) ((TableColumn<HsnSummaryRow, String>) cols.get(6)).setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getTotalTax()));
+        // FXML columns: 0 HSN/SAC, 1 Taxable Value, 2 GST%, 3 CGST, 4 SGST, 5 IGST, 6
+        // Total Tax
+        if (cols.size() >= 1)
+            ((TableColumn<HsnSummaryRow, String>) cols.get(0))
+                    .setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getHsnSac()));
+        if (cols.size() >= 2)
+            ((TableColumn<HsnSummaryRow, String>) cols.get(1))
+                    .setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getTaxable()));
+        if (cols.size() >= 3)
+            ((TableColumn<HsnSummaryRow, String>) cols.get(2))
+                    .setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getGstPercent()));
+        if (cols.size() >= 4)
+            ((TableColumn<HsnSummaryRow, String>) cols.get(3))
+                    .setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getCgst()));
+        if (cols.size() >= 5)
+            ((TableColumn<HsnSummaryRow, String>) cols.get(4))
+                    .setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getSgst()));
+        if (cols.size() >= 6)
+            ((TableColumn<HsnSummaryRow, String>) cols.get(5))
+                    .setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getIgst()));
+        if (cols.size() >= 7)
+            ((TableColumn<HsnSummaryRow, String>) cols.get(6))
+                    .setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getTotalTax()));
     }
 
     private void refreshHsnSummaryFromItemRows() {
@@ -639,13 +945,13 @@ public class GenerateGSTInvoiceController implements Initializable {
                     a.gstRate,
                     round2(a.cgst),
                     round2(a.sgst),
-                    round2(a.igst)
-            ));
+                    round2(a.igst)));
         }
     }
 
     private void refreshInvoiceSummary() {
-        if (lblTaxable == null) return; // FXML not bound
+        if (lblTaxable == null)
+            return; // FXML not bound
 
         int itemCount = itemRows.size();
         long totalQty = 0;
@@ -660,7 +966,7 @@ public class GenerateGSTInvoiceController implements Initializable {
             cgst += r.cgstRaw.get();
             sgst += r.sgstRaw.get();
             igst += r.igstRaw.get();
-            
+
             try {
                 // Remove commas and parse
                 long qty = Long.parseLong(r.getQty().replace(",", "").trim());
@@ -681,7 +987,7 @@ public class GenerateGSTInvoiceController implements Initializable {
         double roundOff = grandTotal - unroundedTotal;
 
         setLbl(lblTotalItems, String.valueOf(itemCount));
-        
+
         String unitStr = (commonUnit == null || "MIXED".equals(commonUnit)) ? "UNITS" : commonUnit;
         setLbl(lblTotalQty, String.format("%,d %s", totalQty, unitStr));
 
@@ -694,8 +1000,8 @@ public class GenerateGSTInvoiceController implements Initializable {
 
         String words = utils.NumberToWords.convert((long) grandTotal);
         setLbl(lblGrandTotalWords, "(INR " + words + " Only)");
+        setLbl(lblTaxAmountWords, utils.NumberToWords.convertToIndianCurrency(totalTax));
     }
-
 
     private boolean isIntraStateSupply() {
         String companyGst = utils.CompanyProfile.getGst();
@@ -714,43 +1020,53 @@ public class GenerateGSTInvoiceController implements Initializable {
     }
 
     private static String extractStateCode(String s) {
-        if (s == null) return null;
+        if (s == null)
+            return null;
         // GSTIN starts with 2 digits; combo values contain "(07)" etc.
         String trimmed = s.trim();
         java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\((\\d{2})\\)").matcher(trimmed);
-        if (m.find()) return m.group(1);
+        if (m.find())
+            return m.group(1);
         m = java.util.regex.Pattern.compile("^(\\d{2})").matcher(trimmed);
-        if (m.find()) return m.group(1);
+        if (m.find())
+            return m.group(1);
         return null;
     }
 
     private record QtyUnit(long qty, String unit) {
         static QtyUnit resolveForJobItem(model.JobItem ji) {
-            if (ji == null) return new QtyUnit(0, "PCS");
+            if (ji == null)
+                return new QtyUnit(0, "PCS");
 
             try {
                 switch (ji.getType() != null ? ji.getType().trim().toUpperCase() : "") {
                     case "PRINTING" -> {
                         model.Printing p = new repository.PrintingItemRepository().findByJobItemUuid(ji.getUuid());
-                        if (p != null) return new QtyUnit(p.getQty(), p.getUnits());
+                        if (p != null)
+                            return new QtyUnit(p.getQty(), p.getUnits());
                     }
                     case "PAPER" -> {
                         model.Paper p = new repository.PaperItemRepository().findByJobItemUuid(ji.getUuid());
-                        if (p != null) return new QtyUnit(p.getQty(), p.getUnits());
+                        if (p != null)
+                            return new QtyUnit(p.getQty(), p.getUnits());
                     }
                     case "BINDING" -> {
                         model.Binding b = new repository.BindingItemRepository().findByJobItemUuid(ji.getUuid());
-                        if (b != null) return new QtyUnit(b.getQty(), "PCS");
+                        if (b != null)
+                            return new QtyUnit(b.getQty(), "PCS");
                     }
                     case "LAMINATION" -> {
                         model.Lamination l = new repository.LaminationItemRepository().findByJobItemUuid(ji.getUuid());
-                        if (l != null) return new QtyUnit(l.getQty(), l.getUnit());
+                        if (l != null)
+                            return new QtyUnit(l.getQty(), l.getUnit());
                     }
                     case "CTP" -> {
                         model.CtpPlate c = new repository.CtpItemRepository().findByJobItemUuid(ji.getUuid());
-                        if (c != null) return new QtyUnit(c.getQty(), "PCS");
+                        if (c != null)
+                            return new QtyUnit(c.getQty(), "PCS");
                     }
-                    default -> { }
+                    default -> {
+                    }
                 }
             } catch (Exception e) {
                 // ignore and fallback below
@@ -761,7 +1077,8 @@ public class GenerateGSTInvoiceController implements Initializable {
 
     private record Taxes(double cgst, double sgst, double igst, double totalTax, double total) {
         static Taxes compute(double taxable, double gstRate, boolean intraState) {
-            if (gstRate < 0) gstRate = 0;
+            if (gstRate < 0)
+                gstRate = 0;
             double cgst = 0;
             double sgst = 0;
             double igst = 0;
@@ -822,7 +1139,12 @@ public class GenerateGSTInvoiceController implements Initializable {
 
             List<String> selectedIds = new ArrayList<>(selectedJobUuids);
 
-            // Build invoice jobs for each selected job.
+            double totalTaxable = 0.0;
+            double totalCgst = 0.0;
+            double totalSgst = 0.0;
+            double totalIgst = 0.0;
+
+            // Build invoice jobs for each selected job using edited fields from tableItems.
             for (model.JobSummary js : loadedJobSummaries) {
                 if (!selectedJobUuids.contains(js.getUuid())) {
                     continue;
@@ -831,18 +1153,51 @@ public class GenerateGSTInvoiceController implements Initializable {
                 model.InvoiceJob invJob = new model.InvoiceJob();
                 invJob.setJobId(js.getUuid());
                 invJob.setJobNo(js.getJobNo());
-                invJob.setJobName(js.getJobTitle());
                 invJob.setJobDate(js.getJobDate());
 
-                // Pull totals/qty from DB so PDF matches real amounts.
-                double jobTaxable = jobService.getSumJobItemsAmountForJobUuids(List.of(js.getUuid()));
-                long jobQty = jobService.getTotalPrintingQtyForJobUuids(List.of(js.getUuid()));
-                invJob.setQuantity(jobQty);
-                invJob.setUnit("PCS");
-                if (jobQty > 0) {
-                    invJob.setRatePerUnit(jobTaxable / jobQty);
+                ItemRow matchingRow = null;
+                for (ItemRow r : itemRows) {
+                    if (r.getJobUuid().equals(js.getUuid())) {
+                        matchingRow = r;
+                        break;
+                    }
                 }
-                invJob.addLine(new model.InvoiceLine(js.getJobTitle(), jobTaxable));
+
+                if (matchingRow != null) {
+                    invJob.setJobName(matchingRow.descriptionProperty().get());
+                    invJob.setHsnSac(matchingRow.hsnSacProperty().get());
+                    invJob.setQuantity((long) matchingRow.qtyRaw.get());
+                    invJob.setUnit(matchingRow.unitProperty().get());
+                    invJob.setRatePerUnit(matchingRow.rateRaw.get());
+                    invJob.setGstRate(matchingRow.gstRateRaw.get());
+                    invJob.addLine(new model.InvoiceLine(matchingRow.descriptionProperty().get(), matchingRow.taxableRaw.get()));
+                    
+                    totalTaxable += matchingRow.taxableRaw.get();
+                    totalCgst += matchingRow.cgstRaw.get();
+                    totalSgst += matchingRow.sgstRaw.get();
+                    totalIgst += matchingRow.igstRaw.get();
+                } else {
+                    double jobTaxable = jobService.getSumJobItemsAmountForJobUuids(List.of(js.getUuid()));
+                    long jobQty = jobService.getTotalPrintingQtyForJobUuids(List.of(js.getUuid()));
+                    invJob.setJobName(js.getJobTitle());
+                    invJob.setQuantity(jobQty);
+                    invJob.setUnit("PCS");
+                    if (jobQty > 0) {
+                        invJob.setRatePerUnit(jobTaxable / jobQty);
+                    }
+                    invJob.setHsnSac("4821");
+                    invJob.setGstRate(0.18);
+                    invJob.addLine(new model.InvoiceLine(js.getJobTitle(), jobTaxable));
+                    
+                    totalTaxable += jobTaxable;
+                    double gstRate = 0.18;
+                    if (isIntraStateSupply()) {
+                        totalCgst += Math.round(jobTaxable * (gstRate / 2.0) * 100.0) / 100.0;
+                        totalSgst += Math.round(jobTaxable * (gstRate / 2.0) * 100.0) / 100.0;
+                    } else {
+                        totalIgst += Math.round(jobTaxable * gstRate * 100.0) / 100.0;
+                    }
+                }
                 invoice.addJob(invJob);
             }
 
@@ -861,14 +1216,14 @@ public class GenerateGSTInvoiceController implements Initializable {
                 invoice.setConsigneeStateName(comboPlaceOfSupply != null ? comboPlaceOfSupply.getValue() : null);
             }
 
-            // Ensure grand total includes IGST like your original sample.
-            double taxable = jobService.getSumJobItemsAmountForJobUuids(selectedIds);
-            double igst = Math.round(taxable * 0.18 * 100.0) / 100.0;
-            invoice.setGrandTotal(Math.round((taxable + igst) * 100.0) / 100.0);
-            
+            // Ensure grand total includes taxes and correct round off
+            double unroundedTotal = totalTaxable + totalCgst + totalSgst + totalIgst;
+            double grandTotal = Math.round(unroundedTotal);
+            invoice.setGrandTotal(grandTotal);
+
             // Note: Jobs should be collected from flowJobsContainer or a selected list
             // For now, we simulate with a dummy check if anything is present
-            
+
             invoiceService.saveGeneratedInvoice(invoice, "GST_INVOICE", status, null);
 
             // 🆕 Generate the premium GST PDF
@@ -938,8 +1293,7 @@ public class GenerateGSTInvoiceController implements Initializable {
         scene.getStylesheets().addAll(
                 getClass().getResource("/css/theme.css").toExternalForm(),
                 getClass().getResource("/css/view_job.css").toExternalForm(),
-                getClass().getResource("/css/genrate_gst_invoice.css").toExternalForm()
-        );
+                getClass().getResource("/css/genrate_gst_invoice.css").toExternalForm());
         dlg.setScene(scene);
 
         btnClose.setOnAction(e -> dlg.close());
@@ -949,121 +1303,71 @@ public class GenerateGSTInvoiceController implements Initializable {
     public static final class ItemRow {
         private final String jobUuid;
         private final int slNo;
-        private final String description;
-        private final String qty;
-        private final String unit;
-        private final String rate;
-        private final String taxable;
+        
+        private final StringProperty description = new SimpleStringProperty("");
+        private final StringProperty qty = new SimpleStringProperty("");
+        private final StringProperty unit = new SimpleStringProperty("");
+        private final StringProperty rate = new SimpleStringProperty("");
+        private final StringProperty taxable = new SimpleStringProperty("");
         private final StringProperty hsnSac = new SimpleStringProperty("—");
         private final StringProperty gstPercent = new SimpleStringProperty("—");
         private final StringProperty cgst = new SimpleStringProperty("—");
         private final StringProperty sgst = new SimpleStringProperty("—");
         private final StringProperty igst = new SimpleStringProperty("—");
         private final StringProperty total = new SimpleStringProperty("—");
+        
+        private final DoubleProperty qtyRaw = new SimpleDoubleProperty(0);
+        private final DoubleProperty rateRaw = new SimpleDoubleProperty(0);
         private final DoubleProperty taxableRaw = new SimpleDoubleProperty(0);
         private final DoubleProperty cgstRaw = new SimpleDoubleProperty(0);
         private final DoubleProperty sgstRaw = new SimpleDoubleProperty(0);
         private final DoubleProperty igstRaw = new SimpleDoubleProperty(0);
         private final DoubleProperty gstRateRaw = new SimpleDoubleProperty(DEFAULT_GST_RATE);
+        private boolean intraState = true; // Kept for recalculation
 
         private ItemRow(
                 String jobUuid,
                 int slNo,
-                String description,
+                String desc,
                 String hsnSac,
-                String qty,
+                double qtyRawVal,
                 String unit,
-                String rate,
-                String taxable,
-                String gstPercent,
-                String cgst,
-                String sgst,
-                String igst,
-                String total,
-                double taxableRaw,
-                double cgstRaw,
-                double sgstRaw,
-                double igstRaw,
-                double gstRateRaw
-        ) {
+                double rateRawVal,
+                double gstRateRawVal,
+                boolean intraState) {
             this.jobUuid = jobUuid;
             this.slNo = slNo;
-            this.description = description;
-            this.qty = qty;
-            this.unit = unit;
-            this.rate = rate;
-            this.taxable = taxable;
-            this.hsnSac.set(hsnSac);
-            this.gstPercent.set(gstPercent);
-            this.cgst.set(cgst);
-            this.sgst.set(sgst);
-            this.igst.set(igst);
-            this.total.set(total);
-            this.taxableRaw.set(taxableRaw);
-            this.cgstRaw.set(cgstRaw);
-            this.sgstRaw.set(sgstRaw);
-            this.igstRaw.set(igstRaw);
-            this.gstRateRaw.set(gstRateRaw);
+            this.description.set(desc != null ? desc : "");
+            this.hsnSac.set(hsnSac != null ? hsnSac : "—");
+            this.unit.set(unit != null ? unit : "PCS");
+            this.intraState = intraState;
+            this.gstRateRaw.set(gstRateRawVal);
+
+            this.qtyRaw.set(qtyRawVal);
+            this.qty.set(String.valueOf((long)qtyRawVal));
+            this.rateRaw.set(rateRawVal);
+            this.rate.set(fmtMoney(rateRawVal));
+
+            recalcTaxable();
         }
 
-        static ItemRow ofJob(int slNo, String jobUuid, String desc, String hsnSac, long qty, String unit, double rate, double taxable, Taxes taxes) {
-            return ofJob(slNo, jobUuid, desc, hsnSac, qty, unit, rate, taxable, taxes, DEFAULT_GST_RATE);
-        }
-
-        static ItemRow ofJob(int slNo, String jobUuid, String desc, String hsnSac, long qty, String unit, double rate, double taxable, Taxes taxes, double gstRate) {
-            String gstPct = String.format("%.0f%%", gstRate * 100.0);
-            return new ItemRow(
-                    jobUuid,
-                    slNo,
-                    desc != null ? desc : "",
-                    hsnSac != null ? hsnSac : "—",
-                    String.valueOf(qty),
-                    unit != null ? unit : "PCS",
-                    fmtMoney(rate),
-                    fmtMoney(taxable),
-                    gstPct,
-                    taxes.cgst() > 0 ? fmtMoney(taxes.cgst()) : "—",
-                    taxes.sgst() > 0 ? fmtMoney(taxes.sgst()) : "—",
-                    taxes.igst() > 0 ? fmtMoney(taxes.igst()) : "—",
-                    fmtMoney(taxes.total()),
-                    taxable,
-                    taxes.cgst(),
-                    taxes.sgst(),
-                    taxes.igst(),
-                    gstRate
-            );
+        static ItemRow ofJob(int slNo, String jobUuid, String desc, String hsnSac, long qty, String unit, double rate, double gstRate, boolean intraState) {
+            return new ItemRow(jobUuid, slNo, desc, hsnSac, qty, unit, rate, gstRate, intraState);
         }
 
         private static String fmtMoney(double v) {
             return String.format("₹ %.2f", v);
         }
 
-        public String getJobUuid() { return jobUuid; }
-        public int getSlNo() { return slNo; }
-        public String getDescription() { return description; }
-        public String getHsnSac() { return hsnSac.get(); }
-        public String getQty() { return qty; }
-        public String getUnit() { return unit; }
-        public String getRate() { return rate; }
-        public String getTaxable() { return taxable; }
-        public String getGstPercent() { return gstPercent.get(); }
-        public String getCgst() { return cgst.get(); }
-        public String getSgst() { return sgst.get(); }
-        public String getIgst() { return igst.get(); }
-        public String getTotal() { return total.get(); }
-
-        public StringProperty hsnSacProperty() { return hsnSac; }
-        public StringProperty gstPercentProperty() { return gstPercent; }
-        public StringProperty cgstProperty() { return cgst; }
-        public StringProperty sgstProperty() { return sgst; }
-        public StringProperty igstProperty() { return igst; }
-        public StringProperty totalProperty() { return total; }
-
-        public void setHsnSac(String code) {
-            hsnSac.set(code != null && !code.isBlank() ? code.trim() : "—");
+        public void recalcTaxable() {
+            double newTaxable = qtyRaw.get() * rateRaw.get();
+            taxableRaw.set(newTaxable);
+            taxable.set(fmtMoney(newTaxable));
+            recalcTaxes(gstRateRaw.get(), this.intraState);
         }
 
         public void recalcTaxes(double gstRate, boolean intraState) {
+            this.intraState = intraState;
             gstRateRaw.set(gstRate);
             Taxes taxes = Taxes.compute(taxableRaw.get(), gstRate, intraState);
             String pct = String.format("%.0f%%", gstRate * 100.0);
@@ -1076,6 +1380,61 @@ public class GenerateGSTInvoiceController implements Initializable {
             igst.set(taxes.igst() > 0 ? fmtMoney(taxes.igst()) : "—");
             total.set(fmtMoney(taxes.total()));
         }
+
+        public String getJobUuid() { return jobUuid; }
+        public int getSlNo() { return slNo; }
+
+        public String getDescription() { return description.get(); }
+        public void setDescription(String v) { description.set(v); }
+        public StringProperty descriptionProperty() { return description; }
+
+        public String getQty() { return qty.get(); }
+        public void setQty(String v) { 
+            qty.set(v);
+            try {
+                qtyRaw.set(Double.parseDouble(v.replace(",", "").trim()));
+            } catch(Exception ignored) { qtyRaw.set(0); }
+            recalcTaxable();
+        }
+        public StringProperty qtyProperty() { return qty; }
+
+        public String getUnit() { return unit.get(); }
+        public void setUnit(String v) { unit.set(v); }
+        public StringProperty unitProperty() { return unit; }
+
+        public String getRate() { return rate.get(); }
+        public void setRate(String v) { 
+            rate.set(v); 
+            try {
+                rateRaw.set(Double.parseDouble(v.replace("₹", "").replace(",", "").trim()));
+            } catch(Exception ignored) { rateRaw.set(0); }
+            recalcTaxable();
+        }
+        public StringProperty rateProperty() { return rate; }
+
+        public String getTaxable() { return taxable.get(); }
+        public StringProperty taxableProperty() { return taxable; }
+
+        public String getHsnSac() { return hsnSac.get(); }
+        public void setHsnSac(String code) {
+            hsnSac.set(code != null && !code.isBlank() ? code.trim() : "—");
+        }
+        public StringProperty hsnSacProperty() { return hsnSac; }
+
+        public String getGstPercent() { return gstPercent.get(); }
+        public StringProperty gstPercentProperty() { return gstPercent; }
+
+        public String getCgst() { return cgst.get(); }
+        public StringProperty cgstProperty() { return cgst; }
+
+        public String getSgst() { return sgst.get(); }
+        public StringProperty sgstProperty() { return sgst; }
+
+        public String getIgst() { return igst.get(); }
+        public StringProperty igstProperty() { return igst; }
+
+        public String getTotal() { return total.get(); }
+        public StringProperty totalProperty() { return total; }
     }
 
     public static final class HsnSummaryRow {
@@ -1087,7 +1446,8 @@ public class GenerateGSTInvoiceController implements Initializable {
         private final String igst;
         private final String totalTax;
 
-        private HsnSummaryRow(String hsnSac, String taxable, String gstPercent, String cgst, String sgst, String igst, String totalTax) {
+        private HsnSummaryRow(String hsnSac, String taxable, String gstPercent, String cgst, String sgst, String igst,
+                String totalTax) {
             this.hsnSac = hsnSac;
             this.taxable = taxable;
             this.gstPercent = gstPercent;
@@ -1107,16 +1467,35 @@ public class GenerateGSTInvoiceController implements Initializable {
                     cgst > 0 ? ItemRow.fmtMoney(cgst) : "—",
                     sgst > 0 ? ItemRow.fmtMoney(sgst) : "—",
                     igst > 0 ? ItemRow.fmtMoney(igst) : "—",
-                    ItemRow.fmtMoney(totalTax)
-            );
+                    ItemRow.fmtMoney(totalTax));
         }
 
-        public String getHsnSac() { return hsnSac; }
-        public String getTaxable() { return taxable; }
-        public String getGstPercent() { return gstPercent; }
-        public String getCgst() { return cgst; }
-        public String getSgst() { return sgst; }
-        public String getIgst() { return igst; }
-        public String getTotalTax() { return totalTax; }
+        public String getHsnSac() {
+            return hsnSac;
+        }
+
+        public String getTaxable() {
+            return taxable;
+        }
+
+        public String getGstPercent() {
+            return gstPercent;
+        }
+
+        public String getCgst() {
+            return cgst;
+        }
+
+        public String getSgst() {
+            return sgst;
+        }
+
+        public String getIgst() {
+            return igst;
+        }
+
+        public String getTotalTax() {
+            return totalTax;
+        }
     }
 }

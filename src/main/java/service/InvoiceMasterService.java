@@ -722,7 +722,7 @@ public class InvoiceMasterService {
      * UPDATE FILTERED INVOICES (FOR VIEW INVOICES SCREEN)
      * =========================================================
      */
-    public List<InvoiceMaster> getFilteredInvoices(String clientId, String status, LocalDate start, LocalDate end, String invoiceNo) {
-        return AtomicDB.run(con -> repo.findFiltered(con, clientId, status, start, end, invoiceNo));
+    public List<InvoiceMaster> getFilteredInvoices(String clientId, String status, LocalDate start, LocalDate end, String invoiceNo, String documentSeries) {
+        return AtomicDB.run(con -> repo.findFiltered(con, clientId, status, start, end, invoiceNo, documentSeries));
     }
 }
