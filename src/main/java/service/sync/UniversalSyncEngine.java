@@ -117,6 +117,25 @@ public final class UniversalSyncEngine {
 		});
 	}
 
+	public static void schedulePullAsync() {
+		SupabaseGate.restClientIfConfigured().ifPresent(http -> {
+			CompletableFuture.runAsync(() -> {
+				if (!SupabaseReachability.isReachable()) {
+					return;
+				}
+				RemoteToLocalSync.pullAll(http);
+				try {
+					MainController mc = MainController.getInstance();
+					if (mc != null) {
+						mc.refreshActiveScreen();
+					}
+				} catch (Exception e) {
+					System.err.println("[UniversalSyncEngine] Failed to trigger UI refresh after pull: " + e.getMessage());
+				}
+			});
+		});
+	}
+
 
 
 	public static boolean hasPendingWork() {

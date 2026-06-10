@@ -458,6 +458,7 @@ public class MainController implements Initializable {
 		service.sync.ConnectivitySyncWatcher.start();
 		api.supabase.sequences.NumberSequenceSupabaseSync.syncRemoteToLocalAsync();
 		service.sync.UniversalSyncEngine.scheduleSyncAsync();
+		service.sync.UniversalSyncEngine.schedulePullAsync();
 
 		if (mainSearchBox != null && mainSearchField != null) {
 			mainSearchField.focusedProperty().addListener((obs, oldVal, focused) -> {

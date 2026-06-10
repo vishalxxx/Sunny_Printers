@@ -266,6 +266,7 @@ public class GeneralSettingsController implements Initializable {
             s.setAuthPassword(supabasePasswordField.getText());
         }
         supabaseRepo.save(s);
+        service.sync.UniversalSyncEngine.schedulePullAsync();
     }
 
     private void wireSupabaseActions() {
