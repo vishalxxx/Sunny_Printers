@@ -242,14 +242,24 @@ public class ViewJobsController {
                 if (e.isShiftDown() || e.isControlDown() || e.isShortcutDown()) {
                     return;
                 }
-                Job item = row.getItem();
-                if (item != null) {
-                    int index = row.getIndex();
-                    if (jobsTable.getSelectionModel().isSelected(index)) {
-                        jobsTable.getSelectionModel().clearSelection(index);
-                    } else {
-                        jobsTable.getSelectionModel().clearAndSelect(index);
+                // If clicking in an interactive control or checkbox selection cell, let the event pass
+                javafx.event.EventTarget target = e.getTarget();
+                if (target instanceof javafx.scene.Node) {
+                    javafx.scene.Node node = (javafx.scene.Node) target;
+                    while (node != null && node != row) {
+                        if (node instanceof javafx.scene.control.ButtonBase ||
+                            node instanceof javafx.scene.control.ComboBoxBase ||
+                            node instanceof javafx.scene.control.TextInputControl ||
+                            node instanceof javafx.scene.control.MenuButton ||
+                            node instanceof javafx.scene.control.ChoiceBox ||
+                            node.getStyleClass().contains("table-cell-job-select")) {
+                            return;
+                        }
+                        node = node.getParent();
                     }
+                }
+                // Consume single-click to disable single-click row selection
+                if (e.getClickCount() == 1) {
                     e.consume();
                 }
             });
@@ -295,9 +305,7 @@ public class ViewJobsController {
 
 
     private void updateBulkActionBar() {
-        List<Job> selected = jobsTable.getItems().stream()
-                .filter(Job::isSelected)
-                .collect(Collectors.toList());
+        List<Job> selected = new ArrayList<>(jobsTable.getSelectionModel().getSelectedItems());
 
         if (selected.isEmpty()) {
             wasInvalidSelection = false;
@@ -373,11 +381,6 @@ public class ViewJobsController {
 
     @FXML
     private void handleCloseBulk() {
-        for (Job job : jobsTable.getItems()) {
-            if (job.isSelected()) {
-                job.selectedProperty().set(false);
-            }
-        }
         jobsTable.getSelectionModel().clearSelection();
         updateBulkActionBar();
     }
@@ -406,9 +409,7 @@ public class ViewJobsController {
 
     @FXML
     private void handleInvoiceAction() {
-        List<Job> selected = jobsTable.getItems().stream()
-                .filter(Job::isSelected)
-                .collect(Collectors.toList());
+        List<Job> selected = new ArrayList<>(jobsTable.getSelectionModel().getSelectedItems());
         if (selected.isEmpty()) return;
         
         Job first = selected.get(0);
@@ -424,7 +425,7 @@ public class ViewJobsController {
             return;
         }
         
-        first.selectedProperty().set(false);
+        jobsTable.getSelectionModel().clearSelection();
         updateBulkActionBar();
         
         handleInvoicedRequest(first);
@@ -437,24 +438,18 @@ public class ViewJobsController {
 
     @FXML
     private void clearSelection() {
-        for (Job job : masterJobs) {
-            job.setSelected(false);
-        }
         jobsTable.getSelectionModel().clearSelection();
         toast("Selection cleared.");
     }
 
     private void processBulkStatusUpdate(String status, String successMsg) {
-        List<Job> selected = jobsTable.getItems().stream()
-                .filter(Job::isSelected)
-                .collect(Collectors.toList());
+        List<Job> selected = new ArrayList<>(jobsTable.getSelectionModel().getSelectedItems());
         if (selected.isEmpty()) return;
 
         for (Job job : selected) {
             jobService.updateJobStatus(job.getUuid(), status);
             job.setStatus(status);
             applyDefaultChildForNewMajor(job, status);
-            job.selectedProperty().set(false);
         }
         jobsTable.refresh();
         toast(successMsg);
