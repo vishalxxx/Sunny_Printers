@@ -296,7 +296,15 @@
         <VBox spacing="12" styleClass="gst-card">
             <HBox alignment="CENTER_LEFT" spacing="14">
                 <Region HBox.hgrow="ALWAYS"/>
-                <Button fx:id="btnAddItem" onAction="#handleAddItem" text="+ Add Item" styleClass="gst-btn-chip"/>
+                <MenuButton fx:id="btnAddItem" text="+ Add Item" styleClass="gst-btn-chip">
+                    <items>
+                        <MenuItem text="FREIGHT OUTWARD CHARGES" onAction="#handleFreightOutward"/>
+                        <MenuItem text="PACKING CHARGES" onAction="#handlePackingCharges"/>
+                        <MenuItem text="DESIGN CHARGES" onAction="#handleDesignCharges"/>
+                        <MenuItem text="MISCELLANEOUS CHARGES" onAction="#handleMiscCharges"/>
+                        <MenuItem text="CUSTOM ITEM" onAction="#handleCustomItem"/>
+                    </items>
+                </MenuButton>
                 <Button fx:id="btnImportJob" onAction="#handleImportJob" text="Import from Job" styleClass="gst-btn-chip"/>
                 <Button fx:id="btnClearAll" onAction="#handleClearAll" text="Clear All" styleClass="gst-btn-chip"/>
             </HBox>

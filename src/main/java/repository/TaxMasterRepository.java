@@ -140,14 +140,25 @@ public class TaxMasterRepository {
 	}
 
 	public int insert(Connection con, TaxMasterItem row) throws Exception {
+		String uuid = java.util.UUID.randomUUID().toString();
 		String sql = """
 				INSERT INTO hsn_sac_master (
-				  item_type, item_name, keyword, code_type, hsn_sac, gst_rate,
+				  uuid, item_type, item_name, keyword, code_type, hsn_sac, gst_rate,
 				  unit_default, description, is_favorite, is_active
-				) VALUES (?,?,?,?,?,?,?,?,?,?)
+				) VALUES (?,?,?,?,?,?,?,?,?,?,?)
 				""";
 		try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-			fill(ps, row);
+			ps.setString(1, uuid);
+			ps.setString(2, nz(row.getItemType()));
+			ps.setString(3, nz(row.getItemName()));
+			ps.setString(4, nz(row.getKeyword()));
+			ps.setString(5, nz(row.getCodeType()));
+			ps.setString(6, nz(row.getHsnSac()));
+			ps.setDouble(7, row.getGstRate());
+			ps.setString(8, nz(row.getUnitDefault()));
+			ps.setString(9, nz(row.getDescription()));
+			ps.setInt(10, row.isFavorite() ? 1 : 0);
+			ps.setInt(11, row.isActive() ? 1 : 0);
 			ps.executeUpdate();
 			try (ResultSet keys = ps.getGeneratedKeys()) {
 				if (keys.next()) {

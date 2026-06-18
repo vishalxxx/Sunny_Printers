@@ -133,6 +133,8 @@ public class GstPdfInvoiceService {
 
         document.close();
 
+        utils.DownloadTracker.registerExportedFile(file, "PDF");
+
         return file;
 
     }
@@ -517,10 +519,12 @@ public class GstPdfInvoiceService {
 
                 taxable += amt;
 
+                boolean isCustomItem = job.getJobNo() == null || job.getJobNo().isBlank();
+
                 // Sl No
                 table.addCell(
                         bodyCell(
-                                String.valueOf(sl++),
+                                isCustomItem ? "" : String.valueOf(sl++),
                                 Element.ALIGN_CENTER));
 
                 // Description
@@ -529,25 +533,32 @@ public class GstPdfInvoiceService {
                 table.addCell(
                         bodyCellWithDesc(
                                 descText,
-                                Element.ALIGN_LEFT));
+                                isCustomItem ? Element.ALIGN_RIGHT : Element.ALIGN_LEFT));
 
                 descLinesCount += descText.split("\n").length;
 
                 // HSN
+                String hsnVal = safe(job.getHsnSac());
+                if ("NA".equalsIgnoreCase(hsnVal) || "N/A".equalsIgnoreCase(hsnVal)) {
+                    hsnVal = "";
+                }
                 table.addCell(
                         bodyCell(
-                                safe(job.getHsnSac()),
+                                hsnVal,
                                 Element.ALIGN_CENTER));
 
                 // Qty
                 String unit = safe(job.getUnit());
+                if ("NA".equalsIgnoreCase(unit) || "N/A".equalsIgnoreCase(unit)) {
+                    unit = "";
+                }
 
                 long qty = job.getQuantity();
 
                 table.addCell(
                         bodyCell(
                                 qty > 0
-                                        ? (fmtQty3(qty) + " " + unit)
+                                        ? (unit.isEmpty() ? fmtQty3(qty) : (fmtQty3(qty) + " " + unit))
                                         : "",
                                 Element.ALIGN_RIGHT));
 
@@ -743,21 +754,17 @@ public class GstPdfInvoiceService {
         String commonUnit = "";
 
         if (invoice.getJobs() != null) {
-
             for (InvoiceJob job : invoice.getJobs()) {
-
                 totalQty += job.getQuantity();
-
-                if (commonUnit.isEmpty()) {
-
-                    commonUnit = job.getUnit();
-
-                } else if (!commonUnit.equals(job.getUnit())) {
-
-                    commonUnit = "MIXED";
+                String u = job.getUnit();
+                if (u != null) {
+                    if (commonUnit.isEmpty()) {
+                        commonUnit = u;
+                    } else if (!commonUnit.equals(u)) {
+                        commonUnit = "MIXED";
+                    }
                 }
             }
-
         }
 
         String qtyText = totalQty > 0
@@ -1848,6 +1855,7 @@ public class GstPdfInvoiceService {
 
             paragraph.setSpacingBefore(0f);
             paragraph.setSpacingAfter(0f);
+            paragraph.setAlignment(align);
 
             cell.addElement(paragraph);
         }

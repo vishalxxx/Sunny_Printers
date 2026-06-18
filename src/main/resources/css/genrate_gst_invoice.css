@@ -72,6 +72,28 @@
 }
 .gst-btn-chip:hover { -fx-background-color: #F3DEC8; }
 
+/* MenuButton dropdown specific styling */
+.menu-button.gst-btn-chip {
+    -fx-padding: 6 12;
+}
+.menu-button.gst-btn-chip > .label {
+    -fx-text-fill: #CD7B4E;
+    -fx-font-weight: 800;
+}
+.menu-button.gst-btn-chip > .arrow-button {
+    -fx-padding: 0 0 0 6;
+    -fx-background-color: transparent;
+}
+.menu-button.gst-btn-chip > .arrow-button > .arrow {
+    -fx-background-color: #CD7B4E;
+}
+.menu-button.gst-btn-chip:hover > .label {
+    -fx-text-fill: #A25A31;
+}
+.menu-button.gst-btn-chip:hover > .arrow-button > .arrow {
+    -fx-background-color: #A25A31;
+}
+
 .gst-mini-btn {
     -fx-background-color: #F1EBE5;
     -fx-text-fill: #433934;
@@ -378,6 +400,38 @@
     -fx-border-width: 1.2;
     -fx-border-style: solid;
     -fx-border-radius: 4;
+}
+
+/* Context Menu/Dropdown styling for Add Item */
+.context-menu {
+    -fx-background-color: #FFFDF9;
+    -fx-border-color: #F0E6DD;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 4 0;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.08), 12, 0, 0, 4);
+}
+
+.context-menu .menu-item {
+    -fx-padding: 8 16;
+    -fx-background-color: transparent;
+}
+
+.context-menu .menu-item .label {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+}
+
+.context-menu .menu-item:focused,
+.context-menu .menu-item:hover {
+    -fx-background-color: #FFF2E5;
+}
+
+.context-menu .menu-item:focused .label,
+.context-menu .menu-item:hover .label {
+    -fx-text-fill: #CD7B4E;
 }
 
 

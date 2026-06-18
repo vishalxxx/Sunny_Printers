@@ -20,11 +20,51 @@ public class JobRepository {
 
     private static final String JOB_SELECT = """
             j.uuid, j.job_code, j.client_uuid, j.job_title, j.job_date, j.job_type, j.description,
-            j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_uuid,
+            j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path,
+            CASE
+                WHEN j.invoice_uuid IS NOT NULL AND EXISTS (
+                    SELECT 1 FROM invoice_job_mapping m
+                    WHERE m.job_uuid = j.uuid AND m.invoice_uuid = j.invoice_uuid
+                      AND COALESCE(m.is_deleted, 0) = 0
+                ) THEN j.invoice_uuid
+                ELSE (SELECT m.invoice_uuid FROM invoice_job_mapping m
+                      WHERE m.job_uuid = j.uuid AND COALESCE(m.is_deleted, 0) = 0 LIMIT 1)
+            END AS invoice_uuid,
             j.amount, j.job_number_mode, j.delivery_date, j.is_deleted, j.is_active, j.sync_status, j.sync_version,
             j.created_by_user_uuid, j.updated_by_user_uuid,
-            (SELECT invoice_no FROM invoice_master inv WHERE inv.uuid = j.invoice_uuid) AS invoice_no,
-            (SELECT status FROM invoice_master inv WHERE inv.uuid = j.invoice_uuid) AS invoice_status,
+            (SELECT inv.invoice_no FROM invoice_master inv WHERE inv.uuid = (
+                CASE
+                    WHEN j.invoice_uuid IS NOT NULL AND EXISTS (
+                        SELECT 1 FROM invoice_job_mapping m
+                        WHERE m.job_uuid = j.uuid AND m.invoice_uuid = j.invoice_uuid
+                          AND COALESCE(m.is_deleted, 0) = 0
+                    ) THEN j.invoice_uuid
+                    ELSE (SELECT m.invoice_uuid FROM invoice_job_mapping m
+                          WHERE m.job_uuid = j.uuid AND COALESCE(m.is_deleted, 0) = 0 LIMIT 1)
+                END
+            )) AS invoice_no,
+            (SELECT inv.status FROM invoice_master inv WHERE inv.uuid = (
+                CASE
+                    WHEN j.invoice_uuid IS NOT NULL AND EXISTS (
+                        SELECT 1 FROM invoice_job_mapping m
+                        WHERE m.job_uuid = j.uuid AND m.invoice_uuid = j.invoice_uuid
+                          AND COALESCE(m.is_deleted, 0) = 0
+                    ) THEN j.invoice_uuid
+                    ELSE (SELECT m.invoice_uuid FROM invoice_job_mapping m
+                          WHERE m.job_uuid = j.uuid AND COALESCE(m.is_deleted, 0) = 0 LIMIT 1)
+                END
+            )) AS invoice_status,
+            (SELECT inv.document_series FROM invoice_master inv WHERE inv.uuid = (
+                CASE
+                    WHEN j.invoice_uuid IS NOT NULL AND EXISTS (
+                        SELECT 1 FROM invoice_job_mapping m
+                        WHERE m.job_uuid = j.uuid AND m.invoice_uuid = j.invoice_uuid
+                          AND COALESCE(m.is_deleted, 0) = 0
+                    ) THEN j.invoice_uuid
+                    ELSE (SELECT m.invoice_uuid FROM invoice_job_mapping m
+                          WHERE m.job_uuid = j.uuid AND COALESCE(m.is_deleted, 0) = 0 LIMIT 1)
+                END
+            )) AS invoice_type,
             (SELECT COALESCE(SUM(ji.amount), 0) FROM job_items ji
                 WHERE ji.job_uuid = j.uuid AND COALESCE(ji.is_deleted, 0) = 0) AS job_total
             """;
@@ -192,7 +232,7 @@ public class JobRepository {
 
         List<Job> list = new ArrayList<>();
 
-        String sql = "SELECT " + JOB_SELECT + " FROM jobs j ORDER BY DATE(j.job_date) DESC, j.created_at DESC";
+        String sql = "SELECT " + JOB_SELECT + " FROM jobs j WHERE (j.job_type IS NULL OR j.job_type != 'CHARGE') ORDER BY COALESCE(j.updated_at, j.created_at) DESC, j.created_at DESC";
 
         try (Connection con = DBConnection.getConnection();
                 PreparedStatement ps = con.prepareStatement(sql);
@@ -221,10 +261,11 @@ public class JobRepository {
 
         String sql = "SELECT " + JOB_SELECT + """
                  FROM jobs j
-                 WHERE LOWER(j.job_code) LIKE ?
+                 WHERE (LOWER(j.job_code) LIKE ?
                     OR LOWER(j.job_title) LIKE ?
-                    OR LOWER(j.remarks) LIKE ?
-                 ORDER BY DATE(j.job_date) DESC, j.created_at DESC
+                    OR LOWER(j.remarks) LIKE ?)
+                   AND (j.job_type IS NULL OR j.job_type != 'CHARGE')
+                 ORDER BY COALESCE(j.updated_at, j.created_at) DESC, j.created_at DESC
                 """;
 
         try (Connection con = DBConnection.getConnection();
@@ -357,6 +398,10 @@ public class JobRepository {
             job.setInvoiceStatus(rs.getString("invoice_status"));
         } catch (SQLException ignore) {}
 
+        try {
+            job.setInvoiceType(rs.getString("invoice_type"));
+        } catch (SQLException ignore) {}
+
         return job;
     }
 
@@ -394,7 +439,7 @@ public class JobRepository {
 
         List<Job> list = new ArrayList<>();
 
-        String sql = "SELECT " + JOB_SELECT + " FROM jobs j WHERE j.client_uuid = ? ORDER BY j.created_at DESC";
+        String sql = "SELECT " + JOB_SELECT + " FROM jobs j WHERE j.client_uuid = ? AND (j.job_type IS NULL OR j.job_type != 'CHARGE') ORDER BY j.created_at DESC";
 
         try (Connection con = DBConnection.getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
@@ -423,6 +468,7 @@ public class JobRepository {
                     FROM jobs
                     WHERE client_uuid = ?
                       AND invoice_uuid IS NULL
+                      AND (job_type IS NULL OR job_type != 'CHARGE')
                       AND LOWER(TRIM(REPLACE(COALESCE(status,''), '_', ' '))) = 'completed'
                     ORDER BY created_at DESC
                 """;
@@ -488,7 +534,7 @@ public class JobRepository {
                         (SELECT SUM(amount) FROM job_items ji WHERE ji.job_uuid = j.uuid) as total_val
                     FROM jobs j
                     LEFT JOIN clients c ON j.client_uuid = c.uuid
-                    WHERE j.status != 'DRAFT'
+                    WHERE j.status != 'DRAFT' AND (j.job_type IS NULL OR j.job_type != 'CHARGE')
                     ORDER BY j.created_at DESC
                     LIMIT ?
                 """;
@@ -810,8 +856,7 @@ public class JobRepository {
                 + JOB_ITEMS_TOTAL_SUBQUERY + " AS job_total\n"
                 + """
                 FROM jobs j
-                WHERE IFNULL(j.is_deleted, 0) = 0
-                  AND UPPER(TRIM(COALESCE(j.sync_status, ''))) IN ('', 'PENDING', 'WAITING_DEPENDENCY')
+                WHERE UPPER(TRIM(COALESCE(j.sync_status, ''))) IN ('', 'PENDING', 'WAITING_DEPENDENCY')
                   AND j.job_code NOT LIKE 'TEMP-%'
                 ORDER BY j.created_at ASC
                 """;

@@ -37,6 +37,7 @@ public class Job {
 	private String clientBusinessName;
 	private String invoiceNo;
 	private String invoiceStatus;
+	private String invoiceType;
 
 	public Job() {
 	}
@@ -269,6 +270,14 @@ public class Job {
 
 	public void setInvoiceStatus(String invoiceStatus) {
 		this.invoiceStatus = invoiceStatus;
+	}
+
+	public String getInvoiceType() {
+		return invoiceType;
+	}
+
+	public void setInvoiceType(String invoiceType) {
+		this.invoiceType = invoiceType;
 	}
 
 	private final javafx.beans.property.BooleanProperty selected = new javafx.beans.property.SimpleBooleanProperty(

@@ -123,14 +123,16 @@ public final class UniversalSyncEngine {
 				if (!SupabaseReachability.isReachable()) {
 					return;
 				}
-				RemoteToLocalSync.pullAll(http);
-				try {
-					MainController mc = MainController.getInstance();
-					if (mc != null) {
-						mc.refreshActiveScreen();
+				int changes = RemoteToLocalSync.pullAll(http);
+				if (changes > 0) {
+					try {
+						MainController mc = MainController.getInstance();
+						if (mc != null) {
+							mc.refreshActiveScreen();
+						}
+					} catch (Exception e) {
+						System.err.println("[UniversalSyncEngine] Failed to trigger UI refresh after pull: " + e.getMessage());
 					}
-				} catch (Exception e) {
-					System.err.println("[UniversalSyncEngine] Failed to trigger UI refresh after pull: " + e.getMessage());
 				}
 			});
 		});
@@ -214,6 +216,11 @@ public final class UniversalSyncEngine {
 				syncedThisPass += mappingSynced;
 				report.othersSynced += mappingSynced;
 
+				// invoice_additional_charges
+				int additionalChargesSynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("invoice_additional_charges", SupabaseEndpoints.INVOICE_ADDITIONAL_CHARGES, "uuid", false), report);
+				syncedThisPass += additionalChargesSynced;
+				report.othersSynced += additionalChargesSynced;
+
 				// 10. printing_items
 				int printingSynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("printing_items", SupabaseEndpoints.PRINTING_ITEMS, "uuid", false), report);
 				syncedThisPass += printingSynced;
@@ -258,6 +265,21 @@ public final class UniversalSyncEngine {
 				int mappingsSynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("document_number_mappings", SupabaseEndpoints.DOCUMENT_NUMBER_MAPPINGS, "uuid", false), report);
 				syncedThisPass += mappingsSynced;
 				report.othersSynced += mappingsSynced;
+
+				// 19. company_details
+				int companySynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("company_details", SupabaseEndpoints.COMPANY_DETAILS, "uuid", false), report);
+				syncedThisPass += companySynced;
+				report.othersSynced += companySynced;
+
+				// 20. bank_details
+				int bankSynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("bank_details", SupabaseEndpoints.BANK_DETAILS, "uuid", false), report);
+				syncedThisPass += bankSynced;
+				report.othersSynced += bankSynced;
+
+				// 21. hsn_sac_master
+				int hsnSynced = OtherPendingEntitiesSync.syncTable(http, new OtherPendingEntitiesSync.TableDef("hsn_sac_master", SupabaseEndpoints.HSN_SAC_MASTER, "uuid", false), report);
+				syncedThisPass += hsnSynced;
+				report.othersSynced += hsnSynced;
 
 				if (syncedThisPass > 0) {
 					progress = true;
@@ -399,6 +421,15 @@ public final class UniversalSyncEngine {
 			}
 			try {
 				boolean wasWaiting = "WAITING_DEPENDENCY".equalsIgnoreCase(client.getSyncStatus());
+
+				try (Connection conn = utils.DBConnection.getConnection()) {
+					List<String> colsList = SyncConflictResolver.getColumns(conn, "clients");
+					if (SyncConflictResolver.checkPushConflictAndResolve(conn, http, "clients", SupabaseEndpoints.CLIENTS, client.getClientUuid(), client.getUpdatedAt(), colsList)) {
+						synced++;
+						continue;
+					}
+				} catch (Exception ignored) {}
+
 				api.upsert(client);
 				markTableSynced("clients", client.getClientUuid());
 				synced++;
@@ -428,6 +459,15 @@ public final class UniversalSyncEngine {
 			}
 			try {
 				boolean wasWaiting = "WAITING_DEPENDENCY".equalsIgnoreCase(job.getSyncStatus());
+
+				try (Connection conn = utils.DBConnection.getConnection()) {
+					List<String> colsList = SyncConflictResolver.getColumns(conn, "jobs");
+					if (SyncConflictResolver.checkPushConflictAndResolve(conn, http, "jobs", SupabaseEndpoints.JOBS, job.getUuid(), job.getUpdatedAt(), colsList)) {
+						synced++;
+						continue;
+					}
+				} catch (Exception ignored) {}
+
 				JobSupabaseSync.upsertToRemote(http, job);
 				markTableSynced("jobs", job.getUuid());
 				synced++;
@@ -458,6 +498,15 @@ public final class UniversalSyncEngine {
 			}
 			try {
 				boolean wasWaiting = "WAITING_DEPENDENCY".equalsIgnoreCase(inv.getSyncStatus());
+
+				try (Connection conn = utils.DBConnection.getConnection()) {
+					List<String> colsList = SyncConflictResolver.getColumns(conn, "invoice_master");
+					if (SyncConflictResolver.checkPushConflictAndResolve(conn, http, "invoice_master", SupabaseEndpoints.INVOICE_MASTER, inv.getUuid(), inv.getUpdatedAt(), colsList)) {
+						synced++;
+						continue;
+					}
+				} catch (Exception ignored) {}
+
 				api.upsert(inv);
 				markTableSynced("invoice_master", inv.getUuid());
 				synced++;
@@ -485,6 +534,15 @@ public final class UniversalSyncEngine {
 			}
 			try {
 				boolean wasWaiting = "WAITING_DEPENDENCY".equalsIgnoreCase(payment.getSyncStatus());
+
+				try (Connection conn = utils.DBConnection.getConnection()) {
+					List<String> colsList = SyncConflictResolver.getColumns(conn, "payments");
+					if (SyncConflictResolver.checkPushConflictAndResolve(conn, http, "payments", SupabaseEndpoints.PAYMENTS, payment.getUuid(), payment.getUpdatedAt(), colsList)) {
+						synced++;
+						continue;
+					}
+				} catch (Exception ignored) {}
+
 				api.upsert(payment);
 				markTableSynced("payments", payment.getUuid());
 				synced++;

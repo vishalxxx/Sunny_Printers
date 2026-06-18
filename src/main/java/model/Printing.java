@@ -35,6 +35,7 @@ public class Printing implements Serializable {
     private transient boolean isNew;
     private transient boolean isUpdated;
     private transient boolean isDeleted;
+    private boolean includeNotesInInvoice = true;
 
     /* ================= SNAPSHOT ================= */
 
@@ -80,6 +81,7 @@ public class Printing implements Serializable {
         p.amount = amount;
         p.jobItemUuid = jobItemUuid;
         p.uuid = uuid;
+        p.includeNotesInInvoice = includeNotesInInvoice;
         return p;
     }
 
@@ -155,6 +157,9 @@ public class Printing implements Serializable {
 
     public boolean isDeleted() { return isDeleted; }
     public void setDeleted(boolean isDeleted) { this.isDeleted = isDeleted; }
+
+    public boolean isIncludeNotesInInvoice() { return includeNotesInInvoice; }
+    public void setIncludeNotesInInvoice(boolean includeNotesInInvoice) { this.includeNotesInInvoice = includeNotesInInvoice; }
 
     @Override
     public String toString() {

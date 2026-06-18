@@ -42,12 +42,16 @@ public final class OtherPendingEntitiesSync {
 			new TableDef("lamination_items", SupabaseEndpoints.LAMINATION_ITEMS, "uuid", false),
 			new TableDef("ctp_items", SupabaseEndpoints.CTP_ITEMS, "uuid", false),
 			new TableDef("invoice_job_mapping", SupabaseEndpoints.INVOICE_JOB_MAPPING, "uuid", false),
+			new TableDef("invoice_additional_charges", SupabaseEndpoints.INVOICE_ADDITIONAL_CHARGES, "uuid", false),
 			new TableDef("invoice_adjustments", SupabaseEndpoints.INVOICE_ADJUSTMENTS, "uuid", true),
 			new TableDef("payment_allocations", SupabaseEndpoints.PAYMENT_ALLOCATIONS, "uuid", false),
 			new TableDef("payment_details", SupabaseEndpoints.PAYMENT_DETAILS, "uuid", false),
 			new TableDef("suppliers", SupabaseEndpoints.SUPPLIERS, "uuid", false),
 			new TableDef("users", SupabaseEndpoints.USERS, "uuid", false),
-			new TableDef("document_number_mappings", SupabaseEndpoints.DOCUMENT_NUMBER_MAPPINGS, "uuid", false));
+			new TableDef("document_number_mappings", SupabaseEndpoints.DOCUMENT_NUMBER_MAPPINGS, "uuid", false),
+			new TableDef("company_details", SupabaseEndpoints.COMPANY_DETAILS, "uuid", false),
+			new TableDef("bank_details", SupabaseEndpoints.BANK_DETAILS, "uuid", false),
+			new TableDef("hsn_sac_master", SupabaseEndpoints.HSN_SAC_MASTER, "uuid", false));
 
 	private OtherPendingEntitiesSync() {
 	}
@@ -113,8 +117,12 @@ public final class OtherPendingEntitiesSync {
 						if ("paper_items".equals(def.sqliteTable()) || "ctp_items".equals(def.sqliteTable())) {
 							row.remove("supplier_name");
 						}
-						// Convert SQLite 0/1 integers to actual JSON booleans for is_deleted and is_active
-						for (String boolCol : new String[]{"is_deleted", "is_active"}) {
+						// Convert SQLite 0/1 integers to actual JSON booleans for is_deleted, is_active, and taxable_flag
+						for (String boolCol : new String[]{"is_deleted", "is_active", "taxable_flag"}) {
+							if ("invoice_master".equals(def.sqliteTable()) && "is_deleted".equals(boolCol)) {
+								// Skip boolean conversion for invoice_master's is_deleted (stays as integer 0/1)
+								continue;
+							}
 							if (row.has(boolCol) && !row.get(boolCol).isJsonNull()) {
 								try {
 									com.google.gson.JsonElement el = row.get(boolCol);
@@ -123,12 +131,26 @@ public final class OtherPendingEntitiesSync {
 										if (prim.isNumber()) {
 											row.addProperty(boolCol, prim.getAsInt() != 0);
 										} else if (prim.isString()) {
-											row.addProperty(boolCol, "true".equalsIgnoreCase(prim.getAsString()) || "1".equals(prim.getAsString()));
+											String val = prim.getAsString();
+											row.addProperty(boolCol, "true".equalsIgnoreCase(val) || "1".equals(val) || "yes".equalsIgnoreCase(val));
 										}
 									}
 								} catch (Exception ignored) {}
 							}
 						}
+
+
+						String localUpdatedAt = null;
+						try {
+							localUpdatedAt = rs.getString("updated_at");
+						} catch (Exception ignored) {}
+
+						List<String> colsList = SyncConflictResolver.getColumns(conn, def.sqliteTable());
+						if (SyncConflictResolver.checkPushConflictAndResolve(conn, http, def.sqliteTable(), def.endpoint(), uuid, localUpdatedAt, colsList)) {
+							synced++;
+							continue;
+						}
+
 						row.addProperty("sync_status", "SYNCED");
 						row.addProperty("synced_at", java.time.Instant.now().toString());
 						upsertRow(http, def.endpoint(), def.uuidColumn(), row);
@@ -164,9 +186,6 @@ public final class OtherPendingEntitiesSync {
 			return null;
 		}
 		StringBuilder sql = new StringBuilder("SELECT * FROM ").append(table).append(" WHERE 1=1");
-		if (columnExists(conn, table, "is_deleted")) {
-			sql.append(" AND ").append(PendingSyncFilters.NOT_DELETED);
-		}
 		sql.append(" AND ").append(PendingSyncFilters.PENDING_STATUS);
 		if (columnExists(conn, table, "invoice_uuid")) {
 			sql.append(" AND (invoice_uuid IS NULL OR invoice_uuid = '' OR invoice_uuid NOT IN (SELECT uuid FROM invoice_master WHERE invoice_no LIKE 'TEMP-%'))");

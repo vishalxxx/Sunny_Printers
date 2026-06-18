@@ -52,19 +52,21 @@ public class BankDetailsRepository {
 	}
 
 	public int insert(Connection con, BankDetails b) throws Exception {
+		String uuid = java.util.UUID.randomUUID().toString();
 		String sql = """
-				INSERT INTO bank_details (bank_name, account_holder_name, account_no, branch_ifsc, branch_name, ifsc_code, is_default, is_active)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+				INSERT INTO bank_details (uuid, bank_name, account_holder_name, account_no, branch_ifsc, branch_name, ifsc_code, is_default, is_active)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 				""";
 		try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-			ps.setString(1, safe(b.getBankName()));
-			ps.setString(2, safe(b.getAccountHolderName()));
-			ps.setString(3, safe(b.getAccountNo()));
-			ps.setString(4, safe(b.getBranchIfsc()));
-			ps.setString(5, safe(b.getBranchName()));
-			ps.setString(6, safe(b.getIfscCode()));
-			ps.setInt(7, b.isDefault() ? 1 : 0);
-			ps.setInt(8, b.isActive() ? 1 : 0);
+			ps.setString(1, uuid);
+			ps.setString(2, safe(b.getBankName()));
+			ps.setString(3, safe(b.getAccountHolderName()));
+			ps.setString(4, safe(b.getAccountNo()));
+			ps.setString(5, safe(b.getBranchIfsc()));
+			ps.setString(6, safe(b.getBranchName()));
+			ps.setString(7, safe(b.getIfscCode()));
+			ps.setInt(8, b.isDefault() ? 1 : 0);
+			ps.setInt(9, b.isActive() ? 1 : 0);
 			ps.executeUpdate();
 			try (ResultSet keys = ps.getGeneratedKeys()) {
 				if (keys.next()) {

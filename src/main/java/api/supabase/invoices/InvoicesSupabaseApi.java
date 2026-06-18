@@ -67,7 +67,7 @@ public final class InvoicesSupabaseApi {
 		o.addProperty("file_path", nz(inv.getFilePath()));
 		o.addProperty("document_series", nz(inv.getDocumentSeries()));
 		o.addProperty("is_deleted", inv.getIsDeleted());
-		o.addProperty("is_active", inv.getIsActive() > 0 ? 1 : 0);
+		o.addProperty("is_active", inv.getIsActive() > 0);
 		o.addProperty("sync_version", Math.max(1, inv.getSyncVersion()));
 		addTimestampOrNull(o, "created_at", inv.getCreatedAt());
 		addTimestampOrNull(o, "updated_at", inv.getUpdatedAt());

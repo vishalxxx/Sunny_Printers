@@ -326,8 +326,8 @@ public class ViewJobsController {
         } else {
             selectionCountLabel.setText(selected.size() + " job" + (selected.size() == 1 ? "" : "s") + " selected");
 
-            java.util.Set<String> uniqueStatuses = selected.stream()
-                    .map(j -> j.getStatus() == null ? "" : j.getStatus().trim().toLowerCase())
+            java.util.Set<utils.JobWorkflow.Major> uniqueStatuses = selected.stream()
+                    .map(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()))
                     .collect(Collectors.toSet());
 
             if (uniqueStatuses.size() > 1) {
@@ -349,10 +349,10 @@ public class ViewJobsController {
                 bulkInvoiceBtn.setVisible(true);  bulkInvoiceBtn.setManaged(true);
                 bulkCancelBtn.setVisible(true);   bulkCancelBtn.setManaged(true);
 
-                long draftCount      = selected.stream().filter(j -> "Draft".equalsIgnoreCase(j.getStatus())).count();
-                long processingCount = selected.stream().filter(j -> "In Progress".equalsIgnoreCase(j.getStatus())).count();
-                long completedCount  = selected.stream().filter(j -> "Completed".equalsIgnoreCase(j.getStatus())).count();
-                long anyButCancelled = selected.stream().filter(j -> !"Cancelled".equalsIgnoreCase(j.getStatus())).count();
+                long draftCount      = selected.stream().filter(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()) == utils.JobWorkflow.Major.DRAFT).count();
+                long processingCount = selected.stream().filter(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()) == utils.JobWorkflow.Major.PROCESSING).count();
+                long completedCount  = selected.stream().filter(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()) == utils.JobWorkflow.Major.COMPLETED).count();
+                long anyButCancelled = selected.stream().filter(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()) != utils.JobWorkflow.Major.CANCELLED).count();
 
                 bulkStartBtn.setText("Start Processing (" + draftCount + ")");
                 bulkStartBtn.setDisable(draftCount == 0);
@@ -364,7 +364,10 @@ public class ViewJobsController {
                 bulkInvoiceBtn.setDisable(completedCount == 0);
 
                 bulkCancelBtn.setText("Cancel Job (" + anyButCancelled + ")");
-                bulkCancelBtn.setDisable(anyButCancelled == 0);
+                boolean canBulkCancel = uniqueStatuses.contains(utils.JobWorkflow.Major.DRAFT) 
+                                     || uniqueStatuses.contains(utils.JobWorkflow.Major.PROCESSING) 
+                                     || uniqueStatuses.contains(utils.JobWorkflow.Major.COMPLETED);
+                bulkCancelBtn.setDisable(!canBulkCancel);
             }
         }
     }
@@ -407,6 +410,21 @@ public class ViewJobsController {
         processBulkStatusUpdate("Completed", "Job marked as completed!");
     }
 
+    private void processBulkStatusUpdate(String status, String successMsg) {
+        List<Job> selected = new ArrayList<>(jobsTable.getSelectionModel().getSelectedItems());
+        if (selected.isEmpty()) return;
+
+        for (Job job : selected) {
+            jobService.updateJobStatus(job.getUuid(), status);
+            job.setStatus(status);
+            applyDefaultChildForNewMajor(job, status);
+        }
+        jobsTable.refresh();
+        toast(successMsg);
+        jobsTable.getSelectionModel().clearSelection();
+        updateBulkActionBar();
+    }
+
     @FXML
     private void handleInvoiceAction() {
         List<Job> selected = new ArrayList<>(jobsTable.getSelectionModel().getSelectedItems());
@@ -433,28 +451,133 @@ public class ViewJobsController {
 
     @FXML
     private void handleCancelAction() {
-        processBulkStatusUpdate("Cancelled", "Job cancelled.");
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Job once cancelled cant be get back", ButtonType.YES, ButtonType.NO);
+        alert.setHeaderText("Cancel Job");
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.YES) {
+            List<Job> selected = new ArrayList<>(jobsTable.getSelectionModel().getSelectedItems());
+            processJobCancellations(selected);
+        }
+    }
+
+    private void processJobCancellations(List<Job> jobsToCancel) {
+        if (jobsToCancel == null || jobsToCancel.isEmpty()) return;
+
+        List<Job> toProcess = jobsToCancel.stream()
+                .filter(j -> !"Cancelled".equalsIgnoreCase(j.getStatus()))
+                .collect(Collectors.toList());
+
+        if (toProcess.isEmpty()) return;
+
+        Map<String, List<Job>> byInvoice = toProcess.stream()
+                .collect(Collectors.groupingBy(j -> j.getInvoiceUuid() == null ? "" : j.getInvoiceUuid()));
+
+        for (Map.Entry<String, List<Job>> entry : byInvoice.entrySet()) {
+            String invUuid = entry.getKey();
+            List<Job> jobsForInv = entry.getValue();
+
+            if (invUuid.isEmpty()) {
+                for (Job job : jobsForInv) {
+                    jobService.updateJobStatus(job.getUuid(), "Cancelled");
+                    job.setStatus("Cancelled");
+                    applyDefaultChildForNewMajor(job, "Cancelled");
+                }
+            } else {
+                InvoiceMaster invoice = invoiceService.getInvoiceByUuid(invUuid);
+                if (invoice == null || invoice.resolveDocumentSeries() != model.MasterDocumentSeries.PROFORMA_INVOICE) {
+                    for (Job job : jobsForInv) {
+                        jobService.updateJobStatus(job.getUuid(), "Cancelled");
+                        job.setStatus("Cancelled");
+                        applyDefaultChildForNewMajor(job, "Cancelled");
+                    }
+                    try {
+                        List<String> jobUuidsToUnlink = jobsForInv.stream().map(Job::getUuid).collect(Collectors.toList());
+                        invoiceService.unlinkJobsAndRecalculateProforma(invUuid, jobUuidsToUnlink);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                } else {
+                    List<Job> allLinkedJobs = jobService.getJobsByInvoice(invoice);
+                    long activeCount = allLinkedJobs.stream()
+                            .filter(j -> !"Cancelled".equalsIgnoreCase(j.getStatus()))
+                            .count();
+                    long cancellingCount = allLinkedJobs.stream()
+                            .filter(j -> jobsForInv.stream().anyMatch(jc -> jc.getUuid().equals(j.getUuid())))
+                            .count();
+
+                    if (activeCount == cancellingCount) {
+                        if (invoice.getPaidAmount() <= 0) {
+                            for (Job job : jobsForInv) {
+                                jobService.updateJobStatus(job.getUuid(), "Cancelled");
+                                job.setStatus("Cancelled");
+                                applyDefaultChildForNewMajor(job, "Cancelled");
+                            }
+                            invoiceService.updateInvoiceStatus(invUuid, "CANCELLED");
+                        } else {
+                            ButtonType btnRefund = new ButtonType("Refund Advance");
+                            ButtonType btnKeep = new ButtonType("Keep as Customer Advance");
+                            ButtonType btnCancel = new ButtonType("Cancel/Abort", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+                            Alert dialog = new Alert(Alert.AlertType.CONFIRMATION);
+                            dialog.setTitle("Handle Advance Payment");
+                            dialog.setHeaderText("Advance Received: " + invoice.getPaidAmount() + " for Proforma " + invoice.getInvoiceNo());
+                            dialog.setContentText("This proforma invoice will be cancelled. How would you like to handle the advance payment?");
+                            dialog.getButtonTypes().setAll(btnRefund, btnKeep, btnCancel);
+
+                            Optional<ButtonType> opt = dialog.showAndWait();
+                            if (opt.isPresent()) {
+                                if (opt.get() == btnRefund) {
+                                    Alert confirmRefund = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to refund the advance amount of ₹" + invoice.getPaidAmount() + "?", ButtonType.YES, ButtonType.NO);
+                                    confirmRefund.setTitle("Confirm Refund");
+                                    Optional<ButtonType> confOpt = confirmRefund.showAndWait();
+                                    if (confOpt.isPresent() && confOpt.get() == ButtonType.YES) {
+                                        invoiceService.refundAdvanceForInvoice(invUuid, invoice.getClientUuid(), invoice.getPaidAmount());
+                                        Toast.show((javafx.stage.Stage) jobsTable.getScene().getWindow(), "Refund created for advance.");
+                                    } else {
+                                        toast("Refund cancelled.");
+                                        return;
+                                    }
+                                } else if (opt.get() == btnKeep) {
+                                    invoiceService.deallocatePaymentsForInvoice(invUuid);
+                                    Toast.show((javafx.stage.Stage) jobsTable.getScene().getWindow(), "Advance deallocated (kept as Customer Advance).");
+                                } else {
+                                    toast("Cancellation aborted.");
+                                    return;
+                                }
+                                for (Job job : jobsForInv) {
+                                    jobService.updateJobStatus(job.getUuid(), "Cancelled");
+                                    job.setStatus("Cancelled");
+                                    applyDefaultChildForNewMajor(job, "Cancelled");
+                                }
+                                invoiceService.updateInvoiceStatus(invUuid, "CANCELLED");
+                            } else {
+                                toast("Cancellation aborted.");
+                                return;
+                            }
+                        }
+                    } else {
+                        List<String> jobUuidsToUnlink = jobsForInv.stream().map(Job::getUuid).collect(Collectors.toList());
+                        for (Job job : jobsForInv) {
+                            jobService.updateJobStatus(job.getUuid(), "Cancelled");
+                            job.setStatus("Cancelled");
+                            applyDefaultChildForNewMajor(job, "Cancelled");
+                        }
+                        invoiceService.unlinkJobsAndRecalculateProforma(invUuid, jobUuidsToUnlink);
+                        toast("Job cancelled & Proforma recalculated.");
+                    }
+                }
+            }
+        }
+
+        jobsTable.refresh();
+        jobsTable.getSelectionModel().clearSelection();
+        updateBulkActionBar();
     }
 
     @FXML
     private void clearSelection() {
         jobsTable.getSelectionModel().clearSelection();
         toast("Selection cleared.");
-    }
-
-    private void processBulkStatusUpdate(String status, String successMsg) {
-        List<Job> selected = new ArrayList<>(jobsTable.getSelectionModel().getSelectedItems());
-        if (selected.isEmpty()) return;
-
-        for (Job job : selected) {
-            jobService.updateJobStatus(job.getUuid(), status);
-            job.setStatus(status);
-            applyDefaultChildForNewMajor(job, status);
-        }
-        jobsTable.refresh();
-        toast(successMsg);
-        jobsTable.getSelectionModel().clearSelection();
-        updateBulkActionBar();
     }
     
     private void handleInvoicedRequest(Job job) {
@@ -898,11 +1021,11 @@ public class ViewJobsController {
             private final HBox root = new HBox(4);
             { 
                 getStyleClass().add("table-cell-job-actions");
-                root.setAlignment(Pos.CENTER);
+                root.setAlignment(Pos.CENTER_RIGHT);
                 root.setFillHeight(false);
                 root.setMaxWidth(Region.USE_PREF_SIZE);
-                root.setPadding(TABLE_LEAD_COL_PADDING);
-                setAlignment(Pos.CENTER);
+                root.setPadding(new Insets(0, 12, 0, 12));
+                setAlignment(Pos.CENTER_RIGHT);
             }
 
             @Override
@@ -917,7 +1040,7 @@ public class ViewJobsController {
                 
                 String statusMsg = job.getStatus() != null ? job.getStatus().toLowerCase() : "";
                 boolean isCancelled = statusMsg.contains("cancel");
-                boolean isInvoiced = statusMsg.contains("invoice") || statusMsg.contains("invoic");
+                boolean isInvoiced = statusMsg.contains("invoice") || statusMsg.contains("invoic") || (job.getInvoiceUuid() != null && !job.getInvoiceUuid().isBlank());
                 
                 Button primaryBtn = new Button();
                 primaryBtn.setMinHeight(24);
@@ -966,11 +1089,13 @@ public class ViewJobsController {
                 if (!isInvoiced) {
                     root.getChildren().add(primaryBtn);
                 }
-                if (!isCancelled) {
+                boolean canEdit = !isInvoiced && !isCancelled;
+                if (canEdit) {
                     root.getChildren().add(eBtn);
                 }
                 root.getChildren().add(mailBtn);
-                if (!isCancelled && !isInvoiced) {
+                boolean canCancel = !isInvoiced && !isCancelled;
+                if (canCancel) {
                     root.getChildren().add(cancelBtn);
                 }
                 useGraphicOnlyCell(this);
@@ -1014,20 +1139,27 @@ public class ViewJobsController {
         }
         
         List<model.Supplier> suppliers = new ArrayList<>();
-        String sql = "SELECT * FROM suppliers WHERE IFNULL(is_deleted,0) = 0 ORDER BY business_name ASC";
+        String sql = "SELECT * FROM suppliers WHERE IFNULL(is_deleted,0) = 0 AND uuid IN (" +
+                     "  SELECT DISTINCT supplier_uuid FROM paper_items pi JOIN job_items ji ON pi.job_item_uuid = ji.uuid WHERE ji.job_uuid = ? AND IFNULL(pi.is_deleted, 0) = 0 AND pi.supplier_uuid IS NOT NULL AND pi.supplier_uuid != '' " +
+                     "  UNION " +
+                     "  SELECT DISTINCT supplier_uuid FROM ctp_items ci JOIN job_items ji ON ci.job_item_uuid = ji.uuid WHERE ji.job_uuid = ? AND IFNULL(ci.is_deleted, 0) = 0 AND ci.supplier_uuid IS NOT NULL AND ci.supplier_uuid != ''" +
+                     ") ORDER BY business_name ASC";
         try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                model.Supplier s = new model.Supplier();
-                s.setUuid(rs.getString("uuid"));
-                s.setName(rs.getString("name"));
-                s.setbusinessName(rs.getString("business_name"));
-                s.setType(rs.getString("type"));
-                s.setPhone(rs.getString("phone"));
-                s.setAddress(rs.getString("address"));
-                s.setGstNumber(rs.getString("gst_number"));
-                suppliers.add(s);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, job.getUuid());
+            ps.setString(2, job.getUuid());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    model.Supplier s = new model.Supplier();
+                    s.setUuid(rs.getString("uuid"));
+                    s.setName(rs.getString("name"));
+                    s.setbusinessName(rs.getString("business_name"));
+                    s.setType(rs.getString("type"));
+                    s.setPhone(rs.getString("phone"));
+                    s.setAddress(rs.getString("address"));
+                    s.setGstNumber(rs.getString("gst_number"));
+                    suppliers.add(s);
+                }
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -1083,7 +1215,7 @@ public class ViewJobsController {
         // TableView for recipients
         TableView<MailRecipient> table = new TableView<>();
         table.getStyleClass().add("mail-popup-table");
-        table.setPrefHeight(150);
+        table.setPrefHeight(100);
         
         TableColumn<MailRecipient, String> typeCol = new TableColumn<>("Role / Type");
         typeCol.setCellValueFactory(new PropertyValueFactory<>("type"));
@@ -1120,7 +1252,8 @@ public class ViewJobsController {
         Label messageLabel = new Label("Message:");
         messageLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700;");
         TextArea messageArea = new TextArea();
-        messageArea.setPrefRowCount(6);
+        messageArea.setPrefRowCount(10);
+        messageArea.setPrefHeight(200);
         messageArea.setWrapText(true);
         messageArea.getStyleClass().add("mail-area");
         
@@ -1285,11 +1418,12 @@ public class ViewJobsController {
     }
 
     private void handleCancelActionForJob(Job job) {
-        jobService.updateJobStatus(job.getUuid(), "Cancelled");
-        job.setStatus("Cancelled");
-        applyDefaultChildForNewMajor(job, "Cancelled");
-        jobsTable.refresh();
-        toast("Job cancelled.");
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Job once cancelled cant be get back", ButtonType.YES, ButtonType.NO);
+        alert.setHeaderText("Cancel Job");
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.YES) {
+            processJobCancellations(List.of(job));
+        }
     }
 
     /** Theme primary, tinted child panel background, and 24dp-style icon path (stroke-drawn in UI). */
@@ -2003,6 +2137,15 @@ public class ViewJobsController {
     private void openEditJobScreen(Job job) {
         if (job == null) {
             toast("Cannot edit: job is null ❌");
+            return;
+        }
+        String status = job.getStatus() != null ? job.getStatus().toLowerCase() : "";
+        if (status.contains("invoice") || status.contains("invoic")) {
+            toast("❌ Invoiced jobs cannot be edited.");
+            return;
+        }
+        if (status.contains("cancel")) {
+            toast("❌ Cancelled jobs cannot be edited.");
             return;
         }
         try {

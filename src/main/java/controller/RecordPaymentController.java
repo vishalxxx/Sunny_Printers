@@ -23,6 +23,7 @@ import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 import model.Client;
@@ -258,7 +259,9 @@ public class RecordPaymentController implements Initializable {
 
     private void loadClients() {
         try {
-            clientCombo.getItems().setAll(clientService.getAllClients());
+            List<Client> clients = clientService.getAllClients();
+            utils.ComboBoxSorter.sortClients(clients);
+            clientCombo.getItems().setAll(clients);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -266,7 +269,9 @@ public class RecordPaymentController implements Initializable {
 
     private void setupPaymentTypeCombo() {
         if (paymentTypeCombo != null) {
-            paymentTypeCombo.setItems(FXCollections.observableArrayList("Payment", "Refund"));
+            java.util.List<String> types = new java.util.ArrayList<>(java.util.List.of("Payment", "Refund"));
+            utils.ComboBoxSorter.sortStrings(types);
+            paymentTypeCombo.setItems(FXCollections.observableArrayList(types));
             paymentTypeCombo.setValue("Payment");
             paymentTypeCombo.setOnAction(e -> {
                 onClientSelected(); // Refresh invoices list based on type
@@ -277,7 +282,9 @@ public class RecordPaymentController implements Initializable {
 
 
     private void setupPaymentModeCombo() {
-        paymentModeCombo.setItems(FXCollections.observableArrayList("Cash", "Cheque", "UPI", "Bank Transfer"));
+        java.util.List<String> modes = new java.util.ArrayList<>(java.util.List.of("Cash", "Cheque", "UPI", "Bank Transfer"));
+        utils.ComboBoxSorter.sortStrings(modes);
+        paymentModeCombo.setItems(FXCollections.observableArrayList(modes));
         paymentModeCombo.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             updateModeSpecificSections(newVal);
             updateAmountEnabledState();
@@ -337,21 +344,27 @@ public class RecordPaymentController implements Initializable {
             chequeReceiverBankCombo.getItems().setAll(getIndianBankNames());
         }
         if (chequeStatusCombo != null) {
-            chequeStatusCombo.setItems(FXCollections.observableArrayList("Pending", "Cleared", "Failed"));
+            java.util.List<String> list = new java.util.ArrayList<>(java.util.List.of("Pending", "Cleared", "Failed"));
+            utils.ComboBoxSorter.sortStrings(list);
+            chequeStatusCombo.setItems(FXCollections.observableArrayList(list));
         }
         if (receiverBankCombo != null) {
             receiverBankCombo.setEditable(false);
             receiverBankCombo.getItems().setAll(getIndianBankNames());
         }
         if (bankTransferStatusCombo != null) {
-            bankTransferStatusCombo.setItems(FXCollections.observableArrayList("Pending", "Success", "Failed"));
+            java.util.List<String> list = new java.util.ArrayList<>(java.util.List.of("Pending", "Success", "Failed"));
+            utils.ComboBoxSorter.sortStrings(list);
+            bankTransferStatusCombo.setItems(FXCollections.observableArrayList(list));
         }
         if (upiReceiverBankCombo != null) {
             upiReceiverBankCombo.setEditable(false);
             upiReceiverBankCombo.getItems().setAll(getIndianBankNames());
         }
         if (upiStatusCombo != null) {
-            upiStatusCombo.setItems(FXCollections.observableArrayList("Pending", "Success", "Failed"));
+            java.util.List<String> list = new java.util.ArrayList<>(java.util.List.of("Pending", "Success", "Failed"));
+            utils.ComboBoxSorter.sortStrings(list);
+            upiStatusCombo.setItems(FXCollections.observableArrayList(list));
         }
 
         // Disable all inputs until a client is selected
@@ -643,16 +656,28 @@ public class RecordPaymentController implements Initializable {
             return;
         }
 
+        String type = paymentTypeCombo.getValue();
+        if (type == null) type = "Payment";
+        if ("Refund".equalsIgnoreCase(type)) {
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to record this refund?", ButtonType.YES, ButtonType.NO);
+            confirm.setTitle("Confirm Refund");
+            confirm.setHeaderText("Refund Confirmation");
+            Optional<ButtonType> res = confirm.showAndWait();
+            if (res.isEmpty() || res.get() != ButtonType.YES) {
+                return;
+            }
+        }
+
         try {
             AtomicDB.runVoid(con -> {
                 String clientId = getSelectedClientUuid(con);
                 InvoiceMasterRepository repo = new InvoiceMasterRepository();
 
                 BigDecimal totalAmount = parseAmountField().abs();
-                String type = paymentTypeCombo.getValue();
-                if (type == null) type = "Payment";
+                String paymentType = paymentTypeCombo.getValue();
+                if (paymentType == null) paymentType = "Payment";
 
-                boolean isRefund = "Refund".equalsIgnoreCase(type);
+                boolean isRefund = "Refund".equalsIgnoreCase(paymentType);
                 if (isRefund) {
                     long selectedCount = invoiceItems.stream().filter(InvoiceRow::isSelected).count();
                     
@@ -697,7 +722,7 @@ public class RecordPaymentController implements Initializable {
                     ps.setString(4,
                             paymentDatePicker.getValue() == null ? null : paymentDatePicker.getValue().toString());
                     ps.setString(5, mode);
-                    ps.setString(6, type);
+                    ps.setString(6, paymentType);
                     ps.executeUpdate();
                 }
 
@@ -1017,7 +1042,7 @@ public class RecordPaymentController implements Initializable {
     }
 
     private ObservableList<String> getIndianBankNames() {
-        return FXCollections.observableArrayList(
+        ObservableList<String> list = FXCollections.observableArrayList(
                 "State Bank of India (SBI)",
                 "HDFC Bank",
                 "ICICI Bank",
@@ -1060,6 +1085,8 @@ public class RecordPaymentController implements Initializable {
                 "Paytm Payments Bank",
                 "Airtel Payments Bank",
                 "India Post Payments Bank");
+        utils.ComboBoxSorter.sortStrings(list);
+        return list;
     }
 
     private void savePaymentDetails(Connection con, String paymentUuid, String mode) throws Exception {

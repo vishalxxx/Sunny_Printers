@@ -147,7 +147,11 @@
                         <TextField fx:id="printSetField" promptText="Number of sets" styleClass="card-field"/>
                     </VBox>
                     <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="1" GridPane.columnSpan="2" GridPane.rowSpan="2">
-                        <Label text="PRODUCTION NOTES" styleClass="field-heading-sm"/>
+                        <HBox alignment="CENTER_LEFT" spacing="10">
+                            <Label text="PRODUCTION NOTES" styleClass="field-heading-sm"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <CheckBox fx:id="printIncludeNotesToggle" text="Include in Invoice" selected="true" styleClass="notes-toggle-checkbox"/>
+                        </HBox>
                         <TextArea fx:id="printNotesArea" promptText="Specify any additional printing requirements..." styleClass="card-textarea" wrapText="true" prefHeight="60"/>
                     </VBox>
 
@@ -243,7 +247,11 @@
                     </VBox>
 
                     <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="3" GridPane.columnSpan="3">
-                        <Label text="PRODUCTION NOTES" styleClass="field-heading-sm"/>
+                        <HBox alignment="CENTER_LEFT" spacing="10">
+                            <Label text="PRODUCTION NOTES" styleClass="field-heading-sm"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <CheckBox fx:id="ctpIncludeNotesToggle" text="Include in Invoice" selected="true" styleClass="notes-toggle-checkbox"/>
+                        </HBox>
                         <TextArea fx:id="ctpNotesArea" promptText="Specify any additional CTP requirements..." styleClass="card-textarea" wrapText="true" prefHeight="60"/>
                     </VBox>
 
@@ -307,7 +315,11 @@
                     </VBox>
 
                     <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="3" GridPane.columnSpan="3">
-                        <Label text="PRODUCTION NOTES" styleClass="field-heading-sm"/>
+                        <HBox alignment="CENTER_LEFT" spacing="10">
+                            <Label text="PRODUCTION NOTES" styleClass="field-heading-sm"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <CheckBox fx:id="paperIncludeNotesToggle" text="Include in Invoice" selected="true" styleClass="notes-toggle-checkbox"/>
+                        </HBox>
                         <TextArea fx:id="paperNotesArea" promptText="Specify any additional paper requirements..." styleClass="card-textarea" wrapText="true" prefHeight="60"/>
                     </VBox>
 
@@ -349,7 +361,11 @@
                         <TextField fx:id="bindingRateField" promptText="0.50" styleClass="card-field"/>
                     </VBox>
                     <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="2">
-                        <Label text="PRODUCTION NOTES" styleClass="field-heading-sm"/>
+                        <HBox alignment="CENTER_LEFT" spacing="10">
+                            <Label text="PRODUCTION NOTES" styleClass="field-heading-sm"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <CheckBox fx:id="bindingIncludeNotesToggle" text="Include in Invoice" selected="true" styleClass="notes-toggle-checkbox"/>
+                        </HBox>
                         <TextArea fx:id="bindingNotesArea" promptText="Specify any additional binding requirements..." styleClass="card-textarea" wrapText="true" prefHeight="60"/>
                     </VBox>
 
@@ -404,7 +420,11 @@
                     </VBox>
 
                     <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="3">
-                        <Label text="PRODUCTION NOTES" styleClass="field-heading-sm"/>
+                        <HBox alignment="CENTER_LEFT" spacing="10">
+                            <Label text="PRODUCTION NOTES" styleClass="field-heading-sm"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <CheckBox fx:id="lamIncludeNotesToggle" text="Include in Invoice" selected="true" styleClass="notes-toggle-checkbox"/>
+                        </HBox>
                         <TextArea fx:id="lamNotesArea" promptText="Specify any additional lamination requirements..." styleClass="card-textarea" wrapText="true" prefHeight="60"/>
                     </VBox>
 

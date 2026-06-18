@@ -23,6 +23,17 @@ public class SettingsService {
 		if (series == null) {
 			series = MasterDocumentSeries.GST_INVOICE;
 		}
+		if (series == MasterDocumentSeries.PROFORMA_INVOICE) {
+			NumberSequenceRepository numberSeqRepo = new NumberSequenceRepository();
+			NumberSequence local = numberSeqRepo.findByKey(con, "proforma_invoice");
+			if (local != null) {
+				long next = local.getOfflineCurrentNumber() + 1;
+				int pad = Math.max(1, local.getDigitWidth() > 0 ? local.getDigitWidth() : 4);
+				return DocumentNumbering.formatTemporary(local.getPrefix(), next, pad);
+			} else {
+				return "TEMP-PI-1";
+			}
+		}
 		String key = utils.NumberSequenceCatalog.moduleNameFor(series);
 		if (key != null && sequenceAllocator.canReachSupabaseFor(key)) {
 			SystemSettings s = repo.load(con);

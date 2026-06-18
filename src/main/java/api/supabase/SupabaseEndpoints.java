@@ -30,7 +30,8 @@ public enum SupabaseEndpoints {
 	HSN_SAC_MASTER("hsn_sac_master"),
 	USER_PROFILES("user_profiles"),
 	NUMBER_SEQUENCES("number_sequences"),
-	DOCUMENT_NUMBER_MAPPINGS("document_number_mappings");
+	DOCUMENT_NUMBER_MAPPINGS("document_number_mappings"),
+	INVOICE_ADDITIONAL_CHARGES("invoice_additional_charges");
 
 	private final String pathSegment;
 

@@ -260,7 +260,7 @@ public class JobItemService {
         if (p.getSets() != null && !p.getSets().isBlank()) sb.append("[").append(p.getSets()).append(" Sets] ");
         if (p.getColor() != null && !p.getColor().equalsIgnoreCase("Select Color")) sb.append(p.getColor()).append(" ");
         if (p.isWithCtp()) sb.append("with CTP ");
-        if (p.getNotes() != null && !p.getNotes().isBlank())
+        if (p.isIncludeNotesInInvoice() && p.getNotes() != null && !p.getNotes().isBlank())
             sb.append("- ").append(p.getNotes());
         return sb.toString().trim();
     }
@@ -273,7 +273,7 @@ public class JobItemService {
         if (p.getGsm() != null && !p.getGsm().equalsIgnoreCase("Select GSM")) sb.append(p.getGsm()).append(" GSM ");
         if (p.getType() != null && !p.getType().equalsIgnoreCase("Select Type")) sb.append(p.getType()).append(" ");
         if (p.getSource() != null) sb.append("(").append(p.getSource()).append(") ");
-        if (p.getNotes() != null && !p.getNotes().isBlank())
+        if (p.isIncludeNotesInInvoice() && p.getNotes() != null && !p.getNotes().isBlank())
             sb.append("- ").append(p.getNotes());
         return sb.toString().trim();
     }
@@ -283,7 +283,7 @@ public class JobItemService {
         if (b.getQty() > 0) sb.append(b.getQty()).append(" ");
         if (b.getProcess() != null && !b.getProcess().equalsIgnoreCase("Select Binding")) sb.append(b.getProcess()).append(" ");
         if (b.getRate() > 0) sb.append("@").append(b.getRate()).append(" ");
-        if (b.getNotes() != null && !b.getNotes().isBlank())
+        if (b.isIncludeNotesInInvoice() && b.getNotes() != null && !b.getNotes().isBlank())
             sb.append("- ").append(b.getNotes());
         return sb.toString().trim();
     }
@@ -295,7 +295,7 @@ public class JobItemService {
         if (l.getType() != null && !l.getType().equalsIgnoreCase("Select Type")) sb.append(l.getType()).append(" ");
         if (l.getSide() != null) sb.append(l.getSide()).append(" ");
         if (l.getSize() != null && !l.getSize().equalsIgnoreCase("Select Size")) sb.append(l.getSize()).append(" ");
-        if (l.getNotes() != null && !l.getNotes().isBlank())
+        if (l.isIncludeNotesInInvoice() && l.getNotes() != null && !l.getNotes().isBlank())
             sb.append("- ").append(l.getNotes());
         return sb.toString().trim();
     }
@@ -307,7 +307,7 @@ public class JobItemService {
         if (ctp.getGauge() != null && !ctp.getGauge().equalsIgnoreCase("Select Gauge")) sb.append(ctp.getGauge()).append(" ");
         if (ctp.getBacking() != null && !ctp.getBacking().equalsIgnoreCase("Select Backing")) sb.append(ctp.getBacking()).append(" ");
         if (ctp.getColor() != null && !ctp.getColor().equalsIgnoreCase("Select Color")) sb.append(ctp.getColor()).append(" ");
-        if (ctp.getNotes() != null && !ctp.getNotes().isBlank())
+        if (ctp.isIncludeNotesInInvoice() && ctp.getNotes() != null && !ctp.getNotes().isBlank())
             sb.append("- ").append(ctp.getNotes());
         return sb.toString().trim();
     }

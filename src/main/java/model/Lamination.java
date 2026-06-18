@@ -34,6 +34,7 @@ public class Lamination implements Serializable {
     private transient boolean isNew;
     private transient boolean isUpdated;
     private transient boolean isDeleted;
+    private boolean includeNotesInInvoice = true;
 
     /* ================= ORIGINAL SNAPSHOT ================= */
 
@@ -54,6 +55,7 @@ public class Lamination implements Serializable {
         l.size = this.size;
         l.notes = this.notes;
         l.amount = this.amount;
+        l.includeNotesInInvoice = this.includeNotesInInvoice;
         return l;
     }
 
@@ -158,6 +160,9 @@ public class Lamination implements Serializable {
 
     public String getDeletedAt() { return deletedAt; }
     public void setDeletedAt(String deletedAt) { this.deletedAt = deletedAt; }
+
+    public boolean isIncludeNotesInInvoice() { return includeNotesInInvoice; }
+    public void setIncludeNotesInInvoice(boolean includeNotesInInvoice) { this.includeNotesInInvoice = includeNotesInInvoice; }
 
     /* ================= DISPLAY ================= */
 

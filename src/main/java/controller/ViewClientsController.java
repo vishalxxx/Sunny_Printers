@@ -276,6 +276,7 @@ public class ViewClientsController implements Initializable {
             boolean matchesSearch = keyword.isBlank()
                     || (biz != null && biz.toLowerCase().contains(keyword))
                     || (name != null && name.toLowerCase().contains(keyword))
+                    || (client.getClientCode() != null && client.getClientCode().toLowerCase().contains(keyword))
                     || client.getClientUuid().contains(keyword);
 
             boolean matchesInsight = insight == null
@@ -614,7 +615,9 @@ public class ViewClientsController implements Initializable {
                 setGraphic(null);
             } else {
                 lblBusiness.setText(client.getBusinessName());
-                lblPrimary.setText("Primary: " + (client.getClientName().isBlank() ? "N/A" : client.getClientName()));
+                String clientCodeStr = client.getClientCode() != null && !client.getClientCode().isBlank() ? client.getClientCode() : "N/A";
+                String clientNameStr = client.getClientName() != null && !client.getClientName().isBlank() ? client.getClientName() : "N/A";
+                lblPrimary.setText("ID: " + clientCodeStr + "  |  " + clientNameStr);
                 
                 // Soft-delete tag & revive button toggle
                 if (client.isDeleted()) {

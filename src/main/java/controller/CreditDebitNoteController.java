@@ -223,6 +223,7 @@ public class CreditDebitNoteController {
 
     private void loadClients() {
         List<Client> clients = clientRepository.findAllSortedById();
+        utils.ComboBoxSorter.sortClients(clients);
         ObservableList<Client> clientList = FXCollections.observableArrayList(clients);
         clientComboBox.setItems(clientList);
 
@@ -254,6 +255,7 @@ public class CreditDebitNoteController {
     private void loadInvoicesForClient(String clientUuid) {
         try (Connection con = DBConnection.getConnection()) {
             List<InvoiceMaster> invoices = invoiceRepo.findByClientId(con, clientUuid);
+            utils.ComboBoxSorter.sortInvoices(invoices);
             ObservableList<InvoiceMaster> invList = FXCollections.observableArrayList(invoices);
             invoiceComboBox.setItems(invList);
 

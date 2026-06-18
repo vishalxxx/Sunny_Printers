@@ -11,10 +11,19 @@ import utils.SessionManager;
  */
 public final class SupabaseGate {
 
+	private static SupabaseRestClient overrideClient = null;
+
+	public static void setOverrideClient(SupabaseRestClient client) {
+		overrideClient = client;
+	}
+
 	private SupabaseGate() {
 	}
 
 	public static Optional<SupabaseRestClient> restClientIfConfigured() {
+		if (overrideClient != null) {
+			return Optional.of(overrideClient);
+		}
 		try {
 			SupabaseSettings s = new SupabaseSettingsRepository().load();
 			String url = s.getSupabaseUrl();

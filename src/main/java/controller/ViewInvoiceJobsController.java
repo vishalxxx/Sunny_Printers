@@ -24,6 +24,7 @@ import utils.Toast;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public class ViewInvoiceJobsController {
 
@@ -82,6 +83,7 @@ public class ViewInvoiceJobsController {
     private Button btnJobView, btnJobEdit, btnJobCancel, btnJobUnlink;
     @FXML
     private Button btnSave, btnDiscard;
+
     @FXML
     private Label paginationInfoLabel;
     @FXML
@@ -94,6 +96,7 @@ public class ViewInvoiceJobsController {
     private boolean isViewOnly = false;
     private InvoiceMaster currentEditInvoice;
     private final java.util.Set<String> jobsToCancel = new java.util.HashSet<>();
+    private String cancellationReason = "";
     private final java.util.Map<String, String> jobsToUpdateStatus = new java.util.HashMap<>();
     private final java.util.Set<String> jobsToUnlink = new java.util.HashSet<>();
     private final java.util.Set<String> jobsToAdd = new java.util.HashSet<>();
@@ -128,8 +131,8 @@ public class ViewInvoiceJobsController {
         setupJobActionBarStyles();
 
         // ✅ Job selection logic
-        jobsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
-            updateJobActionBar(newSel);
+        jobsTable.getSelectionModel().getSelectedItems().addListener((javafx.collections.ListChangeListener<Job>) c -> {
+            updateJobActionBar(new java.util.ArrayList<>(jobsTable.getSelectionModel().getSelectedItems()));
         });
 
         // ✅ Double click to edit job
@@ -141,6 +144,24 @@ public class ViewInvoiceJobsController {
                 }
                 if (e.isShiftDown() || e.isControlDown() || e.isShortcutDown()) {
                     return;
+                }
+                // If clicking in an interactive control or checkbox selection cell, let the event pass
+                javafx.event.EventTarget target = e.getTarget();
+                if (target instanceof javafx.scene.Node) {
+                    javafx.scene.Node node = (javafx.scene.Node) target;
+                    while (node != null && node != row) {
+                        if (node instanceof javafx.scene.control.ButtonBase ||
+                            node instanceof javafx.scene.control.ComboBoxBase ||
+                            node instanceof javafx.scene.control.TextInputControl ||
+                            node instanceof javafx.scene.control.MenuButton ||
+                            node instanceof javafx.scene.control.ChoiceBox ||
+                            node.getStyleClass().contains("vi-row-select-cb") ||
+                            node.getStyleClass().contains("row-action-btn") ||
+                            node.getStyleClass().contains("table-cell-job-select")) {
+                            return;
+                        }
+                        node = node.getParent();
+                    }
                 }
                 Job item = row.getItem();
                 if (item != null) {
@@ -184,6 +205,13 @@ public class ViewInvoiceJobsController {
 
             this.isViewOnly = viewOnlyMode;
             viewOnlyMode = false; // Reset for next use
+
+            // Set Save/Discard visibility immediately so it's correct before populateInvoiceDetails
+            btnSave.setVisible(!isViewOnly);
+            btnSave.setManaged(!isViewOnly);
+            btnDiscard.setVisible(true);
+            btnDiscard.setManaged(true);
+            btnDiscard.setText(isViewOnly ? "Close" : "Discard");
 
             onInvoiceSelected(prefill);
         } else {
@@ -488,8 +516,18 @@ public class ViewInvoiceJobsController {
         // Styles are now handled purely by CSS classes in view_job.css
     }
 
-    private void updateJobActionBar(Job job) {
-        if (job == null) {
+    private void updateJobActionBar(java.util.List<Job> selected) {
+        System.out.println("DEBUG: updateJobActionBar selected size: " + (selected == null ? 0 : selected.size()));
+
+        // Always ensure Save/Discard are in correct state
+        boolean canEdit = !isViewOnly;
+        btnSave.setVisible(canEdit);
+        btnSave.setManaged(canEdit);
+        btnDiscard.setVisible(true);
+        btnDiscard.setManaged(true);
+        btnDiscard.setText(isViewOnly ? "Close" : "Discard");
+
+        if (selected == null || selected.isEmpty()) {
             btnJobView.setDisable(true);
             btnJobEdit.setDisable(true);
             btnJobCancel.setDisable(true);
@@ -497,95 +535,16 @@ public class ViewInvoiceJobsController {
             return;
         }
 
-        btnJobView.setDisable(false);
-        btnJobUnlink.setDisable(false);
-
-        String status = job.getStatus() != null ? job.getStatus().toLowerCase() : "";
-        boolean isCancelled = status.startsWith("cancel");
-        // boolean isCompleted = status.equals("completed");
-        // boolean isInProgress = status.equals("in progress");
-        boolean isInvoiced = job.getInvoiceUuid() != null && !job.getInvoiceUuid().isBlank();
-
-        boolean isInvoiceDrafted = status.equals("invoice drafted") || status.equals("invoice_drafted");
-
-        if (isInvoiced || status.equals("invoiced")) {
-            // btnJobStart removed
-
-            // Allow cancelling if invoice is Draft
-            if (currentEditInvoice != null) {
-                String invStatus = currentEditInvoice.getStatus() != null ? currentEditInvoice.getStatus().toUpperCase()
-                        : "";
-                btnJobCancel.setDisable(!"DRAFT".equals(invStatus));
-            } else {
-                btnJobCancel.setDisable(true);
-            }
-
-            // Allow editing only if invoice is Draft/Final
-            if (currentEditInvoice != null) {
-                String invStatus = currentEditInvoice.getStatus() != null ? currentEditInvoice.getStatus().toLowerCase()
-                        : "";
-                boolean canEditInvoiced = invStatus.equals("draft") || invStatus.equals("final");
-                btnJobEdit.setDisable(!canEditInvoiced);
-            } else {
-                btnJobEdit.setDisable(true);
-            }
-        } else if (isInvoiceDrafted) {
-            // btnJobStart removed
-
-            // Allow cancelling if invoice is Draft
-            if (currentEditInvoice != null) {
-                String invS = currentEditInvoice.getStatus() != null ? currentEditInvoice.getStatus().toUpperCase()
-                        : "";
-                btnJobCancel.setDisable(!"DRAFT".equals(invS));
-            } else {
-                btnJobCancel.setDisable(true);
-            }
-
-            // Allow editing if the parent invoice is Draft/Final
-            if (currentEditInvoice != null) {
-                String invS = currentEditInvoice.getStatus() != null ? currentEditInvoice.getStatus().toUpperCase()
-                        : "";
-                boolean canEdit = "DRAFT".equals(invS) || "FINAL".equals(invS);
-                btnJobEdit.setDisable(!canEdit);
-            } else {
-                btnJobEdit.setDisable(true);
-            }
+        if (selected.size() == 1) {
+            btnJobView.setDisable(false);
+            btnJobEdit.setDisable(!canEdit);
+            btnJobCancel.setDisable(!canEdit);
+            btnJobUnlink.setDisable(!canEdit);
         } else {
-            // boolean disableProgressBtns = isCancelled || isCompleted;
-            // btnJobStart removed
-            btnJobEdit.setDisable(isCancelled);
-            btnJobCancel.setDisable(isCancelled);
-        }
-
-        // Final check on action bar based on Invoice Status and View Mode
-        if (currentEditInvoice != null) {
-            String invStatus = currentEditInvoice.getStatus() != null ? currentEditInvoice.getStatus().toUpperCase()
-                    : "";
-            boolean isDraft = "DRAFT".equals(invStatus);
-            boolean isLocked = "FINAL".equals(invStatus) || "SENT".equals(invStatus) || "PAID".equals(invStatus)
-                    || isViewOnly;
-
-            if (isDraft) {
-                // For draft invoices, we allow Edit and Unlink
-                btnJobEdit.setDisable(false);
-                btnJobUnlink.setDisable(false);
-                btnJobCancel.setDisable(false);
-                btnAddJob.setDisable(false);
-            } else if (isLocked) {
-                btnJobEdit.setDisable(true);
-                btnJobCancel.setDisable(true);
-                btnJobUnlink.setDisable(true);
-                btnAddJob.setDisable(true);
-            } else {
-                btnJobEdit.setDisable(false);
-                btnJobUnlink.setDisable(false);
-                btnAddJob.setDisable(false);
-            }
-        } else if (isViewOnly) {
+            btnJobView.setDisable(true);
             btnJobEdit.setDisable(true);
-            btnJobCancel.setDisable(true);
-            btnJobUnlink.setDisable(true);
-            btnAddJob.setDisable(true);
+            btnJobCancel.setDisable(!canEdit);
+            btnJobUnlink.setDisable(!canEdit);
         }
     }
 
@@ -610,49 +569,58 @@ public class ViewInvoiceJobsController {
 
     @FXML
     private void handleJobCancelAction() {
-        Job selected = jobsTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            jobsToCancel.add(selected.getUuid());
-            selected.setStatus("Cancelled");
-            tableData.remove(selected);
-            resultLabel.setText("Showing " + tableData.size() + " jobs");
-            toast("Job marked for cancellation and removal. Click Save to persist.");
+        java.util.List<Job> selectedItems = new java.util.ArrayList<>(jobsTable.getSelectionModel().getSelectedItems());
+        if (!selectedItems.isEmpty()) {
+            TextInputDialog reasonDlg = new TextInputDialog();
+            reasonDlg.setTitle("Cancellation Reason");
+            reasonDlg.setHeaderText("Reason for Cancelling Selected Jobs");
+            reasonDlg.setContentText("Please enter a reason:");
+            Optional<String> reasonResult = reasonDlg.showAndWait();
+            if (reasonResult.isEmpty()) {
+                return; // User cancelled, abort
+            }
+            String reason = reasonResult.get().trim();
+            if (reason.isEmpty()) {
+                reason = "No reason provided";
+            }
+            this.cancellationReason = reason;
+
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Selected jobs once cancelled cant be get back. Proceed?", ButtonType.YES, ButtonType.NO);
+            alert.setHeaderText("Cancel Selected Jobs");
+            Optional<ButtonType> result = alert.showAndWait();
+            if (result.isPresent() && result.get() == ButtonType.YES) {
+                for (Job job : selectedItems) {
+                    jobsToCancel.add(job.getUuid());
+                    job.setStatus("Cancelled");
+                    tableData.remove(job);
+                }
+                resultLabel.setText("Showing " + tableData.size() + " jobs");
+                toast("Selected jobs marked for cancellation and removal. Click Save to persist.");
+            }
         }
     }
 
     @FXML
     private void handleJobUnlinkAction() {
-        Job selected = jobsTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            String msg = "Unlink job " + selected.getJobNo() + " from this invoice?";
-            if (tableData.size() <= 1) {
-                String invStatus = currentEditInvoice.getStatus() != null ? currentEditInvoice.getStatus().toUpperCase()
-                        : "";
-                String invNo = currentEditInvoice.getInvoiceNo() != null
-                        ? currentEditInvoice.getInvoiceNo().toUpperCase()
-                        : "";
-                boolean isTemp = "DRAFT".equals(invStatus) && invNo.startsWith("TEMP-");
-
-                if (isTemp) {
-                    msg = "Unlinking the last job will result in the temporary invoice being deleted and jobs moved back to Completed status. Proceed?";
-                } else if (!"DRAFT".equals(invStatus) && !"FINAL".equals(invStatus)) {
-                    msg = "Unlinking the last job will result in the Invoice being CANCELLED. Proceed?";
-                } else {
-                    msg = "Unlink the last job? The invoice will remain as an empty " + invStatus
-                            + " invoice. Proceed?";
-                }
+        java.util.List<Job> selectedItems = new java.util.ArrayList<>(jobsTable.getSelectionModel().getSelectedItems());
+        if (!selectedItems.isEmpty()) {
+            String msg = "Unlink selected job(s) from this invoice?";
+            if (tableData.size() <= selectedItems.size()) {
+                msg = "Unlinking all jobs will result in the Invoice being CANCELLED. Proceed?";
             }
 
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION, msg, ButtonType.YES, ButtonType.NO);
-            alert.setHeaderText("Caution: Unlink Job");
+            alert.setHeaderText("Caution: Unlink Selected Jobs");
             alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
             alert.getDialogPane().setStyle("-fx-font-family: 'Segoe UI';");
             alert.showAndWait().ifPresent(type -> {
                 if (type == ButtonType.YES) {
-                    jobsToUnlink.add(selected.getUuid());
-                    tableData.remove(selected);
+                    for (Job job : selectedItems) {
+                        jobsToUnlink.add(job.getUuid());
+                        tableData.remove(job);
+                    }
                     resultLabel.setText("Showing " + tableData.size() + " jobs");
-                    toast("Job unlinked locally. Click Save to persist.");
+                    toast("Selected jobs unlinked locally. Click Save to persist.");
                 }
             });
         }
@@ -807,6 +775,10 @@ public class ViewInvoiceJobsController {
     }
 
     private void openEditJobScreen(Job job) {
+        if (job != null && "Cancelled".equalsIgnoreCase(job.getStatus())) {
+            toast("❌ Cancelled jobs cannot be edited.");
+            return;
+        }
         try {
             javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/fxml/edit_job.fxml"));
             javafx.scene.Parent view = loader.load();
@@ -902,6 +874,7 @@ public class ViewInvoiceJobsController {
                         txtInvoiceNo.setDisable(true);
                         if (invoiceIconEdit != null) invoiceIconEdit.setStyle("-fx-background-color: #A7A69D; -fx-opacity: 0.5;");
                     } else {
+                        utils.ComboBoxSorter.sortInvoices(invoices);
                         txtInvoiceNo.getItems().setAll(invoices);
                         txtInvoiceNo.setPromptText("Select Invoice...");
                         txtInvoiceNo.setDisable(false);
@@ -951,6 +924,7 @@ public class ViewInvoiceJobsController {
 
     private void loadClients() {
         List<Client> clients = clientService.getAllClients();
+        utils.ComboBoxSorter.sortClients(clients);
         clientComboBox.getItems().setAll(clients);
         txtClientName.getItems().setAll(clients);
     }
@@ -973,6 +947,7 @@ public class ViewInvoiceJobsController {
             if (invoiceIconSearch != null) invoiceIconSearch.setStyle("-fx-background-color: #A7A69D; -fx-opacity: 0.5;");
             toast("No invoices found for " + client.getBusinessName());
         } else {
+            utils.ComboBoxSorter.sortInvoices(invoices);
             invoiceComboBox.getItems().setAll(invoices);
             invoiceComboBox.setPromptText("Select Invoice...");
             if (invoiceIconSearch != null) invoiceIconSearch.setStyle("-fx-background-color: #CD7B4E; -fx-opacity: 1;");
@@ -980,12 +955,15 @@ public class ViewInvoiceJobsController {
     }
 
     private void onInvoiceSelected(InvoiceMaster invoice) {
+        currentEditInvoice = invoice;
         jobsToCancel.clear();
         jobsToUpdateStatus.clear();
         jobsToUnlink.clear();
         jobsToAdd.clear();
         tableData.clear();
         if (invoice == null) {
+            searchModeBox.setVisible(true);
+            searchModeBox.setManaged(true);
             editModeBox.setVisible(false);
             editModeBox.setManaged(false);
             jobActionsBox.setVisible(false);
@@ -994,7 +972,9 @@ public class ViewInvoiceJobsController {
             return;
         }
 
-        // Show the info card and actions
+        // Show the info card and actions; hide search bar so height stays fixed
+        searchModeBox.setVisible(false);
+        searchModeBox.setManaged(false);
         editModeBox.setVisible(true);
         editModeBox.setManaged(true);
         jobActionsBox.setVisible(true);
@@ -1012,14 +992,25 @@ public class ViewInvoiceJobsController {
 
         populateInvoiceDetails(invoice);
 
+        System.out.println("DEBUG: onInvoiceSelected called for invoice " + invoice.getInvoiceNo() + " (UUID: " + invoice.getUuid() + ")");
+
         Thread thread = new Thread(() -> {
             try {
+                System.out.println("DEBUG: Fetching jobs in background thread for invoice " + invoice.getInvoiceNo());
                 List<Job> jobs = jobService.getJobsByInvoice(invoice);
+                System.out.println("DEBUG: Fetched " + (jobs == null ? "null" : jobs.size()) + " jobs.");
                 Platform.runLater(() -> {
-                    tableData.setAll(jobs);
-                    resultLabel.setText("Showing " + jobs.size() + " jobs");
+                    try {
+                        tableData.setAll(jobs);
+                        resultLabel.setText("Showing " + jobs.size() + " jobs");
+                        System.out.println("DEBUG: Updated tableData on UI thread. tableData size: " + tableData.size());
+                    } catch (Exception ex) {
+                        System.err.println("DEBUG: Exception in Platform.runLater: ");
+                        ex.printStackTrace();
+                    }
                 });
             } catch (Exception e) {
+                System.err.println("DEBUG: Exception fetching jobs: ");
                 e.printStackTrace();
             }
         });
@@ -1040,10 +1031,12 @@ public class ViewInvoiceJobsController {
             if (matchingClient != null) {
                 txtClientName.setValue(matchingClient);
                 List<InvoiceMaster> invoices = invoiceMasterService.getInvoicesByClientId(matchingClient.getClientUuid());
+                utils.ComboBoxSorter.sortInvoices(invoices);
                 txtInvoiceNo.getItems().setAll(invoices);
             } else if (clientComboBox.getValue() != null) {
                 txtClientName.setValue(clientComboBox.getValue());
                 List<InvoiceMaster> invoices = invoiceMasterService.getInvoicesByClientId(clientComboBox.getValue().getClientUuid());
+                utils.ComboBoxSorter.sortInvoices(invoices);
                 txtInvoiceNo.getItems().setAll(invoices);
             }
 
@@ -1055,25 +1048,27 @@ public class ViewInvoiceJobsController {
         txtProcessStatus.setText(inv.getStatus());
 
         String stat = inv.getStatus() != null ? inv.getStatus().toUpperCase() : "";
-        boolean isDraft = "DRAFT".equals(stat);
+        boolean isDraft = "DRAFT".equals(stat) || stat.contains("DRAFT");
 
         // Locking logic
         boolean isLocked = !isDraft; // Consistent with user request to lock anything not Draft
         dpInvoiceDate.setDisable(isLocked);
 
         // Button Visibility
-        boolean canSave = isDraft && !isViewOnly; // 🔥 Respect both status and view mode
+        boolean canSave = !isViewOnly;
         btnSave.setVisible(canSave);
         btnSave.setManaged(canSave);
 
         // For Discard/Close button
         btnDiscard.setVisible(true);
         btnDiscard.setManaged(true);
-        if (isDraft) {
-            btnDiscard.setText(pendingPrefillInvoice == null ? "Discard" : "Discard Changes");
-        } else {
+        if (isViewOnly) {
             btnDiscard.setText("Close");
+        } else {
+            btnDiscard.setText(pendingPrefillInvoice == null ? "Discard" : "Discard Changes");
         }
+
+
 
     }
 
@@ -1170,6 +1165,14 @@ public class ViewInvoiceJobsController {
 
                     // 3. Cancel Jobs
                     if (!jobsToCancel.isEmpty()) {
+                        utils.SessionManager session = utils.SessionManager.getInstance();
+                        String cancelledBy = "System";
+                        if (session.getCurrentUser() != null) {
+                            cancelledBy = session.getCurrentUser().getUsername();
+                        } else if (session.getAuthEmail() != null) {
+                            cancelledBy = session.getAuthEmail();
+                        }
+                        invoiceMasterService.reallocatePaymentsOnJobCancellation(con, invoiceUuid, new java.util.ArrayList<>(jobsToCancel), cancellationReason, cancelledBy);
                         try (java.sql.PreparedStatement psC = con.prepareStatement(
                                 "UPDATE jobs SET status = 'Cancelled', invoice_uuid = NULL, sync_status = 'PENDING', "
                                         + "updated_at = datetime('now') WHERE uuid = ?")) {
@@ -1181,6 +1184,7 @@ public class ViewInvoiceJobsController {
                             psC.executeBatch();
                         }
                     }
+
 
                     // 4. Unlink Jobs
                     if (!jobsToUnlink.isEmpty()) {
@@ -1205,33 +1209,7 @@ public class ViewInvoiceJobsController {
                     }
 
                     // 6. Recalculate Totals
-                    try (java.sql.PreparedStatement psT = con.prepareStatement(
-                            """
-                                    UPDATE invoice_master SET
-                                      amount = (SELECT COALESCE(SUM(ji.amount), 0)
-                                                FROM job_items ji
-                                                JOIN jobs j ON ji.job_uuid = j.uuid
-                                                WHERE j.invoice_uuid = ?),
-                                      due_amount = (SELECT COALESCE(SUM(ji.amount), 0)
-                                                    FROM job_items ji
-                                                    JOIN jobs j ON ji.job_uuid = j.uuid
-                                                    WHERE j.invoice_uuid = ?)
-                                        + (SELECT COALESCE(SUM(amount), 0)
-                                           FROM invoice_adjustments
-                                           WHERE invoice_uuid = ? AND type = 'Debit Note')
-                                        - (SELECT COALESCE(SUM(amount), 0)
-                                           FROM invoice_adjustments
-                                           WHERE invoice_uuid = ? AND type = 'Credit Note')
-                                        - paid_amount
-                                    WHERE uuid = ?
-                                    """)) {
-                        psT.setString(1, invoiceUuid);
-                        psT.setString(2, invoiceUuid);
-                        psT.setString(3, invoiceUuid);
-                        psT.setString(4, invoiceUuid);
-                        psT.setString(5, invoiceUuid);
-                        psT.executeUpdate();
-                    }
+                    invoiceMasterService.recalculateInvoiceTotals(con, invoiceUuid);
 
                     // 7. Cleanup
                     invoiceMasterService.deleteEmptyInvoices(con);
@@ -1268,6 +1246,7 @@ public class ViewInvoiceJobsController {
                         String clientUuid = updated.getClientId();
                         if (clientUuid != null) {
                             List<InvoiceMaster> invoices = invoiceMasterService.getInvoicesByClientId(clientUuid);
+                            utils.ComboBoxSorter.sortInvoices(invoices);
                             invoiceComboBox.getItems().setAll(invoices);
                         }
                         invoiceComboBox.setValue(updated);
@@ -1278,14 +1257,24 @@ public class ViewInvoiceJobsController {
                     populateInvoiceDetails(updated);
 
                     // Re-load jobs
+                    System.out.println("DEBUG: refresh() reloading jobs for invoice " + updated.getInvoiceNo() + " (UUID: " + updated.getUuid() + ")");
                     Thread thread = new Thread(() -> {
                         try {
+                            System.out.println("DEBUG: refresh() Fetching jobs in background thread");
                             List<Job> jobs = jobService.getJobsByInvoice(updated);
+                            System.out.println("DEBUG: refresh() Fetched " + (jobs == null ? "null" : jobs.size()) + " jobs.");
                             Platform.runLater(() -> {
-                                tableData.setAll(jobs);
-                                resultLabel.setText("Showing " + jobs.size() + " jobs");
+                                try {
+                                    tableData.setAll(jobs);
+                                    resultLabel.setText("Showing " + jobs.size() + " jobs");
+                                    System.out.println("DEBUG: refresh() Updated tableData. Size: " + tableData.size());
+                                } catch (Exception ex) {
+                                    System.err.println("DEBUG: refresh() Exception in Platform.runLater: ");
+                                    ex.printStackTrace();
+                                }
                             });
                         } catch (Exception e) {
+                            System.err.println("DEBUG: refresh() Exception fetching jobs: ");
                             e.printStackTrace();
                         }
                     });

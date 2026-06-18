@@ -23,6 +23,7 @@ public class InvoiceStorageService {
 	public static File saveInvoice(Workbook workbook, Invoice invoice) {
 		File output = CompanyDataLayout.invoiceExcelPath(invoice);
 		output.getParentFile().mkdirs();
+		output = getWritableFile(output);
 		try (FileOutputStream fos = new FileOutputStream(output)) {
 			workbook.write(fos);
 		} catch (Exception e) {
@@ -56,12 +57,42 @@ public class InvoiceStorageService {
 	public static File createPdfFile(Invoice invoice) {
 		File out = CompanyDataLayout.invoicePdfPath(invoice);
 		out.getParentFile().mkdirs();
-		return out;
+		return getWritableFile(out);
 	}
 
 	public static File createMonthlyPdfFile(YearMonth ym) {
 		File out = CompanyDataLayout.monthlyBulkPdfPath(ym);
 		out.getParentFile().mkdirs();
-		return out;
+		return getWritableFile(out);
+	}
+
+	private static File getWritableFile(File file) {
+		if (file == null) {
+			return null;
+		}
+		if (file.exists()) {
+			boolean locked = false;
+			try (FileOutputStream fos = new FileOutputStream(file, true)) {
+				// File is writable/not locked
+			} catch (Exception e) {
+				locked = true;
+			}
+			if (locked) {
+				String path = file.getAbsolutePath();
+				int dotIndex = path.lastIndexOf('.');
+				String base = dotIndex > 0 ? path.substring(0, dotIndex) : path;
+				String ext = dotIndex > 0 ? path.substring(dotIndex) : "";
+				int count = 1;
+				while (true) {
+					File candidate = new File(base + " (" + count + ")" + ext);
+					try (FileOutputStream fos = new FileOutputStream(candidate, true)) {
+						return candidate;
+					} catch (Exception e) {
+						count++;
+					}
+				}
+			}
+		}
+		return file;
 	}
 }

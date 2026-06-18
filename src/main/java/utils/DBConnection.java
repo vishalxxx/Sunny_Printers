@@ -8,7 +8,15 @@ import java.sql.Statement;
 
 public class DBConnection {
 
-    private static final String URL = "jdbc:sqlite:database/sunnyprinters.db";
+    private static String url = "jdbc:sqlite:database/sunnyprinters.db";
+
+    public static void setUrl(String newUrl) {
+        url = newUrl;
+    }
+
+    public static String getUrl() {
+        return url;
+    }
 
     static {
         try {
@@ -28,7 +36,7 @@ public class DBConnection {
 
     public static Connection getConnection() throws Exception {
 		ensureDatabaseParentDirectory();
-        Connection connection = DriverManager.getConnection(URL);
+        Connection connection = DriverManager.getConnection(url);
 
         try (Statement st = connection.createStatement()) {
             st.execute("PRAGMA journal_mode=WAL;");

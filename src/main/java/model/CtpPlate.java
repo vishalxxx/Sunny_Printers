@@ -36,6 +36,7 @@ public class CtpPlate implements Serializable {
     private transient boolean isNew;
     private transient boolean isUpdated;
     private transient boolean isDeleted;
+    private boolean includeNotesInInvoice = true;
 
     /* ================= SNAPSHOT ================= */
 
@@ -57,6 +58,7 @@ public class CtpPlate implements Serializable {
         c.color = this.color;
         c.notes = this.notes;
         c.amount = this.amount;
+        c.includeNotesInInvoice = this.includeNotesInInvoice;
         return c;
     }
 
@@ -164,6 +166,9 @@ public class CtpPlate implements Serializable {
 
     public String getDeletedAt() { return deletedAt; }
     public void setDeletedAt(String deletedAt) { this.deletedAt = deletedAt; }
+
+    public boolean isIncludeNotesInInvoice() { return includeNotesInInvoice; }
+    public void setIncludeNotesInInvoice(boolean includeNotesInInvoice) { this.includeNotesInInvoice = includeNotesInInvoice; }
 
     /* ================= DEBUG ================= */
 

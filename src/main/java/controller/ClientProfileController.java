@@ -65,6 +65,7 @@ public class ClientProfileController implements Initializable {
     @FXML private Label lblAddress;
     @FXML private Label lblTaxId;
     @FXML private Label lblNotes;
+    @FXML private Label lblClientId;
 
     private Client currentClient;
     private final ClientRepository clientRepo = new ClientRepository();
@@ -143,9 +144,13 @@ public class ClientProfileController implements Initializable {
         String notesStr = currentClient.getNotes() != null && !currentClient.getNotes().isEmpty() ? currentClient.getNotes() : "No internal notes available.";
         String notes = "\"" + notesStr + "\"";
 
+        String clientCodeDisplay = currentClient.getClientCode() != null && !currentClient.getClientCode().isBlank()
+                ? currentClient.getClientCode() : "N/A";
+
         Platform.runLater(() -> {
             if (lblBusinessName != null) lblBusinessName.setText(name);
             if (lblInitial != null) lblInitial.setText(initial);
+            if (lblClientId != null) lblClientId.setText(clientCodeDisplay);
             if (lblStatusTag != null) lblStatusTag.setText(status);
             if (lblOwnerName != null) lblOwnerName.setText(owner);
             if (lblEmail != null) lblEmail.setText(email);
@@ -476,7 +481,12 @@ public class ClientProfileController implements Initializable {
                     }
                     InvoiceBuilderService builder = new InvoiceBuilderService();
                     Invoice full = builder.buildInvoiceFromMasterForPdfExport(master.getUuid());
-                    File created = new PdfInvoiceService().generateSingleInvoicePDF(full);
+                    File created;
+                    if (model.MasterDocumentSeries.GST_INVOICE == full.getMasterDocumentSeries()) {
+                        created = new service.GstPdfInvoiceService().generateGstInvoice(full);
+                    } else {
+                        created = new PdfInvoiceService().generateSingleInvoicePDF(full);
+                    }
                     if (stage != null) {
                         Toast.showSmall(stage, "Invoice PDF saved");
                     }

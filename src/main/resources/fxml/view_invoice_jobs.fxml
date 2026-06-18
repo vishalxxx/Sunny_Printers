@@ -97,14 +97,6 @@
                     style="-fx-shape: 'M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z'; -fx-background-color: #F1ECE6; -fx-min-width: 32; -fx-min-height: 32;" />
             </StackPane>
 
-            <!-- Dynamic Save/Discard Box (Hidden by default but keep references) -->
-            <VBox fx:id="saveDiscardBox" spacing="8" alignment="CENTER_RIGHT" managed="false"
-                visible="false">
-                <Button fx:id="btnSave" text="Save Changes  ✓" onAction="#handleSaveChanges"
-                    styleClass="finish-btn-premium" prefWidth="140" />
-                <Button fx:id="btnDiscard" text="✕  Discard" onAction="#handleDiscardChanges"
-                    styleClass="cancel-btn" />
-            </VBox>
         </HBox>
     </VBox>
 
@@ -148,6 +140,10 @@
         <Region HBox.hgrow="ALWAYS" />
         <Button fx:id="btnAddJob" text="+ Add Jobs" onAction="#handleAddJobsToInvoice"
             styleClass="action-btn-custom, btn-light-green" />
+        <Button fx:id="btnSave" text="Save Changes ✓" onAction="#handleSaveChanges"
+            styleClass="finish-btn-premium" />
+        <Button fx:id="btnDiscard" text="Discard" onAction="#handleDiscardChanges"
+            styleClass="cancel-btn" />
     </HBox>
 
     <VBox VBox.vgrow="ALWAYS" styleClass="invoice-card-container" spacing="12" style="-fx-padding: 14;">

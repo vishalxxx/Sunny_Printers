@@ -43,20 +43,22 @@ public class CompanyDetailsRepository {
 	}
 
 	public int insert(Connection con, CompanyDetails c) throws Exception {
+		String uuid = java.util.UUID.randomUUID().toString();
 		String sql = """
-				INSERT INTO company_details (trade_name, address, phone, alt_phone, email, gstin, state, is_default, is_active)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+				INSERT INTO company_details (uuid, trade_name, address, phone, alt_phone, email, gstin, state, is_default, is_active)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 				""";
 		try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-			ps.setString(1, safe(c.getTradeName()));
-			ps.setString(2, safe(c.getAddress()));
-			ps.setString(3, safe(c.getPhone()));
-			ps.setString(4, safe(c.getAltPhone()));
-			ps.setString(5, safe(c.getEmail()));
-			ps.setString(6, safe(c.getGstin()));
-			ps.setString(7, safe(c.getState()));
-			ps.setInt(8, c.isDefault() ? 1 : 0);
-			ps.setInt(9, c.isActive() ? 1 : 0);
+			ps.setString(1, uuid);
+			ps.setString(2, safe(c.getTradeName()));
+			ps.setString(3, safe(c.getAddress()));
+			ps.setString(4, safe(c.getPhone()));
+			ps.setString(5, safe(c.getAltPhone()));
+			ps.setString(6, safe(c.getEmail()));
+			ps.setString(7, safe(c.getGstin()));
+			ps.setString(8, safe(c.getState()));
+			ps.setInt(9, c.isDefault() ? 1 : 0);
+			ps.setInt(10, c.isActive() ? 1 : 0);
 			ps.executeUpdate();
 			try (ResultSet keys = ps.getGeneratedKeys()) {
 				if (keys.next()) return keys.getInt(1);

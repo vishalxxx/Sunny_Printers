@@ -107,6 +107,14 @@ public class MainController implements Initializable {
 	private Button btnChart1M, btnChart3M, btnChart6M;
 	@FXML
 	private Label lblCashFlow_M1, lblCashFlow_M2, lblCashFlow_M3, lblCashFlow_M4, lblCashFlow_M5, lblCashFlow_M6;
+	@FXML
+	private Label lblSyncStatus;
+	@FXML
+	private Label lblPendingSync;
+	@FXML
+	private Label lblLastSync;
+	@FXML
+	private Button btnSyncNow;
 
 	@FXML
 	private javafx.scene.control.ComboBox<String> comboTimeRange;
@@ -457,8 +465,9 @@ public class MainController implements Initializable {
 		loadDashboardData();
 		service.sync.ConnectivitySyncWatcher.start();
 		api.supabase.sequences.NumberSequenceSupabaseSync.syncRemoteToLocalAsync();
-		service.sync.UniversalSyncEngine.scheduleSyncAsync();
-		service.sync.UniversalSyncEngine.schedulePullAsync();
+		setupSyncStatusBindings();
+		service.sync.SyncScheduler.getInstance().start();
+		service.sync.SyncCoordinator.getInstance().syncNow();
 
 		if (mainSearchBox != null && mainSearchField != null) {
 			mainSearchField.focusedProperty().addListener((obs, oldVal, focused) -> {
@@ -1673,7 +1682,7 @@ public class MainController implements Initializable {
 
 	@FXML
 	public void showJobsSubmenu() {
-		toggleSubmenu(jobsSubmenu, jobsChevron, jobsBtn, this::loadAddJob);
+		toggleSubmenu(jobsSubmenu, jobsChevron, jobsBtn, this::loadViewJob);
 	}
 
 	@FXML
@@ -2314,5 +2323,63 @@ public class MainController implements Initializable {
 		if (u != null) {
 			view.getStylesheets().add(u.toExternalForm());
 		}
+	}
+
+	private void setupSyncStatusBindings() {
+		service.sync.SyncStatusManager syncManager = service.sync.SyncStatusManager.getInstance();
+		
+		syncManager.syncingProperty().addListener((obs, oldVal, syncing) -> updateSyncStatusUI());
+		syncManager.onlineProperty().addListener((obs, oldVal, online) -> updateSyncStatusUI());
+		updateSyncStatusUI();
+
+		if (lblPendingSync != null) {
+			lblPendingSync.textProperty().bind(
+				javafx.beans.binding.Bindings.concat("Pending Sync: ", syncManager.pendingSyncCountProperty().asString())
+			);
+		}
+
+		syncManager.lastSyncTimeProperty().addListener((obs, oldVal, newTime) -> {
+			if (lblLastSync != null) {
+				if (newTime == null) {
+					lblLastSync.setText("Last Sync: Never");
+				} else {
+					lblLastSync.setText("Last Sync: " + newTime.format(java.time.format.DateTimeFormatter.ofPattern("hh:mm a")));
+				}
+			}
+		});
+		if (lblLastSync != null) {
+			if (syncManager.getLastSyncTime() == null) {
+				lblLastSync.setText("Last Sync: Never");
+			} else {
+				lblLastSync.setText("Last Sync: " + syncManager.getLastSyncTime().format(java.time.format.DateTimeFormatter.ofPattern("hh:mm a")));
+			}
+		}
+
+		if (btnSyncNow != null) {
+			btnSyncNow.disableProperty().bind(syncManager.syncingProperty());
+		}
+	}
+
+	private void updateSyncStatusUI() {
+		Platform.runLater(() -> {
+			service.sync.SyncStatusManager syncManager = service.sync.SyncStatusManager.getInstance();
+			if (lblSyncStatus != null) {
+				if (syncManager.isSyncing()) {
+					lblSyncStatus.setText("🟡 Syncing...");
+					lblSyncStatus.setStyle("-fx-text-fill: #D4AF37; -fx-font-weight: bold; -fx-font-size: 11px;");
+				} else if (syncManager.isOnline()) {
+					lblSyncStatus.setText("🟢 Online");
+					lblSyncStatus.setStyle("-fx-text-fill: #2E7D32; -fx-font-weight: bold; -fx-font-size: 11px;");
+				} else {
+					lblSyncStatus.setText("🔴 Offline");
+					lblSyncStatus.setStyle("-fx-text-fill: #8B0000; -fx-font-weight: bold; -fx-font-size: 11px;");
+				}
+			}
+		});
+	}
+
+	@FXML
+	private void handleSyncNow(javafx.event.ActionEvent event) {
+		service.sync.SyncCoordinator.getInstance().syncNow();
 	}
 }

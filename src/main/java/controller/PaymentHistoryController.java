@@ -145,7 +145,9 @@ public class PaymentHistoryController implements Initializable {
     private void loadClients() {
         try {
             ClientRepository clientRepo = new ClientRepository();
-            ObservableList<Client> clients = FXCollections.observableArrayList(clientRepo.findAllSortedById());
+            java.util.List<Client> list = clientRepo.findAllSortedById();
+            utils.ComboBoxSorter.sortClients(list);
+            ObservableList<Client> clients = FXCollections.observableArrayList(list);
             setupClientCombo();
             clientCombo.setItems(clients);
         } catch (Exception e) {
@@ -163,6 +165,7 @@ public class PaymentHistoryController implements Initializable {
             } else {
                 list = invService.getRecentInvoices(200);
             }
+            utils.ComboBoxSorter.sortInvoices(list);
             invoiceCombo.setItems(FXCollections.observableArrayList(list));
             
             invoiceCombo.setConverter(new javafx.util.StringConverter<InvoiceMaster>() {

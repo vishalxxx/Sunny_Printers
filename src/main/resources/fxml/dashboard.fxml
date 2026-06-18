@@ -242,7 +242,20 @@
                         
                         <Region HBox.hgrow="ALWAYS"/>
                         
-                        <HBox spacing="10" alignment="CENTER">
+                        <HBox spacing="10" alignment="CENTER" minWidth="-Infinity">
+                            <!-- Sync Status Area -->
+                            <HBox spacing="10" alignment="CENTER" minWidth="-Infinity" style="-fx-background-color: #FAF9F5; -fx-background-radius: 20; -fx-padding: 4 12; -fx-border-color: #EFE9DB; -fx-border-radius: 20; -fx-border-width: 1;">
+                                <Label fx:id="lblSyncStatus" text="🟢 Online" minWidth="-Infinity" style="-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #2E7D32;"/>
+                                <Separator orientation="VERTICAL" prefHeight="12" style="-fx-opacity: 0.2;"/>
+                                <Label fx:id="lblPendingSync" text="Pending Sync: 0" minWidth="-Infinity" style="-fx-font-size: 11px; -fx-text-fill: #716D68;"/>
+                                <Separator orientation="VERTICAL" prefHeight="12" style="-fx-opacity: 0.2;"/>
+                                <Label fx:id="lblLastSync" text="Last Sync: Never" minWidth="-Infinity" style="-fx-font-size: 11px; -fx-text-fill: #716D68;"/>
+                            </HBox>
+                            
+                            <Button fx:id="btnSyncNow" text="Sync Now" onAction="#handleSyncNow" minWidth="-Infinity" style="-fx-background-color: #CD7B4E; -fx-text-fill: white; -fx-font-size: 11px; -fx-font-weight: bold; -fx-background-radius: 20; -fx-padding: 5 15; -fx-cursor: hand;"/>
+                            
+                            <Separator orientation="VERTICAL" prefHeight="24" style="-fx-opacity: 0.1; -fx-padding: 0 5;"/>
+
                             <!-- Notification Icon -->
                             <StackPane styleClass="header-icon-btn">
                                 <Region styleClass="sidebar-icon, icon-notification" style="-fx-background-color: #716D68; -fx-min-width: 18; -fx-min-height: 18;"/>

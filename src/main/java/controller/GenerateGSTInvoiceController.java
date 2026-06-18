@@ -27,6 +27,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.Set;
 
 public class GenerateGSTInvoiceController implements Initializable {
@@ -97,7 +101,7 @@ public class GenerateGSTInvoiceController implements Initializable {
     @FXML
     private TableView<ItemRow> tableItems;
     @FXML
-    private Button btnAddItem;
+    private MenuButton btnAddItem;
     @FXML
     private Button btnImportJob;
     @FXML
@@ -192,6 +196,9 @@ public class GenerateGSTInvoiceController implements Initializable {
         }
         if (!printingHsnOptions.contains("—")) {
             printingHsnOptions.add(0, "—");
+        }
+        if (!printingHsnOptions.contains("NA")) {
+            printingHsnOptions.add("NA");
         }
     }
 
@@ -377,9 +384,61 @@ public class GenerateGSTInvoiceController implements Initializable {
             TableColumn<ItemRow, String> col = (TableColumn<ItemRow, String>) cols.get(3);
             col.setCellValueFactory(c -> c.getValue().qtyProperty());
             col.setCellFactory(tc -> {
-                TableCell<ItemRow, String> cell = javafx.scene.control.cell.TextFieldTableCell.<ItemRow>forTableColumn().call(tc);
-                cell.getStyleClass().add("gst-editable-text-cell");
-                return cell;
+                return new TableCell<ItemRow, String>() {
+                    private TextField textField;
+                    {
+                        getStyleClass().add("gst-editable-text-cell");
+                    }
+                    @Override
+                    public void startEdit() {
+                        if (!isEmpty()) {
+                            ItemRow row = getTableView().getItems().get(getIndex());
+                            if (row != null && row.isCharge()) {
+                                return;
+                            }
+                            super.startEdit();
+                            createTextField();
+                            setText(null);
+                            setGraphic(textField);
+                            textField.selectAll();
+                            textField.requestFocus();
+                        }
+                    }
+                    @Override
+                    public void cancelEdit() {
+                        super.cancelEdit();
+                        setText(getItem());
+                        setGraphic(null);
+                    }
+                    @Override
+                    public void updateItem(String item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (empty || item == null) {
+                            setText(null);
+                            setGraphic(null);
+                        } else {
+                            if (isEditing()) {
+                                if (textField != null) {
+                                    textField.setText(item);
+                                }
+                                setText(null);
+                                setGraphic(textField);
+                            } else {
+                                setText(item);
+                                setGraphic(null);
+                            }
+                        }
+                    }
+                    private void createTextField() {
+                        textField = new TextField(getItem() != null ? getItem() : "");
+                        textField.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+                            if (!isFocused) {
+                                commitEdit(textField.getText());
+                            }
+                        });
+                        textField.setOnAction(e -> commitEdit(textField.getText()));
+                    }
+                };
             });
             col.setEditable(true);
             col.setOnEditCommit(ev -> {
@@ -396,10 +455,14 @@ public class GenerateGSTInvoiceController implements Initializable {
             TableColumn<ItemRow, String> col = (TableColumn<ItemRow, String>) cols.get(4);
             col.setCellValueFactory(c -> c.getValue().unitProperty());
             col.setCellFactory(tc -> {
-                ComboBoxTableCell<ItemRow, String> cell = new ComboBoxTableCell<>(FXCollections.observableArrayList("PCS", "NOS", "PKTS", "BOX", "KGS")) {
+                ComboBoxTableCell<ItemRow, String> cell = new ComboBoxTableCell<>(FXCollections.observableArrayList("PCS", "NOS", "PKTS", "BOX", "KGS", "NA")) {
                     {
                         setOnMouseClicked(e -> {
                             if (!isEmpty()) {
+                                ItemRow row = getTableView().getItems().get(getIndex());
+                                if (row != null && row.isCharge()) {
+                                    return;
+                                }
                                 getTableView().edit(getIndex(), getTableColumn());
                             }
                         });
@@ -407,6 +470,10 @@ public class GenerateGSTInvoiceController implements Initializable {
 
                     @Override
                     public void startEdit() {
+                        ItemRow row = getTableView().getItems().get(getIndex());
+                        if (row != null && row.isCharge()) {
+                            return;
+                        }
                         super.startEdit();
                         if (isEditing() && getGraphic() instanceof ComboBox<?> comboBox) {
                             comboBox.show();
@@ -445,9 +512,61 @@ public class GenerateGSTInvoiceController implements Initializable {
             TableColumn<ItemRow, String> col = (TableColumn<ItemRow, String>) cols.get(5);
             col.setCellValueFactory(c -> c.getValue().rateProperty());
             col.setCellFactory(tc -> {
-                TableCell<ItemRow, String> cell = javafx.scene.control.cell.TextFieldTableCell.<ItemRow>forTableColumn().call(tc);
-                cell.getStyleClass().add("gst-editable-text-cell");
-                return cell;
+                return new TableCell<ItemRow, String>() {
+                    private TextField textField;
+                    {
+                        getStyleClass().add("gst-editable-text-cell");
+                    }
+                    @Override
+                    public void startEdit() {
+                        if (!isEmpty()) {
+                            ItemRow row = getTableView().getItems().get(getIndex());
+                            if (row != null && row.isCharge()) {
+                                return;
+                            }
+                            super.startEdit();
+                            createTextField();
+                            setText(null);
+                            setGraphic(textField);
+                            textField.selectAll();
+                            textField.requestFocus();
+                        }
+                    }
+                    @Override
+                    public void cancelEdit() {
+                        super.cancelEdit();
+                        setText(getItem());
+                        setGraphic(null);
+                    }
+                    @Override
+                    public void updateItem(String item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (empty || item == null) {
+                            setText(null);
+                            setGraphic(null);
+                        } else {
+                            if (isEditing()) {
+                                if (textField != null) {
+                                    textField.setText(item);
+                                }
+                                setText(null);
+                                setGraphic(textField);
+                            } else {
+                                setText(item);
+                                setGraphic(null);
+                            }
+                        }
+                    }
+                    private void createTextField() {
+                        textField = new TextField(getItem() != null ? getItem() : "");
+                        textField.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+                            if (!isFocused) {
+                                commitEdit(textField.getText());
+                            }
+                        });
+                        textField.setOnAction(e -> commitEdit(textField.getText()));
+                    }
+                };
             });
             col.setEditable(true);
             col.setOnEditCommit(ev -> {
@@ -470,8 +589,76 @@ public class GenerateGSTInvoiceController implements Initializable {
             ((TableColumn<ItemRow, String>) cols.get(9)).setCellValueFactory(c -> c.getValue().sgstProperty());
         if (cols.size() >= 11)
             ((TableColumn<ItemRow, String>) cols.get(10)).setCellValueFactory(c -> c.getValue().igstProperty());
-        if (cols.size() >= 12)
-            ((TableColumn<ItemRow, String>) cols.get(11)).setCellValueFactory(c -> c.getValue().totalProperty());
+        if (cols.size() >= 12) {
+            TableColumn<ItemRow, String> totalCol = (TableColumn<ItemRow, String>) cols.get(11);
+            totalCol.setCellValueFactory(c -> c.getValue().totalProperty());
+            totalCol.setCellFactory(tc -> {
+                return new TableCell<ItemRow, String>() {
+                    private TextField textField;
+                    {
+                        getStyleClass().add("gst-editable-text-cell");
+                    }
+                    @Override
+                    public void startEdit() {
+                        if (!isEmpty()) {
+                            ItemRow row = getTableView().getItems().get(getIndex());
+                            if (row == null || !row.isCustom()) {
+                                return;
+                            }
+                            super.startEdit();
+                            createTextField();
+                            setText(null);
+                            setGraphic(textField);
+                            textField.selectAll();
+                            textField.requestFocus();
+                        }
+                    }
+                    @Override
+                    public void cancelEdit() {
+                        super.cancelEdit();
+                        setText(getItem());
+                        setGraphic(null);
+                    }
+                    @Override
+                    public void updateItem(String item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (empty || item == null) {
+                            setText(null);
+                            setGraphic(null);
+                        } else {
+                            if (isEditing()) {
+                                if (textField != null) {
+                                    textField.setText(item);
+                                }
+                                setText(null);
+                                setGraphic(textField);
+                            } else {
+                                setText(item);
+                                setGraphic(null);
+                            }
+                        }
+                    }
+                    private void createTextField() {
+                        textField = new TextField(getItem() != null ? getItem() : "");
+                        textField.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+                            if (!isFocused) {
+                                commitEdit(textField.getText());
+                            }
+                        });
+                        textField.setOnAction(e -> commitEdit(textField.getText()));
+                    }
+                };
+            });
+            totalCol.setEditable(true);
+            totalCol.setOnEditCommit(ev -> {
+                ItemRow row = ev.getRowValue();
+                if (row != null) {
+                    row.setTotal(ev.getNewValue());
+                    refreshHsnSummaryFromItemRows();
+                    refreshInvoiceSummary();
+                }
+            });
+        }
     }
 
     private void setupInitialData() {
@@ -493,6 +680,17 @@ public class GenerateGSTInvoiceController implements Initializable {
 
         if (dpDueDate != null) {
             dpDueDate.setEditable(false);
+        }
+
+        if (comboPlaceOfSupply != null) {
+            comboPlaceOfSupply.valueProperty().addListener((obs, oldV, newV) -> {
+                boolean intraState = isIntraStateSupply();
+                for (ItemRow r : itemRows) {
+                    r.recalcTaxes(r.gstRateRaw.get(), intraState);
+                }
+                refreshHsnSummaryFromItemRows();
+                refreshInvoiceSummary();
+            });
         }
 
         recalcDueDate();
@@ -822,8 +1020,20 @@ public class GenerateGSTInvoiceController implements Initializable {
     }
 
     private void refreshItemsTableFromSelectedJobs() {
+        // Keep custom items (those not in loadedJobSummaries)
+        List<ItemRow> customRows = new ArrayList<>();
+        java.util.Set<String> loadedUuids = new java.util.HashSet<>();
+        for (model.JobSummary js : loadedJobSummaries) {
+            loadedUuids.add(js.getUuid());
+        }
+        for (ItemRow r : itemRows) {
+            if (!loadedUuids.contains(r.getJobUuid())) {
+                customRows.add(r);
+            }
+        }
+
         itemRows.clear();
-        if (selectedJobUuids.isEmpty()) {
+        if (selectedJobUuids.isEmpty() && customRows.isEmpty()) {
             hsnRows.clear();
             refreshInvoiceSummary();
             return;
@@ -838,7 +1048,8 @@ public class GenerateGSTInvoiceController implements Initializable {
 
             List<model.JobItem> items = jobItemService.getJobItems(js.getUuid());
             long qty = jobService.getTotalPrintingQtyForJobUuids(List.of(js.getUuid()));
-            double rate = 1.0;
+            double jobTaxable = jobService.getSumJobItemsAmountForJobUuids(List.of(js.getUuid()));
+            double rate = qty > 0 ? (jobTaxable / qty) : jobTaxable;
             String hsn = "—";
             double gstRate = DEFAULT_GST_RATE;
 
@@ -868,6 +1079,22 @@ public class GenerateGSTInvoiceController implements Initializable {
             combinedDesc += "\n    COMPLETE-" + qty + " PCS";
 
             itemRows.add(ItemRow.ofJob(sl++, js.getUuid(), combinedDesc, hsn, qty, "PCS", rate, gstRate, intraState));
+        }
+
+        for (ItemRow cr : customRows) {
+            itemRows.add(new ItemRow(
+                cr.getJobUuid(),
+                sl++,
+                cr.getDescription(),
+                cr.getHsnSac(),
+                cr.qtyRaw.get(),
+                cr.getUnit(),
+                cr.rateRaw.get(),
+                cr.gstRateRaw.get(),
+                intraState,
+                true, // isCustom
+                cr.isCharge()
+            ));
         }
 
         refreshHsnSummaryFromItemRows();
@@ -1108,6 +1335,37 @@ public class GenerateGSTInvoiceController implements Initializable {
         processInvoiceGeneration("SENT");
     }
 
+    private void saveInvoiceAdditionalChargesToDb(Connection con, String invoiceUuid, List<ItemRow> customRows) throws SQLException {
+        // Delete existing additional charges for this invoice first
+        String deleteSql = "DELETE FROM invoice_additional_charges WHERE invoice_uuid = ?";
+        try (PreparedStatement psDel = con.prepareStatement(deleteSql)) {
+            psDel.setString(1, invoiceUuid);
+            psDel.executeUpdate();
+        }
+
+        String insertSql = """
+            INSERT INTO invoice_additional_charges (
+                uuid, invoice_uuid, charge_type, description, amount, hsn_sac, gst_rate, taxable_flag,
+                sync_status, sync_version, is_deleted, is_active, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'PENDING', 1, 0, 1, datetime('now'), datetime('now'))
+            """;
+
+        try (PreparedStatement ps = con.prepareStatement(insertSql)) {
+            for (ItemRow cr : customRows) {
+                String serializedDesc = "QTY:" + cr.qtyRaw.get() + "|UNIT:" + cr.getUnit() + "|RATE:" + cr.rateRaw.get() + "|DESC:" + cr.getDescription();
+                ps.setString(1, cr.getJobUuid());
+                ps.setString(2, invoiceUuid);
+                ps.setString(3, cr.isCharge() ? "CHARGE" : "ITEM");
+                ps.setString(4, serializedDesc);
+                ps.setDouble(5, cr.taxableRaw.get());
+                ps.setString(6, cr.getHsnSac());
+                ps.setDouble(7, cr.gstRateRaw.get());
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+    }
+
     private void processInvoiceGeneration(String status) {
         try {
             model.Invoice invoice = new model.Invoice();
@@ -1128,16 +1386,14 @@ public class GenerateGSTInvoiceController implements Initializable {
             invoice.setInvoiceType("GST_INVOICE");
             invoice.setMasterDocumentSeries(model.MasterDocumentSeries.GST_INVOICE);
 
-            if (selectedJobUuids.isEmpty()) {
+            if (itemRows.isEmpty()) {
                 Alert alert = new Alert(Alert.AlertType.WARNING);
                 alert.setTitle("Missing Items");
                 alert.setHeaderText("Nothing to generate");
-                alert.setContentText("Please select one or more jobs in the Job box before generating the invoice.");
+                alert.setContentText("Please select jobs or add items before generating the invoice.");
                 alert.showAndWait();
                 return;
             }
-
-            List<String> selectedIds = new ArrayList<>(selectedJobUuids);
 
             double totalTaxable = 0.0;
             double totalCgst = 0.0;
@@ -1201,6 +1457,40 @@ public class GenerateGSTInvoiceController implements Initializable {
                 invoice.addJob(invJob);
             }
 
+            // Now loop through any custom rows that are NOT associated with a selected job!
+            List<ItemRow> customRowsList = new ArrayList<>();
+            java.util.Set<String> selectedUuidsSet = new java.util.HashSet<>(selectedJobUuids);
+            for (ItemRow r : itemRows) {
+                if (!selectedUuidsSet.contains(r.getJobUuid())) {
+                    customRowsList.add(r);
+                    
+                    String printedDesc = r.getDescription();
+                    String pctStr = r.getGstPercent();
+                    if (pctStr != null && !pctStr.isBlank() && !pctStr.equals("—")) {
+                        printedDesc = printedDesc + " - " + pctStr;
+                    }
+
+                    model.InvoiceJob invJob = new model.InvoiceJob();
+                    invJob.setJobId(r.getJobUuid());
+                    invJob.setJobNo(""); // No job number for custom items
+                    invJob.setJobDate(invoice.getInvoiceDate());
+                    invJob.setJobName(printedDesc);
+                    invJob.setHsnSac(r.getHsnSac());
+                    invJob.setQuantity((long) r.qtyRaw.get());
+                    invJob.setUnit(r.getUnit());
+                    invJob.setRatePerUnit(r.rateRaw.get());
+                    invJob.setGstRate(r.gstRateRaw.get());
+                    invJob.addLine(new model.InvoiceLine(printedDesc, r.taxableRaw.get()));
+
+                    totalTaxable += r.taxableRaw.get();
+                    totalCgst += r.cgstRaw.get();
+                    totalSgst += r.sgstRaw.get();
+                    totalIgst += r.igstRaw.get();
+
+                    invoice.addJob(invJob);
+                }
+            }
+
             // Consignee defaults to Ship To selection; if missing, reuse buyer.
             model.Client ship = comboShipTo != null ? comboShipTo.getValue() : null;
             if (ship == null) {
@@ -1221,10 +1511,93 @@ public class GenerateGSTInvoiceController implements Initializable {
             double grandTotal = Math.round(unroundedTotal);
             invoice.setGrandTotal(grandTotal);
 
-            // Note: Jobs should be collected from flowJobsContainer or a selected list
-            // For now, we simulate with a dummy check if anything is present
+            String invoiceUuid = invoiceService.saveGeneratedInvoice(invoice, "GST_INVOICE", status, null);
 
-            invoiceService.saveGeneratedInvoice(invoice, "GST_INVOICE", status, null);
+            // Update regular jobs and save custom jobs to DB
+            try (Connection con = utils.DBConnection.getConnection()) {
+                con.setAutoCommit(false);
+                try {
+                    // Update descriptions of regular (selected) jobs that were edited
+                    for (model.JobSummary js : loadedJobSummaries) {
+                        if (!selectedJobUuids.contains(js.getUuid())) {
+                            continue;
+                        }
+                        ItemRow matchingRow = null;
+                        for (ItemRow r : itemRows) {
+                            if (r.getJobUuid().equals(js.getUuid())) {
+                                matchingRow = r;
+                                break;
+                            }
+                        }
+                        if (matchingRow != null) {
+                            String editedDesc = matchingRow.getDescription();
+                            // Update the job title and description in the database
+                            String updateJobSql = "UPDATE jobs SET job_title = ?, description = ?, updated_at = datetime('now'), sync_status = 'PENDING' WHERE uuid = ?";
+                            try (PreparedStatement ps = con.prepareStatement(updateJobSql)) {
+                                ps.setString(1, editedDesc);
+                                ps.setString(2, editedDesc);
+                                ps.setString(3, js.getUuid());
+                                ps.executeUpdate();
+                            }
+
+                            // Update job items: keep only one job item with the edited description
+                            List<String> itemUuids = new ArrayList<>();
+                            String selectItemsSql = "SELECT uuid FROM job_items WHERE job_uuid = ? AND COALESCE(is_deleted, 0) = 0 ORDER BY sort_order, created_at";
+                            try (PreparedStatement psSelect = con.prepareStatement(selectItemsSql)) {
+                                psSelect.setString(1, js.getUuid());
+                                try (ResultSet rs = psSelect.executeQuery()) {
+                                    while (rs.next()) {
+                                        itemUuids.add(rs.getString(1));
+                                    }
+                                }
+                            }
+
+                            if (!itemUuids.isEmpty()) {
+                                // Update the first job item description
+                                String updateFirstItemSql = "UPDATE job_items SET description = ?, updated_at = datetime('now'), sync_status = 'PENDING' WHERE uuid = ?";
+                                try (PreparedStatement psUpdateItem = con.prepareStatement(updateFirstItemSql)) {
+                                    psUpdateItem.setString(1, editedDesc);
+                                    psUpdateItem.setString(2, itemUuids.get(0));
+                                    psUpdateItem.executeUpdate();
+                                }
+                                // Delete the other job items if there are any
+                                if (itemUuids.size() > 1) {
+                                    String deleteOtherItemsSql = "UPDATE job_items SET is_deleted = 1, sync_status = 'PENDING', updated_at = datetime('now') WHERE job_uuid = ? AND uuid <> ?";
+                                    try (PreparedStatement psDelete = con.prepareStatement(deleteOtherItemsSql)) {
+                                        psDelete.setString(1, js.getUuid());
+                                        psDelete.setString(2, itemUuids.get(0));
+                                        psDelete.executeUpdate();
+                                    }
+                                }
+                            } else {
+                                // Insert a new job item
+                                String newItemUuid = utils.ClientIdentifiers.newUuidString();
+                                String insertItemSql = """
+                                    INSERT INTO job_items (
+                                        uuid, job_uuid, type, description, amount, sort_order, sync_status, sync_version,
+                                        is_deleted, is_active, created_at, updated_at
+                                    ) VALUES (?, ?, 'OTHER', ?, ?, 1, 'PENDING', 1, 0, 1, datetime('now'), datetime('now'))
+                                    """;
+                                try (PreparedStatement psInsert = con.prepareStatement(insertItemSql)) {
+                                    psInsert.setString(1, newItemUuid);
+                                    psInsert.setString(2, js.getUuid());
+                                    psInsert.setString(3, editedDesc);
+                                    psInsert.setDouble(4, matchingRow.taxableRaw.get());
+                                    psInsert.executeUpdate();
+                                }
+                            }
+                        }
+                    }
+
+                    // Save custom charges/items to dedicated invoice_additional_charges table
+                    saveInvoiceAdditionalChargesToDb(con, invoiceUuid, customRowsList);
+                    
+                    con.commit();
+                } catch (Exception ex) {
+                    con.rollback();
+                    throw ex;
+                }
+            }
 
             // 🆕 Generate the premium GST PDF
             java.io.File pdfFile = pdfService.generateGstInvoice(invoice);
@@ -1252,9 +1625,93 @@ public class GenerateGSTInvoiceController implements Initializable {
         }
     }
 
+    private void addCustomItemRow(String selectedItem) {
+        String description = selectedItem.toUpperCase();
+        
+        // Fetch HSN & GST % from HSN master sheet (except for Custom Item, or if not found)
+        String hsn = "—";
+        double gstRate = DEFAULT_GST_RATE;
+        
+        if (!"CUSTOM ITEM".equals(description)) {
+            try {
+                model.HsnSacInfo info = hsnSacService.findBestMatchByNameOrDesc(description);
+                if (info == null) {
+                    // Try looking up the original option names without the extra word "CHARGES" if not found
+                    String baseName = description.replace(" CHARGES", "").trim();
+                    info = hsnSacService.findBestMatchByNameOrDesc(baseName);
+                }
+                if (info != null) {
+                    hsn = info.getHsnSac() != null ? info.getHsnSac() : "—";
+                    if (info.getGstRate() > 0) {
+                        gstRate = info.getGstRate();
+                    }
+                }
+            } catch (Exception e) {
+                // fallback to defaults
+            }
+        }
+        
+        String customJobUuid = utils.ClientIdentifiers.newUuidString();
+        int sl = itemRows.size() + 1;
+        
+        boolean isChg = !"CUSTOM ITEM".equals(description);
+        ItemRow newRow = new ItemRow(
+            customJobUuid,
+            sl,
+            description,
+            hsn,
+            isChg ? 0.0 : 1.0,
+            isChg ? "" : "PCS",
+            0.0,
+            gstRate,
+            isIntraStateSupply(),
+            true, // isCustom
+            isChg  // isCharge
+        );
+        
+        itemRows.add(newRow);
+        refreshHsnSummaryFromItemRows();
+        refreshInvoiceSummary();
+        
+        // Focus the first editable field (Rate/Total) after row creation
+        javafx.application.Platform.runLater(() -> {
+            int rowIndex = itemRows.indexOf(newRow);
+            if (rowIndex >= 0 && rowIndex < tableItems.getItems().size()) {
+                tableItems.requestFocus();
+                tableItems.getSelectionModel().select(rowIndex);
+                int colIndex = newRow.isCharge() ? 11 : 3;
+                if (tableItems.getColumns().size() > colIndex) {
+                    TableColumn<ItemRow, ?> targetCol = tableItems.getColumns().get(colIndex);
+                    tableItems.getFocusModel().focus(rowIndex, targetCol);
+                    tableItems.edit(rowIndex, targetCol);
+                }
+            }
+        });
+    }
+
     @FXML
-    private void handleAddItem() {
-        System.out.println("Adding Item...");
+    private void handleFreightOutward() {
+        addCustomItemRow("FREIGHT OUTWARD CHARGES");
+    }
+
+    @FXML
+    private void handlePackingCharges() {
+        addCustomItemRow("PACKING CHARGES");
+    }
+
+    @FXML
+    private void handleDesignCharges() {
+        addCustomItemRow("DESIGN CHARGES");
+    }
+
+    @FXML
+    private void handleMiscCharges() {
+        addCustomItemRow("MISCELLANEOUS CHARGES");
+    }
+
+    @FXML
+    private void handleCustomItem() {
+        addCustomItemRow("CUSTOM ITEM");
     }
 
     @FXML
@@ -1303,6 +1760,8 @@ public class GenerateGSTInvoiceController implements Initializable {
     public static final class ItemRow {
         private final String jobUuid;
         private final int slNo;
+        private final boolean isCustom;
+        private final boolean isCharge;
         
         private final StringProperty description = new SimpleStringProperty("");
         private final StringProperty qty = new SimpleStringProperty("");
@@ -1331,35 +1790,59 @@ public class GenerateGSTInvoiceController implements Initializable {
                 String desc,
                 String hsnSac,
                 double qtyRawVal,
-                String unit,
+                String unitVal,
                 double rateRawVal,
                 double gstRateRawVal,
-                boolean intraState) {
+                boolean intraState,
+                boolean isCustom,
+                boolean isCharge) {
             this.jobUuid = jobUuid;
             this.slNo = slNo;
+            this.isCustom = isCustom;
+            this.isCharge = isCharge;
             this.description.set(desc != null ? desc : "");
             this.hsnSac.set(hsnSac != null ? hsnSac : "—");
-            this.unit.set(unit != null ? unit : "PCS");
+            this.unit.set(isCharge ? "" : (unitVal != null ? unitVal : "PCS"));
             this.intraState = intraState;
             this.gstRateRaw.set(gstRateRawVal);
 
-            this.qtyRaw.set(qtyRawVal);
-            this.qty.set(String.valueOf((long)qtyRawVal));
-            this.rateRaw.set(rateRawVal);
-            this.rate.set(fmtMoney(rateRawVal));
+            this.qtyRaw.set(isCharge ? 0 : qtyRawVal);
+            this.qty.set(isCharge ? "" : ("NA".equalsIgnoreCase(qty.get()) ? "NA" : String.valueOf((long)qtyRawVal)));
+            this.rateRaw.set(isCharge ? 0 : rateRawVal);
+            this.rate.set(isCharge ? "" : ("NA".equalsIgnoreCase(rate.get()) ? "NA" : fmtMoney(rateRawVal)));
 
-            recalcTaxable();
+            if (isCharge) {
+                this.taxableRaw.set(0);
+                this.taxable.set("");
+                recalcTaxes(gstRateRawVal, intraState);
+            } else {
+                recalcTaxable();
+            }
         }
 
         static ItemRow ofJob(int slNo, String jobUuid, String desc, String hsnSac, long qty, String unit, double rate, double gstRate, boolean intraState) {
-            return new ItemRow(jobUuid, slNo, desc, hsnSac, qty, unit, rate, gstRate, intraState);
+            return new ItemRow(jobUuid, slNo, desc, hsnSac, qty, unit, rate, gstRate, intraState, false, false);
         }
 
         private static String fmtMoney(double v) {
             return String.format("₹ %.2f", v);
         }
 
+        public boolean isCustom() {
+            return isCustom;
+        }
+
+        public boolean isCharge() {
+            return isCharge;
+        }
+
         public void recalcTaxable() {
+            if (isCharge) {
+                taxable.set("");
+                qty.set("");
+                rate.set("");
+                return;
+            }
             double newTaxable = qtyRaw.get() * rateRaw.get();
             taxableRaw.set(newTaxable);
             taxable.set(fmtMoney(newTaxable));
@@ -1375,10 +1858,10 @@ public class GenerateGSTInvoiceController implements Initializable {
             cgstRaw.set(taxes.cgst());
             sgstRaw.set(taxes.sgst());
             igstRaw.set(taxes.igst());
-            cgst.set(taxes.cgst() > 0 ? fmtMoney(taxes.cgst()) : "—");
-            sgst.set(taxes.sgst() > 0 ? fmtMoney(taxes.sgst()) : "—");
-            igst.set(taxes.igst() > 0 ? fmtMoney(taxes.igst()) : "—");
-            total.set(fmtMoney(taxes.total()));
+            cgst.set(!isCharge && taxes.cgst() > 0 ? fmtMoney(taxes.cgst()) : (isCharge ? "" : "—"));
+            sgst.set(!isCharge && taxes.sgst() > 0 ? fmtMoney(taxes.sgst()) : (isCharge ? "" : "—"));
+            igst.set(!isCharge && taxes.igst() > 0 ? fmtMoney(taxes.igst()) : (isCharge ? "" : "—"));
+            total.set(fmtMoney(taxableRaw.get()));
         }
 
         public String getJobUuid() { return jobUuid; }
@@ -1388,32 +1871,45 @@ public class GenerateGSTInvoiceController implements Initializable {
         public void setDescription(String v) { description.set(v); }
         public StringProperty descriptionProperty() { return description; }
 
-        public String getQty() { return qty.get(); }
+        public String getQty() { return isCharge ? "" : qty.get(); }
         public void setQty(String v) { 
+            if (isCharge) return;
             qty.set(v);
-            try {
-                qtyRaw.set(Double.parseDouble(v.replace(",", "").trim()));
-            } catch(Exception ignored) { qtyRaw.set(0); }
+            if ("NA".equalsIgnoreCase(v) || "N/A".equalsIgnoreCase(v)) {
+                qtyRaw.set(0);
+            } else {
+                try {
+                    qtyRaw.set(Double.parseDouble(v.replace(",", "").trim()));
+                } catch(Exception ignored) { qtyRaw.set(0); }
+            }
             recalcTaxable();
         }
-        public StringProperty qtyProperty() { return qty; }
+        public StringProperty qtyProperty() { return isCharge ? new SimpleStringProperty("") : qty; }
 
-        public String getUnit() { return unit.get(); }
-        public void setUnit(String v) { unit.set(v); }
-        public StringProperty unitProperty() { return unit; }
+        public String getUnit() { return isCharge ? "" : unit.get(); }
+        public void setUnit(String v) { 
+            if (isCharge) return;
+            unit.set(v); 
+        }
+        public StringProperty unitProperty() { return isCharge ? new SimpleStringProperty("") : unit; }
 
-        public String getRate() { return rate.get(); }
+        public String getRate() { return isCharge ? "" : rate.get(); }
         public void setRate(String v) { 
+            if (isCharge) return;
             rate.set(v); 
-            try {
-                rateRaw.set(Double.parseDouble(v.replace("₹", "").replace(",", "").trim()));
-            } catch(Exception ignored) { rateRaw.set(0); }
+            if ("NA".equalsIgnoreCase(v) || "N/A".equalsIgnoreCase(v)) {
+                rateRaw.set(0);
+            } else {
+                try {
+                    rateRaw.set(Double.parseDouble(v.replace("₹", "").replace(",", "").trim()));
+                } catch(Exception ignored) { rateRaw.set(0); }
+            }
             recalcTaxable();
         }
-        public StringProperty rateProperty() { return rate; }
+        public StringProperty rateProperty() { return isCharge ? new SimpleStringProperty("") : rate; }
 
-        public String getTaxable() { return taxable.get(); }
-        public StringProperty taxableProperty() { return taxable; }
+        public String getTaxable() { return isCharge ? "" : taxable.get(); }
+        public StringProperty taxableProperty() { return isCharge ? new SimpleStringProperty("") : taxable; }
 
         public String getHsnSac() { return hsnSac.get(); }
         public void setHsnSac(String code) {
@@ -1424,16 +1920,28 @@ public class GenerateGSTInvoiceController implements Initializable {
         public String getGstPercent() { return gstPercent.get(); }
         public StringProperty gstPercentProperty() { return gstPercent; }
 
-        public String getCgst() { return cgst.get(); }
-        public StringProperty cgstProperty() { return cgst; }
+        public String getCgst() { return isCharge ? "" : cgst.get(); }
+        public StringProperty cgstProperty() { return isCharge ? new SimpleStringProperty("") : cgst; }
 
-        public String getSgst() { return sgst.get(); }
-        public StringProperty sgstProperty() { return sgst; }
+        public String getSgst() { return isCharge ? "" : sgst.get(); }
+        public StringProperty sgstProperty() { return isCharge ? new SimpleStringProperty("") : sgst; }
 
-        public String getIgst() { return igst.get(); }
-        public StringProperty igstProperty() { return igst; }
+        public String getIgst() { return isCharge ? "" : igst.get(); }
+        public StringProperty igstProperty() { return isCharge ? new SimpleStringProperty("") : igst; }
 
         public String getTotal() { return total.get(); }
+        public void setTotal(String v) {
+            if (!isCustom) return;
+            try {
+                double totalVal = Double.parseDouble(v.replace("₹", "").replace(",", "").trim());
+                double g = gstRateRaw.get();
+                taxableRaw.set(totalVal);
+                recalcTaxes(g, this.intraState);
+            } catch(Exception ignored) {
+                taxableRaw.set(0);
+                recalcTaxes(gstRateRaw.get(), this.intraState);
+            }
+        }
         public StringProperty totalProperty() { return total; }
     }
 

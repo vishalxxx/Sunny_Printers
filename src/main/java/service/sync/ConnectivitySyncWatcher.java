@@ -46,6 +46,7 @@ public final class ConnectivitySyncWatcher {
 			return;
 		}
 		boolean reachable = SupabaseReachability.isReachable();
+		SyncStatusManager.getInstance().setOnline(reachable);
 		long now = System.currentTimeMillis();
 
 		// Periodic background refresh for sequences (e.g. every 15 minutes)
@@ -65,7 +66,7 @@ public final class ConnectivitySyncWatcher {
 		wasReachable = reachable;
 		if (trigger && reachable && now - lastSyncTriggerMs >= MIN_SYNC_GAP_MS) {
 			lastSyncTriggerMs = now;
-			UniversalSyncEngine.scheduleSyncAsync();
+			SyncCoordinator.getInstance().syncNow();
 		}
 	}
 }

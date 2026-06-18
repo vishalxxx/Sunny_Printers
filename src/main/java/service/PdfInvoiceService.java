@@ -439,6 +439,8 @@ public class PdfInvoiceService {
 
         PdfPCell cell = new PdfPCell(p);
         cell.setBorder(Rectangle.NO_BORDER);
+        cell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         cell.setPaddingRight(10f);
         cell.setPaddingTop(4f);
         cell.setPaddingBottom(4f);

@@ -18,6 +18,7 @@ public class Paper implements Serializable {
     private String source;    // Our / Client
     private String notes;     // optional
     private double amount;    // required
+    private boolean includeNotesInInvoice = true;
     
     private String syncStatus = "PENDING";
     private int syncVersion = 1;
@@ -43,6 +44,7 @@ public class Paper implements Serializable {
         p.setSource(this.source);
         p.setNotes(this.notes);
         p.setAmount(this.amount);
+        p.includeNotesInInvoice = this.includeNotesInInvoice;
         return p;
     }
 
@@ -112,6 +114,9 @@ public class Paper implements Serializable {
     public void setDeleted(boolean deleted) {
         this.deleted = deleted;
     }
+
+    public boolean isIncludeNotesInInvoice() { return includeNotesInInvoice; }
+    public void setIncludeNotesInInvoice(boolean includeNotesInInvoice) { this.includeNotesInInvoice = includeNotesInInvoice; }
 
     
     

@@ -151,7 +151,7 @@
 }
 
 .jobs-table-premium .table-cell.table-cell-job-actions {
-    -fx-alignment: center;
+    -fx-alignment: center-right;
     -fx-padding: 0 8 0 8;
 }
 
@@ -1167,11 +1167,29 @@
 
 .view-invoice-jobs-root .finish-btn-premium {
     -fx-font-size: 12px;
-    -fx-padding: 8 18;
+    -fx-padding: 6 16;
+    -fx-background-radius: 6;
+    -fx-pref-height: 30;
+    -fx-min-height: 30;
+    -fx-max-height: 30;
 }
 
 .view-invoice-jobs-root .cancel-btn {
-    -fx-font-size: 11px;
+    -fx-font-size: 12px;
+    -fx-padding: 6 14;
+    -fx-background-radius: 6;
+    -fx-pref-height: 30;
+    -fx-min-height: 30;
+    -fx-max-height: 30;
+    -fx-background-color: #f5f0eb;
+    -fx-border-color: #d9cfc8;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+}
+
+.view-invoice-jobs-root .cancel-btn:hover {
+    -fx-background-color: #ede6de;
+    -fx-underline: false;
 }
 
 .view-invoice-jobs-root .invoice-jobs-table-premium {

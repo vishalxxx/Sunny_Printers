@@ -73,5 +73,36 @@ public class HsnSacRepository {
         }
         return out;
     }
-}
 
+    public HsnSacInfo findBestMatchByNameOrDesc(Connection con, String name) {
+        String sql = """
+                SELECT hsn_sac, gst_rate, unit_default
+                FROM hsn_sac_master
+                WHERE is_deleted = 0
+                  AND is_active = 1
+                  AND (
+                     lower(trim(item_name)) = lower(trim(?))
+                     OR lower(trim(keyword)) = lower(trim(?))
+                     OR lower(trim(description)) = lower(trim(?))
+                  )
+                LIMIT 1
+                """;
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, name);
+            ps.setString(2, name);
+            ps.setString(3, name);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new HsnSacInfo(
+                            rs.getString("hsn_sac"),
+                            rs.getDouble("gst_rate"),
+                            rs.getString("unit_default")
+                    );
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to lookup HSN/SAC by name", e);
+        }
+        return null;
+    }
+}

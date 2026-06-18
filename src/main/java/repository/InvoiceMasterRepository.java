@@ -23,9 +23,9 @@ public class InvoiceMasterRepository {
         List<InvoiceMaster> list = new ArrayList<>();
         String sql = """
                 SELECT * FROM invoice_master
-                WHERE %s AND %s
+                WHERE %s
                 ORDER BY created_at ASC
-                """.formatted(PendingSyncFilters.NOT_DELETED, PendingSyncFilters.PENDING_STATUS);
+                """.formatted(PendingSyncFilters.PENDING_STATUS);
         try (Connection conn = DBConnection.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {
@@ -256,23 +256,12 @@ public class InvoiceMasterRepository {
         if (invoiceUuid == null || invoiceUuid.isBlank()) {
             return;
         }
-        model.User current = utils.SessionManager.getInstance().getCurrentUser();
-        boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
-        if (isAdmin) {
-            String sql = "DELETE FROM invoice_master WHERE uuid = ?";
-            try (PreparedStatement ps = con.prepareStatement(sql)) {
-                ps.setString(1, invoiceUuid);
-                ps.executeUpdate();
-            }
-            deleteInvoiceOnSupabaseAsync(invoiceUuid);
-        } else {
-            String sql = "UPDATE invoice_master SET is_deleted = 1, is_active = 0, deleted_at = datetime('now'), sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
-            try (PreparedStatement ps = con.prepareStatement(sql)) {
-                ps.setString(1, invoiceUuid);
-                ps.executeUpdate();
-            }
-            deleteInvoiceOnSupabaseAsync(invoiceUuid);
+        String sql = "UPDATE invoice_master SET is_deleted = 1, is_active = 0, deleted_at = datetime('now'), sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, invoiceUuid);
+            ps.executeUpdate();
         }
+        deleteInvoiceOnSupabaseAsync(invoiceUuid);
     }
     
     /** Legacy alias. */
@@ -284,21 +273,15 @@ public class InvoiceMasterRepository {
         }
         api.supabase.SupabaseGate.restClientIfConfigured().ifPresent(http -> java.util.concurrent.CompletableFuture.runAsync(() -> {
             try {
-                model.User current = utils.SessionManager.getInstance().getCurrentUser();
-                boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
                 String v = java.net.URLEncoder.encode(invoiceUuid.trim(), java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
-                if (isAdmin) {
-                    http.delete(api.supabase.SupabaseEndpoints.INVOICE_MASTER, "uuid=eq." + v);
-                } else {
-                    com.google.gson.JsonObject body = new com.google.gson.JsonObject();
-                    body.addProperty("uuid", invoiceUuid.trim());
-                    body.addProperty("is_deleted", 1);
-                    body.addProperty("is_active", 0);
-                    body.addProperty("sync_status", "SYNCED");
-                    body.addProperty("synced_at", java.time.Instant.now().toString());
-                    body.add("deleted_at", com.google.gson.JsonNull.INSTANCE);
-                    http.patchJson(api.supabase.SupabaseEndpoints.INVOICE_MASTER, "uuid=eq." + v, body.toString(), "return=minimal");
-                }
+                com.google.gson.JsonObject body = new com.google.gson.JsonObject();
+                body.addProperty("uuid", invoiceUuid.trim());
+                body.addProperty("is_deleted", 1);
+                body.addProperty("is_active", 0);
+                body.addProperty("sync_status", "SYNCED");
+                body.addProperty("synced_at", java.time.Instant.now().toString());
+                body.addProperty("deleted_at", java.time.Instant.now().toString());
+                http.patchJson(api.supabase.SupabaseEndpoints.INVOICE_MASTER, "uuid=eq." + v, body.toString(), "return=minimal");
             } catch (Exception ex) {
                 System.err.println("[Supabase invoices] remote delete/patch failed for uuid=" + invoiceUuid + ": " + ex.getMessage());
             }
@@ -427,7 +410,7 @@ public class InvoiceMasterRepository {
             params.add(documentSeries.trim());
         }
 
-        sql.append(" ORDER BY invoice_date DESC, uuid DESC");
+        sql.append(" ORDER BY invoice_date DESC, COALESCE(updated_at, created_at) DESC");
 
         List<InvoiceMaster> list = new ArrayList<>();
 
@@ -572,11 +555,18 @@ public class InvoiceMasterRepository {
         try {
             // ✅ Normal ISO date: 2026-02-12
             if (value.contains("-")) {
-                return LocalDate.parse(value);
+                String d = value.trim();
+                if (d.contains(" ")) {
+                    d = d.split(" ")[0];
+                }
+                if (d.contains("T")) {
+                    d = d.split("T")[0];
+                }
+                return LocalDate.parse(d);
             }
 
             // ✅ Epoch millis: 1769797800000
-            long epoch = Long.parseLong(value);
+            long epoch = Long.parseLong(value.trim());
             return java.time.Instant.ofEpochMilli(epoch)
                     .atZone(java.time.ZoneId.systemDefault())
                     .toLocalDate();

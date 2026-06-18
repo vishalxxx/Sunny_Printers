@@ -10,12 +10,14 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import api.supabase.SupabaseGate;
+import api.supabase.SupabaseEndpoints;
 import api.supabase.clients.ClientsSupabaseApi;
 import model.Client;
 import model.User;
 import service.NumberSequenceAllocationService.AllocatedNumber;
 import service.sync.UniversalNumberAllocator;
 import service.sync.UniversalSyncEngine;
+import service.sync.SyncConflictResolver;
 import utils.ClientIdentifiers;
 import utils.DBConnection;
 import utils.DocumentNumbering;
@@ -290,8 +292,7 @@ public class ClientRepository {
 		List<Client> list = new ArrayList<>();
 		String sql = """
 				SELECT * FROM clients
-				WHERE IFNULL(is_deleted, 0) = 0
-				  AND UPPER(TRIM(COALESCE(sync_status, ''))) IN ('', 'PENDING', 'WAITING_DEPENDENCY')
+				WHERE UPPER(TRIM(COALESCE(sync_status, ''))) IN ('', 'PENDING', 'WAITING_DEPENDENCY')
 				  AND client_code NOT LIKE 'TEMP-%'
 				ORDER BY created_at ASC
 				""";
@@ -440,6 +441,15 @@ public class ClientRepository {
 		}
 		SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
 			try {
+				try (Connection conn = DBConnection.getConnection()) {
+					List<String> colsList = SyncConflictResolver.getColumns(conn, "clients");
+					if (SyncConflictResolver.checkPushConflictAndResolve(conn, http, "clients", SupabaseEndpoints.CLIENTS, client.getClientUuid(), client.getUpdatedAt(), colsList)) {
+						return; // Skip push: remote was newer, conflict was logged and resolved
+					}
+				} catch (Exception e) {
+					System.err.println("[ClientRepository] Push conflict check failed: " + e.getMessage());
+				}
+
 				ClientsSupabaseApi api = new ClientsSupabaseApi(http);
 				if (preferPatch) {
 					api.patchUpdate(client, before);

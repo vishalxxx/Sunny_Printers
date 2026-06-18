@@ -11,6 +11,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
@@ -227,6 +228,8 @@ public class AddJobController implements utils.DirtySupport {
 	@FXML
 	private TextArea printNotesArea;
 	@FXML
+	private CheckBox printIncludeNotesToggle;
+	@FXML
 	private TextField printAmountField;
 
 	/* ========================= CTP PLATE ========================= */
@@ -241,6 +244,8 @@ public class AddJobController implements utils.DirtySupport {
 	private ComboBox<String> ctpBackingCombo;
 	@FXML
 	private TextArea ctpNotesArea;
+	@FXML
+	private CheckBox ctpIncludeNotesToggle;
 	@FXML
 	private TextField ctpAmountField;
 	@FXML
@@ -272,6 +277,8 @@ public class AddJobController implements utils.DirtySupport {
 	@FXML
 	private TextArea paperNotesArea;
 	@FXML
+	private CheckBox paperIncludeNotesToggle;
+	@FXML
 	private TextField paperAmountField;
 
 	/* ========================= BINDING ========================= */
@@ -284,6 +291,8 @@ public class AddJobController implements utils.DirtySupport {
 	private TextField bindingRateField;
 	@FXML
 	private TextArea bindingNotesArea;
+	@FXML
+	private CheckBox bindingIncludeNotesToggle;
 	@FXML
 	private TextField bindingAmountField;
 
@@ -299,6 +308,8 @@ public class AddJobController implements utils.DirtySupport {
 	private ComboBox<String> lamSizeCombo;
 	@FXML
 	private TextArea lamNotesArea;
+	@FXML
+	private CheckBox lamIncludeNotesToggle;
 	@FXML
 	private TextField lamAmountField;
 
@@ -786,6 +797,7 @@ public class AddJobController implements utils.DirtySupport {
 		p.setSide(sideDoubleBtn.isSelected() ? "Double" : "Single");
 		p.setWithCtp("With CTP (Computer to Plate)".equalsIgnoreCase(printCtpCombo.getValue()));
 		p.setNotes(printNotesArea.getText());
+		p.setIncludeNotesInInvoice(printIncludeNotesToggle.isSelected());
 
 		try {
 			if (printAmountField.getText() != null && !printAmountField.getText().isBlank()) {
@@ -814,6 +826,9 @@ public class AddJobController implements utils.DirtySupport {
 		sideDoubleBtn.setSelected(true);
 		printCtpCombo.setValue(null);
 		printNotesArea.clear();
+		if (printIncludeNotesToggle != null) {
+			printIncludeNotesToggle.setSelected(true);
+		}
 		printAmountField.clear();
 	}
 
@@ -835,6 +850,7 @@ public class AddJobController implements utils.DirtySupport {
 		c.setBacking(ctpBackingCombo.getValue());
 		c.setColor(ctpColorCombo.getValue());
 		c.setNotes(ctpNotesArea.getText());
+		c.setIncludeNotesInInvoice(ctpIncludeNotesToggle.isSelected());
 
 		Supplier supplier = ctpSupplierCombo.getValue();
 		if (ctpOurRadio.isSelected() && supplier != null && supplier.getUuid() != null && !supplier.getUuid().isBlank()) {
@@ -868,6 +884,9 @@ public class AddJobController implements utils.DirtySupport {
 		ctpBackingCombo.setValue(null);
 		ctpSupplierCombo.setValue(null);
 		ctpNotesArea.clear();
+		if (ctpIncludeNotesToggle != null) {
+			ctpIncludeNotesToggle.setSelected(true);
+		}
 		ctpAmountField.clear();
 		if (ctpOurRadio != null) {
 			ctpOurRadio.setSelected(true);
@@ -892,6 +911,7 @@ public class AddJobController implements utils.DirtySupport {
 		p.setGsm(paperGsmCombo.getValue());
 		p.setType(paperTypeCombo.getValue());
 		p.setNotes(paperNotesArea.getText());
+		p.setIncludeNotesInInvoice(paperIncludeNotesToggle.isSelected());
 
 		String source = "Our";
 		if (paperClientRadio.isSelected())
@@ -930,6 +950,9 @@ public class AddJobController implements utils.DirtySupport {
 		paperTypeCombo.setValue(null);
 		paperSupplierCombo.setValue(null);
 		paperNotesArea.clear();
+		if (paperIncludeNotesToggle != null) {
+			paperIncludeNotesToggle.setSelected(true);
+		}
 		paperAmountField.clear();
 		paperOurRadio.setSelected(true);
 	}
@@ -959,6 +982,7 @@ public class AddJobController implements utils.DirtySupport {
 		}
 
 		b.setNotes(bindingNotesArea.getText());
+		b.setIncludeNotesInInvoice(bindingIncludeNotesToggle.isSelected());
 
 		try {
 			if (bindingAmountField.getText() != null && !bindingAmountField.getText().isBlank()) {
@@ -984,6 +1008,9 @@ public class AddJobController implements utils.DirtySupport {
 		bindingQtyField.clear();
 		bindingRateField.clear();
 		bindingNotesArea.clear();
+		if (bindingIncludeNotesToggle != null) {
+			bindingIncludeNotesToggle.setSelected(true);
+		}
 		bindingAmountField.clear();
 	}
 
@@ -1005,6 +1032,7 @@ public class AddJobController implements utils.DirtySupport {
 		l.setSide(lamDoubleBtn.isSelected() ? "Double Side" : "Single Side");
 		l.setSize(lamSizeCombo.getValue());
 		l.setNotes(lamNotesArea.getText());
+		l.setIncludeNotesInInvoice(lamIncludeNotesToggle.isSelected());
 
 		try {
 			if (lamAmountField.getText() != null && !lamAmountField.getText().isBlank()) {
@@ -1032,6 +1060,9 @@ public class AddJobController implements utils.DirtySupport {
 		lamDoubleBtn.setSelected(true);
 		lamSizeCombo.setValue(null);
 		lamNotesArea.clear();
+		if (lamIncludeNotesToggle != null) {
+			lamIncludeNotesToggle.setSelected(true);
+		}
 		lamAmountField.clear();
 	}
 
@@ -1184,6 +1215,7 @@ public class AddJobController implements utils.DirtySupport {
 				// Small delay to let UI stabilize
 				Thread.sleep(50);
 				List<Client> clients = clientService.getAllClients();
+				utils.ComboBoxSorter.sortClients(clients);
 				javafx.application.Platform.runLater(() -> {
 					masterClients.setAll(clients);
 					updateFormState();
@@ -1371,33 +1403,75 @@ public class AddJobController implements utils.DirtySupport {
 	private void populateCombos() {
 		// Product type (top header)
 		if (productTypeCombo != null) {
-			productTypeCombo.getItems().setAll("Sticker / Brochure / Label / Book", "Sticker", "Brochure", "Label", "Book");
+			java.util.List<String> list = new java.util.ArrayList<>(java.util.List.of("Sticker / Brochure / Label / Book", "Sticker", "Brochure", "Label", "Book"));
+			utils.ComboBoxSorter.sortStrings(list);
+			productTypeCombo.getItems().setAll(list);
 		}
 
 		// Printing
-		printUnitsCombo.getItems().setAll("Select Unit", "Copies", "Sets", "Rim", "Pkt", "Sheet");
-		printColorCombo.getItems().setAll("Select Color", "1", "2", "4", "4+4", "Spot", "Custom");
-		printCtpCombo.getItems().setAll("With CTP (Computer to Plate)", "Without CTP");
+		java.util.List<String> printUnits = new java.util.ArrayList<>(java.util.List.of("Select Unit", "Copies", "Sets", "Rim", "Pkt", "Sheet"));
+		utils.ComboBoxSorter.sortStrings(printUnits);
+		printUnitsCombo.getItems().setAll(printUnits);
+
+		java.util.List<String> printColors = new java.util.ArrayList<>(java.util.List.of("Select Color", "1", "2", "4", "4+4", "Spot", "Custom"));
+		utils.ComboBoxSorter.sortStrings(printColors);
+		printColorCombo.getItems().setAll(printColors);
+
+		java.util.List<String> printCtp = new java.util.ArrayList<>(java.util.List.of("With CTP (Computer to Plate)", "Without CTP"));
+		utils.ComboBoxSorter.sortStrings(printCtp);
+		printCtpCombo.getItems().setAll(printCtp);
 
 		// CTP
-		ctpSizeCombo.getItems().setAll("Select Size", "23x36", "25x36", "19x25", "18x23", "15x20", "20x30", "10x15");
-		ctpGaugeCombo.getItems().setAll("Select Gauge", "0.15mm", "0.28mm", "0.30mm");
-		ctpColorCombo.getItems().setAll("Select Color", "CMYK (Full)", "Cyan", "Magenta", "Yellow", "Black", "Spot Color");
-		ctpBackingCombo.getItems().setAll("Select Backing", "Paper Backing", "Plastic Backing", "None");
+		java.util.List<String> ctpSizes = new java.util.ArrayList<>(java.util.List.of("Select Size", "23x36", "25x36", "19x25", "18x23", "15x20", "20x30", "10x15"));
+		utils.ComboBoxSorter.sortStrings(ctpSizes);
+		ctpSizeCombo.getItems().setAll(ctpSizes);
+
+		java.util.List<String> ctpGauges = new java.util.ArrayList<>(java.util.List.of("Select Gauge", "0.15mm", "0.28mm", "0.30mm"));
+		utils.ComboBoxSorter.sortStrings(ctpGauges);
+		ctpGaugeCombo.getItems().setAll(ctpGauges);
+
+		java.util.List<String> ctpColors = new java.util.ArrayList<>(java.util.List.of("Select Color", "CMYK (Full)", "Cyan", "Magenta", "Yellow", "Black", "Spot Color"));
+		utils.ComboBoxSorter.sortStrings(ctpColors);
+		ctpColorCombo.getItems().setAll(ctpColors);
+
+		java.util.List<String> ctpBackings = new java.util.ArrayList<>(java.util.List.of("Select Backing", "Paper Backing", "Plastic Backing", "None"));
+		utils.ComboBoxSorter.sortStrings(ctpBackings);
+		ctpBackingCombo.getItems().setAll(ctpBackings);
 
 		// Paper
-		paperUnitsCombo.getItems().setAll("Select Unit", "Rim", "Sheet", "Pkt", "Kg");
-		paperSizeCombo.getItems().setAll("Select Size", "23x36", "25x36", "18x23", "20x30", "Custom");
-		paperGsmCombo.getItems().setAll("Select GSM", "60", "70", "80", "90", "100", "130", "170", "210", "250", "300");
-		paperTypeCombo.getItems().setAll("Select Type", "Art Paper", "Art Card", "Maplitho", "Sunshine", "Chromo", "Mirror Coat", "Texture", "Bond");
+		java.util.List<String> paperUnits = new java.util.ArrayList<>(java.util.List.of("Select Unit", "Rim", "Sheet", "Pkt", "Kg"));
+		utils.ComboBoxSorter.sortStrings(paperUnits);
+		paperUnitsCombo.getItems().setAll(paperUnits);
+
+		java.util.List<String> paperSizes = new java.util.ArrayList<>(java.util.List.of("Select Size", "23x36", "25x36", "18x23", "20x30", "Custom"));
+		utils.ComboBoxSorter.sortStrings(paperSizes);
+		paperSizeCombo.getItems().setAll(paperSizes);
+
+		java.util.List<String> paperGsms = new java.util.ArrayList<>(java.util.List.of("Select GSM", "60", "70", "80", "90", "100", "130", "170", "210", "250", "300"));
+		utils.ComboBoxSorter.sortStrings(paperGsms);
+		paperGsmCombo.getItems().setAll(paperGsms);
+
+		java.util.List<String> paperTypes = new java.util.ArrayList<>(java.util.List.of("Select Type", "Art Paper", "Art Card", "Maplitho", "Sunshine", "Chromo", "Mirror Coat", "Texture", "Bond"));
+		utils.ComboBoxSorter.sortStrings(paperTypes);
+		paperTypeCombo.getItems().setAll(paperTypes);
 
 		// Binding
-		bindingProcessCombo.getItems().setAll("Select Binding", "Center Pin", "Perfect Binding", "Hard Bound", "Spiral", "Wire-O", "Crease & Fold", "Cutting Only");
+		java.util.List<String> bindingProcesses = new java.util.ArrayList<>(java.util.List.of("Select Binding", "Center Pin", "Perfect Binding", "Hard Bound", "Spiral", "Wire-O", "Crease & Fold", "Cutting Only"));
+		utils.ComboBoxSorter.sortStrings(bindingProcesses);
+		bindingProcessCombo.getItems().setAll(bindingProcesses);
 
 		// Lamination
-		lamUnitCombo.getItems().setAll("Select Unit", "Sq. Inch", "Piece", "Sheet", "Meter");
-		lamTypeCombo.getItems().setAll("Select Type", "Gloss", "Matt", "Velvet", "Thermal Gloss", "Thermal Matt", "UV Coating");
-		lamSizeCombo.getItems().setAll("Select Size", "23x36", "25x36", "18x23", "20x30", "Custom");
+		java.util.List<String> lamUnits = new java.util.ArrayList<>(java.util.List.of("Select Unit", "Sq. Inch", "Piece", "Sheet", "Meter"));
+		utils.ComboBoxSorter.sortStrings(lamUnits);
+		lamUnitCombo.getItems().setAll(lamUnits);
+
+		java.util.List<String> lamTypes = new java.util.ArrayList<>(java.util.List.of("Select Type", "Gloss", "Matt", "Velvet", "Thermal Gloss", "Thermal Matt", "UV Coating"));
+		utils.ComboBoxSorter.sortStrings(lamTypes);
+		lamTypeCombo.getItems().setAll(lamTypes);
+
+		java.util.List<String> lamSizes = new java.util.ArrayList<>(java.util.List.of("Select Size", "23x36", "25x36", "18x23", "20x30", "Custom"));
+		utils.ComboBoxSorter.sortStrings(lamSizes);
+		lamSizeCombo.getItems().setAll(lamSizes);
 	}
 
 	private void loadSuppliers() {
@@ -1408,6 +1482,7 @@ public class AddJobController implements utils.DirtySupport {
 		selectCtpSupplier.setName("");
 		ctpSuppliers.add(selectCtpSupplier);
 		ctpSuppliers.addAll(supplierService.getSuppliersByType("CTP"));
+		utils.ComboBoxSorter.sortSuppliers(ctpSuppliers);
 		ctpSupplierCombo.getItems().setAll(ctpSuppliers);
 
 		ctpSupplierCombo.setCellFactory(cb -> new ListCell<>() {
@@ -1445,6 +1520,7 @@ public class AddJobController implements utils.DirtySupport {
 		selectPaperSupplier.setName("");
 		paperSuppliers.add(selectPaperSupplier);
 		paperSuppliers.addAll(supplierService.getSuppliersByType("Paper"));
+		utils.ComboBoxSorter.sortSuppliers(paperSuppliers);
 		paperSupplierCombo.getItems().setAll(paperSuppliers);
 
 		paperSupplierCombo.setCellFactory(cb -> new ListCell<>() {

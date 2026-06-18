@@ -204,8 +204,83 @@ public class InvoiceBuilderService {
 			invoice.setMasterDocumentSeries(master.resolveDocumentSeries());
 			invoice.setGrandTotal(0);
 
+			repository.ClientRepository clientRepo = new repository.ClientRepository();
+			model.Client client = clientRepo.findByUuid(master.getClientId());
+			if (client != null) {
+				invoice.setBuyerAddress(client.getBillingAddress());
+				invoice.setBuyerGstin(client.getGst());
+				invoice.setConsigneeName(client.getBusinessName());
+				invoice.setConsigneeAddress(client.getShippingAddress());
+				invoice.setConsigneeGstin(client.getGst());
+
+				String gst = client.getGst();
+				String stateCode = "";
+				if (gst != null) {
+					String trimmed = gst.trim();
+					java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\((\\d{2})\\)").matcher(trimmed);
+					if (m.find()) {
+						stateCode = m.group(1);
+					} else {
+						m = java.util.regex.Pattern.compile("^(\\d{2})").matcher(trimmed);
+						if (m.find()) {
+							stateCode = m.group(1);
+						}
+					}
+				}
+
+				String stateName = "Delhi";
+				if (!stateCode.isEmpty()) {
+					stateName = switch (stateCode) {
+						case "01" -> "Jammu & Kashmir";
+						case "02" -> "Himachal Pradesh";
+						case "03" -> "Punjab";
+						case "04" -> "Chandigarh";
+						case "05" -> "Uttarakhand";
+						case "06" -> "Haryana";
+						case "07" -> "Delhi";
+						case "08" -> "Rajasthan";
+						case "09" -> "Uttar Pradesh";
+						case "10" -> "Bihar";
+						case "11" -> "Sikkim";
+						case "12" -> "Arunachal Pradesh";
+						case "13" -> "Nagaland";
+						case "14" -> "Manipur";
+						case "15" -> "Mizoram";
+						case "16" -> "Tripura";
+						case "17" -> "Meghalaya";
+						case "18" -> "Assam";
+						case "19" -> "West Bengal";
+						case "20" -> "Jharkhand";
+						case "21" -> "Odisha";
+						case "22" -> "Chhattisgarh";
+						case "23" -> "Madhya Pradesh";
+						case "24" -> "Gujarat";
+						case "25" -> "Daman & Diu";
+						case "26" -> "Dadra & Nagar Haveli";
+						case "27" -> "Maharashtra";
+						case "29" -> "Karnataka";
+						case "30" -> "Goa";
+						case "31" -> "Lakshadweep";
+						case "32" -> "Kerala";
+						case "33" -> "Tamil Nadu";
+						case "34" -> "Puducherry";
+						case "35" -> "Andaman & Nicobar Islands";
+						case "36" -> "Telangana";
+						case "37" -> "Andhra Pradesh";
+						case "38" -> "Ladakh";
+						default -> "Other State";
+					};
+					invoice.setBuyerStateName(stateName + " (" + stateCode + ")");
+					invoice.setConsigneeStateName(stateName + " (" + stateCode + ")");
+				} else {
+					invoice.setBuyerStateName("Delhi (07)");
+					invoice.setConsigneeStateName("Delhi (07)");
+				}
+			}
+
 			List<String> jobUuids = loadJobUuidsForSavedInvoice(con, master.getUuid());
 			loadJobLinesForSavedInvoice(con, invoice, jobUuids);
+			loadAdditionalChargesForSavedInvoice(con, invoice, master.getUuid());
 			if (invoice.getJobs().isEmpty()) {
 				invoice.setGrandTotal(master.getAmount());
 			}
@@ -217,9 +292,12 @@ public class InvoiceBuilderService {
 		List<String> uuids = new ArrayList<>();
 		try {
 			String sql = """
-					SELECT job_uuid FROM invoice_job_mapping
-					WHERE invoice_uuid = ?
-					ORDER BY job_uuid
+					SELECT m.job_uuid FROM invoice_job_mapping m
+					JOIN jobs j ON m.job_uuid = j.uuid
+					WHERE m.invoice_uuid = ?
+					  AND COALESCE(m.is_deleted, 0) = 0
+					  AND j.status <> 'Cancelled'
+					ORDER BY m.job_uuid
 					""";
 			try (PreparedStatement ps = con.prepareStatement(sql)) {
 				ps.setString(1, invoiceUuid);
@@ -234,7 +312,9 @@ public class InvoiceBuilderService {
 			String sql2 = """
 					SELECT uuid FROM jobs
 					WHERE invoice_uuid = ?
-					ORDER BY created_at
+					  AND status <> 'Cancelled'
+					  AND COALESCE(is_deleted, 0) = 0
+					  ORDER BY created_at
 					""";
 			try (PreparedStatement ps = con.prepareStatement(sql2)) {
 				ps.setString(1, invoiceUuid);
@@ -259,6 +339,8 @@ public class InvoiceBuilderService {
 				       j.job_code,
 				       j.job_date,
 				       j.job_title,
+				       j.job_type,
+				       j.remarks,
 				       ji.description,
 				       ji.amount,
 				       ji.type,
@@ -284,6 +366,77 @@ public class InvoiceBuilderService {
 					job.setJobName(jobDisplayTitle(rs, jobUuid, jobNo));
 					LocalDate jd = parseJobDateFlexible(rs.getString("job_date"));
 					job.setJobDate(jd != null ? jd : invoice.getInvoiceDate());
+
+					// Populate GST invoice columns:
+					String jobType = rs.getString("job_type");
+					String remarks = rs.getString("remarks");
+
+					long qty = 0;
+					String unit = "";
+					double ratePerUnit = 0.0;
+					String hsnSac = "—";
+					double gstRate = 0.18;
+
+					if ("CHARGE".equalsIgnoreCase(jobType)) {
+						// It's a custom charge or custom item
+						if (remarks != null && remarks.startsWith("QTY:")) {
+							try {
+								String[] parts = remarks.split("\\|");
+								for (String part : parts) {
+									if (part.startsWith("QTY:")) {
+										qty = (long) Double.parseDouble(part.substring(4));
+									} else if (part.startsWith("UNIT:")) {
+										unit = part.substring(5);
+									} else if (part.startsWith("RATE:")) {
+										ratePerUnit = Double.parseDouble(part.substring(5));
+									} else if (part.startsWith("GST:")) {
+										gstRate = Double.parseDouble(part.substring(4));
+									} else if (part.startsWith("HSN:")) {
+										hsnSac = part.substring(4);
+									}
+								}
+							} catch (Exception e) {
+								// fallback
+							}
+						} else {
+							// Legacy custom charge fallback
+							boolean isCustomItem = jobNo == null || jobNo.isBlank();
+							qty = isCustomItem ? 0 : 1;
+							unit = isCustomItem ? "" : "PCS";
+							hsnSac = "—";
+							gstRate = 0.18;
+						}
+					} else {
+						// It's a regular job loaded from DB!
+						qty = new service.JobService().getTotalPrintingQtyForJobUuids(List.of(jobUuid));
+						unit = "PCS"; // default unit
+						try {
+							List<model.JobItem> items = new service.JobItemService().getJobItems(jobUuid);
+							double jobTaxable = new service.JobService().getSumJobItemsAmountForJobUuids(List.of(jobUuid));
+							ratePerUnit = qty > 0 ? (jobTaxable / qty) : jobTaxable;
+							
+							service.HsnSacService hsnSacService = new service.HsnSacService();
+							for (model.JobItem ji : items) {
+								model.HsnSacInfo info = hsnSacService.lookup(ji);
+								if (info != null && info.getHsnSac() != null && !info.getHsnSac().isBlank()) {
+									hsnSac = info.getHsnSac();
+									if (info.getGstRate() > 0) {
+										gstRate = info.getGstRate();
+									}
+									break;
+								}
+							}
+						} catch (Exception e) {
+							// fallbacks
+						}
+					}
+
+					job.setQuantity(qty);
+					job.setUnit(unit);
+					job.setRatePerUnit(ratePerUnit);
+					job.setHsnSac(hsnSac);
+					job.setGstRate(gstRate);
+
 					jobMap.put(jobUuid, job);
 					invoice.getJobs().add(job);
 				}
@@ -483,6 +636,84 @@ public class InvoiceBuilderService {
 			}
 		}
 		return null;
+	}
+
+	private void loadAdditionalChargesForSavedInvoice(Connection con, Invoice invoice, String invoiceUuid) {
+		String sql = """
+				SELECT uuid, charge_type, description, amount, hsn_sac, gst_rate, taxable_flag
+				FROM invoice_additional_charges
+				WHERE invoice_uuid = ? AND COALESCE(is_deleted, 0) = 0
+				ORDER BY created_at
+				""";
+		try (PreparedStatement ps = con.prepareStatement(sql)) {
+			ps.setString(1, invoiceUuid);
+			try (ResultSet rs = ps.executeQuery()) {
+				while (rs.next()) {
+					InvoiceJob job = new InvoiceJob();
+					String uuid = rs.getString("uuid");
+					job.setJobUuid(uuid);
+					job.setJobNo(""); // No job number for custom items
+
+					String chargeType = rs.getString("charge_type");
+					String rawDesc = rs.getString("description");
+					double amount = rs.getDouble("amount");
+					String hsnSac = rs.getString("hsn_sac");
+					double gstRate = rs.getDouble("gst_rate");
+
+					long qty = 0;
+					String unit = "";
+					double ratePerUnit = 0.0;
+					String printedDesc = rawDesc;
+
+					if (rawDesc != null && rawDesc.startsWith("QTY:")) {
+						try {
+							String[] parts = rawDesc.split("\\|");
+							for (String part : parts) {
+								if (part.startsWith("QTY:")) {
+									qty = (long) Double.parseDouble(part.substring(4));
+								} else if (part.startsWith("UNIT:")) {
+									unit = part.substring(5);
+								} else if (part.startsWith("RATE:")) {
+									ratePerUnit = Double.parseDouble(part.substring(5));
+								} else if (part.startsWith("DESC:")) {
+									printedDesc = part.substring(5);
+								}
+							}
+						} catch (Exception e) {
+							// fallback
+						}
+					}
+
+					// Format description to match how it is printed
+					String formattedDesc = printedDesc;
+					if ("CHARGE".equalsIgnoreCase(chargeType)) {
+						String pctStr = String.format("%.0f%%", gstRate * 100.0);
+						if (!formattedDesc.toUpperCase().contains(pctStr) && !formattedDesc.toUpperCase().contains("-")) {
+							formattedDesc = formattedDesc + " - " + pctStr;
+						}
+					}
+
+					job.setJobName(formattedDesc);
+					job.setQuantity(qty);
+					job.setUnit(unit);
+					job.setRatePerUnit(ratePerUnit);
+					job.setHsnSac(hsnSac != null ? hsnSac : "—");
+					job.setGstRate(gstRate);
+
+					// Add a dummy invoice line so that getJobTotal() works correctly (sum of lines amount)
+					InvoiceLine line = new InvoiceLine();
+					line.setDescription(formattedDesc);
+					line.setAmount(amount);
+					line.setType("OTHER");
+					line.setSortOrder(1);
+					job.addLine(line);
+
+					invoice.getJobs().add(job);
+				}
+			}
+		} catch (Exception e) {
+			throw new RuntimeException("Failed loading additional charges for invoice " + invoiceUuid, e);
+		}
 	}
 
 }

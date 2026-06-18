@@ -38,7 +38,7 @@ public class DatabaseInitializer {
 
         // Open a direct JDBC connection here to avoid calling DBConnection.getConnection()
         // which itself calls DatabaseInitializer.initialize() and causes recursion.
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database/sunnyprinters.db");
+        try (Connection conn = DriverManager.getConnection(DBConnection.getUrl());
              Statement stmt = conn.createStatement()) {
 
             dropLeftoverMigrationBackupTables(conn, stmt);
@@ -57,6 +57,7 @@ public class DatabaseInitializer {
             ensureInvoiceAdjustmentsUuid(conn, stmt);
             ensureDocumentNumberMappingsTable(conn, stmt);
             ensurePaperItemsSupplierColumns(conn, stmt);
+            stmt.execute(SYNC_CONFLICTS_DDL);
 
             // ================== SUPPLIERS TABLE ==================
             stmt.execute("""
@@ -139,6 +140,7 @@ public class DatabaseInitializer {
             stmt.execute(PAYMENTS_DDL);
             stmt.execute(PAYMENT_ALLOCATIONS_DDL);
             stmt.execute(PAYMENT_DETAILS_DDL);
+            stmt.execute(JOB_CANCELLATION_AUDIT_DDL);
 
             // ================== USERS TABLE ==================
             boolean needUsersMigration = false;
@@ -585,9 +587,14 @@ public class DatabaseInitializer {
                     item_type TEXT NOT NULL,                  -- PRINTING | PAPER | BINDING | LAMINATION | CTP | OTHER
                     item_name TEXT NOT NULL DEFAULT '',
                     keyword TEXT NOT NULL DEFAULT '',          -- optional: description keyword match (case-insensitive)
+                    code_type TEXT NOT NULL DEFAULT 'HSN',
                     hsn_sac TEXT NOT NULL,
                     gst_rate REAL NOT NULL DEFAULT 0.18,      -- e.g. 0.18 for 18%%
                     unit_default TEXT,                        -- optional override: PCS/SHEET/SET etc.
+                    description TEXT NOT NULL DEFAULT '',
+                    is_favorite INTEGER NOT NULL DEFAULT 0,
+                    created_by_user_uuid TEXT DEFAULT NULL,
+                    updated_by_user_uuid TEXT DEFAULT NULL,
                     %s,
                     UNIQUE(item_type, keyword)
                 );
@@ -607,17 +614,11 @@ public class DatabaseInitializer {
                     branch_name TEXT NOT NULL DEFAULT '',
                     ifsc_code TEXT NOT NULL DEFAULT '',
                     is_default INTEGER NOT NULL DEFAULT 0,
+                    created_by_user_uuid TEXT DEFAULT NULL,
+                    updated_by_user_uuid TEXT DEFAULT NULL,
                     %s
                 );
                 """.formatted(SYNC_COLUMNS));
-            try {
-                stmt.execute("ALTER TABLE bank_details ADD COLUMN branch_name TEXT NOT NULL DEFAULT '';");
-            } catch (Exception e) {
-            }
-            try {
-                stmt.execute("ALTER TABLE bank_details ADD COLUMN ifsc_code TEXT NOT NULL DEFAULT '';");
-            } catch (Exception e) {
-            }
             try {
                 stmt.execute("""
                     INSERT INTO bank_details (uuid, bank_name, account_holder_name, account_no, branch_ifsc, is_default, is_active)
@@ -640,21 +641,19 @@ public class DatabaseInitializer {
                     gstin TEXT NOT NULL DEFAULT '',
                     state TEXT NOT NULL DEFAULT '',
                     is_default INTEGER NOT NULL DEFAULT 0,
+                    created_by_user_uuid TEXT DEFAULT NULL,
+                    updated_by_user_uuid TEXT DEFAULT NULL,
                     %s
                 );
                 """.formatted(SYNC_COLUMNS));
-            try {
-                stmt.execute("ALTER TABLE company_details ADD COLUMN alt_phone TEXT NOT NULL DEFAULT '';");
-            } catch (Exception e) {
-            }
             try {
                 String trade = utils.CompanyProfile.getName().replace("'", "''");
                 String addr = utils.CompanyProfile.getAddress().replace("'", "''");
                 String phone = utils.CompanyProfile.getPhone().replace("'", "''");
                 String email = utils.CompanyProfile.getEmail().replace("'", "''");
                 String gst = utils.CompanyProfile.getGst().replace("'", "''");
-                stmt.execute("INSERT INTO company_details (trade_name,address,phone,alt_phone,email,gstin,state,is_default,is_active) "
-                        + "SELECT '" + trade + "','" + addr + "','" + phone + "','','" + email + "','" + gst
+                stmt.execute("INSERT INTO company_details (uuid,trade_name,address,phone,alt_phone,email,gstin,state,is_default,is_active) "
+                        + "SELECT '" + java.util.UUID.randomUUID().toString() + "','" + trade + "','" + addr + "','" + phone + "','','" + email + "','" + gst
                         + "','',1,1 WHERE NOT EXISTS (SELECT 1 FROM company_details)");
             } catch (Exception e) {
             }
@@ -733,6 +732,14 @@ public class DatabaseInitializer {
 
             ensureInvoicePaymentCanonicalSchema(conn, stmt);
             ensureUuidOnlySchema(conn, stmt);
+
+            stmt.execute("""
+                    CREATE TABLE IF NOT EXISTS sync_metadata (
+                        table_name TEXT PRIMARY KEY NOT NULL,
+                        last_pull_at TEXT DEFAULT NULL
+                    );
+                    """);
+
             System.out.println("✔ All tables are created and ready!");
 
         }
@@ -764,6 +771,20 @@ public class DatabaseInitializer {
             }
         }
     }
+
+    private static final String SYNC_CONFLICTS_DDL = """
+            CREATE TABLE IF NOT EXISTS sync_conflicts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                table_name TEXT NOT NULL,
+                record_uuid TEXT NOT NULL,
+                local_updated_at TEXT,
+                remote_updated_at TEXT,
+                local_data TEXT,
+                remote_data TEXT,
+                resolution_strategy TEXT NOT NULL,
+                resolved_at TEXT DEFAULT (datetime('now'))
+            );
+            """;
 
     /** Canonical {@code clients} shape (SQLite). Primary key is UUID v7 in {@code uuid}. */
     private static final String CLIENTS_DDL = """
@@ -968,6 +989,21 @@ public class DatabaseInitializer {
             )
             """.formatted(SYNC_COLUMNS);
 
+    private static final String INVOICE_ADDITIONAL_CHARGES_DDL = """
+            CREATE TABLE IF NOT EXISTS invoice_additional_charges (
+                uuid TEXT PRIMARY KEY NOT NULL,
+                invoice_uuid TEXT NOT NULL,
+                charge_type TEXT,
+                description TEXT,
+                amount REAL DEFAULT 0,
+                hsn_sac TEXT,
+                gst_rate REAL DEFAULT 0,
+                taxable_flag BOOLEAN DEFAULT 1,
+                %s,
+                FOREIGN KEY (invoice_uuid) REFERENCES invoice_master(uuid) ON DELETE CASCADE
+            )
+            """.formatted(SYNC_COLUMNS);
+
     private static final String INVOICE_JOB_MAPPING_DDL = """
             CREATE TABLE IF NOT EXISTS invoice_job_mapping (
                 uuid TEXT PRIMARY KEY NOT NULL,
@@ -1002,6 +1038,22 @@ public class DatabaseInitializer {
                 %s,
                 FOREIGN KEY (payment_uuid) REFERENCES payments(uuid) ON DELETE CASCADE,
                 FOREIGN KEY (invoice_uuid) REFERENCES invoice_master(uuid) ON DELETE CASCADE
+            )
+            """.formatted(SYNC_COLUMNS);
+
+    private static final String JOB_CANCELLATION_AUDIT_DDL = """
+            CREATE TABLE IF NOT EXISTS job_cancellation_audit (
+                uuid TEXT PRIMARY KEY NOT NULL,
+                job_uuid TEXT NOT NULL,
+                cancellation_reason TEXT,
+                cancelled_by TEXT,
+                cancelled_at TEXT DEFAULT (datetime('now')),
+                original_invoice_uuid TEXT,
+                original_job_amount REAL,
+                original_gst_amount REAL,
+                reallocated_amount REAL,
+                refund_pending_amount REAL,
+                %s
             )
             """.formatted(SYNC_COLUMNS);
 
@@ -1681,6 +1733,8 @@ public class DatabaseInitializer {
                         unit_default TEXT,
                         description TEXT NOT NULL DEFAULT '',
                         is_favorite INTEGER NOT NULL DEFAULT 0,
+                        created_by_user_uuid TEXT DEFAULT NULL,
+                        updated_by_user_uuid TEXT DEFAULT NULL,
                         %s,
                         UNIQUE(item_type, keyword)
                     )
@@ -2367,9 +2421,11 @@ public class DatabaseInitializer {
         stmt.execute(INVOICE_MASTER_DDL);
         stmt.execute(INVOICE_ADJUSTMENTS_DDL);
         stmt.execute(INVOICE_JOB_MAPPING_DDL);
+        stmt.execute(INVOICE_ADDITIONAL_CHARGES_DDL);
         stmt.execute(PAYMENTS_DDL);
         stmt.execute(PAYMENT_ALLOCATIONS_DDL);
         stmt.execute(PAYMENT_DETAILS_DDL);
+        stmt.execute(JOB_CANCELLATION_AUDIT_DDL);
 
         migrateInvoiceMasterToCanonicalIfNeeded(conn, stmt);
         migratePaymentAllocationsToCanonicalIfNeeded(conn, stmt);
@@ -2377,8 +2433,10 @@ public class DatabaseInitializer {
         migrateInvoiceJobMappingToCanonicalIfNeeded(conn, stmt);
 
         ensureChildTableSyncColumns(conn, stmt, "invoice_job_mapping");
+        ensureChildTableSyncColumns(conn, stmt, "invoice_additional_charges");
         ensureChildTableSyncColumns(conn, stmt, "payment_allocations");
         ensureChildTableSyncColumns(conn, stmt, "payment_details");
+        ensureChildTableSyncColumns(conn, stmt, "job_cancellation_audit");
         ensurePaymentDetailsHaveUuid(conn, stmt);
 
         ensureInvoiceMasterColumnDefaults(conn, stmt);

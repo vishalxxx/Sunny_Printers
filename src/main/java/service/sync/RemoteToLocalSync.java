@@ -1,11 +1,17 @@
 package service.sync;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -21,70 +27,138 @@ public final class RemoteToLocalSync {
 	private RemoteToLocalSync() {
 	}
 
-	public static void pullAll(SupabaseRestClient http) {
+	/**
+	 * Pulls updates from Supabase and applies them to local SQLite.
+	 * Returns the total number of inserted, updated, and deleted rows.
+	 */
+	public static int pullAll(SupabaseRestClient http) {
 		System.out.println("[RemoteToLocalSync] Starting remote-to-local sync...");
+		int totalChanges = 0;
+		Map<String, String> newLastPullMap = new HashMap<>();
+
 		try (Connection conn = DBConnection.getConnection()) {
-			try (Statement stmt = conn.createStatement()) {
-				stmt.execute("PRAGMA foreign_keys = OFF;");
+			boolean autoCommit = conn.getAutoCommit();
+			conn.setAutoCommit(false);
+			try {
+				try (Statement stmt = conn.createStatement()) {
+					stmt.execute("PRAGMA foreign_keys = OFF;");
+				}
+
+				// Pull tables in strict dependency order
+				totalChanges += pullTable(http, conn, "users", SupabaseEndpoints.USERS, newLastPullMap);
+				totalChanges += pullTable(http, conn, "company_details", SupabaseEndpoints.COMPANY_DETAILS, newLastPullMap);
+				totalChanges += pullTable(http, conn, "bank_details", SupabaseEndpoints.BANK_DETAILS, newLastPullMap);
+				totalChanges += pullTable(http, conn, "hsn_sac_master", SupabaseEndpoints.HSN_SAC_MASTER, newLastPullMap);
+				totalChanges += pullTable(http, conn, "suppliers", SupabaseEndpoints.SUPPLIERS, newLastPullMap);
+				totalChanges += pullTable(http, conn, "clients", SupabaseEndpoints.CLIENTS, newLastPullMap);
+				totalChanges += pullTable(http, conn, "jobs", SupabaseEndpoints.JOBS, newLastPullMap);
+				totalChanges += pullTable(http, conn, "job_items", SupabaseEndpoints.JOB_ITEMS, newLastPullMap);
+				totalChanges += pullTable(http, conn, "printing_items", SupabaseEndpoints.PRINTING_ITEMS, newLastPullMap);
+				totalChanges += pullTable(http, conn, "paper_items", SupabaseEndpoints.PAPER_ITEMS, newLastPullMap);
+				totalChanges += pullTable(http, conn, "binding_items", SupabaseEndpoints.BINDING_ITEMS, newLastPullMap);
+				totalChanges += pullTable(http, conn, "lamination_items", SupabaseEndpoints.LAMINATION_ITEMS, newLastPullMap);
+				totalChanges += pullTable(http, conn, "ctp_items", SupabaseEndpoints.CTP_ITEMS, newLastPullMap);
+				totalChanges += pullTable(http, conn, "invoice_master", SupabaseEndpoints.INVOICE_MASTER, newLastPullMap);
+				totalChanges += pullTable(http, conn, "invoice_job_mapping", SupabaseEndpoints.INVOICE_JOB_MAPPING, newLastPullMap);
+				totalChanges += pullTable(http, conn, "invoice_additional_charges", SupabaseEndpoints.INVOICE_ADDITIONAL_CHARGES, newLastPullMap);
+				totalChanges += pullTable(http, conn, "invoice_adjustments", SupabaseEndpoints.INVOICE_ADJUSTMENTS, newLastPullMap);
+				totalChanges += pullTable(http, conn, "payments", SupabaseEndpoints.PAYMENTS, newLastPullMap);
+				totalChanges += pullTable(http, conn, "payment_details", SupabaseEndpoints.PAYMENT_DETAILS, newLastPullMap);
+				totalChanges += pullTable(http, conn, "payment_allocations", SupabaseEndpoints.PAYMENT_ALLOCATIONS, newLastPullMap);
+				totalChanges += pullTable(http, conn, "document_number_mappings", SupabaseEndpoints.DOCUMENT_NUMBER_MAPPINGS, newLastPullMap);
+
+				try (Statement stmt = conn.createStatement()) {
+					stmt.execute("PRAGMA foreign_keys = ON;");
+				}
+				conn.commit();
+				System.out.println("[RemoteToLocalSync] Remote-to-local sync transaction committed.");
+			} catch (Exception e) {
+				conn.rollback();
+				throw e;
+			} finally {
+				conn.setAutoCommit(autoCommit);
 			}
 
-			pullTable(http, conn, "users", SupabaseEndpoints.USERS);
-			pullTable(http, conn, "company_details", SupabaseEndpoints.COMPANY_DETAILS);
-			pullTable(http, conn, "bank_details", SupabaseEndpoints.BANK_DETAILS);
-			pullTable(http, conn, "hsn_sac_master", SupabaseEndpoints.HSN_SAC_MASTER);
-			pullTable(http, conn, "suppliers", SupabaseEndpoints.SUPPLIERS);
-			pullTable(http, conn, "clients", SupabaseEndpoints.CLIENTS);
-			pullTable(http, conn, "invoice_master", SupabaseEndpoints.INVOICE_MASTER);
-			pullTable(http, conn, "jobs", SupabaseEndpoints.JOBS);
-			pullTable(http, conn, "job_items", SupabaseEndpoints.JOB_ITEMS);
-			pullTable(http, conn, "printing_items", SupabaseEndpoints.PRINTING_ITEMS);
-			pullTable(http, conn, "paper_items", SupabaseEndpoints.PAPER_ITEMS);
-			pullTable(http, conn, "binding_items", SupabaseEndpoints.BINDING_ITEMS);
-			pullTable(http, conn, "lamination_items", SupabaseEndpoints.LAMINATION_ITEMS);
-			pullTable(http, conn, "ctp_items", SupabaseEndpoints.CTP_ITEMS);
-			pullTable(http, conn, "invoice_job_mapping", SupabaseEndpoints.INVOICE_JOB_MAPPING);
-			pullTable(http, conn, "invoice_adjustments", SupabaseEndpoints.INVOICE_ADJUSTMENTS);
-			pullTable(http, conn, "payments", SupabaseEndpoints.PAYMENTS);
-			pullTable(http, conn, "payment_details", SupabaseEndpoints.PAYMENT_DETAILS);
-			pullTable(http, conn, "payment_allocations", SupabaseEndpoints.PAYMENT_ALLOCATIONS);
-			pullTable(http, conn, "document_number_mappings", SupabaseEndpoints.DOCUMENT_NUMBER_MAPPINGS);
-
-			try (Statement stmt = conn.createStatement()) {
-				stmt.execute("PRAGMA foreign_keys = ON;");
+			// Save the metadata state *after* successful commit
+			for (Map.Entry<String, String> entry : newLastPullMap.entrySet()) {
+				updateLastPullAt(conn, entry.getKey(), entry.getValue());
 			}
-			System.out.println("[RemoteToLocalSync] Remote-to-local sync completed successfully.");
+
+			System.out.println("[RemoteToLocalSync] Remote-to-local sync completed successfully. Total changes: " + totalChanges);
 		} catch (Exception e) {
 			System.err.println("[RemoteToLocalSync] Failed to execute remote-to-local sync: " + e.getMessage());
 			e.printStackTrace();
 		}
+		return totalChanges;
 	}
 
-	private static void pullTable(SupabaseRestClient http, Connection conn, String table, SupabaseEndpoints endpoint) {
+	private static int pullTable(SupabaseRestClient http, Connection conn, String table, SupabaseEndpoints endpoint, Map<String, String> newLastPullMap) {
+		long startTime = System.currentTimeMillis();
+		int fetched = 0;
+		int inserted = 0;
+		int updated = 0;
+		int deleted = 0;
+		int skipped = 0;
+		int conflicts = 0;
+
+		String lastPullAt = getLastPullAt(conn, table);
+		String overlapTimestamp = calculateOverlapTimestamp(lastPullAt);
+
 		try {
 			if (!tableExists(conn, table)) {
-				return;
+				return 0;
 			}
-			var res = http.get(endpoint, "select=*");
+
+			String query = "select=*";
+			String timestampCol = "document_number_mappings".equals(table) ? "created_at" : "updated_at";
+
+			if (overlapTimestamp != null) {
+				query += "&" + timestampCol + "=gt." + URLEncoder.encode(overlapTimestamp, StandardCharsets.UTF_8);
+			}
+
+			var res = http.get(endpoint, query);
 			if (res.statusCode() < 200 || res.statusCode() >= 300) {
 				System.err.println("[RemoteToLocalSync] Failed to pull " + table + ": HTTP " + res.statusCode() + " " + res.body());
-				return;
+				return 0;
 			}
+
 			String body = res.body();
 			if (body == null || body.trim().isEmpty()) {
-				return;
+				logMetrics(table, lastPullAt, fetched, inserted, updated, deleted, skipped, conflicts, startTime, lastPullAt);
+				// Do NOT advance the watermark on empty pulls
+				return 0;
 			}
+
 			JsonElement root = JsonParser.parseString(body);
 			if (!root.isJsonArray()) {
-				return;
+				logMetrics(table, lastPullAt, fetched, inserted, updated, deleted, skipped, conflicts, startTime, lastPullAt);
+				// Do NOT advance the watermark on empty pulls
+				return 0;
 			}
+
 			JsonArray arr = root.getAsJsonArray();
-			if (arr.size() == 0) {
-				return;
+			fetched = arr.size();
+			if (fetched == 0) {
+				logMetrics(table, lastPullAt, fetched, inserted, updated, deleted, skipped, conflicts, startTime, lastPullAt);
+				// Do NOT advance the watermark on empty pulls
+				return 0;
 			}
 
 			List<String> cols = getColumns(conn, table);
 			if (cols.isEmpty()) {
-				return;
+				return 0;
+			}
+
+			String maxTimestamp = lastPullAt;
+			Instant maxInstant = null;
+			if (lastPullAt != null) {
+				try {
+					String fmt = lastPullAt.trim().replace(" ", "T");
+					if (!fmt.contains("Z") && !fmt.contains("+") && fmt.length() == 19) {
+						fmt += "Z";
+					}
+					maxInstant = Instant.parse(fmt);
+				} catch (Exception ignored) {}
 			}
 
 			for (JsonElement el : arr) {
@@ -92,6 +166,73 @@ public final class RemoteToLocalSync {
 					continue;
 				}
 				JsonObject o = el.getAsJsonObject();
+
+				// Track highest remote timestamp to advance the watermark
+				String remoteUpdatedAt = o.has(timestampCol) && !o.get(timestampCol).isJsonNull() ? o.get(timestampCol).getAsString() : null;
+				if (remoteUpdatedAt != null) {
+					try {
+						String formattedRemote = remoteUpdatedAt.trim().replace(" ", "T");
+						if (!formattedRemote.contains("Z") && !formattedRemote.contains("+") && formattedRemote.length() == 19) {
+							formattedRemote += "Z";
+						}
+						Instant remoteInst = Instant.parse(formattedRemote);
+						if (maxInstant == null || remoteInst.isAfter(maxInstant)) {
+							maxInstant = remoteInst;
+							maxTimestamp = remoteUpdatedAt;
+						}
+					} catch (Exception ignored) {}
+				}
+
+				String uuid = o.has("uuid") && !o.get("uuid").isJsonNull() ? o.get("uuid").getAsString() : null;
+				boolean localExists = false;
+				String localSyncStatus = null;
+				String localUpdatedAt = null;
+
+				if (uuid != null && cols.contains("sync_status") && cols.contains("updated_at")) {
+					try (PreparedStatement checkPs = conn.prepareStatement("SELECT sync_status, updated_at FROM " + table + " WHERE uuid = ?")) {
+						checkPs.setString(1, uuid);
+						try (ResultSet checkRs = checkPs.executeQuery()) {
+							if (checkRs.next()) {
+								localExists = true;
+								localSyncStatus = checkRs.getString("sync_status");
+								localUpdatedAt = checkRs.getString("updated_at");
+							}
+						}
+					}
+				}
+
+				boolean shouldUpsert = true;
+				if (localExists) {
+					String remoteUpdatedAtStr = o.has(timestampCol) && !o.get(timestampCol).isJsonNull() ? o.get(timestampCol).getAsString() : null;
+					java.time.Instant localInst = SyncConflictResolver.parseTimestamp(localUpdatedAt);
+					java.time.Instant remoteInst = SyncConflictResolver.parseTimestamp(remoteUpdatedAtStr);
+
+					if (remoteInst.equals(localInst)) {
+						shouldUpsert = false;
+						skipped++;
+					} else if ("PENDING".equalsIgnoreCase(localSyncStatus)) {
+						conflicts++;
+						if (remoteInst.isAfter(localInst)) {
+							SyncConflictResolver.logConflict(table, uuid, localUpdatedAt, remoteUpdatedAtStr,
+								"Local unpushed edit overwritten by newer remote update", o.toString(), "LAST_WRITE_WINS_REMOTE_WINS");
+							shouldUpsert = true;
+						} else {
+							SyncConflictResolver.logConflict(table, uuid, localUpdatedAt, remoteUpdatedAtStr,
+								"Local unpushed edit kept; older remote update rejected", o.toString(), "LAST_WRITE_WINS_LOCAL_WINS");
+							shouldUpsert = false;
+							skipped++;
+						}
+					} else {
+						if (remoteInst.isBefore(localInst)) {
+							shouldUpsert = false;
+							skipped++;
+						}
+					}
+				}
+
+				if (!shouldUpsert) {
+					continue;
+				}
 
 				List<String> insertCols = new ArrayList<>();
 				List<Object> values = new ArrayList<>();
@@ -129,7 +270,8 @@ public final class RemoteToLocalSync {
 					continue;
 				}
 
-				StringBuilder sb = new StringBuilder("INSERT OR REPLACE INTO ").append(table).append(" (");
+				// Build safe UUID-based UPSERT query
+				StringBuilder sb = new StringBuilder("INSERT INTO ").append(table).append(" (");
 				for (int i = 0; i < insertCols.size(); i++) {
 					sb.append(insertCols.get(i));
 					if (i < insertCols.size() - 1) {
@@ -143,7 +285,18 @@ public final class RemoteToLocalSync {
 						sb.append(",");
 					}
 				}
-				sb.append(")");
+				sb.append(") ON CONFLICT(uuid) DO UPDATE SET ");
+				boolean first = true;
+				for (String col : insertCols) {
+					if ("uuid".equalsIgnoreCase(col) || "id".equalsIgnoreCase(col)) {
+						continue;
+					}
+					if (!first) {
+						sb.append(", ");
+					}
+					sb.append(col).append("=excluded.").append(col);
+					first = false;
+				}
 
 				try (PreparedStatement ps = conn.prepareStatement(sb.toString())) {
 					for (int i = 0; i < values.size(); i++) {
@@ -156,11 +309,101 @@ public final class RemoteToLocalSync {
 					}
 					ps.executeUpdate();
 				}
+
+				boolean isDeletedVal = false;
+				if (o.has("is_deleted") && !o.get("is_deleted").isJsonNull()) {
+					try {
+						isDeletedVal = o.get("is_deleted").getAsBoolean();
+					} catch (Exception ignored) {
+						isDeletedVal = o.get("is_deleted").getAsInt() != 0;
+					}
+				}
+
+				if (isDeletedVal) {
+					deleted++;
+				} else if (localExists) {
+					updated++;
+				} else {
+					inserted++;
+				}
 			}
-			System.out.println("[RemoteToLocalSync] Successfully pulled and upserted " + arr.size() + " rows into " + table);
+
+			logMetrics(table, lastPullAt, fetched, inserted, updated, deleted, skipped, conflicts, startTime, maxTimestamp);
+			if (maxTimestamp != null) {
+				newLastPullMap.put(table, maxTimestamp);
+			}
 		} catch (Exception e) {
 			System.err.println("[RemoteToLocalSync] Error syncing table " + table + ": " + e.getMessage());
 			e.printStackTrace();
+		}
+
+		return inserted + updated + deleted;
+	}
+
+	private static void logMetrics(String table, String lastPull, int fetched, int inserted, int updated,
+								   int deleted, int skipped, int conflicts, long startTime, String newLastPull) {
+		long duration = System.currentTimeMillis() - startTime;
+		System.out.println(String.format(
+			"[RemoteToLocalSync]%n" +
+			"Table=%s%n" +
+			"LastPull=%s%n" +
+			"Fetched=%d%n" +
+			"Inserted=%d%n" +
+			"Updated=%d%n" +
+			"Deleted=%d%n" +
+			"Skipped=%d%n" +
+			"Conflicts=%d%n" +
+			"Duration=%dms%n" +
+			"NewLastPull=%s%n",
+			table,
+			lastPull == null ? "None" : lastPull,
+			fetched, inserted, updated, deleted, skipped, conflicts,
+			duration, newLastPull == null ? "None" : newLastPull
+		));
+	}
+
+	private static String calculateOverlapTimestamp(String lastPullAt) {
+		if (lastPullAt == null || lastPullAt.trim().isEmpty()) {
+			return null;
+		}
+		try {
+			String formatted = lastPullAt.trim().replace(" ", "T");
+			if (!formatted.contains("Z") && !formatted.contains("+") && formatted.length() == 19) {
+				formatted += "Z";
+			}
+			java.time.Instant instant = java.time.Instant.parse(formatted);
+			java.time.Instant overlap = instant.minusSeconds(60);
+			return overlap.toString();
+		} catch (Exception e) {
+			System.err.println("[RemoteToLocalSync] Failed to parse last_pull_at: " + lastPullAt + ", doing full pull.");
+			return null;
+		}
+	}
+
+	private static String getLastPullAt(Connection conn, String table) {
+		String sql = "SELECT last_pull_at FROM sync_metadata WHERE table_name = ?";
+		try (PreparedStatement ps = conn.prepareStatement(sql)) {
+			ps.setString(1, table);
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) {
+					return rs.getString(1);
+				}
+			}
+		} catch (Exception e) {
+			// Table might not exist yet, or other issue - safe fallback to null
+		}
+		return null;
+	}
+
+	private static void updateLastPullAt(Connection conn, String table, String timestamp) {
+		String sql = "INSERT INTO sync_metadata (table_name, last_pull_at) VALUES (?, ?) " +
+		             "ON CONFLICT(table_name) DO UPDATE SET last_pull_at = excluded.last_pull_at";
+		try (PreparedStatement ps = conn.prepareStatement(sql)) {
+			ps.setString(1, table);
+			ps.setString(2, timestamp);
+			ps.executeUpdate();
+		} catch (Exception e) {
+			System.err.println("[RemoteToLocalSync] Error updating last_pull_at for " + table + ": " + e.getMessage());
 		}
 	}
 

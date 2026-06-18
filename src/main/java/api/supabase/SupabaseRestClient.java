@@ -13,7 +13,7 @@ import utils.SupabaseRestProbe;
 /**
  * Minimal synchronous PostgREST client (anon key / service role key as Bearer).
  */
-public final class SupabaseRestClient {
+public class SupabaseRestClient {
 
 	private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
 	private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(12);

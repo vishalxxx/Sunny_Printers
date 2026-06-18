@@ -101,6 +101,11 @@ public class TaxMasterController implements Initializable {
 
 	}
 
+	public void refresh() {
+		reloadCategories();
+		reloadTable();
+	}
+
 	private void setupFilterCombos() {
 		if (comboCategory != null) {
 			comboCategory.getItems().clear();
@@ -132,10 +137,12 @@ public class TaxMasterController implements Initializable {
 			ex.printStackTrace();
 		}
 		List<String> standard = List.of("PRINTING", "PAPER", "BINDING", "LAMINATION", "CTP");
-		java.util.LinkedHashSet<String> merged = new java.util.LinkedHashSet<>(fromDb);
+		java.util.LinkedHashSet<String> mergedSet = new java.util.LinkedHashSet<>(fromDb);
 		for (String s : standard) {
-			merged.add(s);
+			mergedSet.add(s);
 		}
+		List<String> merged = new ArrayList<>(mergedSet);
+		utils.ComboBoxSorter.sortStrings(merged);
 
 		String catSel = comboCategory != null && comboCategory.getValue() != null ? comboCategory.getValue() : ALL_CATEGORIES;
 		if (comboCategory != null) {

@@ -152,6 +152,11 @@ public class UserManagementController {
     }
 
     @FXML
+    public void refresh() {
+        refreshData();
+    }
+
+    @FXML
     private void refreshData() {
         // Run connectivity probe asynchronously so UI doesn't hitch
         CompletableFuture.runAsync(() -> {

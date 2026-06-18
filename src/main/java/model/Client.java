@@ -378,4 +378,20 @@ public class Client {
 	public StringProperty updatedByUserUuidProperty() {
 		return updatedByUserUuid;
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Client client = (Client) o;
+		String thisUuid = getClientUuid();
+		String thatUuid = client.getClientUuid();
+		return thisUuid != null ? thisUuid.equals(thatUuid) : thatUuid == null;
+	}
+
+	@Override
+	public int hashCode() {
+		String thisUuid = getClientUuid();
+		return thisUuid != null ? thisUuid.hashCode() : 0;
+	}
 }

@@ -46,6 +46,7 @@ public class Binding implements Serializable {
     private transient boolean isNew;
     private transient boolean isUpdated;
     private boolean deleted;
+    private boolean includeNotesInInvoice = true;
 
     /* ================= SNAPSHOT ================= */
 
@@ -64,6 +65,7 @@ public class Binding implements Serializable {
         b.rate = this.rate;
         b.notes = this.notes;
         b.amount = this.amount;
+        b.includeNotesInInvoice = this.includeNotesInInvoice;
         return b;
     }
 
@@ -150,6 +152,9 @@ public class Binding implements Serializable {
 
     public String getDeletedAt() { return deletedAt; }
     public void setDeletedAt(String deletedAt) { this.deletedAt = deletedAt; }
+
+    public boolean isIncludeNotesInInvoice() { return includeNotesInInvoice; }
+    public void setIncludeNotesInInvoice(boolean includeNotesInInvoice) { this.includeNotesInInvoice = includeNotesInInvoice; }
 
     @Override
     public String toString() {

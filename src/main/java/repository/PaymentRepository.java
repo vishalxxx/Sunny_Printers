@@ -18,9 +18,9 @@ public class PaymentRepository {
 				SELECT uuid, client_uuid, amount, payment_date, method, type,
 				       sync_status, sync_version, is_deleted, is_active, created_at, updated_at
 				FROM payments
-				WHERE %s AND %s
+				WHERE %s
 				ORDER BY created_at ASC
-				""".formatted(PendingSyncFilters.NOT_DELETED, PendingSyncFilters.PENDING_STATUS);
+				""".formatted(PendingSyncFilters.PENDING_STATUS);
 		try (Connection conn = DBConnection.getConnection();
 				PreparedStatement ps = conn.prepareStatement(sql);
 				ResultSet rs = ps.executeQuery()) {
