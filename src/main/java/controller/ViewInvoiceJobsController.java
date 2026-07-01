@@ -176,12 +176,8 @@ public class ViewInvoiceJobsController {
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && (!row.isEmpty())) {
                     Job item = row.getItem();
-                    String invoiceStatus = currentEditInvoice != null && currentEditInvoice.getStatus() != null
-                            ? currentEditInvoice.getStatus().toUpperCase()
-                            : "";
-
-                    if (isViewOnly || "FINAL".equals(invoiceStatus) || "SENT".equals(invoiceStatus)
-                            || "PAID".equals(invoiceStatus)) {
+                    boolean isLocked = isInvoiceLocked(currentEditInvoice);
+                    if (isViewOnly || isLocked) {
                         showJobDetails(item);
                     } else {
                         openEditJobScreen(item);
@@ -453,11 +449,11 @@ public class ViewInvoiceJobsController {
         // ✅ Actions Column: Button row
         actionsCol.setCellFactory(col -> new TableCell<>() {
             private final javafx.scene.layout.HBox container = new javafx.scene.layout.HBox(8);
+            private final Button btnE = createCircularBtn("M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z", "#FA8C16");
             {
                 container.setAlignment(javafx.geometry.Pos.CENTER); // Centered content
                 setStyle("-fx-alignment: CENTER;");
                 Button btnV = createCircularBtn("M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z", "#00BCD4");
-                Button btnE = createCircularBtn("M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z", "#FA8C16");
                 Button btnM = createCircularBtn("M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z", "#A7A69D");
                 
                 btnV.setOnAction(e -> {
@@ -484,7 +480,16 @@ public class ViewInvoiceJobsController {
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                setGraphic(empty ? null : container);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    TableRow<?> row = getTableRow();
+                    Job rowJob = row != null ? (Job) row.getItem() : null;
+                    boolean isLocked = isJobLocked(rowJob);
+                    boolean canEditInvoice = !isViewOnly && !isInvoiceLocked(currentEditInvoice);
+                    btnE.setDisable(!canEditInvoice || isLocked);
+                    setGraphic(container);
+                }
             }
         });
 
@@ -516,13 +521,40 @@ public class ViewInvoiceJobsController {
         // Styles are now handled purely by CSS classes in view_job.css
     }
 
+    private boolean isInvoiceLocked(InvoiceMaster inv) {
+        if (inv == null) return false;
+        String stat = inv.getStatus() != null ? inv.getStatus().trim().toUpperCase() : "";
+        String ds = inv.getDocumentSeries();
+        String tp = inv.getType();
+        boolean isProforma = (ds != null && "PROFORMA_INVOICE".equalsIgnoreCase(ds))
+                          || (tp != null && (tp.toUpperCase().contains("PROFORMA") || tp.toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(tp) || "DATE_RANGE".equalsIgnoreCase(tp) || tp.toUpperCase().contains("MONTHLY")));
+        if (isProforma) {
+            return "REVISED".equals(stat) || "CANCELLED".equals(stat) || "VOID".equals(stat);
+        } else {
+            return !stat.isEmpty() && !"DRAFT".equals(stat) && !stat.contains("DRAFT");
+        }
+    }
+
+    private boolean isJobLocked(Job job) {
+        if (job == null) return true;
+        if ("Cancelled".equalsIgnoreCase(job.getStatus())) {
+            return true;
+        }
+        if (currentEditInvoice != null) {
+            if (isInvoiceLocked(currentEditInvoice)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void updateJobActionBar(java.util.List<Job> selected) {
         System.out.println("DEBUG: updateJobActionBar selected size: " + (selected == null ? 0 : selected.size()));
 
         // Always ensure Save/Discard are in correct state
-        boolean canEdit = !isViewOnly;
-        btnSave.setVisible(canEdit);
-        btnSave.setManaged(canEdit);
+        boolean canEditInvoice = !isViewOnly && !isInvoiceLocked(currentEditInvoice);
+        btnSave.setVisible(canEditInvoice);
+        btnSave.setManaged(canEditInvoice);
         btnDiscard.setVisible(true);
         btnDiscard.setManaged(true);
         btnDiscard.setText(isViewOnly ? "Close" : "Discard");
@@ -535,16 +567,26 @@ public class ViewInvoiceJobsController {
             return;
         }
 
+        boolean anyLocked = false;
+        for (Job job : selected) {
+            if (isJobLocked(job)) {
+                anyLocked = true;
+                break;
+            }
+        }
+
+        boolean actionAllowed = canEditInvoice && !anyLocked;
+
         if (selected.size() == 1) {
             btnJobView.setDisable(false);
-            btnJobEdit.setDisable(!canEdit);
-            btnJobCancel.setDisable(!canEdit);
-            btnJobUnlink.setDisable(!canEdit);
+            btnJobEdit.setDisable(!actionAllowed);
+            btnJobCancel.setDisable(!actionAllowed);
+            btnJobUnlink.setDisable(!actionAllowed);
         } else {
             btnJobView.setDisable(true);
             btnJobEdit.setDisable(true);
-            btnJobCancel.setDisable(!canEdit);
-            btnJobUnlink.setDisable(!canEdit);
+            btnJobCancel.setDisable(!actionAllowed);
+            btnJobUnlink.setDisable(!actionAllowed);
         }
     }
 
@@ -569,6 +611,10 @@ public class ViewInvoiceJobsController {
 
     @FXML
     private void handleJobCancelAction() {
+        if (isInvoiceLocked(currentEditInvoice)) {
+            toast("Cancelling jobs is not allowed for locked/finalized invoices.");
+            return;
+        }
         java.util.List<Job> selectedItems = new java.util.ArrayList<>(jobsTable.getSelectionModel().getSelectedItems());
         if (!selectedItems.isEmpty()) {
             TextInputDialog reasonDlg = new TextInputDialog();
@@ -602,6 +648,10 @@ public class ViewInvoiceJobsController {
 
     @FXML
     private void handleJobUnlinkAction() {
+        if (isInvoiceLocked(currentEditInvoice)) {
+            toast("Unlinking jobs is not allowed for locked/finalized invoices.");
+            return;
+        }
         java.util.List<Job> selectedItems = new java.util.ArrayList<>(jobsTable.getSelectionModel().getSelectedItems());
         if (!selectedItems.isEmpty()) {
             String msg = "Unlink selected job(s) from this invoice?";
@@ -631,9 +681,8 @@ public class ViewInvoiceJobsController {
         if (currentEditInvoice == null)
             return;
 
-        String invStatus = currentEditInvoice.getStatus() != null ? currentEditInvoice.getStatus().toLowerCase() : "";
-        if (!invStatus.equals("draft") && !invStatus.equals("final")) {
-            toast("Adding jobs is only allowed for Draft or Final invoices.");
+        if (isInvoiceLocked(currentEditInvoice)) {
+            toast("Adding jobs is not allowed for locked/finalized invoices.");
             return;
         }
 
@@ -1049,10 +1098,17 @@ public class ViewInvoiceJobsController {
 
         String stat = inv.getStatus() != null ? inv.getStatus().toUpperCase() : "";
         boolean isDraft = "DRAFT".equals(stat) || stat.contains("DRAFT");
+        String ds = inv.getDocumentSeries();
+        String tp = inv.getType();
+        boolean isProforma = (ds != null && "PROFORMA_INVOICE".equalsIgnoreCase(ds))
+                          || (tp != null && (tp.toUpperCase().contains("PROFORMA") || tp.toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(tp) || "DATE_RANGE".equalsIgnoreCase(tp) || tp.toUpperCase().contains("MONTHLY")));
 
         // Locking logic
-        boolean isLocked = !isDraft; // Consistent with user request to lock anything not Draft
+        boolean isLocked = isInvoiceLocked(inv);
         dpInvoiceDate.setDisable(isLocked);
+        if (btnAddJob != null) {
+            btnAddJob.setDisable(isLocked);
+        }
 
         // Button Visibility
         boolean canSave = !isViewOnly;

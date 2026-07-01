@@ -229,7 +229,7 @@
     -fx-border-width: 1.5;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
-    -fx-padding: 9 18 9 14;
+    -fx-padding: 8 10;
     -fx-font-size: 12px;
     -fx-font-weight: 800;
     -fx-cursor: hand;
@@ -237,7 +237,6 @@
     -fx-content-display: LEFT;
     -fx-text-overrun: clip;
     -fx-wrap-text: false;
-    -fx-min-width: 172;
     -fx-label-padding: 0 2 0 0;
 }
 .view-invoices-root .vi-btn-filter-clear:hover {
@@ -326,9 +325,9 @@
 .vi-btn-clear-taste:hover { -fx-background-color: #FAF6F0; }
 
 .vi-icon-clear {
-    -fx-shape: "M14.73 13.31L21.59 20.17 19.47 22.29 12.61 15.43 5.75 22.29 3.63 20.17 10.49 13.31 3.63 6.45 5.75 4.33 12.61 11.19 19.47 4.33 21.59 6.45 14.73 13.31z";
+    -fx-shape: "M10.83 8H21V6H8.83l2 2zM15 12h-2.17l-2-2H15v2zm-4.17 4H6v-2h2.83l2 2zM2.81 2.81L1.39 4.22 4 6.83V8h2.17l2 2H6v2h4.17l2 2H10v2h2v-1.17l6.78 6.78 1.41-1.41L2.81 2.81z";
     -fx-background-color: #8E7B71;
-    -fx-min-width: 12; -fx-min-height: 12;
+    -fx-min-width: 14; -fx-min-height: 14;
 }
 
 /* Redundant taste styles removed - inherited from theme.css */

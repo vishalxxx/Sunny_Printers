@@ -75,7 +75,7 @@ public final class PaymentDetailsDialogUtil {
 					SELECT i.invoice_no, a.allocated_amount
 					FROM payment_allocations a
 					JOIN invoice_master i ON a.invoice_uuid = i.uuid
-					WHERE a.payment_uuid = ?""";
+					WHERE a.payment_uuid = ? AND COALESCE(a.is_deleted, 0) = 0""";
 			try (PreparedStatement ps = con.prepareStatement(allocSql)) {
 				ps.setString(1, paymentUuid);
 				ResultSet rs = ps.executeQuery();

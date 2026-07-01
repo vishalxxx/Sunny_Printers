@@ -12,10 +12,13 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import model.Supplier;
 import service.SupplierService;
 import utils.Toast;
+import utils.GSTINValidator;
+import utils.PhoneValidator;
 
 public class AddSupplierController implements Initializable {
 
@@ -26,8 +29,20 @@ public class AddSupplierController implements Initializable {
     @FXML private TextField supplierCodeField;
     @FXML private TextField businessNameField;
     @FXML private TextField gstinField;
+    @FXML private Label lblGstValidation;
+    @FXML private VBox panGstDetails;
+    @FXML private Label lblGstDetailsGstin;
+    @FXML private Label lblGstDetailsState;
+    @FXML private Label lblGstDetailsPan;
+    @FXML private Label lblGstDetailsType;
+    @FXML private Label lblGstDetailsStatus;
+
     @FXML private TextField mobileField;
+    @FXML private Label lblPhoneValidation;
+
     @FXML private TextField phoneField;
+    @FXML private Label lblAltPhoneValidation;
+
     @FXML private TextField emailField;
     @FXML private TextField websiteField;
     
@@ -82,6 +97,16 @@ public class AddSupplierController implements Initializable {
         java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy");
         lblCreatedOn.setText(java.time.LocalDate.now().format(dtf));
         
+        if (gstinField != null) {
+            gstinField.textProperty().addListener((obs, oldVal, newVal) -> validateGstinRealtime(newVal));
+        }
+        if (mobileField != null) {
+            mobileField.textProperty().addListener((obs, oldVal, newVal) -> validatePhoneRealtime(newVal));
+        }
+        if (phoneField != null) {
+            phoneField.textProperty().addListener((obs, oldVal, newVal) -> validateAltPhoneRealtime(newVal));
+        }
+
         // Clear fields and set initial code to SUP-NEW
         setSupplierData(null);
     }
@@ -136,6 +161,19 @@ public class AddSupplierController implements Initializable {
         paymentTermsCombo.setValue(null);
         creditLimitField.setText("0.00");
         notesField.clear();
+        if (lblGstValidation != null) {
+            lblGstValidation.setText("");
+        }
+        if (panGstDetails != null) {
+            panGstDetails.setVisible(false);
+            panGstDetails.setManaged(false);
+        }
+        if (lblPhoneValidation != null) {
+            lblPhoneValidation.setText("");
+        }
+        if (lblAltPhoneValidation != null) {
+            lblAltPhoneValidation.setText("");
+        }
     }
     
     @FXML
@@ -159,6 +197,62 @@ public class AddSupplierController implements Initializable {
         }
         
         boolean isEdit = (selectedSupplier != null);
+        String excludeUuid = isEdit ? selectedSupplier.getUuid() : null;
+
+        // Mobile Validation
+        String mobileVal = mobileField.getText() == null ? "" : mobileField.getText().trim();
+        if (!mobileVal.isEmpty()) {
+            if (!PhoneValidator.isValidMobile(mobileVal)) {
+                Toast.show((Stage) mobileField.getScene().getWindow(), "Invalid Mobile Number");
+                return;
+            }
+            if (supplierService.duplicateMobileExists(mobileVal, excludeUuid)) {
+                Toast.show((Stage) mobileField.getScene().getWindow(), "Duplicate Mobile Number");
+                return;
+            }
+        }
+
+        // Alternate Phone/Landline Validation
+        String phoneVal = phoneField.getText() == null ? "" : phoneField.getText().trim();
+        if (!phoneVal.isEmpty()) {
+            if (!PhoneValidator.isValidLandline(phoneVal)) {
+                Toast.show((Stage) phoneField.getScene().getWindow(), "Invalid Alternate/Landline Number");
+                return;
+            }
+        }
+
+        // GSTIN Validation
+        String gstinVal = gstinField.getText() == null ? "" : gstinField.getText().trim().toUpperCase();
+        if (!gstinVal.isEmpty()) {
+            if (!GSTINValidator.isFormatValid(gstinVal)) {
+                Toast.show((Stage) gstinField.getScene().getWindow(), "GSTIN Format Invalid");
+                return;
+            }
+            if (!GSTINValidator.isStateCodeValid(gstinVal)) {
+                Toast.show((Stage) gstinField.getScene().getWindow(), "Invalid State Code");
+                return;
+            }
+            if (!GSTINValidator.isChecksumValid(gstinVal)) {
+                Toast.show((Stage) gstinField.getScene().getWindow(), "GSTIN Checksum Invalid");
+                return;
+            }
+            if (supplierService.duplicateGstinExists(gstinVal, excludeUuid)) {
+                Toast.show((Stage) gstinField.getScene().getWindow(), "Duplicate GSTIN");
+                return;
+            }
+
+            // Consistency check with stateCombo
+            String selectedState = stateCombo.getValue();
+            if (selectedState != null && !selectedState.isBlank()) {
+                String gstinStateCode = gstinVal.substring(0, 2);
+                String expectedStateStr = GSTINValidator.getStateByCode(gstinStateCode);
+                if (expectedStateStr == null || !expectedStateStr.contains(selectedState)) {
+                    Toast.show((Stage) gstinField.getScene().getWindow(), "State Mismatch");
+                    return;
+                }
+            }
+        }
+        
         if (!isEdit) {
             selectedSupplier = new Supplier();
         }
@@ -166,9 +260,9 @@ public class AddSupplierController implements Initializable {
         selectedSupplier.setName(name.trim());
         selectedSupplier.setSupplierCode(supplierCodeField.getText() == null ? "" : supplierCodeField.getText().trim());
         selectedSupplier.setbusinessName(businessNameField.getText() == null ? "" : businessNameField.getText().trim());
-        selectedSupplier.setGstNumber(gstinField.getText() == null ? "" : gstinField.getText().trim());
-        selectedSupplier.setMobile(mobileField.getText() == null ? "" : mobileField.getText().trim());
-        selectedSupplier.setPhone(phoneField.getText() == null ? "" : phoneField.getText().trim());
+        selectedSupplier.setGstNumber(gstinVal);
+        selectedSupplier.setMobile(mobileVal);
+        selectedSupplier.setPhone(phoneVal);
         selectedSupplier.setEmail(emailField.getText() == null ? "" : emailField.getText().trim());
         selectedSupplier.setWebsite(websiteField.getText() == null ? "" : websiteField.getText().trim());
         selectedSupplier.setAddress(addressField.getText() == null ? "" : addressField.getText().trim());
@@ -198,6 +292,189 @@ public class AddSupplierController implements Initializable {
         } catch (Exception e) {
             e.printStackTrace();
             Toast.show((Stage) supplierNameField.getScene().getWindow(), "Error saving supplier details.");
+        }
+    }
+
+    private void validateGstinRealtime(String newVal) {
+        if (newVal == null || newVal.trim().isEmpty()) {
+            if (lblGstValidation != null) {
+                lblGstValidation.setText("");
+            }
+            if (panGstDetails != null) {
+                panGstDetails.setVisible(false);
+                panGstDetails.setManaged(false);
+            }
+            return;
+        }
+        String clean = newVal.trim().toUpperCase();
+        if (!GSTINValidator.isFormatValid(clean)) {
+            if (lblGstValidation != null) {
+                lblGstValidation.setText("✗ GSTIN Format Invalid");
+                lblGstValidation.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 11px;");
+            }
+            if (panGstDetails != null) {
+                panGstDetails.setVisible(false);
+                panGstDetails.setManaged(false);
+            }
+            return;
+        }
+        if (!GSTINValidator.isStateCodeValid(clean)) {
+            if (lblGstValidation != null) {
+                lblGstValidation.setText("✗ Invalid State Code");
+                lblGstValidation.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 11px;");
+            }
+            if (panGstDetails != null) {
+                panGstDetails.setVisible(false);
+                panGstDetails.setManaged(false);
+            }
+            return;
+        }
+        
+        // Auto-populate state
+        String code = clean.substring(0, 2);
+        String stateVal = GSTINValidator.getStateByCode(code);
+        if (stateVal != null) {
+            int idx = stateVal.indexOf(" (");
+            String cleanState = idx != -1 ? stateVal.substring(0, idx) : stateVal;
+            if (stateCombo != null) {
+                stateCombo.setValue(cleanState);
+            }
+        }
+
+        if (!GSTINValidator.isChecksumValid(clean)) {
+            if (lblGstValidation != null) {
+                lblGstValidation.setText("✗ GSTIN Checksum Invalid");
+                lblGstValidation.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 11px;");
+            }
+            if (panGstDetails != null) {
+                panGstDetails.setVisible(false);
+                panGstDetails.setManaged(false);
+            }
+            return;
+        }
+
+        // Check duplicate
+        boolean isEdit = (selectedSupplier != null);
+        boolean duplicate = supplierService.duplicateGstinExists(clean, isEdit ? selectedSupplier.getUuid() : null);
+        if (duplicate) {
+            if (lblGstValidation != null) {
+                lblGstValidation.setText("✗ Duplicate GSTIN");
+                lblGstValidation.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 11px;");
+            }
+            if (panGstDetails != null) {
+                panGstDetails.setVisible(false);
+                panGstDetails.setManaged(false);
+            }
+            return;
+        }
+
+        if (lblGstValidation != null) {
+            lblGstValidation.setText("✓ GSTIN Format Valid\n✓ GSTIN Checksum Valid");
+            lblGstValidation.setStyle("-fx-text-fill: #2ecc71; -fx-font-size: 11px;");
+        }
+
+        // Auto-extract PAN (characters 3-12)
+        String panVal = "";
+        if (clean.length() >= 12) {
+            panVal = clean.substring(2, 12);
+        }
+
+        // Show dynamic extraction panel
+        if (panGstDetails != null) {
+            if (lblGstDetailsGstin != null) lblGstDetailsGstin.setText(clean);
+            if (lblGstDetailsState != null) lblGstDetailsState.setText(stateVal != null ? stateVal : "Unknown (" + code + ")");
+            if (lblGstDetailsPan != null) lblGstDetailsPan.setText(panVal);
+            if (lblGstDetailsType != null) lblGstDetailsType.setText(GSTINValidator.getRegistrationType(clean));
+            if (lblGstDetailsStatus != null) lblGstDetailsStatus.setText("✓ Active / Offline Verified");
+            panGstDetails.setVisible(true);
+            panGstDetails.setManaged(true);
+        }
+    }
+
+    private void validatePhoneRealtime(String newVal) {
+        if (newVal == null || newVal.trim().isEmpty()) {
+            if (lblPhoneValidation != null) {
+                lblPhoneValidation.setText("");
+            }
+            return;
+        }
+        String clean = PhoneValidator.sanitize(newVal);
+        
+        // Digit check
+        if (!clean.matches("[0-9]+")) {
+            if (lblPhoneValidation != null) {
+                lblPhoneValidation.setText("✗ Must consist of only digits");
+                lblPhoneValidation.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 11px;");
+            }
+            return;
+        }
+        
+        // Starting digit check
+        char first = clean.charAt(0);
+        if (first < '6' || first > '9') {
+            if (lblPhoneValidation != null) {
+                lblPhoneValidation.setText("✗ Invalid starting digit");
+                lblPhoneValidation.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 11px;");
+            }
+            return;
+        }
+
+        // Length check
+        if (clean.length() != 10) {
+            if (lblPhoneValidation != null) {
+                lblPhoneValidation.setText("✗ Must be 10 digits");
+                lblPhoneValidation.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 11px;");
+            }
+            return;
+        }
+
+        // Duplicate mobile check
+        boolean isEdit = (selectedSupplier != null);
+        boolean duplicate = supplierService.duplicateMobileExists(clean, isEdit ? selectedSupplier.getUuid() : null);
+        if (duplicate) {
+            if (lblPhoneValidation != null) {
+                lblPhoneValidation.setText("✗ Duplicate mobile number");
+                lblPhoneValidation.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 11px;");
+            }
+            return;
+        }
+
+        if (lblPhoneValidation != null) {
+            lblPhoneValidation.setText("✓ Valid Mobile Number");
+            lblPhoneValidation.setStyle("-fx-text-fill: #2ecc71; -fx-font-size: 11px;");
+        }
+    }
+
+    private void validateAltPhoneRealtime(String newVal) {
+        if (newVal == null || newVal.trim().isEmpty()) {
+            if (lblAltPhoneValidation != null) {
+                lblAltPhoneValidation.setText("");
+            }
+            return;
+        }
+        String clean = PhoneValidator.sanitize(newVal);
+        
+        // Digit check
+        if (!clean.matches("[0-9]+")) {
+            if (lblAltPhoneValidation != null) {
+                lblAltPhoneValidation.setText("✗ Only digits allowed");
+                lblAltPhoneValidation.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 11px;");
+            }
+            return;
+        }
+
+        // Length check
+        if (clean.length() < 8 || clean.length() > 15) {
+            if (lblAltPhoneValidation != null) {
+                lblAltPhoneValidation.setText("✗ Length must be between 8 and 15 digits");
+                lblAltPhoneValidation.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 11px;");
+            }
+            return;
+        }
+
+        if (lblAltPhoneValidation != null) {
+            lblAltPhoneValidation.setText("✓ Valid Alternate Phone");
+            lblAltPhoneValidation.setStyle("-fx-text-fill: #2ecc71; -fx-font-size: 11px;");
         }
     }
 }

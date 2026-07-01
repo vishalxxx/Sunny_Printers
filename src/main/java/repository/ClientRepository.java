@@ -31,6 +31,7 @@ public class ClientRepository {
 				nz(rs, "billing_address"), nz(rs, "shipping_address"), nz(rs, "notes"));
 		c.setClientUuid(nz(rs, "uuid"));
 		c.setClientCode(nz(rs, "client_code"));
+		c.setState(nz(rs, "state"));
 		c.setClientType(nz(rs, "client_type"));
 		c.setPriceCategory(nz(rs, "price_category"));
 		c.setPaymentTerms(nz(rs, "payment_terms"));
@@ -68,9 +69,9 @@ public class ClientRepository {
 				  uuid, client_code, client_name, business_name, mobile, alternate_mobile, email,
 				  gstin, pan_number, billing_address, shipping_address,
 				  client_type, price_category, credit_limit, payment_terms, opening_balance, balance_type,
-				  is_active, notes, sync_status, sync_version, is_deleted, deleted_at,
+				  is_active, notes, state, sync_status, sync_version, is_deleted, deleted_at,
 				  created_by_user_uuid, updated_by_user_uuid
-				) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+				) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 				""";
 		try (Connection conn = DBConnection.getConnection();
 				PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -122,6 +123,7 @@ public class ClientRepository {
 			ps.setString(i++, nz(client.getBalanceType()));
 			ps.setInt(i++, client.isActive() ? 1 : 1);
 			ps.setString(i++, nz(client.getNotes()));
+			ps.setString(i++, nz(client.getState()));
 			ps.setString(i++, nz(client.getSyncStatus()));
 			ps.setInt(i++, client.getSyncVersion());
 			ps.setInt(i++, 0);
@@ -234,18 +236,10 @@ public class ClientRepository {
 			return false;
 		}
 		
-		model.User current = utils.SessionManager.getInstance().getCurrentUser();
-		boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
-
-		String sql;
-		if (isAdmin) {
-			sql = "DELETE FROM clients WHERE uuid = ?";
-		} else {
-			sql = """
-					UPDATE clients SET is_deleted=1, is_active=0, deleted_at=datetime('now'),
-					sync_status='PENDING', updated_at=datetime('now') WHERE uuid=? AND IFNULL(is_deleted,0)=0
-					""";
-		}
+		String sql = """
+				UPDATE clients SET is_deleted=1, is_active=0, deleted_at=datetime('now'),
+				sync_status='PENDING', updated_at=datetime('now') WHERE uuid=? AND IFNULL(is_deleted,0)=0
+				""";
 
 		try (Connection conn = DBConnection.getConnection();
 				PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -393,7 +387,7 @@ public class ClientRepository {
 				UPDATE clients SET client_name=?, business_name=?, mobile=?, alternate_mobile=?,
 				email=?, gstin=?, pan_number=?, billing_address=?, shipping_address=?,
 				client_type=?, price_category=?, credit_limit=?, payment_terms=?, opening_balance=?, balance_type=?,
-				notes=?, sync_status='PENDING', sync_version=?, updated_at=datetime('now'),
+				notes=?, state=?, sync_status='PENDING', sync_version=?, updated_at=datetime('now'),
 				updated_by_user_uuid=? WHERE uuid=?
 				""";
 		try (Connection conn = DBConnection.getConnection();
@@ -415,6 +409,7 @@ public class ClientRepository {
 			ps.setDouble(i++, client.getOpeningBalance());
 			ps.setString(i++, nz(client.getBalanceType()));
 			ps.setString(i++, nz(client.getNotes()));
+			ps.setString(i++, nz(client.getState()));
 			ps.setInt(i++, client.getSyncVersion() + 1);
 			ps.setString(i++, nz(client.getUpdatedByUserUuid()));
 			ps.setString(i++, client.getClientUuid());
@@ -431,6 +426,42 @@ public class ClientRepository {
 		return false;
 	}
 
+	public boolean duplicateGstinExists(String gstin, String excludeUuid) {
+		if (gstin == null || gstin.trim().isBlank()) {
+			return false;
+		}
+		String sql = "SELECT 1 FROM clients WHERE gstin = ? AND uuid <> ? AND IFNULL(is_deleted,0)=0 LIMIT 1";
+		try (Connection conn = DBConnection.getConnection();
+				PreparedStatement ps = conn.prepareStatement(sql)) {
+			ps.setString(1, gstin.trim());
+			ps.setString(2, excludeUuid != null ? excludeUuid.trim() : "");
+			try (ResultSet rs = ps.executeQuery()) {
+				return rs.next();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	public boolean duplicateMobileExists(String mobile, String excludeUuid) {
+		if (mobile == null || mobile.trim().isBlank()) {
+			return false;
+		}
+		String sql = "SELECT 1 FROM clients WHERE mobile = ? AND uuid <> ? AND IFNULL(is_deleted,0)=0 LIMIT 1";
+		try (Connection conn = DBConnection.getConnection();
+				PreparedStatement ps = conn.prepareStatement(sql)) {
+			ps.setString(1, mobile.trim());
+			ps.setString(2, excludeUuid != null ? excludeUuid.trim() : "");
+			try (ResultSet rs = ps.executeQuery()) {
+				return rs.next();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
 	private static void pushClientToSupabaseAsync(Client client, boolean preferPatch) {
 		pushClientToSupabaseAsync(client, preferPatch, null);
 	}
@@ -439,27 +470,55 @@ public class ClientRepository {
 		if (client == null || !client.hasClientUuid()) {
 			return;
 		}
+		System.out.println("[PUSH] pushClientToSupabaseAsync called for client UUID " + client.getClientUuid());
 		SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
 			try {
 				try (Connection conn = DBConnection.getConnection()) {
 					List<String> colsList = SyncConflictResolver.getColumns(conn, "clients");
 					if (SyncConflictResolver.checkPushConflictAndResolve(conn, http, "clients", SupabaseEndpoints.CLIENTS, client.getClientUuid(), client.getUpdatedAt(), colsList)) {
+						System.out.println("[PUSH] Async push skipped because of conflict resolver");
 						return; // Skip push: remote was newer, conflict was logged and resolved
 					}
 				} catch (Exception e) {
 					System.err.println("[ClientRepository] Push conflict check failed: " + e.getMessage());
 				}
 
+				// RACE CONDITION GUARD: Re-read sync_status before pushing.
+				// If the UniversalSyncEngine conflict resolver ran on another thread
+				// and already marked this record SYNCED, abort this push.
+				try (Connection checkConn = DBConnection.getConnection();
+						PreparedStatement checkPs = checkConn.prepareStatement(
+								"SELECT sync_status FROM clients WHERE uuid=?")) {
+					checkPs.setString(1, client.getClientUuid());
+					try (java.sql.ResultSet checkRs = checkPs.executeQuery()) {
+						if (checkRs.next()) {
+							String currentStatus = checkRs.getString(1);
+							boolean stillPending = "PENDING".equalsIgnoreCase(currentStatus)
+									|| "WAITING_DEPENDENCY".equalsIgnoreCase(currentStatus)
+									|| (currentStatus == null || currentStatus.isBlank());
+							if (!stillPending) {
+								System.out.println("[PUSH] Async push aborted - record " + client.getClientUuid() + " is no longer PENDING (status=" + currentStatus + "). Conflict resolved on another thread.");
+								return;
+							}
+						}
+					}
+				} catch (Exception staleCheckEx) {
+					System.err.println("[ClientRepository] Pre-push stale check failed: " + staleCheckEx.getMessage());
+				}
+
+				System.out.println("[PUSH] Async dependency check PASSED. Executing POST/PATCH /clients for " + client.getClientUuid());
 				ClientsSupabaseApi api = new ClientsSupabaseApi(http);
 				if (preferPatch) {
 					api.patchUpdate(client, before);
 				} else {
 					api.upsert(client);
 				}
+				System.out.println("[PUSH] Async push HTTP Success");
 				markClientSyncedLocally(client.getClientUuid());
 			} catch (Exception ex) {
 				System.err.println("[Supabase clients] remote write failed for uuid=" + client.getClientUuid() + ": "
 						+ ex.getMessage());
+				ex.printStackTrace();
 				UniversalSyncEngine.scheduleSyncAsync();
 			}
 		}));
@@ -471,23 +530,14 @@ public class ClientRepository {
 		}
 		SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
 			try {
-				User current = SessionManager.getInstance().getCurrentUser();
-				boolean isAdmin = current != null && current.getRole() != null
-						&& "ADMIN".equalsIgnoreCase(current.getRole());
-				if (isAdmin) {
-					// Admins may remove the remote row entirely
-					new ClientsSupabaseApi(http).deleteByClientUuid(clientUuid);
-				} else {
-					// Non-admin users: perform a soft-delete remotely by PATCHing the deleted fields
-					Client local = new ClientRepository().findByUuid(clientUuid);
-					if (local != null) {
-						local.setIsDeleted(true);
-						local.setIsActive(false);
-						if (local.getDeletedAt() == null || local.getDeletedAt().isBlank()) {
-							local.setDeletedAt(java.time.Instant.now().toString());
-						}
-						new ClientsSupabaseApi(http).patchUpdate(local, null);
+				Client local = new ClientRepository().findByUuid(clientUuid);
+				if (local != null) {
+					local.setIsDeleted(true);
+					local.setIsActive(false);
+					if (local.getDeletedAt() == null || local.getDeletedAt().isBlank()) {
+						local.setDeletedAt(java.time.Instant.now().toString());
 					}
+					new ClientsSupabaseApi(http).patchUpdate(local, null);
 				}
 				markClientSyncedLocally(clientUuid);
 			} catch (Exception ex) {

@@ -36,53 +36,29 @@ public final class RemoteToLocalSync {
 		int totalChanges = 0;
 		Map<String, String> newLastPullMap = new HashMap<>();
 
-		try (Connection conn = DBConnection.getConnection()) {
-			boolean autoCommit = conn.getAutoCommit();
-			conn.setAutoCommit(false);
-			try {
-				try (Statement stmt = conn.createStatement()) {
-					stmt.execute("PRAGMA foreign_keys = OFF;");
-				}
-
-				// Pull tables in strict dependency order
-				totalChanges += pullTable(http, conn, "users", SupabaseEndpoints.USERS, newLastPullMap);
-				totalChanges += pullTable(http, conn, "company_details", SupabaseEndpoints.COMPANY_DETAILS, newLastPullMap);
-				totalChanges += pullTable(http, conn, "bank_details", SupabaseEndpoints.BANK_DETAILS, newLastPullMap);
-				totalChanges += pullTable(http, conn, "hsn_sac_master", SupabaseEndpoints.HSN_SAC_MASTER, newLastPullMap);
-				totalChanges += pullTable(http, conn, "suppliers", SupabaseEndpoints.SUPPLIERS, newLastPullMap);
-				totalChanges += pullTable(http, conn, "clients", SupabaseEndpoints.CLIENTS, newLastPullMap);
-				totalChanges += pullTable(http, conn, "jobs", SupabaseEndpoints.JOBS, newLastPullMap);
-				totalChanges += pullTable(http, conn, "job_items", SupabaseEndpoints.JOB_ITEMS, newLastPullMap);
-				totalChanges += pullTable(http, conn, "printing_items", SupabaseEndpoints.PRINTING_ITEMS, newLastPullMap);
-				totalChanges += pullTable(http, conn, "paper_items", SupabaseEndpoints.PAPER_ITEMS, newLastPullMap);
-				totalChanges += pullTable(http, conn, "binding_items", SupabaseEndpoints.BINDING_ITEMS, newLastPullMap);
-				totalChanges += pullTable(http, conn, "lamination_items", SupabaseEndpoints.LAMINATION_ITEMS, newLastPullMap);
-				totalChanges += pullTable(http, conn, "ctp_items", SupabaseEndpoints.CTP_ITEMS, newLastPullMap);
-				totalChanges += pullTable(http, conn, "invoice_master", SupabaseEndpoints.INVOICE_MASTER, newLastPullMap);
-				totalChanges += pullTable(http, conn, "invoice_job_mapping", SupabaseEndpoints.INVOICE_JOB_MAPPING, newLastPullMap);
-				totalChanges += pullTable(http, conn, "invoice_additional_charges", SupabaseEndpoints.INVOICE_ADDITIONAL_CHARGES, newLastPullMap);
-				totalChanges += pullTable(http, conn, "invoice_adjustments", SupabaseEndpoints.INVOICE_ADJUSTMENTS, newLastPullMap);
-				totalChanges += pullTable(http, conn, "payments", SupabaseEndpoints.PAYMENTS, newLastPullMap);
-				totalChanges += pullTable(http, conn, "payment_details", SupabaseEndpoints.PAYMENT_DETAILS, newLastPullMap);
-				totalChanges += pullTable(http, conn, "payment_allocations", SupabaseEndpoints.PAYMENT_ALLOCATIONS, newLastPullMap);
-				totalChanges += pullTable(http, conn, "document_number_mappings", SupabaseEndpoints.DOCUMENT_NUMBER_MAPPINGS, newLastPullMap);
-
-				try (Statement stmt = conn.createStatement()) {
-					stmt.execute("PRAGMA foreign_keys = ON;");
-				}
-				conn.commit();
-				System.out.println("[RemoteToLocalSync] Remote-to-local sync transaction committed.");
-			} catch (Exception e) {
-				conn.rollback();
-				throw e;
-			} finally {
-				conn.setAutoCommit(autoCommit);
-			}
-
-			// Save the metadata state *after* successful commit
-			for (Map.Entry<String, String> entry : newLastPullMap.entrySet()) {
-				updateLastPullAt(conn, entry.getKey(), entry.getValue());
-			}
+		try {
+			// Pull tables in strict dependency order (NO GLOBAL DB LOCK)
+			totalChanges += pullTable(http, "users", SupabaseEndpoints.USERS, newLastPullMap);
+			totalChanges += pullTable(http, "company_details", SupabaseEndpoints.COMPANY_DETAILS, newLastPullMap);
+			totalChanges += pullTable(http, "bank_details", SupabaseEndpoints.BANK_DETAILS, newLastPullMap);
+			totalChanges += pullTable(http, "hsn_sac_master", SupabaseEndpoints.HSN_SAC_MASTER, newLastPullMap);
+			totalChanges += pullTable(http, "suppliers", SupabaseEndpoints.SUPPLIERS, newLastPullMap);
+			totalChanges += pullTable(http, "clients", SupabaseEndpoints.CLIENTS, newLastPullMap);
+			totalChanges += pullTable(http, "jobs", SupabaseEndpoints.JOBS, newLastPullMap);
+			totalChanges += pullTable(http, "job_items", SupabaseEndpoints.JOB_ITEMS, newLastPullMap);
+			totalChanges += pullTable(http, "printing_items", SupabaseEndpoints.PRINTING_ITEMS, newLastPullMap);
+			totalChanges += pullTable(http, "paper_items", SupabaseEndpoints.PAPER_ITEMS, newLastPullMap);
+			totalChanges += pullTable(http, "binding_items", SupabaseEndpoints.BINDING_ITEMS, newLastPullMap);
+			totalChanges += pullTable(http, "lamination_items", SupabaseEndpoints.LAMINATION_ITEMS, newLastPullMap);
+			totalChanges += pullTable(http, "ctp_items", SupabaseEndpoints.CTP_ITEMS, newLastPullMap);
+			totalChanges += pullTable(http, "invoice_master", SupabaseEndpoints.INVOICE_MASTER, newLastPullMap);
+			totalChanges += pullTable(http, "invoice_job_mapping", SupabaseEndpoints.INVOICE_JOB_MAPPING, newLastPullMap);
+			totalChanges += pullTable(http, "invoice_additional_charges", SupabaseEndpoints.INVOICE_ADDITIONAL_CHARGES, newLastPullMap);
+			totalChanges += pullTable(http, "invoice_adjustments", SupabaseEndpoints.INVOICE_ADJUSTMENTS, newLastPullMap);
+			totalChanges += pullTable(http, "payments", SupabaseEndpoints.PAYMENTS, newLastPullMap);
+			totalChanges += pullTable(http, "payment_details", SupabaseEndpoints.PAYMENT_DETAILS, newLastPullMap);
+			totalChanges += pullTable(http, "payment_allocations", SupabaseEndpoints.PAYMENT_ALLOCATIONS, newLastPullMap);
+			totalChanges += pullTable(http, "document_number_mappings", SupabaseEndpoints.DOCUMENT_NUMBER_MAPPINGS, newLastPullMap);
 
 			System.out.println("[RemoteToLocalSync] Remote-to-local sync completed successfully. Total changes: " + totalChanges);
 		} catch (Exception e) {
@@ -92,7 +68,7 @@ public final class RemoteToLocalSync {
 		return totalChanges;
 	}
 
-	private static int pullTable(SupabaseRestClient http, Connection conn, String table, SupabaseEndpoints endpoint, Map<String, String> newLastPullMap) {
+	private static int pullTable(SupabaseRestClient http, String table, SupabaseEndpoints endpoint, Map<String, String> newLastPullMap) {
 		long startTime = System.currentTimeMillis();
 		int fetched = 0;
 		int inserted = 0;
@@ -101,14 +77,19 @@ public final class RemoteToLocalSync {
 		int skipped = 0;
 		int conflicts = 0;
 
-		String lastPullAt = getLastPullAt(conn, table);
+		String lastPullAt = null;
+		try (Connection readConn = DBConnection.getConnection()) {
+			if (!tableExists(readConn, table)) {
+				return 0;
+			}
+			lastPullAt = getLastPullAt(readConn, table);
+		} catch (Exception e) {
+			return 0;
+		}
+
 		String overlapTimestamp = calculateOverlapTimestamp(lastPullAt);
 
 		try {
-			if (!tableExists(conn, table)) {
-				return 0;
-			}
-
 			String query = "select=*";
 			String timestampCol = "document_number_mappings".equals(table) ? "created_at" : "updated_at";
 
@@ -116,6 +97,7 @@ public final class RemoteToLocalSync {
 				query += "&" + timestampCol + "=gt." + URLEncoder.encode(overlapTimestamp, StandardCharsets.UTF_8);
 			}
 
+			// NETWORK CALL OUTSIDE LOCK
 			var res = http.get(endpoint, query);
 			if (res.statusCode() < 200 || res.statusCode() >= 300) {
 				System.err.println("[RemoteToLocalSync] Failed to pull " + table + ": HTTP " + res.statusCode() + " " + res.body());
@@ -123,215 +105,327 @@ public final class RemoteToLocalSync {
 			}
 
 			String body = res.body();
-			if (body == null || body.trim().isEmpty()) {
-				logMetrics(table, lastPullAt, fetched, inserted, updated, deleted, skipped, conflicts, startTime, lastPullAt);
-				// Do NOT advance the watermark on empty pulls
-				return 0;
+			JsonArray arr = new JsonArray();
+			if (body != null && !body.trim().isEmpty()) {
+				JsonElement root = JsonParser.parseString(body);
+				if (root.isJsonArray()) {
+					arr = root.getAsJsonArray();
+				}
 			}
-
-			JsonElement root = JsonParser.parseString(body);
-			if (!root.isJsonArray()) {
-				logMetrics(table, lastPullAt, fetched, inserted, updated, deleted, skipped, conflicts, startTime, lastPullAt);
-				// Do NOT advance the watermark on empty pulls
-				return 0;
-			}
-
-			JsonArray arr = root.getAsJsonArray();
 			fetched = arr.size();
-			if (fetched == 0) {
-				logMetrics(table, lastPullAt, fetched, inserted, updated, deleted, skipped, conflicts, startTime, lastPullAt);
-				// Do NOT advance the watermark on empty pulls
-				return 0;
-			}
-
-			List<String> cols = getColumns(conn, table);
-			if (cols.isEmpty()) {
-				return 0;
-			}
-
 			String maxTimestamp = lastPullAt;
-			Instant maxInstant = null;
-			if (lastPullAt != null) {
+
+			// NOW WE TAKE THE EXCLUSIVE WRITE LOCK FOR RAPID DB UPDATES
+			try (Connection conn = DBConnection.getExclusiveConnection()) {
+				boolean autoCommit = conn.getAutoCommit();
+				conn.setAutoCommit(false);
 				try {
-					String fmt = lastPullAt.trim().replace(" ", "T");
-					if (!fmt.contains("Z") && !fmt.contains("+") && fmt.length() == 19) {
-						fmt += "Z";
+					try (Statement stmt = conn.createStatement()) {
+						stmt.execute("PRAGMA foreign_keys = OFF;");
 					}
-					maxInstant = Instant.parse(fmt);
-				} catch (Exception ignored) {}
-			}
 
-			for (JsonElement el : arr) {
-				if (!el.isJsonObject()) {
-					continue;
-				}
-				JsonObject o = el.getAsJsonObject();
+					List<String> cols = getColumns(conn, table);
+					if (cols.isEmpty()) {
+						return 0;
+					}
 
-				// Track highest remote timestamp to advance the watermark
-				String remoteUpdatedAt = o.has(timestampCol) && !o.get(timestampCol).isJsonNull() ? o.get(timestampCol).getAsString() : null;
-				if (remoteUpdatedAt != null) {
-					try {
-						String formattedRemote = remoteUpdatedAt.trim().replace(" ", "T");
-						if (!formattedRemote.contains("Z") && !formattedRemote.contains("+") && formattedRemote.length() == 19) {
-							formattedRemote += "Z";
-						}
-						Instant remoteInst = Instant.parse(formattedRemote);
-						if (maxInstant == null || remoteInst.isAfter(maxInstant)) {
-							maxInstant = remoteInst;
-							maxTimestamp = remoteUpdatedAt;
-						}
-					} catch (Exception ignored) {}
-				}
-
-				String uuid = o.has("uuid") && !o.get("uuid").isJsonNull() ? o.get("uuid").getAsString() : null;
-				boolean localExists = false;
-				String localSyncStatus = null;
-				String localUpdatedAt = null;
-
-				if (uuid != null && cols.contains("sync_status") && cols.contains("updated_at")) {
-					try (PreparedStatement checkPs = conn.prepareStatement("SELECT sync_status, updated_at FROM " + table + " WHERE uuid = ?")) {
-						checkPs.setString(1, uuid);
-						try (ResultSet checkRs = checkPs.executeQuery()) {
-							if (checkRs.next()) {
-								localExists = true;
-								localSyncStatus = checkRs.getString("sync_status");
-								localUpdatedAt = checkRs.getString("updated_at");
+					Instant maxInstant = null;
+					if (lastPullAt != null) {
+						try {
+							String fmt = lastPullAt.trim().replace(" ", "T");
+							if (!fmt.contains("Z") && !fmt.contains("+") && fmt.length() == 19) {
+								fmt += "Z";
 							}
-						}
+							maxInstant = Instant.parse(fmt);
+						} catch (Exception ignored) {}
 					}
-				}
 
-				boolean shouldUpsert = true;
-				if (localExists) {
-					String remoteUpdatedAtStr = o.has(timestampCol) && !o.get(timestampCol).isJsonNull() ? o.get(timestampCol).getAsString() : null;
-					java.time.Instant localInst = SyncConflictResolver.parseTimestamp(localUpdatedAt);
-					java.time.Instant remoteInst = SyncConflictResolver.parseTimestamp(remoteUpdatedAtStr);
-
-					if (remoteInst.equals(localInst)) {
-						shouldUpsert = false;
-						skipped++;
-					} else if ("PENDING".equalsIgnoreCase(localSyncStatus)) {
-						conflicts++;
-						if (remoteInst.isAfter(localInst)) {
-							SyncConflictResolver.logConflict(table, uuid, localUpdatedAt, remoteUpdatedAtStr,
-								"Local unpushed edit overwritten by newer remote update", o.toString(), "LAST_WRITE_WINS_REMOTE_WINS");
-							shouldUpsert = true;
-						} else {
-							SyncConflictResolver.logConflict(table, uuid, localUpdatedAt, remoteUpdatedAtStr,
-								"Local unpushed edit kept; older remote update rejected", o.toString(), "LAST_WRITE_WINS_LOCAL_WINS");
-							shouldUpsert = false;
-							skipped++;
-						}
-					} else {
-						if (remoteInst.isBefore(localInst)) {
-							shouldUpsert = false;
-							skipped++;
-						}
-					}
-				}
-
-				if (!shouldUpsert) {
-					continue;
-				}
-
-				List<String> insertCols = new ArrayList<>();
-				List<Object> values = new ArrayList<>();
-
-				for (String col : cols) {
-					if (o.has(col)) {
-						insertCols.add(col);
-						if ("sync_status".equals(col)) {
-							values.add("SYNCED");
+					for (JsonElement el : arr) {
+						if (!el.isJsonObject()) {
 							continue;
 						}
-						JsonElement val = o.get(col);
-						if (val.isJsonNull()) {
-							values.add(null);
-						} else if (val.isJsonPrimitive()) {
-							var prim = val.getAsJsonPrimitive();
-							if (prim.isBoolean()) {
-								values.add(prim.getAsBoolean() ? 1 : 0);
-							} else if (prim.isNumber()) {
-								if (prim.getAsString().contains(".")) {
-									values.add(prim.getAsDouble());
+						JsonObject o = el.getAsJsonObject();
+
+						String remoteUpdatedAt = o.has(timestampCol) && !o.get(timestampCol).isJsonNull() ? o.get(timestampCol).getAsString() : null;
+						if (remoteUpdatedAt != null) {
+							try {
+								String formattedRemote = remoteUpdatedAt.trim().replace(" ", "T");
+								if (!formattedRemote.contains("Z") && !formattedRemote.contains("+") && formattedRemote.length() == 19) {
+									formattedRemote += "Z";
+								}
+								Instant remoteInst = Instant.parse(formattedRemote);
+								if (maxInstant == null || remoteInst.isAfter(maxInstant)) {
+									maxInstant = remoteInst;
+									maxTimestamp = remoteUpdatedAt;
+								}
+							} catch (Exception ignored) {}
+						}
+
+						String uuid = o.has("uuid") && !o.get("uuid").isJsonNull() ? o.get("uuid").getAsString() : null;
+						boolean localExists = false;
+						String localSyncStatus = null;
+						String localUpdatedAt = null;
+
+						if (uuid != null && cols.contains("sync_status") && cols.contains("updated_at")) {
+							try (PreparedStatement checkPs = conn.prepareStatement("SELECT sync_status, updated_at FROM " + table + " WHERE uuid = ?")) {
+								checkPs.setString(1, uuid);
+								try (ResultSet checkRs = checkPs.executeQuery()) {
+									if (checkRs.next()) {
+										localExists = true;
+										localSyncStatus = checkRs.getString("sync_status");
+										localUpdatedAt = checkRs.getString("updated_at");
+									}
+								}
+							}
+						}
+
+						boolean shouldUpsert = true;
+						if (localExists) {
+							String remoteUpdatedAtStr = o.has(timestampCol) && !o.get(timestampCol).isJsonNull() ? o.get(timestampCol).getAsString() : null;
+							java.time.Instant localInst = SyncConflictResolver.parseTimestamp(localUpdatedAt);
+							java.time.Instant remoteInst = SyncConflictResolver.parseTimestamp(remoteUpdatedAtStr);
+
+							if (remoteInst.equals(localInst)) {
+								shouldUpsert = false;
+								skipped++;
+							} else if ("PENDING".equalsIgnoreCase(localSyncStatus)) {
+								conflicts++;
+								if (remoteInst.isAfter(localInst)) {
+									SyncConflictResolver.logConflict(table, uuid, localUpdatedAt, remoteUpdatedAtStr,
+										"Local unpushed edit overwritten by newer remote update", o.toString(), "LAST_WRITE_WINS_REMOTE_WINS");
+									shouldUpsert = true;
 								} else {
-									values.add(prim.getAsLong());
+									SyncConflictResolver.logConflict(table, uuid, localUpdatedAt, remoteUpdatedAtStr,
+										"Local unpushed edit kept; older remote update rejected", o.toString(), "LAST_WRITE_WINS_LOCAL_WINS");
+									shouldUpsert = false;
+									skipped++;
 								}
 							} else {
-								values.add(prim.getAsString());
+								if (remoteInst.isBefore(localInst)) {
+									shouldUpsert = false;
+									skipped++;
+								}
 							}
+						}
+
+						if (!shouldUpsert) {
+							continue;
+						}
+
+						if ("payment_allocations".equals(table)) {
+							String paymentUuid = o.has("payment_uuid") && !o.get("payment_uuid").isJsonNull() ? o.get("payment_uuid").getAsString() : null;
+							double allocatedAmount = o.has("allocated_amount") && !o.get("allocated_amount").isJsonNull() ? o.get("allocated_amount").getAsDouble() : 0.0;
+							boolean remoteDeleted = false;
+							if (o.has("is_deleted") && !o.get("is_deleted").isJsonNull()) {
+								remoteDeleted = o.get("is_deleted").getAsBoolean();
+							}
+							if (paymentUuid != null && !remoteDeleted) {
+								boolean rejected = SyncConflictResolver.validateAndResolveDoubleSpend(conn, uuid, paymentUuid, allocatedAmount, true, remoteUpdatedAt, o.toString());
+								if (rejected) {
+									o.addProperty("is_deleted", true);
+									o.addProperty("sync_status", "SYNCED");
+								}
+							}
+						}
+
+						List<String> insertCols = new ArrayList<>();
+						List<Object> values = new ArrayList<>();
+
+						for (String col : cols) {
+							if (o.has(col)) {
+								insertCols.add(col);
+								if ("sync_status".equals(col)) {
+									values.add("SYNCED");
+									continue;
+								}
+								JsonElement val = o.get(col);
+								if (val.isJsonNull()) {
+									values.add(null);
+								} else if (val.isJsonPrimitive()) {
+									var prim = val.getAsJsonPrimitive();
+									if (prim.isBoolean()) {
+										values.add(prim.getAsBoolean() ? 1 : 0);
+									} else if (prim.isNumber()) {
+										if (prim.getAsString().contains(".")) {
+											values.add(prim.getAsDouble());
+										} else {
+											values.add(prim.getAsLong());
+										}
+									} else {
+										values.add(prim.getAsString());
+									}
+								} else {
+									values.add(val.toString());
+								}
+							}
+						}
+
+						if (insertCols.isEmpty()) {
+							continue;
+						}
+
+						StringBuilder sb = new StringBuilder("INSERT INTO ").append(table).append(" (");
+						for (int i = 0; i < insertCols.size(); i++) {
+							sb.append(insertCols.get(i));
+							if (i < insertCols.size() - 1) {
+								sb.append(",");
+							}
+						}
+						sb.append(") VALUES (");
+						for (int i = 0; i < insertCols.size(); i++) {
+							sb.append("?");
+							if (i < insertCols.size() - 1) {
+								sb.append(",");
+							}
+						}
+						sb.append(") ON CONFLICT(uuid) DO UPDATE SET ");
+						boolean first = true;
+						for (String col : insertCols) {
+							if ("uuid".equalsIgnoreCase(col) || "id".equalsIgnoreCase(col)) {
+								continue;
+							}
+							if (!first) {
+								sb.append(", ");
+							}
+							sb.append(col).append("=excluded.").append(col);
+							first = false;
+						}
+
+						try (PreparedStatement ps = conn.prepareStatement(sb.toString())) {
+							for (int i = 0; i < values.size(); i++) {
+								Object v = values.get(i);
+								if (v == null) {
+									ps.setNull(i + 1, java.sql.Types.VARCHAR);
+								} else {
+									ps.setObject(i + 1, v);
+								}
+							}
+							ps.executeUpdate();
+						}
+
+						boolean isDeletedVal = false;
+						if (o.has("is_deleted") && !o.get("is_deleted").isJsonNull()) {
+							try {
+								isDeletedVal = o.get("is_deleted").getAsBoolean();
+							} catch (Exception ignored) {
+								isDeletedVal = o.get("is_deleted").getAsInt() != 0;
+							}
+						}
+
+						if (isDeletedVal) {
+							deleted++;
+						} else if (localExists) {
+							updated++;
 						} else {
-							values.add(val.toString());
+							inserted++;
 						}
 					}
-				}
 
-				if (insertCols.isEmpty()) {
-					continue;
-				}
-
-				// Build safe UUID-based UPSERT query
-				StringBuilder sb = new StringBuilder("INSERT INTO ").append(table).append(" (");
-				for (int i = 0; i < insertCols.size(); i++) {
-					sb.append(insertCols.get(i));
-					if (i < insertCols.size() - 1) {
-						sb.append(",");
-					}
-				}
-				sb.append(") VALUES (");
-				for (int i = 0; i < insertCols.size(); i++) {
-					sb.append("?");
-					if (i < insertCols.size() - 1) {
-						sb.append(",");
-					}
-				}
-				sb.append(") ON CONFLICT(uuid) DO UPDATE SET ");
-				boolean first = true;
-				for (String col : insertCols) {
-					if ("uuid".equalsIgnoreCase(col) || "id".equalsIgnoreCase(col)) {
-						continue;
-					}
-					if (!first) {
-						sb.append(", ");
-					}
-					sb.append(col).append("=excluded.").append(col);
-					first = false;
-				}
-
-				try (PreparedStatement ps = conn.prepareStatement(sb.toString())) {
-					for (int i = 0; i < values.size(); i++) {
-						Object v = values.get(i);
-						if (v == null) {
-							ps.setNull(i + 1, java.sql.Types.VARCHAR);
-						} else {
-							ps.setObject(i + 1, v);
-						}
-					}
-					ps.executeUpdate();
-				}
-
-				boolean isDeletedVal = false;
-				if (o.has("is_deleted") && !o.get("is_deleted").isJsonNull()) {
+					// REMOTE DELETION RECONCILIATION
+					// Fetch all active remote UUIDs for this table to detect hard-deleted or soft-deleted remote records
 					try {
-						isDeletedVal = o.get("is_deleted").getAsBoolean();
-					} catch (Exception ignored) {
-						isDeletedVal = o.get("is_deleted").getAsInt() != 0;
-					}
-				}
+						String selectQuery = "select=uuid" + (cols.contains("is_deleted") ? ",is_deleted" : "");
+						var remoteUuidsRes = http.get(endpoint, selectQuery);
+						if (remoteUuidsRes.statusCode() >= 200 && remoteUuidsRes.statusCode() < 300) {
+							String rBody = remoteUuidsRes.body();
+							if (rBody != null && !rBody.trim().isEmpty()) {
+								JsonElement rRoot = JsonParser.parseString(rBody);
+								if (rRoot.isJsonArray()) {
+									java.util.Set<String> activeRemoteUuids = new java.util.HashSet<>();
+									java.util.Set<String> softDeletedRemoteUuids = new java.util.HashSet<>();
+									for (JsonElement rEl : rRoot.getAsJsonArray()) {
+										if (rEl.isJsonObject()) {
+											JsonObject rObj = rEl.getAsJsonObject();
+											String rUuid = rObj.has("uuid") && !rObj.get("uuid").isJsonNull() ? rObj.get("uuid").getAsString() : null;
+											if (rUuid != null) {
+												boolean rDeleted = false;
+												if (rObj.has("is_deleted") && !rObj.get("is_deleted").isJsonNull()) {
+													try {
+														rDeleted = rObj.get("is_deleted").getAsBoolean();
+													} catch (Exception ex) {
+														rDeleted = rObj.get("is_deleted").getAsInt() != 0;
+													}
+												}
+												if (rDeleted) {
+													softDeletedRemoteUuids.add(rUuid);
+												} else {
+													activeRemoteUuids.add(rUuid);
+												}
+											}
+										}
+									}
 
-				if (isDeletedVal) {
-					deleted++;
-				} else if (localExists) {
-					updated++;
-				} else {
-					inserted++;
+									// Check local synced records
+									boolean hasIsDeletedCol = cols.contains("is_deleted");
+									String localQuery = hasIsDeletedCol
+											? "SELECT uuid, is_deleted FROM " + table + " WHERE sync_status = 'SYNCED'"
+											: "SELECT uuid FROM " + table + " WHERE sync_status = 'SYNCED'";
+									try (PreparedStatement lPs = conn.prepareStatement(localQuery);
+										 ResultSet lRs = lPs.executeQuery()) {
+										while (lRs.next()) {
+											String lUuid = lRs.getString("uuid");
+											boolean currentlyLocalDeleted = hasIsDeletedCol && lRs.getInt("is_deleted") == 1;
+
+											if (softDeletedRemoteUuids.contains(lUuid)) {
+												if (!currentlyLocalDeleted && hasIsDeletedCol) {
+													try (PreparedStatement updPs = conn.prepareStatement(
+															"UPDATE " + table + " SET is_deleted = 1, sync_status = 'SYNCED', deleted_at = datetime('now') WHERE uuid = ?")) {
+														updPs.setString(1, lUuid);
+														updPs.executeUpdate();
+													}
+													deleted++;
+													System.out.println("[RemoteToLocalSync] Reconciled remote soft-deletion for table=" + table + ", uuid=" + lUuid);
+												}
+											} else if (!activeRemoteUuids.contains(lUuid)) {
+												// Record was hard-deleted (physically deleted) from remote Supabase!
+												if (hasIsDeletedCol) {
+													if (!currentlyLocalDeleted) {
+														try (PreparedStatement updPs = conn.prepareStatement(
+																"UPDATE " + table + " SET is_deleted = 1, sync_status = 'SYNCED', deleted_at = datetime('now') WHERE uuid = ?")) {
+															updPs.setString(1, lUuid);
+															updPs.executeUpdate();
+														}
+														deleted++;
+														System.out.println("[RemoteToLocalSync] Reconciled remote physical hard-deletion for table=" + table + ", uuid=" + lUuid);
+													}
+												} else {
+													// Soft delete locally for child mapping tables to preserve recovery data
+													try (PreparedStatement updPs = conn.prepareStatement("UPDATE " + table + " SET is_deleted = 1, sync_status = 'SYNCED', deleted_at = datetime('now') WHERE uuid = ?")) {
+														updPs.setString(1, lUuid);
+														updPs.executeUpdate();
+													}
+													deleted++;
+													System.out.println("[RemoteToLocalSync] Reconciled remote physical hard-deletion (local soft-delete) for table=" + table + ", uuid=" + lUuid);
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					} catch (Exception rEx) {
+						System.err.println("[RemoteToLocalSync] Remote deletion reconciliation failed for " + table + ": " + rEx.getMessage());
+					}
+
+					if (maxTimestamp != null) {
+						updateLastPullAt(conn, table, maxTimestamp);
+						newLastPullMap.put(table, maxTimestamp);
+					}
+
+					try (Statement stmt = conn.createStatement()) {
+						stmt.execute("PRAGMA foreign_keys = ON;");
+					}
+					conn.commit();
+				} catch (Exception e) {
+					conn.rollback();
+					throw e;
+				} finally {
+					conn.setAutoCommit(autoCommit);
 				}
 			}
 
 			logMetrics(table, lastPullAt, fetched, inserted, updated, deleted, skipped, conflicts, startTime, maxTimestamp);
-			if (maxTimestamp != null) {
-				newLastPullMap.put(table, maxTimestamp);
-			}
+
 		} catch (Exception e) {
 			System.err.println("[RemoteToLocalSync] Error syncing table " + table + ": " + e.getMessage());
 			e.printStackTrace();

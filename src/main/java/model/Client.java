@@ -22,6 +22,7 @@ public class Client {
 	private StringProperty billingAddress = new SimpleStringProperty();
 	private StringProperty shippingAddress = new SimpleStringProperty();
 	private StringProperty notes = new SimpleStringProperty();
+	private StringProperty state = new SimpleStringProperty("");
 	private StringProperty clientType = new SimpleStringProperty("Regular");
 	private StringProperty priceCategory = new SimpleStringProperty("");
 	private StringProperty paymentTerms = new SimpleStringProperty("");
@@ -297,6 +298,18 @@ public class Client {
 
 	public StringProperty notesProperty() {
 		return notes;
+	}
+
+	public String getState() {
+		return state.get();
+	}
+
+	public void setState(String v) {
+		state.set(v != null ? v : "");
+	}
+
+	public StringProperty stateProperty() {
+		return state;
 	}
 
 	@Override

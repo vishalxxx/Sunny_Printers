@@ -516,6 +516,27 @@
     -fx-font-weight: 600;
 }
 
+TextArea.taste-field {
+    -fx-control-inner-background: #FAF6F0;
+    -fx-padding: 6 10;
+}
+
+TextArea.taste-field .content,
+TextArea.taste-field .scroll-pane,
+TextArea.taste-field .scroll-pane .viewport {
+    -fx-background-color: #FAF6F0;
+}
+
+TextArea.taste-field:focused .content,
+TextArea.taste-field:focused .scroll-pane,
+TextArea.taste-field:focused .scroll-pane .viewport {
+    -fx-background-color: #FAF6F0;
+}
+
+TextArea.taste-field .text {
+    -fx-fill: #3E312D;
+}
+
 .taste-combo {
     -fx-background-color: #FAF6F0;
     -fx-border-color: #EADFD4;

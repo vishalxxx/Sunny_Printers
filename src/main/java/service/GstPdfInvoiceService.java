@@ -406,27 +406,52 @@ public class GstPdfInvoiceService {
         PdfPTable rightGrid = new PdfPTable(2);
         rightGrid.setWidthPercentage(100);
 
-        addMetaCellWithHeight(rightGrid, "Invoice No.", safe(invoice.getInvoiceNo()), 0, 1, rightRowHeight);
-        addMetaCellWithHeight(rightGrid, "Dated",
-                invoice.getInvoiceDate() != null ? invoice.getInvoiceDate().format(INVOICE_DATE_FMT) : "", 1, 1,
-                rightRowHeight);
+        java.util.List<String[]> metaPairs = new java.util.ArrayList<>();
+        metaPairs.add(new String[]{"Invoice No.", safe(invoice.getInvoiceNo())});
+        metaPairs.add(new String[]{"Dated", invoice.getInvoiceDate() != null ? invoice.getInvoiceDate().format(INVOICE_DATE_FMT) : ""});
 
-        addMetaCellWithHeight(rightGrid, "Delivery Note", "", 0, 1, rightRowHeight);
-        addMetaCellWithHeight(rightGrid, "Mode/Terms of Payment", "", 1, 1, rightRowHeight);
+        if (invoice.getPlaceOfSupply() != null && !invoice.getPlaceOfSupply().isBlank()) {
+            metaPairs.add(new String[]{"Place of Supply", invoice.getPlaceOfSupply()});
+        }
+        if (invoice.getPaymentTerms() != null && !invoice.getPaymentTerms().isBlank()) {
+            metaPairs.add(new String[]{"Mode/Terms of Payment", invoice.getPaymentTerms()});
+        }
+        if (invoice.getDueDate() != null) {
+            metaPairs.add(new String[]{"Due Date", invoice.getDueDate().format(INVOICE_DATE_FMT)});
+        }
+        if (invoice.getPoNo() != null && !invoice.getPoNo().isBlank()) {
+            metaPairs.add(new String[]{"PO No.", invoice.getPoNo()});
+            if (invoice.getPoDate() != null) {
+                metaPairs.add(new String[]{"PO Date", invoice.getPoDate().format(INVOICE_DATE_FMT)});
+            }
+        }
+        if (invoice.getVehicleDispatch() != null && !invoice.getVehicleDispatch().isBlank()) {
+            metaPairs.add(new String[]{"Vehicle / Dispatch", invoice.getVehicleDispatch()});
+        }
+        if (invoice.getDispatchThrough() != null && !invoice.getDispatchThrough().isBlank()) {
+            metaPairs.add(new String[]{"Dispatched through", invoice.getDispatchThrough()});
+        }
+        if (invoice.getLrTrackingNo() != null && !invoice.getLrTrackingNo().isBlank()) {
+            metaPairs.add(new String[]{"Dispatch Doc No. (LR)", invoice.getLrTrackingNo()});
+        }
+        if (invoice.getEwayBillNo() != null && !invoice.getEwayBillNo().isBlank()) {
+            metaPairs.add(new String[]{"E-Way Bill No.", invoice.getEwayBillNo()});
+        }
 
-        addMetaCellWithHeight(rightGrid, "Reference No. & Date", "", 0, 1, rightRowHeight);
-        addMetaCellWithHeight(rightGrid, "Other References", "", 1, 1, rightRowHeight);
+        int count = 0;
+        for (String[] pair : metaPairs) {
+            int col = count % 2;
+            addMetaCellWithHeight(rightGrid, pair[0], pair[1], col, 1, rightRowHeight);
+            count++;
+        }
 
-        addMetaCellWithHeight(rightGrid, "Buyer's Order No.", "", 0, 1, rightRowHeight);
-        addMetaCellWithHeight(rightGrid, "Dated", "", 1, 1, rightRowHeight);
+        if (count % 2 != 0) {
+            addMetaCellWithHeight(rightGrid, "", "", 1, 1, rightRowHeight);
+        }
 
-        addMetaCellWithHeight(rightGrid, "Dispatch Doc No.", "", 0, 1, rightRowHeight);
-        addMetaCellWithHeight(rightGrid, "Delivery Note Date", "", 1, 1, rightRowHeight);
-
-        addMetaCellWithHeight(rightGrid, "Dispatched through", "", 0, 1, rightRowHeight);
-        addMetaCellWithHeight(rightGrid, "Destination", "", 1, 1, rightRowHeight);
-
-        addMetaCellWithHeight(rightGrid, "Terms of Delivery", "", 0, 2, rightRowHeight);
+        if (invoice.getRemarks() != null && !invoice.getRemarks().isBlank()) {
+            addMetaCellWithHeight(rightGrid, "Remarks / Terms of Delivery", invoice.getRemarks(), 0, 2, rightRowHeight * 2);
+        }
 
         PdfPCell rightCell = new PdfPCell(rightGrid);
         rightCell.setBorder(Rectangle.NO_BORDER);
@@ -689,29 +714,29 @@ public class GstPdfInvoiceService {
         // =========================================================
 
         double grandTotal = invoice.getGrandTotal();
+        double roundOff = 0.0;
 
-        if (grandTotal <= 0) {
-
-            grandTotal = round2(
-                    taxable
+        if (invoice.getRoundOff() != null) {
+            roundOff = invoice.getRoundOff();
+            grandTotal = round2(taxable + totalCgst + totalSgst + totalIgst + roundOff);
+        } else {
+            if (grandTotal <= 0) {
+                grandTotal = round2(
+                        taxable
+                                + totalCgst
+                                + totalSgst
+                                + totalIgst);
+            }
+            roundOff = grandTotal
+                    - (taxable
                             + totalCgst
                             + totalSgst
                             + totalIgst);
-
+            roundOff = round2(roundOff);
         }
 
-        double roundOff = grandTotal
-                - (taxable
-                        + totalCgst
-                        + totalSgst
-                        + totalIgst);
-
-        roundOff = round2(roundOff);
-
         if (Math.abs(roundOff) > 0.001) {
-
             addRoundOffRow(table, roundOff);
-
         }
 
         // =========================================================
@@ -767,8 +792,12 @@ public class GstPdfInvoiceService {
             }
         }
 
+        if ("MIXED".equals(commonUnit)) {
+            commonUnit = "";
+        }
+
         String qtyText = totalQty > 0
-                ? (fmtQty3(totalQty) + " " + commonUnit)
+                ? (commonUnit.isEmpty() ? fmtQty3(totalQty) : (fmtQty3(totalQty) + " " + commonUnit))
                 : "";
 
         Paragraph qtyPara = new Paragraph(qtyText, fontBold);
@@ -974,6 +1003,10 @@ public class GstPdfInvoiceService {
             for (InvoiceJob job : invoice.getJobs()) {
 
                 String hsn = safe(job.getHsnSac());
+
+                if ("NA".equalsIgnoreCase(hsn) || "N/A".equalsIgnoreCase(hsn)) {
+                    continue;
+                }
 
                 if (hsn.isBlank() || "—".equals(hsn)) {
 
@@ -1330,8 +1363,14 @@ public class GstPdfInvoiceService {
         String buyerGst = safe(invoice.getBuyerGstin());
 
         String companyCode = extractStateCode(companyGst);
+        if (companyCode.isBlank()) {
+            companyCode = "07";
+        }
 
         String buyerCode = extractStateCode(buyerGst);
+        if (buyerCode.isBlank()) {
+            buyerCode = extractStateCode(invoice.getBuyerStateName());
+        }
 
         if (companyCode.isBlank()
                 || buyerCode.isBlank()) {
@@ -1561,8 +1600,10 @@ public class GstPdfInvoiceService {
 
         try {
 
-            BankDetails defaultBank = new service.BankDetailsService()
-                    .getDefault();
+            BankDetails defaultBank = invoice.getBankDetails();
+            if (defaultBank == null) {
+                defaultBank = new service.BankDetailsService().getDefault();
+            }
 
             if (defaultBank != null) {
 

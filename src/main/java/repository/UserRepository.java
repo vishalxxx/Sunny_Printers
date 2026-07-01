@@ -75,10 +75,6 @@ public class UserRepository {
 			user.setUuid(rs.getString("uuid"));
 		} catch (SQLException ignored) {
 		}
-		try {
-			user.setId(rs.getInt("id"));
-		} catch (SQLException ignored) {
-		}
 		user.setUsername(rs.getString("username"));
 
 		user.setPassword(rs.getString("password"));

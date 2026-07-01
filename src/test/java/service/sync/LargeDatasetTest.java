@@ -120,7 +120,13 @@ public class LargeDatasetTest {
         long seedTime = System.currentTimeMillis() - startTime;
         runtime.gc();
         long endMemory = runtime.totalMemory() - runtime.freeMemory();
-        long dbSizeBytes = Files.size(Path.of(DB_FILE));
+
+        String cleanPath = dbPath.substring("jdbc:sqlite:".length());
+        int qIdx = cleanPath.indexOf('?');
+        if (qIdx != -1) {
+            cleanPath = cleanPath.substring(0, qIdx);
+        }
+        long dbSizeBytes = Files.size(Path.of(cleanPath));
 
         // Generate Performance Report
         StringWriter sw = new StringWriter();
@@ -128,7 +134,7 @@ public class LargeDatasetTest {
         pw.println("=================================================");
         pw.println("LARGE DATASET PERFORMANCE REPORT");
         pw.println("=================================================");
-        pw.println("Database path: " + DB_FILE);
+        pw.println("Database path: " + cleanPath);
         pw.println("Jobs inserted: 100,000");
         pw.println("Job Items inserted: 500,000");
         pw.println("Invoices inserted: 50,000");

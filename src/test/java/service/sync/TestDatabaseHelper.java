@@ -11,7 +11,7 @@ import utils.DatabaseInitializer;
 
 public class TestDatabaseHelper {
 
-    private static final String DIR = "database_test";
+    private static final String DIR = "target/database_test";
 
     public static void setupTestDir() throws Exception {
         Files.createDirectories(Path.of(DIR));
@@ -19,27 +19,33 @@ public class TestDatabaseHelper {
 
     public static void cleanupTestDir() {
         try {
-            Files.walk(Path.of(DIR))
-                 .map(Path::toFile)
-                 .forEach(f -> {
-                     try {
-                         f.delete();
-                     } catch (Exception ignored) {}
-                 });
-            Files.deleteIfExists(Path.of(DIR));
+            api.supabase.SupabaseGate.setOverrideClient(null);
+            if (Files.exists(Path.of(DIR))) {
+                Files.walk(Path.of(DIR))
+                     .map(Path::toFile)
+                     .forEach(f -> {
+                         try {
+                             f.delete();
+                         } catch (Exception ignored) {}
+                     });
+                Files.deleteIfExists(Path.of(DIR));
+            }
         } catch (Exception ignored) {}
     }
 
     public static String createIsolatedDb(String name) throws Exception {
         setupTestDir();
-        String dbPath = DIR + "/" + name + ".db";
-        String jdbcUrl = "jdbc:sqlite:" + dbPath;
+        Path subDir = Path.of(DIR, name + "_" + System.nanoTime());
+        Files.createDirectories(subDir);
+        Path dbFilePath = subDir.resolve(name + ".db");
+        String jdbcUrl = "jdbc:sqlite:" + dbFilePath.toAbsolutePath().toString() + "?busy_timeout=15000&journal_mode=WAL";
         
         // Temporarily swap DB url and run initializer
         String originalUrl = DBConnection.getUrl();
         DBConnection.setUrl(jdbcUrl);
         try {
             DatabaseInitializer.initialize();
+            DBConnection.registerInitializedUrl(jdbcUrl);
         } finally {
             DBConnection.setUrl(originalUrl);
         }

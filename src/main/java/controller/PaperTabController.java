@@ -336,7 +336,7 @@ public class PaperTabController {
     private void applyInvoicedState(boolean isNewSelection) {
         boolean isJobStatusInvoiced = currentJob != null && "invoiced".equalsIgnoreCase(currentJob.getStatus());
         String invStatus = (currentJob != null && currentJob.getInvoiceStatus() != null) ? currentJob.getInvoiceStatus().trim().toLowerCase() : "";
-        boolean isLocked = isJobStatusInvoiced && !(invStatus.equals("draft") || invStatus.equals("final"));
+        boolean isLocked = isJobStatusInvoiced && !invStatus.equals("draft");
 
         qtyField.setDisable(isLocked);
         unitsField.setDisable(isLocked);
@@ -568,3 +568,4 @@ public class PaperTabController {
         return paperTable.getItems().stream().anyMatch(p -> p.isNew() || p.isUpdated() || p.isDeleted());
     }
 }
+

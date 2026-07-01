@@ -91,7 +91,7 @@
         <!-- Supabase (optional; stored locally — used when cloud sync is enabled) -->
         <VBox styleClass="settings-form-card" spacing="10" fillWidth="true">
             <Label text="Supabase database" styleClass="card-title-sm"/>
-            <Label text="Project URL and anon key are used to reach PostgREST. Email and password are reserved for future Auth-based sync." wrapText="true" maxWidth="Infinity" styleClass="settings-section-kicker"/>
+            <Label text="Project URL and Publishable Key (or Anon JWT) are used to reach PostgREST. Email and password are reserved for future Auth-based sync." wrapText="true" maxWidth="Infinity" styleClass="settings-section-kicker"/>
             <GridPane hgap="10" vgap="10">
                 <columnConstraints>
                     <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
@@ -102,8 +102,8 @@
                     <TextField fx:id="supabaseUrlField" promptText="https://your-project.supabase.co" styleClass="taste-field" maxWidth="Infinity"/>
                 </VBox>
                 <VBox spacing="4" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1">
-                    <Label text="Anon key" styleClass="field-heading-sm"/>
-                    <PasswordField fx:id="supabaseAnonKeyField" promptText="Public anon (JWT) key from Supabase API settings" styleClass="taste-field" maxWidth="Infinity"/>
+                    <Label text="Publishable Key / Anon Key" styleClass="field-heading-sm"/>
+                    <PasswordField fx:id="supabaseAnonKeyField" promptText="Publishable key or Anon JWT from Supabase API settings" styleClass="taste-field" maxWidth="Infinity"/>
                 </VBox>
                 <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="2">
                     <Label text="Email" styleClass="field-heading-sm"/>

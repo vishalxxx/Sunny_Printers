@@ -70,8 +70,9 @@ public class IncrementalPullTest {
         fakeSupabase.getTableData(SupabaseEndpoints.CLIENTS).add(c2);
         
         // 2. Perform first pull (should pull all 2 records)
-        int changesFirst = RemoteToLocalSync.pullAll(fakeSupabase);
-        assertEquals(2, changesFirst, "First pull should insert both seeded clients");
+        RemoteToLocalSync.pullAll(fakeSupabase);
+        ClientRepository repo = new ClientRepository();
+        assertEquals(2, repo.findAllSortedById().size(), "First pull should insert both seeded clients");
         
         // Verify watermark is maximum remote updated_at (2026-06-13T10:05:00Z)
         String firstWatermark = getWatermark("clients");
@@ -101,7 +102,6 @@ public class IncrementalPullTest {
         assertEquals("2026-06-13T10:10:00Z", getWatermark("clients"));
         
         // Verify local client records count
-        ClientRepository repo = new ClientRepository();
         assertEquals(3, repo.findAllSortedById().size());
     }
 

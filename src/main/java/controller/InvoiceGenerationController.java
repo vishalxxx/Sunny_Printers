@@ -521,6 +521,7 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 			});
 
 			task.setOnFailed(ev -> {
+				new Thread(() -> invoiceMasterService.deleteInvoicesIfCancelled(newlyCreatedIds)).start();
 				progress.hide();
 				rootStackPane.getChildren().remove(progressRoot);
 				Throwable ex = task.getException();
@@ -616,10 +617,11 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 			});
 
 			task.setOnFailed(ev -> {
+				new Thread(() -> invoiceMasterService.deleteInvoicesIfCancelled(newlyCreatedIds)).start();
 				progress.hide();
 				rootStackPane.getChildren().remove(progressRoot);
 				Throwable ex = task.getException();
-				toast("❌ Failed: " + (ex != null ? ex.getMessage() : "Unknown"));
+				toast("❌ Error: " + (ex != null ? ex.getMessage() : "Unknown"));
 			});
 
 			monthlyTask = null; // reset monthly task ref if needed

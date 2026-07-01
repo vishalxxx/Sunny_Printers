@@ -42,6 +42,20 @@ public class InvoiceMaster {
 
     private String filePath;
     
+    private double totalAfterTax;
+    private double roundOff;
+
+    private String placeOfSupply;
+    private String paymentTerms;
+    private LocalDate dueDate;
+    private String vehicleDispatch;
+    private String poNo;
+    private LocalDate poDate;
+    private String dispatchThrough;
+    private String lrTrackingNo;
+    private String remarks;
+    private String ewayBillNo;
+    
     private String syncStatus = "PENDING";
     private int syncVersion = 1;
     private int isDeleted = 0;
@@ -266,6 +280,42 @@ public class InvoiceMaster {
 
     public String getDeletedAt() { return deletedAt; }
     public void setDeletedAt(String deletedAt) { this.deletedAt = deletedAt; }
+
+    public double getTotalAfterTax() { return totalAfterTax; }
+    public void setTotalAfterTax(double totalAfterTax) { this.totalAfterTax = totalAfterTax; }
+
+    public double getRoundOff() { return roundOff; }
+    public void setRoundOff(double roundOff) { this.roundOff = roundOff; }
+
+    public String getPlaceOfSupply() { return placeOfSupply; }
+    public void setPlaceOfSupply(String placeOfSupply) { this.placeOfSupply = placeOfSupply; }
+
+    public String getPaymentTerms() { return paymentTerms; }
+    public void setPaymentTerms(String paymentTerms) { this.paymentTerms = paymentTerms; }
+
+    public LocalDate getDueDate() { return dueDate; }
+    public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
+
+    public String getVehicleDispatch() { return vehicleDispatch; }
+    public void setVehicleDispatch(String vehicleDispatch) { this.vehicleDispatch = vehicleDispatch; }
+
+    public String getPoNo() { return poNo; }
+    public void setPoNo(String poNo) { this.poNo = poNo; }
+
+    public LocalDate getPoDate() { return poDate; }
+    public void setPoDate(LocalDate poDate) { this.poDate = poDate; }
+
+    public String getDispatchThrough() { return dispatchThrough; }
+    public void setDispatchThrough(String dispatchThrough) { this.dispatchThrough = dispatchThrough; }
+
+    public String getLrTrackingNo() { return lrTrackingNo; }
+    public void setLrTrackingNo(String lrTrackingNo) { this.lrTrackingNo = lrTrackingNo; }
+
+    public String getRemarks() { return remarks; }
+    public void setRemarks(String remarks) { this.remarks = remarks; }
+
+    public String getEwayBillNo() { return ewayBillNo; }
+    public void setEwayBillNo(String ewayBillNo) { this.ewayBillNo = ewayBillNo; }
 
     @Override
     public boolean equals(Object o) {

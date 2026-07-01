@@ -2,7 +2,7 @@ package model;
 
 public class BankDetails {
 
-	private int id;
+	private String uuid;
 	private String bankName;
 	private String accountHolderName;
 	private String accountNo;
@@ -11,12 +11,12 @@ public class BankDetails {
 	private boolean isDefault;
 	private boolean isActive;
 
-	public int getId() {
-		return id;
+	public String getUuid() {
+		return uuid;
 	}
 
-	public void setId(int id) {
-		this.id = id;
+	public void setUuid(String uuid) {
+		this.uuid = uuid;
 	}
 
 	public String getBankName() {
@@ -115,4 +115,3 @@ public class BankDetails {
 		return bankName != null ? bankName : "";
 	}
 }
-

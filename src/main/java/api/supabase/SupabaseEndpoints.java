@@ -31,7 +31,8 @@ public enum SupabaseEndpoints {
 	USER_PROFILES("user_profiles"),
 	NUMBER_SEQUENCES("number_sequences"),
 	DOCUMENT_NUMBER_MAPPINGS("document_number_mappings"),
-	INVOICE_ADDITIONAL_CHARGES("invoice_additional_charges");
+	INVOICE_ADDITIONAL_CHARGES("invoice_additional_charges"),
+	APP_UPDATES("app_updates");
 
 	private final String pathSegment;
 

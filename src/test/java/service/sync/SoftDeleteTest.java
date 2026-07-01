@@ -46,7 +46,7 @@ public class SoftDeleteTest {
 
     @Test
     public void testSoftDeletePropagation() throws Exception {
-        String clientUuid = "client-uuid-soft-delete-123";
+        String clientUuid = "00000000-0000-0000-0000-000000008001";
 
         // 1. Seed on Machine A and push
         DBConnection.setUrl(dbA);
@@ -74,7 +74,7 @@ public class SoftDeleteTest {
         // We write directly to SQLite to simulate setting PENDING and is_deleted
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(
-                 "UPDATE clients SET is_deleted = 1, deleted_at = '2026-06-13 12:00:00', sync_status = 'PENDING', updated_at = '2026-06-13 12:00:00' WHERE uuid = ?")) {
+                 "UPDATE clients SET is_deleted = 1, deleted_at = '2028-06-13 12:00:00', sync_status = 'PENDING', updated_at = '2028-06-13 12:00:00' WHERE uuid = ?")) {
             ps.setString(1, clientUuid);
             ps.executeUpdate();
         }
@@ -85,7 +85,7 @@ public class SoftDeleteTest {
         // Verify remote is updated to is_deleted = true
         remoteRow = fakeSupabase.getTableData(SupabaseEndpoints.CLIENTS).get(0);
         assertTrue(remoteRow.get("is_deleted").getAsBoolean());
-        assertEquals("2026-06-13 12:00:00", remoteRow.get("deleted_at").getAsString());
+        assertEquals("2028-06-13 12:00:00", remoteRow.get("deleted_at").getAsString());
 
         // 4. Pull on Machine B
         DBConnection.setUrl(dbB);
@@ -95,7 +95,7 @@ public class SoftDeleteTest {
         Client localB = repoB.findByUuid(clientUuid);
         assertNotNull(localB);
         assertTrue(localB.isDeleted());
-        assertEquals("2026-06-13 12:00:00", localB.getDeletedAt());
+        assertEquals("2028-06-13 12:00:00", localB.getDeletedAt());
 
         // 5. Subsequent pulls must not resurrect the record or clear the deleted status
         RemoteToLocalSync.pullAll(fakeSupabase);

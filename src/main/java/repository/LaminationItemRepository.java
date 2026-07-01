@@ -104,15 +104,7 @@ public class LaminationItemRepository {
     /* ================= DELETE ================= */
 
     public void deleteByJobItemUuid(Connection con, String jobItemUuid) {
-        model.User current = utils.SessionManager.getInstance().getCurrentUser();
-        boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
-
-        String sql;
-        if (isAdmin) {
-            sql = "DELETE FROM lamination_items WHERE job_item_uuid = ?";
-        } else {
-            sql = "UPDATE lamination_items SET is_deleted = 1, updated_at = datetime('now'), sync_status = 'PENDING' WHERE job_item_uuid = ?";
-        }
+        String sql = "UPDATE lamination_items SET is_deleted = 1, updated_at = datetime('now'), sync_status = 'PENDING' WHERE job_item_uuid = ?";
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, jobItemUuid);

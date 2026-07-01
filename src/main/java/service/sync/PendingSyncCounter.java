@@ -4,31 +4,26 @@ import utils.DBConnection;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.List;
 
 public final class PendingSyncCounter {
     private PendingSyncCounter() {}
 
+    private static final List<String> SYNCABLE_BUSINESS_TABLES = List.of(
+        "clients", "jobs", "invoice_master", "payments", "job_items",
+        "printing_items", "paper_items", "binding_items", "lamination_items", "ctp_items",
+        "invoice_job_mapping", "invoice_additional_charges", "invoice_adjustments",
+        "payment_allocations", "payment_details", "suppliers", "company_details",
+        "bank_details", "hsn_sac_master", "document_number_mappings"
+    );
+
     public static int getPendingRecordsCount() {
         int total = 0;
-        try (Connection conn = DBConnection.getConnection();
-             Statement stmt = conn.createStatement()) {
-            
-            // Find all tables in SQLite
-            List<String> tables = new ArrayList<>();
-            try (ResultSet rs = stmt.executeQuery(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")) {
-                while (rs.next()) {
-                    tables.add(rs.getString(1));
-                }
-            }
-
-            for (String table : tables) {
+        try (Connection conn = DBConnection.getConnection()) {
+            for (String table : SYNCABLE_BUSINESS_TABLES) {
                 boolean hasSyncStatus = false;
                 boolean hasIsDeleted = false;
                 
-                // Inspect table columns
                 try (ResultSet colRs = conn.getMetaData().getColumns(null, null, table, null)) {
                     while (colRs.next()) {
                         String columnName = colRs.getString("COLUMN_NAME");
@@ -46,12 +41,16 @@ public final class PendingSyncCounter {
                     if (hasIsDeleted) {
                         query += "IFNULL(is_deleted, 0) = 0 AND ";
                     }
-                    query += "UPPER(TRIM(COALESCE(sync_status, ''))) IN ('PENDING', 'FAILED')";
+                    query += PendingSyncFilters.PENDING_STATUS;
                     
                     try (Statement countStmt = conn.createStatement();
                          ResultSet countRs = countStmt.executeQuery(query)) {
                         if (countRs.next()) {
-                            total += countRs.getInt(1);
+                            int c = countRs.getInt(1);
+                            if (c > 0) {
+                                System.out.println("[PendingSyncCounter] Table '" + table + "' has " + c + " pending records.");
+                            }
+                            total += c;
                         }
                     }
                 }

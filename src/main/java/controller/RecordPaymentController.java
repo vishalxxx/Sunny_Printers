@@ -1425,8 +1425,8 @@ public class RecordPaymentController implements Initializable {
         table.getColumns().addAll(cType, cNo, cAmt, cReason);
         List<InvoiceAdjustment> adjs = new ArrayList<>();
         try (java.sql.Connection con = utils.DBConnection.getConnection();
-             java.sql.PreparedStatement ps = con.prepareStatement("SELECT type, note_no, amount, reason, date FROM invoice_adjustments WHERE invoice_id = ?")) {
-            ps.setInt(1, inv.getId());
+             java.sql.PreparedStatement ps = con.prepareStatement("SELECT type, note_no, amount, reason, date FROM invoice_adjustments WHERE invoice_uuid = ?")) {
+            ps.setString(1, inv.getUuid());
             try (java.sql.ResultSet rs = ps.executeQuery()) {
                 while(rs.next()) {
                     InvoiceAdjustment a = new InvoiceAdjustment();
@@ -1519,7 +1519,8 @@ public class RecordPaymentController implements Initializable {
                 "SELECT p.type, p.payment_date, pa.allocated_amount " +
                 " FROM payment_allocations pa " +
                 " JOIN payments p ON pa.payment_uuid = p.uuid " +
-                " WHERE pa.invoice_uuid = ? ORDER BY p.payment_date DESC")) {
+                " WHERE pa.invoice_uuid = ? AND COALESCE(pa.is_deleted, 0) = 0 " +
+                " ORDER BY p.payment_date DESC")) {
             ps.setString(1, inv.getUuid());
             try (java.sql.ResultSet rs = ps.executeQuery()) {
                 while(rs.next()) {

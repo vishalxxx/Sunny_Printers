@@ -238,50 +238,29 @@ public class SupplierService {
 		if (uuid == null || uuid.isBlank()) {
 			return;
 		}
-		User current = SessionManager.getInstance().getCurrentUser();
-		boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
-		if (isAdmin) {
-			String sql = "DELETE FROM suppliers WHERE uuid = ?";
-			try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-				stmt.setString(1, uuid);
-				stmt.executeUpdate();
-				service.sync.UniversalSyncEngine.scheduleSyncAsync();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
-				try {
-					String v = URLEncoder.encode(uuid.trim(), StandardCharsets.UTF_8).replace("+", "%20");
-					http.delete(SupabaseEndpoints.SUPPLIERS, "uuid=eq." + v);
-				} catch (Exception ex) {
-					System.err.println("[Supabase suppliers] remote delete failed for uuid=" + uuid + ": " + ex.getMessage());
-				}
-			}));
-		} else {
-			String sql = "UPDATE suppliers SET is_deleted = 1, is_active = 0, deleted_at = datetime('now'), sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
-			try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-				stmt.setString(1, uuid);
-				stmt.executeUpdate();
-				service.sync.UniversalSyncEngine.scheduleSyncAsync();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
-				try {
-					JsonObject body = new JsonObject();
-					body.addProperty("uuid", uuid.trim());
-					body.addProperty("is_deleted", 1);
-					body.addProperty("is_active", 0);
-					body.addProperty("sync_status", "SYNCED");
-					body.addProperty("synced_at", Instant.now().toString());
-					body.addProperty("deleted_at", Instant.now().toString());
-					String v = URLEncoder.encode(uuid.trim(), StandardCharsets.UTF_8).replace("+", "%20");
-					http.patchJson(SupabaseEndpoints.SUPPLIERS, "uuid=eq." + v, body.toString(), "return=minimal");
-				} catch (Exception ex) {
-					System.err.println("[Supabase suppliers] remote soft-delete failed for uuid=" + uuid + ": " + ex.getMessage());
-				}
-			}));
+		String sql = "UPDATE suppliers SET is_deleted = 1, is_active = 0, deleted_at = datetime('now'), sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+		try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+			stmt.setString(1, uuid);
+			stmt.executeUpdate();
+			service.sync.UniversalSyncEngine.scheduleSyncAsync();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
+		SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
+			try {
+				JsonObject body = new JsonObject();
+				body.addProperty("uuid", uuid.trim());
+				body.addProperty("is_deleted", 1);
+				body.addProperty("is_active", 0);
+				body.addProperty("sync_status", "SYNCED");
+				body.addProperty("synced_at", Instant.now().toString());
+				body.addProperty("deleted_at", Instant.now().toString());
+				String v = URLEncoder.encode(uuid.trim(), StandardCharsets.UTF_8).replace("+", "%20");
+				http.patchJson(SupabaseEndpoints.SUPPLIERS, "uuid=eq." + v, body.toString(), "return=minimal");
+			} catch (Exception ex) {
+				System.err.println("[Supabase suppliers] remote soft-delete failed for uuid=" + uuid + ": " + ex.getMessage());
+			}
+		}));
 	}
 
 	public void reviveSupplier(String uuid) {
@@ -315,5 +294,39 @@ public class SupplierService {
 				}
 			}));
 		}
+	}
+
+	public boolean duplicateGstinExists(String gstin, String excludeUuid) {
+		if (gstin == null || gstin.trim().isBlank()) {
+			return false;
+		}
+		String sql = "SELECT 1 FROM suppliers WHERE gst_number = ? AND uuid <> ? AND IFNULL(is_deleted,0)=0 LIMIT 1";
+		try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+			stmt.setString(1, gstin.trim());
+			stmt.setString(2, excludeUuid != null ? excludeUuid.trim() : "");
+			try (ResultSet rs = stmt.executeQuery()) {
+				return rs.next();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	public boolean duplicateMobileExists(String mobile, String excludeUuid) {
+		if (mobile == null || mobile.trim().isBlank()) {
+			return false;
+		}
+		String sql = "SELECT 1 FROM suppliers WHERE mobile = ? AND uuid <> ? AND IFNULL(is_deleted,0)=0 LIMIT 1";
+		try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+			stmt.setString(1, mobile.trim());
+			stmt.setString(2, excludeUuid != null ? excludeUuid.trim() : "");
+			try (ResultSet rs = stmt.executeQuery()) {
+				return rs.next();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false;
 	}
 }

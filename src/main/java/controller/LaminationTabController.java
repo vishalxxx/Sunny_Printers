@@ -182,7 +182,7 @@ public class LaminationTabController {
     private void applyInvoicedState(boolean isNewSelection) {
         boolean isJobStatusInvoiced = currentJob != null && "invoiced".equalsIgnoreCase(currentJob.getStatus());
         String invStatus = (currentJob != null && currentJob.getInvoiceStatus() != null) ? currentJob.getInvoiceStatus().trim().toLowerCase() : "";
-        boolean isLocked = isJobStatusInvoiced && !(invStatus.equals("draft") || invStatus.equals("final"));
+        boolean isLocked = isJobStatusInvoiced && !invStatus.equals("draft");
 
         qtyField.setDisable(isLocked);
         unitField.setDisable(isLocked);
@@ -304,3 +304,4 @@ public class LaminationTabController {
         return laminationTable.getItems().stream().anyMatch(l -> l.isNew() || l.isUpdated() || l.isDeleted());
     }
 }
+

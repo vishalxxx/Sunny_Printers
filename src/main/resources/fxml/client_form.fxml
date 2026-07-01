@@ -59,12 +59,14 @@
                         <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
                             <Label text="PHONE NUMBER" styleClass="field-label" />
                             <TextField fx:id="phoneField" styleClass="form-input"
-                                promptText="+91 0000 0000" />
+                                promptText="Enter 10-digit mobile number" />
+                            <Label fx:id="lblPhoneValidation" style="-fx-text-fill: #e74c3c; -fx-font-size: 11px;" wrapText="true" />
                         </VBox>
                         <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
                             <Label text="ALT. PHONE" styleClass="field-label" />
                             <TextField fx:id="altPhoneField" styleClass="form-input"
-                                promptText="Optional" />
+                                promptText="Optional landline/alternate" />
+                            <Label fx:id="lblAltPhoneValidation" style="-fx-text-fill: #e74c3c; -fx-font-size: 11px;" wrapText="true" />
                         </VBox>
                     </HBox>
                     <VBox styleClass="input-container-inset">
@@ -88,10 +90,47 @@
                             <Label text="GST NUMBER" styleClass="field-label" />
                             <TextField fx:id="gstField" styleClass="form-input"
                                 promptText="22AAAAA0000A1Z5" />
+                            <Label fx:id="lblGstValidation" style="-fx-text-fill: #e74c3c; -fx-font-size: 11px;" wrapText="true" />
+                            <VBox fx:id="panGstDetails" spacing="8" style="-fx-background-color: #f8f9fa; -fx-border-color: #e9ecef; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-padding: 12px; -fx-margin-top: 10px;" visible="false" managed="false">
+                                <Label text="Extracted GSTIN Details (Verified Offline)" style="-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #2c3e50;" />
+                                <GridPane hgap="10" vgap="4">
+                                    <columnConstraints>
+                                        <ColumnConstraints minWidth="120" prefWidth="120" />
+                                        <ColumnConstraints hgrow="ALWAYS" />
+                                    </columnConstraints>
+                                    <rowConstraints>
+                                        <RowConstraints minHeight="18" />
+                                        <RowConstraints minHeight="18" />
+                                        <RowConstraints minHeight="18" />
+                                        <RowConstraints minHeight="18" />
+                                        <RowConstraints minHeight="18" />
+                                    </rowConstraints>
+                                    <Label text="GSTIN:" GridPane.columnIndex="0" GridPane.rowIndex="0" style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;" />
+                                    <Label fx:id="lblGstDetailsGstin" GridPane.columnIndex="1" GridPane.rowIndex="0" style="-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #2c3e50;" />
+                                    
+                                    <Label text="State Code &amp; Name:" GridPane.columnIndex="0" GridPane.rowIndex="1" style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;" />
+                                    <Label fx:id="lblGstDetailsState" GridPane.columnIndex="1" GridPane.rowIndex="1" style="-fx-font-size: 11px; -fx-text-fill: #2c3e50;" />
+                                    
+                                    <Label text="PAN Number:" GridPane.columnIndex="0" GridPane.rowIndex="2" style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;" />
+                                    <Label fx:id="lblGstDetailsPan" GridPane.columnIndex="1" GridPane.rowIndex="2" style="-fx-font-size: 11px; -fx-text-fill: #2c3e50;" />
+                                    
+                                    <Label text="Registration Type:" GridPane.columnIndex="0" GridPane.rowIndex="3" style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;" />
+                                    <Label fx:id="lblGstDetailsType" GridPane.columnIndex="1" GridPane.rowIndex="3" style="-fx-font-size: 11px; -fx-text-fill: #2c3e50;" />
+
+                                    <Label text="Validation Status:" GridPane.columnIndex="0" GridPane.rowIndex="4" style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;" />
+                                    <Label fx:id="lblGstDetailsStatus" GridPane.columnIndex="1" GridPane.rowIndex="4" style="-fx-font-size: 11px; -fx-text-fill: #27ae60; -fx-font-weight: bold;" />
+                                </GridPane>
+                            </VBox>
                         </VBox>
                         <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
                             <Label text="PAN NUMBER" styleClass="field-label" />
                             <TextField fx:id="panField" styleClass="form-input" promptText="ABCDE1234F" />
+                        </VBox>
+                    </HBox>
+                    <HBox spacing="20">
+                        <VBox styleClass="input-container-inset" HBox.hgrow="ALWAYS">
+                            <Label text="CUSTOMER STATE (GST STATE)" styleClass="field-label" />
+                            <ComboBox fx:id="stateCombo" promptText="Select State" styleClass="form-combo, form-input" maxWidth="Infinity" />
                         </VBox>
                     </HBox>
                     <HBox spacing="20">

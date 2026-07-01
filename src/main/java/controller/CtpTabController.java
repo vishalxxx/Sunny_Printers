@@ -252,7 +252,7 @@ public class CtpTabController {
     private void applyInvoicedState(boolean isNewSelection) {
         boolean isJobStatusInvoiced = currentJob != null && "invoiced".equalsIgnoreCase(currentJob.getStatus());
         String invStatus = (currentJob != null && currentJob.getInvoiceStatus() != null) ? currentJob.getInvoiceStatus().trim().toLowerCase() : "";
-        boolean isLocked = isJobStatusInvoiced && !(invStatus.equals("draft") || invStatus.equals("final"));
+        boolean isLocked = isJobStatusInvoiced && !invStatus.equals("draft");
 
         qtyField.setDisable(isLocked);
         supplierField.setDisable(isLocked);
@@ -404,3 +404,4 @@ public class CtpTabController {
         return ctpTable.getItems().stream().anyMatch(c -> c.isNew() || c.isUpdated() || c.isDeleted());
     }
 }
+

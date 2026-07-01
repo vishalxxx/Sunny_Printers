@@ -481,11 +481,14 @@ public class ClientProfileController implements Initializable {
                     }
                     InvoiceBuilderService builder = new InvoiceBuilderService();
                     Invoice full = builder.buildInvoiceFromMasterForPdfExport(master.getUuid());
+                    boolean isProformaPdf = (full.getMasterDocumentSeries() == model.MasterDocumentSeries.PROFORMA_INVOICE)
+                                           || (full.getInvoiceType() != null && (full.getInvoiceType().toUpperCase().contains("PROFORMA") || full.getInvoiceType().toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(full.getInvoiceType()) || "DATE_RANGE".equalsIgnoreCase(full.getInvoiceType()) || full.getInvoiceType().toUpperCase().contains("MONTHLY")))
+                                           || (full.getInvoiceNo() != null && full.getInvoiceNo().toUpperCase().contains("/PI/"));
                     File created;
-                    if (model.MasterDocumentSeries.GST_INVOICE == full.getMasterDocumentSeries()) {
-                        created = new service.GstPdfInvoiceService().generateGstInvoice(full);
-                    } else {
+                    if (isProformaPdf) {
                         created = new PdfInvoiceService().generateSingleInvoicePDF(full);
+                    } else {
+                        created = new service.GstPdfInvoiceService().generateGstInvoice(full);
                     }
                     if (stage != null) {
                         Toast.showSmall(stage, "Invoice PDF saved");

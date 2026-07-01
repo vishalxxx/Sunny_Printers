@@ -226,7 +226,13 @@ public class EditJobController implements utils.DirtySupport {
         if (currentJob == null) return;
         boolean isInvoicedStatus = "invoiced".equalsIgnoreCase(currentJob.getStatus());
         String invStatus = (currentJob.getInvoiceStatus() != null) ? currentJob.getInvoiceStatus().trim().toLowerCase() : "";
-        boolean isLocked = isInvoicedStatus && !(invStatus.equals("draft") || invStatus.equals("final"));
+        String invType = (currentJob.getInvoiceType() != null) ? currentJob.getInvoiceType().toUpperCase() : "";
+        boolean isProforma = invType.contains("PROFORMA") || invType.contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(invType) || "DATE_RANGE".equalsIgnoreCase(invType) || invType.contains("MONTHLY");
+        
+        boolean isLocked = false;
+        if (!isProforma && isInvoicedStatus && !invStatus.equals("draft")) {
+            isLocked = true;
+        }
 
         jobRemarksArea.setDisable(isLocked);
         uploadJobImageBtn.setDisable(isLocked);
@@ -438,6 +444,10 @@ public class EditJobController implements utils.DirtySupport {
             if (ctpTabController != null) {
                 ctpTabController.commitEditor();
                 anythingSaved |= saveCtpItems(con,jobItemService);
+            }
+
+            if (anythingSaved && currentJob.getInvoiceUuid() != null && !currentJob.getInvoiceUuid().isBlank()) {
+                new service.InvoiceMasterService().recalculateInvoiceTotals(con, currentJob.getInvoiceUuid());
             }
 
             con.commit();
@@ -739,3 +749,4 @@ public class EditJobController implements utils.DirtySupport {
         }
     }
 }
+

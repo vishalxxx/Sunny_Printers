@@ -85,6 +85,10 @@ public final class OtherPendingEntitiesSync {
 					if (uuid == null || uuid.isBlank()) {
 						continue;
 					}
+					if (!UniversalSyncEngine.isValidUuid(uuid)) {
+						UniversalSyncEngine.markTableSyncError(def.sqliteTable(), def.uuidColumn(), uuid, "Invalid UUID format");
+						continue;
+					}
 					// Skip child items if parent job/job_item is not synced locally
 					if ("job_items".equals(def.sqliteTable())) {
 						String jobUuid = rs.getString("job_uuid");
@@ -108,6 +112,18 @@ public final class OtherPendingEntitiesSync {
 						boolean wasWaiting = "WAITING_DEPENDENCY".equalsIgnoreCase(originalSyncStatus);
 
 						JsonObject row = rowToJson(rs);
+						if ("payment_allocations".equals(def.sqliteTable())) {
+							String paymentUuid = rs.getString("payment_uuid");
+							double allocatedAmount = rs.getDouble("allocated_amount");
+							int localDeleted = rs.getInt("is_deleted");
+							if (paymentUuid != null && localDeleted == 0) {
+								boolean rejected = SyncConflictResolver.validateAndResolveDoubleSpend(conn, uuid, paymentUuid, allocatedAmount, false, null, row.toString());
+								if (rejected) {
+									row.addProperty("is_deleted", true);
+									row.addProperty("sync_status", "PENDING");
+								}
+							}
+						}
 						if ("invoice_job_mapping".equals(def.sqliteTable())) {
 							row = filterJsonColumns(row, INVOICE_JOB_MAPPING_REMOTE_COLS);
 						}
@@ -160,7 +176,15 @@ public final class OtherPendingEntitiesSync {
 							System.out.println("[UniversalSyncEngine] Dependency resolved: successfully synced " + def.sqliteTable() + " row " + uuid);
 						}
 					} catch (Exception e) {
-						if (markRemoteUnavailableIfMissing(def.endpoint(), e.getMessage())) {
+						String errMsg = e.getMessage();
+						if (errMsg != null && (errMsg.contains("PGRST204") || errMsg.contains("schema cache"))) {
+							utils.AdminWarningUtil.showSchemaCacheWarning(def.sqliteTable(), errMsg);
+							report.failures++;
+							System.err.println("[OtherPendingEntitiesSync] SCHEMA CACHE BLOCK on " + def.sqliteTable() + ": " + errMsg);
+							break; // Break the inner loop for this table since the entire table is blocked by the cache
+						}
+						
+						if (markRemoteUnavailableIfMissing(def.endpoint(), errMsg)) {
 							break;
 						}
 						if (UniversalSyncEngine.isForeignKeyFailure(e)) {
@@ -169,7 +193,7 @@ public final class OtherPendingEntitiesSync {
 							report.failures++;
 						}
 						System.err.println("[OtherPendingEntitiesSync] " + def.sqliteTable() + " " + uuid + ": "
-								+ e.getMessage());
+								+ errMsg);
 					}
 				}
 			}
@@ -224,7 +248,11 @@ public final class OtherPendingEntitiesSync {
 			JsonObject row) throws IOException, InterruptedException {
 		JsonArray body = new JsonArray();
 		body.add(row);
-		var res = http.postJsonWithQuery(endpoint, "on_conflict=" + uuidColumn, body.toString(),
+		String conflictCols = uuidColumn;
+		if (SupabaseEndpoints.INVOICE_JOB_MAPPING.equals(endpoint)) {
+			conflictCols = "invoice_uuid,job_uuid";
+		}
+		var res = http.postJsonWithQuery(endpoint, "on_conflict=" + conflictCols, body.toString(),
 				"resolution=merge-duplicates,return=minimal");
 		int code = res.statusCode();
 		if (code < 200 || code >= 300) {

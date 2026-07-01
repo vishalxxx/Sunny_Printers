@@ -111,6 +111,7 @@ public class ClientLedgerController implements Initializable {
     private Label footerClosingBalance;
 
     private ObservableList<LedgerEntry> ledgerData = FXCollections.observableArrayList();
+    private javafx.collections.transformation.FilteredList<LedgerEntry> filteredData;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -271,10 +272,12 @@ public class ClientLedgerController implements Initializable {
         colCredit.setCellFactory(c -> new CurrencyCell(false));
         colBalance.setCellFactory(c -> new CurrencyCell(false));
 
-        ledgerTable.setItems(ledgerData);
+        filteredData = new javafx.collections.transformation.FilteredList<>(ledgerData, p -> true);
+        ledgerTable.setItems(filteredData);
 
         ledgerData.addListener((javafx.collections.ListChangeListener.Change<? extends LedgerEntry> c) -> {
             updateTableHeight();
+            updateRecordCount();
         });
     }
 
@@ -376,16 +379,15 @@ public class ClientLedgerController implements Initializable {
     }
 
     private void updateTableHeight() {
-        int rowCount = ledgerData.size();
+        int rowCount = filteredData != null ? filteredData.size() : ledgerData.size();
 
         double targetHeight;
         if (rowCount == 0) {
             targetHeight = LEDGER_TABLE_HEADER_PX + (LEDGER_TABLE_EMPTY_VISIBLE_ROWS * LEDGER_TABLE_ROW_PX)
                     + LEDGER_TABLE_HEIGHT_FUDGE;
         } else {
-            int rowsToShow = Math.min(rowCount, LEDGER_TABLE_MAX_VISIBLE_ROWS);
-            targetHeight = LEDGER_TABLE_HEADER_PX + (rowsToShow * LEDGER_TABLE_ROW_PX)
-                    + LEDGER_TABLE_HEIGHT_FUDGE;
+            // Expand naturally so wrapped text and all rows display fully without bottom clipping
+            targetHeight = LEDGER_TABLE_HEADER_PX + (rowCount * 50.0) + 28.0;
         }
 
         ledgerTable.setMinHeight(targetHeight);
@@ -657,10 +659,10 @@ public class ClientLedgerController implements Initializable {
         sql.append("SELECT * FROM (");
 
         // Invoices — no receipt_no, use NULL placeholder
-        sql.append("SELECT uuid as txn_id, invoice_date as txn_date, invoice_no as ref, 'INVOICE' as type, ");
+        sql.append("SELECT uuid as txn_id, invoice_date as txn_date, created_at as created_ts, invoice_no as ref, 'INVOICE' as type, ");
         sql.append("'-' as mode, ");
         sql.append("0 as debit, amount as credit, status, payment_status, NULL as receipt_no ");
-        sql.append("FROM invoice_master WHERE client_uuid = ? ");
+        sql.append("FROM invoice_master WHERE client_uuid = ? AND IFNULL(is_deleted, 0) = 0 AND IFNULL(is_void, 0) = 0 ");
         if (from != null)
             sql.append("AND invoice_date >= ? ");
         if (to != null)
@@ -669,16 +671,16 @@ public class ClientLedgerController implements Initializable {
         sql.append("UNION ALL ");
 
         // Payments
-        sql.append("SELECT p.uuid as txn_id, p.payment_date as txn_date, ");
+        sql.append("SELECT p.uuid as txn_id, p.payment_date as txn_date, p.created_at as created_ts, ");
         sql.append("COALESCE(");
-        sql.append("  (SELECT GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid), ");
+        sql.append("  (SELECT GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid AND COALESCE(a.is_deleted, 0) = 0), ");
         sql.append("  CASE WHEN p.type = 'Refund' THEN 'Advance Refund' ELSE 'Advance' END");
         sql.append(") as ref, ");
         sql.append("UPPER(p.type) as type, ");
         sql.append("p.method as mode, ");
         sql.append("p.amount as debit, 0 as credit, 'SUCCESS' as status, '' as payment_status, ");
         sql.append("(SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'receipt_no') as receipt_no ");
-        sql.append("FROM payments p WHERE p.client_uuid = ? ");
+        sql.append("FROM payments p WHERE p.client_uuid = ? AND IFNULL(p.is_deleted, 0) = 0 ");
         if (from != null)
             sql.append("AND p.payment_date >= ? ");
         if (to != null)
@@ -687,7 +689,7 @@ public class ClientLedgerController implements Initializable {
         sql.append("UNION ALL ");
 
         // Credit / Debit Notes (invoice_adjustments) — note_no in receipt_no col, invoice_no in ref col
-        sql.append("SELECT adj.uuid as txn_id, adj.date as txn_date, ");
+        sql.append("SELECT adj.uuid as txn_id, adj.date as txn_date, adj.created_at as created_ts, ");
         sql.append("inv.invoice_no as ref, ");
         sql.append("UPPER(adj.type) as type, ");
         sql.append("'-' as mode, ");
@@ -696,7 +698,7 @@ public class ClientLedgerController implements Initializable {
         sql.append("'SUCCESS' as status, '' as payment_status, adj.note_no as receipt_no ");
         sql.append("FROM invoice_adjustments adj ");
         sql.append("JOIN invoice_master inv ON adj.invoice_uuid = inv.uuid ");
-        sql.append("WHERE inv.client_uuid = ? AND IFNULL(adj.is_deleted, 0) = 0 ");
+        sql.append("WHERE inv.client_uuid = ? AND IFNULL(adj.is_deleted, 0) = 0 AND IFNULL(inv.is_deleted, 0) = 0 AND IFNULL(inv.is_void, 0) = 0 ");
         if (from != null)
             sql.append("AND adj.date >= ? ");
         if (to != null)
@@ -710,7 +712,7 @@ public class ClientLedgerController implements Initializable {
             sql.append("WHERE type IN ('PAYMENT', 'REFUND', 'CREDIT NOTE') ");
         }
 
-        sql.append("ORDER BY txn_date");
+        sql.append("ORDER BY substr(txn_date, 1, 10) ASC, CASE WHEN type = 'INVOICE' THEN 1 WHEN type = 'DEBIT NOTE' THEN 2 WHEN type = 'PAYMENT' THEN 3 ELSE 4 END ASC, created_ts ASC, txn_id ASC");
 
         double totalDebit = 0.0;
         double totalCredit = 0.0;
@@ -777,7 +779,7 @@ public class ClientLedgerController implements Initializable {
                 String formattedDate = dateStr;
                 try {
                     if (dateStr != null && !dateStr.isBlank()) {
-                        String d = dateStr.contains(" ") ? dateStr.split(" ")[0] : dateStr;
+                        String d = dateStr.length() >= 10 ? dateStr.substring(0, 10) : dateStr;
                         formattedDate = java.time.LocalDate.parse(d).format(java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy"));
                     }
                 } catch (Exception e) {}
@@ -829,12 +831,29 @@ public class ClientLedgerController implements Initializable {
 
     private void updateRecordCount() {
         if (recordCountLabel != null) {
-            recordCountLabel.setText(ledgerData.size() + " Records");
+            int count = filteredData != null ? filteredData.size() : ledgerData.size();
+            recordCountLabel.setText(count + " Records");
         }
     }
 
     private void filterList(String query) {
-        // Implementation for search filtering if needed
+        if (filteredData == null) return;
+        if (query == null || query.isBlank()) {
+            filteredData.setPredicate(entry -> true);
+        } else {
+            String lowerCaseFilter = query.toLowerCase().trim();
+            filteredData.setPredicate(entry -> {
+                if (entry.getReference() != null && entry.getReference().toLowerCase().contains(lowerCaseFilter)) return true;
+                if (entry.getReceiptNo() != null && entry.getReceiptNo().toLowerCase().contains(lowerCaseFilter)) return true;
+                if (entry.getType() != null && entry.getType().toLowerCase().contains(lowerCaseFilter)) return true;
+                if (entry.getMode() != null && entry.getMode().toLowerCase().contains(lowerCaseFilter)) return true;
+                if (entry.getStatus() != null && entry.getStatus().toLowerCase().contains(lowerCaseFilter)) return true;
+                if (entry.getDate() != null && entry.getDate().contains(lowerCaseFilter)) return true;
+                return false;
+            });
+        }
+        updateTableHeight();
+        updateRecordCount();
     }
 
     // --- Inner Classes ---

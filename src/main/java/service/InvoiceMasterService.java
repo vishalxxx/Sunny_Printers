@@ -74,6 +74,16 @@ public class InvoiceMasterService {
             inv.setPeriodTo(invoice.getToDate());
             inv.setDocumentSeries(series.name());
             inv.setSyncStatus("PENDING");
+            if (invoice.getTotalAfterTax() != null) {
+                inv.setTotalAfterTax(invoice.getTotalAfterTax());
+            } else {
+                inv.setTotalAfterTax(invoice.getGrandTotal());
+            }
+            if (invoice.getRoundOff() != null) {
+                inv.setRoundOff(invoice.getRoundOff());
+            } else {
+                inv.setRoundOff(0.0);
+            }
 
             repo.insert(con, inv);
             return new CreateOrGetResult(inv, true);
@@ -110,7 +120,7 @@ public class InvoiceMasterService {
             throw new RuntimeException("Cannot save an empty invoice.");
         }
 
-        String generatedUuid = AtomicDB.run(con -> {
+        String generatedUuid = AtomicDB.runExclusive(con -> {
             MasterDocumentSeries series = invoice.getMasterDocumentSeries();
             if (series == null) {
                 series = MasterDocumentSeries.GST_INVOICE;
@@ -135,6 +145,28 @@ public class InvoiceMasterService {
 
             inv.setFilePath(filePath);
             inv.setDocumentSeries(series.name());
+            if (invoice.getTotalAfterTax() != null) {
+                inv.setTotalAfterTax(invoice.getTotalAfterTax());
+            } else {
+                inv.setTotalAfterTax(invoice.getGrandTotal());
+            }
+            if (invoice.getRoundOff() != null) {
+                inv.setRoundOff(invoice.getRoundOff());
+            } else {
+                inv.setRoundOff(0.0);
+            }
+
+            inv.setPlaceOfSupply(invoice.getPlaceOfSupply());
+            inv.setPaymentTerms(invoice.getPaymentTerms());
+            inv.setDueDate(invoice.getDueDate());
+            inv.setVehicleDispatch(invoice.getVehicleDispatch());
+            inv.setPoNo(invoice.getPoNo());
+            inv.setPoDate(invoice.getPoDate());
+            inv.setDispatchThrough(invoice.getDispatchThrough());
+            inv.setLrTrackingNo(invoice.getLrTrackingNo());
+            inv.setRemarks(invoice.getRemarks());
+            inv.setEwayBillNo(invoice.getEwayBillNo());
+            inv.setSyncStatus("PENDING");
 
             repo.insert(con, inv);
             linkJobsToInvoice(con, inv.getUuid(), invoice);
@@ -158,6 +190,21 @@ public class InvoiceMasterService {
             InvoiceMaster existing = repo.findByInvoiceNo(con, invoice.getInvoiceNo());
 
             if (existing != null) {
+                existing.setPlaceOfSupply(invoice.getPlaceOfSupply());
+                existing.setPaymentTerms(invoice.getPaymentTerms());
+                existing.setDueDate(invoice.getDueDate());
+                existing.setVehicleDispatch(invoice.getVehicleDispatch());
+                existing.setPoNo(invoice.getPoNo());
+                existing.setPoDate(invoice.getPoDate());
+                existing.setDispatchThrough(invoice.getDispatchThrough());
+                existing.setLrTrackingNo(invoice.getLrTrackingNo());
+                existing.setRemarks(invoice.getRemarks());
+                existing.setEwayBillNo(invoice.getEwayBillNo());
+                existing.setTotalAfterTax(invoice.getTotalAfterTax() != null ? invoice.getTotalAfterTax() : invoice.getGrandTotal());
+                existing.setRoundOff(invoice.getRoundOff() != null ? invoice.getRoundOff() : 0.0);
+                
+                repo.update(con, existing);
+
                 // Link jobs to the draft created earlier
                 linkJobsToInvoice(con, existing.getUuid(), invoice);
                 return;
@@ -187,6 +234,27 @@ public class InvoiceMasterService {
             inv.setPeriodTo(to);
             inv.setFilePath(filePath);
             inv.setDocumentSeries(invoice.getMasterDocumentSeries().name());
+            if (invoice.getTotalAfterTax() != null) {
+                inv.setTotalAfterTax(invoice.getTotalAfterTax());
+            } else {
+                inv.setTotalAfterTax(invoice.getGrandTotal());
+            }
+            if (invoice.getRoundOff() != null) {
+                inv.setRoundOff(invoice.getRoundOff());
+            } else {
+                inv.setRoundOff(0.0);
+            }
+
+            inv.setPlaceOfSupply(invoice.getPlaceOfSupply());
+            inv.setPaymentTerms(invoice.getPaymentTerms());
+            inv.setDueDate(invoice.getDueDate());
+            inv.setVehicleDispatch(invoice.getVehicleDispatch());
+            inv.setPoNo(invoice.getPoNo());
+            inv.setPoDate(invoice.getPoDate());
+            inv.setDispatchThrough(invoice.getDispatchThrough());
+            inv.setLrTrackingNo(invoice.getLrTrackingNo());
+            inv.setRemarks(invoice.getRemarks());
+            inv.setEwayBillNo(invoice.getEwayBillNo());
 
             repo.insert(con, inv);
             linkJobsToInvoice(con, inv.getUuid(), invoice);
@@ -281,6 +349,27 @@ public class InvoiceMasterService {
         if (invoiceUuid == null || invoiceUuid.isBlank() || jobUuid == null || jobUuid.isBlank()) {
             return;
         }
+        
+        // 1. Existence check to prevent generating a new UUID for an existing mapping.
+        // If we push a new UUID for an existing (invoice, job) pair, Supabase will throw a unique constraint violation.
+        String checkSql = "SELECT uuid FROM invoice_job_mapping WHERE invoice_uuid = ? AND job_uuid = ?";
+        try (java.sql.PreparedStatement psCheck = con.prepareStatement(checkSql)) {
+            psCheck.setString(1, invoiceUuid.trim());
+            psCheck.setString(2, jobUuid.trim());
+            try (java.sql.ResultSet rs = psCheck.executeQuery()) {
+                if (rs.next()) {
+                    String existingUuid = rs.getString("uuid");
+                    String updateSql = "UPDATE invoice_job_mapping SET sync_status = 'PENDING', is_deleted = 0, is_active = 1, updated_at = datetime('now'), sync_version = COALESCE(sync_version, 1) + 1 WHERE uuid = ?";
+                    try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateSql)) {
+                        psUpdate.setString(1, existingUuid);
+                        psUpdate.executeUpdate();
+                    }
+                    return; // Successfully updated existing, skip insert
+                }
+            }
+        }
+
+        // 2. Insert new mapping
         String sql = """
                 INSERT INTO invoice_job_mapping (
                   uuid, invoice_uuid, job_uuid, sync_status, sync_version, is_deleted, is_active, created_at, updated_at
@@ -288,10 +377,13 @@ public class InvoiceMasterService {
                 ON CONFLICT(invoice_uuid, job_uuid) DO UPDATE SET
                   sync_status = 'PENDING',
                   sync_version = COALESCE(invoice_job_mapping.sync_version, 1) + 1,
-                  updated_at = datetime('now')
+                  updated_at = datetime('now'),
+                  is_deleted = 0,
+                  is_active = 1
                 """;
         try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, ClientIdentifiers.newUuidV7String());
+            String deterministicUuid = java.util.UUID.nameUUIDFromBytes((invoiceUuid.trim() + "_" + jobUuid.trim()).getBytes(java.nio.charset.StandardCharsets.UTF_8)).toString();
+            ps.setString(1, deterministicUuid);
             ps.setString(2, invoiceUuid.trim());
             ps.setString(3, jobUuid.trim());
             ps.executeUpdate();
@@ -426,7 +518,7 @@ public class InvoiceMasterService {
      * =========================================================
      */
     public void registerPayment(String invoiceUuid, double amount, double totalDue) {
-        AtomicDB.runVoid(con -> {
+        AtomicDB.runExclusiveVoid(con -> {
             String status = amount >= totalDue ? "PAID" : "PARTIAL_PAID";
             repo.updatePayment(
                     con,
@@ -453,7 +545,7 @@ public class InvoiceMasterService {
             String type,
             String filePath) {
 
-        AtomicDB.runVoid(con -> {
+        AtomicDB.runExclusiveVoid(con -> {
 
             for (Invoice invoice : invoiceMap.values()) {
                 // Skip clients with no jobs (Enforce: No empty invoices)
@@ -484,6 +576,16 @@ public class InvoiceMasterService {
                 inv.setPeriodTo(to);
                 inv.setFilePath(filePath);
                 inv.setDocumentSeries(invoice.getMasterDocumentSeries().name());
+                if (invoice.getTotalAfterTax() != null) {
+                    inv.setTotalAfterTax(invoice.getTotalAfterTax());
+                } else {
+                    inv.setTotalAfterTax(invoice.getGrandTotal());
+                }
+                if (invoice.getRoundOff() != null) {
+                    inv.setRoundOff(invoice.getRoundOff());
+                } else {
+                    inv.setRoundOff(0.0);
+                }
 
                 repo.insert(con, inv);
                 linkJobsToInvoice(con, inv.getUuid(), invoice);
@@ -498,7 +600,7 @@ public class InvoiceMasterService {
      * =========================================================
      */
     public void voidInvoice(String invoiceUuid, String reason) {
-        AtomicDB.runVoid(con -> {
+        AtomicDB.runExclusiveVoid(con -> {
             repo.voidInvoice(con, invoiceUuid, reason, LocalDate.now());
             unlinkJobsFromInvoice(con, invoiceUuid);
         });
@@ -660,12 +762,22 @@ public class InvoiceMasterService {
     }
 
     public void recalculateInvoiceTotals(java.sql.Connection con, String invoiceUuid) throws Exception {
-        InvoiceMaster inv = repo.findByUuid(con, invoiceUuid);
-        if (inv == null) {
-            return;
+        boolean localCon = false;
+        if (con == null) {
+            con = utils.DBConnection.getConnection();
+            localCon = true;
         }
+        
+        try {
+            InvoiceMaster inv = repo.findByUuid(con, invoiceUuid);
+            if (inv == null) {
+                return;
+            }
 
-        boolean isGst = model.MasterDocumentSeries.GST_INVOICE.name().equals(inv.getDocumentSeries()) || !"Performa Bills".equalsIgnoreCase(inv.getType());
+        boolean isProforma = (inv.getDocumentSeries() != null && ("PROFORMA_INVOICE".equalsIgnoreCase(inv.getDocumentSeries()) || "PROFORMA".equalsIgnoreCase(inv.getDocumentSeries())))
+                || (inv.getType() != null && (inv.getType().toUpperCase().contains("PROFORMA") || inv.getType().toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(inv.getType()) || "DATE_RANGE".equalsIgnoreCase(inv.getType()) || inv.getType().toUpperCase().contains("MONTHLY")))
+                || (inv.getInvoiceNo() != null && inv.getInvoiceNo().toUpperCase().contains("/PI/"));
+        boolean isGst = !isProforma;
 
         boolean intra = true;
         repository.ClientRepository clientRepo = new repository.ClientRepository();
@@ -674,6 +786,9 @@ public class InvoiceMasterService {
             String companyGst = utils.CompanyProfile.getGst();
             String buyerGst = client.getGst();
             String companyCode = extractStateCode(companyGst);
+            if (companyCode.isEmpty()) {
+                companyCode = "07";
+            }
             String buyerCode = extractStateCode(buyerGst);
             if (!companyCode.isEmpty() && !buyerCode.isEmpty()) {
                 intra = companyCode.equals(buyerCode);
@@ -696,7 +811,12 @@ public class InvoiceMasterService {
         }
 
         if (activeJobUuids.isEmpty()) {
-            String updateInvStatusSql = "UPDATE invoice_master SET status = 'CANCELLED', payment_status = 'Void', amount = 0, due_amount = 0, sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+            String deallocSql = "UPDATE payment_allocations SET is_deleted = 1, sync_status = 'PENDING', updated_at = datetime('now') WHERE invoice_uuid = ?";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(deallocSql)) {
+                ps.setString(1, invoiceUuid);
+                ps.executeUpdate();
+            }
+            String updateInvStatusSql = "UPDATE invoice_master SET status = 'CANCELLED', payment_status = 'Void', amount = 0, paid_amount = 0, due_amount = 0, sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
             try (java.sql.PreparedStatement ps = con.prepareStatement(updateInvStatusSql)) {
                 ps.setString(1, invoiceUuid);
                 ps.executeUpdate();
@@ -745,6 +865,8 @@ public class InvoiceMasterService {
         } else {
             newAmount = taxable;
         }
+        double newTotalAfterTax = isGst ? (taxable + totalTax) : taxable;
+        double newRoundOff = newAmount - newTotalAfterTax;
 
         if (inv.getPaidAmount() > newAmount) {
             double excess = inv.getPaidAmount() - newAmount;
@@ -790,6 +912,8 @@ public class InvoiceMasterService {
               amount = ?,
               due_amount = ?,
               payment_status = ?,
+              total_after_tax = ?,
+              round_off = ?,
               sync_status = 'PENDING',
               updated_at = datetime('now')
             WHERE uuid = ?
@@ -798,7 +922,9 @@ public class InvoiceMasterService {
             ps.setDouble(1, newAmount);
             ps.setDouble(2, newDue);
             ps.setString(3, newPayStatus);
-            ps.setString(4, invoiceUuid);
+            ps.setDouble(4, newTotalAfterTax);
+            ps.setDouble(5, newRoundOff);
+            ps.setString(6, invoiceUuid);
             ps.executeUpdate();
         }
 
@@ -807,14 +933,22 @@ public class InvoiceMasterService {
             try {
                 service.InvoiceBuilderService builder = new service.InvoiceBuilderService();
                 model.Invoice full = builder.buildInvoiceFromMasterForPdfExport(invoiceUuid);
-                if (model.MasterDocumentSeries.GST_INVOICE == full.getMasterDocumentSeries()) {
-                    new service.GstPdfInvoiceService().generateGstInvoice(full);
-                } else {
+                boolean isProformaPdf = (full.getMasterDocumentSeries() == model.MasterDocumentSeries.PROFORMA_INVOICE)
+                                       || (full.getInvoiceType() != null && (full.getInvoiceType().toUpperCase().contains("PROFORMA") || full.getInvoiceType().toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(full.getInvoiceType()) || "DATE_RANGE".equalsIgnoreCase(full.getInvoiceType()) || full.getInvoiceType().toUpperCase().contains("MONTHLY")))
+                                       || (full.getInvoiceNo() != null && full.getInvoiceNo().toUpperCase().contains("/PI/"));
+                if (isProformaPdf) {
                     new service.PdfInvoiceService().generateSingleInvoicePDF(full);
+                } else {
+                    new service.GstPdfInvoiceService().generateGstInvoice(full);
                 }
             } catch (Exception ex) {
                 System.err.println("Failed to regenerate invoice PDF: " + ex.getMessage());
                 ex.printStackTrace();
+            }
+        }
+        } finally {
+            if (localCon && con != null) {
+                con.close();
             }
         }
     }
@@ -829,7 +963,10 @@ public class InvoiceMasterService {
             return;
         }
 
-        boolean isGst = model.MasterDocumentSeries.GST_INVOICE.name().equals(inv.getDocumentSeries()) || !"Performa Bills".equalsIgnoreCase(inv.getType());
+        boolean isProforma = (inv.getDocumentSeries() != null && ("PROFORMA_INVOICE".equalsIgnoreCase(inv.getDocumentSeries()) || "PROFORMA".equalsIgnoreCase(inv.getDocumentSeries())))
+                || (inv.getType() != null && (inv.getType().toUpperCase().contains("PROFORMA") || inv.getType().toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(inv.getType()) || "DATE_RANGE".equalsIgnoreCase(inv.getType()) || inv.getType().toUpperCase().contains("MONTHLY")))
+                || (inv.getInvoiceNo() != null && inv.getInvoiceNo().toUpperCase().contains("/PI/"));
+        boolean isGst = !isProforma;
 
         boolean intra = true;
         repository.ClientRepository clientRepo = new repository.ClientRepository();
@@ -838,6 +975,9 @@ public class InvoiceMasterService {
             String companyGst = utils.CompanyProfile.getGst();
             String buyerGst = client.getGst();
             String companyCode = extractStateCode(companyGst);
+            if (companyCode.isEmpty()) {
+                companyCode = "07";
+            }
             String buyerCode = extractStateCode(buyerGst);
             if (!companyCode.isEmpty() && !buyerCode.isEmpty()) {
                 intra = companyCode.equals(buyerCode);
@@ -1119,7 +1259,10 @@ public class InvoiceMasterService {
             if (inv != null) {
                 if ("CANCELLED".equalsIgnoreCase(newStatus)) {
                     String invNo = inv.getInvoiceNo();
-                    if (!"Performa Bills".equalsIgnoreCase(inv.getType())) {
+                    boolean isProforma = (inv.getDocumentSeries() != null && ("PROFORMA_INVOICE".equalsIgnoreCase(inv.getDocumentSeries()) || "PROFORMA".equalsIgnoreCase(inv.getDocumentSeries())))
+                                       || (inv.getType() != null && (inv.getType().toUpperCase().contains("PROFORMA") || inv.getType().toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(inv.getType()) || "DATE_RANGE".equalsIgnoreCase(inv.getType()) || inv.getType().toUpperCase().contains("MONTHLY")))
+                                       || (inv.getInvoiceNo() != null && inv.getInvoiceNo().toUpperCase().contains("/PI/"));
+                    if (!isProforma) {
                         if ("DRAFT".equals(inv.getStatus()) || (invNo != null && invNo.startsWith("TEMP-"))) {
                             unlinkJobsFromInvoice(con, inv.getUuid());
                             repo.deleteInvoice(con, inv.getUuid());
@@ -1149,7 +1292,7 @@ public class InvoiceMasterService {
     }
 
     public String finalizeInvoice(String invoiceUuid) {
-        String finalNo = AtomicDB.run(con -> {
+        String finalNo = AtomicDB.runExclusive(con -> {
             InvoiceMaster inv = repo.findByUuid(con, invoiceUuid);
             if (inv == null) {
                 throw new RuntimeException("Invoice not found: " + invoiceUuid);
@@ -1205,6 +1348,12 @@ public class InvoiceMasterService {
             repo.update(con, inv);
 
             updateJobsStatusByInvoice(con, invoiceUuid, "Invoiced");
+
+            try {
+                recalculateInvoiceTotals(con, invoiceUuid);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to recalculate totals during finalization: " + e.getMessage(), e);
+            }
 
             return resolvedNo;
         });
@@ -1277,6 +1426,8 @@ public class InvoiceMasterService {
             newInv.setDueAmount(old.getAmount());
             newInv.setParentInvoiceUuid(rootUuid);
             newInv.setDocumentSeries(old.getDocumentSeries());
+            newInv.setTotalAfterTax(old.getTotalAfterTax());
+            newInv.setRoundOff(old.getRoundOff());
 
             // 2. Mark OLD as REVISED in DB first to clear unique constraint for the new DRAFT
             // 🔥 Requirement: Revised status turning payment status to CLOSED and Dues/Amount to 0
@@ -1329,7 +1480,7 @@ public class InvoiceMasterService {
      * UPDATE FILTERED INVOICES (FOR VIEW INVOICES SCREEN)
      * =========================================================
      */
-    public List<InvoiceMaster> getFilteredInvoices(String clientId, String status, LocalDate start, LocalDate end, String invoiceNo, String documentSeries) {
-        return AtomicDB.run(con -> repo.findFiltered(con, clientId, status, start, end, invoiceNo, documentSeries));
+    public List<InvoiceMaster> getFilteredInvoices(String clientId, String paymentStatus, String invoiceStatus, LocalDate start, LocalDate end, String invoiceNo, String documentSeries) {
+        return AtomicDB.run(con -> repo.findFiltered(con, clientId, paymentStatus, invoiceStatus, start, end, invoiceNo, documentSeries));
     }
 }

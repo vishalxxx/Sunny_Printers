@@ -3,7 +3,7 @@ package model;
 import java.time.LocalDate;
 
 public class InvoiceAdjustment {
-    private int id;
+    private String uuid;
     private String invoiceUuid;
     private String type;
     private String noteNo;
@@ -11,8 +11,8 @@ public class InvoiceAdjustment {
     private String reason;
     private LocalDate date;
 
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    public String getUuid() { return uuid; }
+    public void setUuid(String uuid) { this.uuid = uuid; }
 
     public String getInvoiceUuid() { return invoiceUuid; }
     public void setInvoiceUuid(String invoiceUuid) { this.invoiceUuid = invoiceUuid; }

@@ -2,7 +2,7 @@ package model;
 
 public class CompanyDetails {
 
-	private int id;
+	private String uuid;
 	private String tradeName;
 	private String address;
 	private String phone;
@@ -13,12 +13,12 @@ public class CompanyDetails {
 	private boolean isDefault;
 	private boolean isActive;
 
-	public int getId() {
-		return id;
+	public String getUuid() {
+		return uuid;
 	}
 
-	public void setId(int id) {
-		this.id = id;
+	public void setUuid(String uuid) {
+		this.uuid = uuid;
 	}
 
 	public String getTradeName() {

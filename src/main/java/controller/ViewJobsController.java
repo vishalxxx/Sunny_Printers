@@ -484,7 +484,25 @@ public class ViewJobsController {
                 }
             } else {
                 InvoiceMaster invoice = invoiceService.getInvoiceByUuid(invUuid);
-                if (invoice == null || invoice.resolveDocumentSeries() != model.MasterDocumentSeries.PROFORMA_INVOICE) {
+                boolean isProforma = false;
+                if (invoice != null) {
+                    String ds = invoice.getDocumentSeries();
+                    String tp = invoice.getType();
+                    isProforma = (ds != null && "PROFORMA_INVOICE".equalsIgnoreCase(ds))
+                              || (tp != null && (tp.toUpperCase().contains("PROFORMA") || tp.toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(tp) || "DATE_RANGE".equalsIgnoreCase(tp) || tp.toUpperCase().contains("MONTHLY")));
+                }
+                if (invoice == null || !isProforma) {
+                    if (invoice != null) {
+                        String stat = invoice.getStatus() != null ? invoice.getStatus().toUpperCase() : "";
+                        if (!stat.isEmpty() && !stat.startsWith("DRAFT")) {
+                            Alert blockAlert = new Alert(Alert.AlertType.ERROR);
+                            blockAlert.setTitle("Action Blocked");
+                            blockAlert.setHeaderText("Cannot Cancel Job");
+                            blockAlert.setContentText("Job " + jobsForInv.get(0).getJobNo() + " is linked to a GST Invoice (" + invoice.getInvoiceNo() + ") that is " + stat + ". Cancellation is blocked.");
+                            blockAlert.showAndWait();
+                            continue;
+                        }
+                    }
                     for (Job job : jobsForInv) {
                         jobService.updateJobStatus(job.getUuid(), "Cancelled");
                         job.setStatus("Cancelled");
@@ -497,6 +515,15 @@ public class ViewJobsController {
                         ex.printStackTrace();
                     }
                 } else {
+                    String stat = invoice.getStatus() != null ? invoice.getStatus().toUpperCase() : "";
+                    if ("REVISED".equals(stat) || "CANCELLED".equals(stat) || "VOID".equals(stat)) {
+                        Alert blockAlert = new Alert(Alert.AlertType.ERROR);
+                        blockAlert.setTitle("Action Blocked");
+                        blockAlert.setHeaderText("Cannot Cancel Job");
+                        blockAlert.setContentText("Job " + jobsForInv.get(0).getJobNo() + " is linked to a Proforma Invoice (" + invoice.getInvoiceNo() + ") that is " + stat + ". Cancellation is blocked.");
+                        blockAlert.showAndWait();
+                        continue;
+                    }
                     List<Job> allLinkedJobs = jobService.getJobsByInvoice(invoice);
                     long activeCount = allLinkedJobs.stream()
                             .filter(j -> !"Cancelled".equalsIgnoreCase(j.getStatus()))
@@ -1089,12 +1116,27 @@ public class ViewJobsController {
                 if (!isInvoiced) {
                     root.getChildren().add(primaryBtn);
                 }
-                boolean canEdit = !isInvoiced && !isCancelled;
+                boolean isLockedInvoice = false;
+                if (job.getInvoiceUuid() != null && !job.getInvoiceUuid().isBlank()) {
+                    String invStatus = job.getInvoiceStatus() != null ? job.getInvoiceStatus().trim().toUpperCase() : "";
+                    String invType = job.getInvoiceType() != null ? job.getInvoiceType().toUpperCase() : "";
+                    boolean isProforma = invType.contains("PROFORMA") || invType.contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(invType) || "DATE_RANGE".equalsIgnoreCase(invType) || invType.contains("MONTHLY");
+                    if (isProforma) {
+                        if ("REVISED".equals(invStatus) || "CANCELLED".equals(invStatus) || "VOID".equals(invStatus)) {
+                            isLockedInvoice = true;
+                        }
+                    } else {
+                        if (!invStatus.isEmpty() && !invStatus.startsWith("DRAFT")) {
+                            isLockedInvoice = true;
+                        }
+                    }
+                }
+                boolean canEdit = !isCancelled && !isLockedInvoice;
                 if (canEdit) {
                     root.getChildren().add(eBtn);
                 }
                 root.getChildren().add(mailBtn);
-                boolean canCancel = !isInvoiced && !isCancelled;
+                boolean canCancel = !isCancelled && !isLockedInvoice;
                 if (canCancel) {
                     root.getChildren().add(cancelBtn);
                 }
@@ -2140,8 +2182,23 @@ public class ViewJobsController {
             return;
         }
         String status = job.getStatus() != null ? job.getStatus().toLowerCase() : "";
-        if (status.contains("invoice") || status.contains("invoic")) {
-            toast("❌ Invoiced jobs cannot be edited.");
+        boolean isLockedInvoice = false;
+        if (job.getInvoiceUuid() != null && !job.getInvoiceUuid().isBlank()) {
+            String invStatus = job.getInvoiceStatus() != null ? job.getInvoiceStatus().trim().toUpperCase() : "";
+            String invType = job.getInvoiceType() != null ? job.getInvoiceType().toUpperCase() : "";
+            boolean isProforma = invType.contains("PROFORMA") || invType.contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(invType) || "DATE_RANGE".equalsIgnoreCase(invType) || invType.contains("MONTHLY");
+            if (isProforma) {
+                if ("REVISED".equals(invStatus) || "CANCELLED".equals(invStatus) || "VOID".equals(invStatus)) {
+                    isLockedInvoice = true;
+                }
+            } else {
+                if (!invStatus.isEmpty() && !invStatus.startsWith("DRAFT")) {
+                    isLockedInvoice = true;
+                }
+            }
+        }
+        if (isLockedInvoice) {
+            toast("❌ Invoiced jobs with finalized invoices cannot be edited.");
             return;
         }
         if (status.contains("cancel")) {
@@ -2201,7 +2258,19 @@ public class ViewJobsController {
             if (inv != null) {
                 Platform.runLater(() -> {
                     ViewInvoiceJobsController.pendingPrefillInvoice = inv;
-                    ViewInvoiceJobsController.viewOnlyMode = true;
+                    String stat = inv.getStatus() != null ? inv.getStatus().toUpperCase() : "";
+                    String ds = inv.getDocumentSeries();
+                    String tp = inv.getType();
+                    boolean isProforma = (ds != null && ("PROFORMA_INVOICE".equalsIgnoreCase(ds) || "PROFORMA".equalsIgnoreCase(ds)))
+                                       || (tp != null && (tp.toUpperCase().contains("PROFORMA") || tp.toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(tp) || "DATE_RANGE".equalsIgnoreCase(tp) || tp.toUpperCase().contains("MONTHLY")))
+                                       || (inv.getInvoiceNo() != null && inv.getInvoiceNo().toUpperCase().contains("/PI/"));
+                    boolean isLocked = false;
+                    if (isProforma) {
+                        isLocked = "REVISED".equals(stat) || "CANCELLED".equals(stat) || "VOID".equals(stat);
+                    } else {
+                        isLocked = !stat.isEmpty() && !"DRAFT".equals(stat) && !stat.contains("DRAFT");
+                    }
+                    ViewInvoiceJobsController.viewOnlyMode = isLocked;
                     MainController.getInstance().loadViewInvoiceJobs();
                 });
             }

@@ -92,7 +92,7 @@ public final class SyncConflictResolver {
             Instant localInst = parseTimestamp(localUpdatedAt);
             Instant remoteInst = parseTimestamp(remoteUpdatedAt);
 
-            if (remoteInst.isAfter(localInst)) {
+            if (remoteInst.toEpochMilli() - localInst.toEpochMilli() > 1000) {
                 logConflict(table, uuid, localUpdatedAt, remoteUpdatedAt, "Local push rejected; remote is newer", remoteObj.toString(), "LAST_WRITE_WINS_REMOTE_WINS");
 
                 var fullRes = http.get(endpoint, "uuid=eq." + uuid + "&select=*");
@@ -101,6 +101,19 @@ public final class SyncConflictResolver {
                     if (fullRoot.isJsonArray() && fullRoot.getAsJsonArray().size() > 0) {
                         JsonObject fullRemote = fullRoot.getAsJsonArray().get(0).getAsJsonObject();
                         upsertRemoteObjectToLocal(conn, table, fullRemote, cols);
+                        // CRITICAL FIX: Explicitly mark as SYNCED immediately after conflict resolution.
+                        // upsertRemoteObjectToLocal uses INSERT OR REPLACE, so sync_status is set to SYNCED inside it.
+                        // But we also issue a targeted UPDATE here to handle edge cases where the INSERT OR REPLACE
+                        // might not have included the sync_status column (e.g., if column is absent in remote response).
+                        // This prevents any concurrent push thread from re-pushing the stale local value.
+                        try (PreparedStatement markPs = conn.prepareStatement(
+                                "UPDATE " + table + " SET sync_status='SYNCED', synced_at=datetime('now') WHERE uuid=?")) {
+                            markPs.setString(1, uuid);
+                            markPs.executeUpdate();
+                            System.out.println("[SyncConflictResolver] Marked " + table + " " + uuid + " as SYNCED after remote-wins resolution.");
+                        } catch (Exception markEx) {
+                            System.err.println("[SyncConflictResolver] Failed to mark " + table + " " + uuid + " as SYNCED: " + markEx.getMessage());
+                        }
                     }
                 }
                 return true;
@@ -187,5 +200,137 @@ public final class SyncConflictResolver {
             }
         }
         return cols;
+    }
+
+    public static boolean validateAndResolveDoubleSpend(Connection con, String allocUuid, String paymentUuid, 
+                                                        double allocatedAmount, boolean isIncomingSync, 
+                                                        String remoteUpdatedAt, String remoteDataJson) throws Exception {
+        String clientUuid = null;
+        String paySql = "SELECT client_uuid FROM payments WHERE uuid = ?";
+        try (PreparedStatement ps = con.prepareStatement(paySql)) {
+            ps.setString(1, paymentUuid);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    clientUuid = rs.getString(1);
+                }
+            }
+        }
+        if (clientUuid == null) {
+            return false;
+        }
+
+        double totalPayments = 0;
+        double totalAllocated = 0;
+
+        String sqlPay = "SELECT SUM(amount) FROM payments WHERE client_uuid = ?";
+        try (PreparedStatement ps = con.prepareStatement(sqlPay)) {
+            ps.setString(1, clientUuid);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) totalPayments = rs.getDouble(1);
+            }
+        }
+
+        String sqlAlloc = """
+            SELECT SUM(pa.allocated_amount) 
+            FROM payment_allocations pa
+            JOIN payments p ON pa.payment_uuid = p.uuid
+            WHERE p.client_uuid = ? AND COALESCE(pa.is_deleted, 0) = 0 AND pa.uuid <> ?
+        """;
+        try (PreparedStatement ps = con.prepareStatement(sqlAlloc)) {
+            ps.setString(1, clientUuid);
+            ps.setString(2, allocUuid);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) totalAllocated = rs.getDouble(1);
+            }
+        }
+
+        double available = totalPayments - totalAllocated;
+
+        if (available - allocatedAmount < -0.001) {
+            System.out.println("[Double-Spend Prevention] Rejecting allocation " + allocUuid + " for client " + clientUuid + ". Available: " + available + ", requested: " + allocatedAmount);
+            
+            logConflict(
+                "payment_allocations",
+                allocUuid,
+                LocalDateTime.now().toString(),
+                remoteUpdatedAt,
+                "Local double-spend prevention: rejected allocation due to negative client balance",
+                remoteDataJson,
+                "DOUBLE_SPEND_REJECTION"
+            );
+
+            String localUpdate;
+            if (!isIncomingSync) {
+                localUpdate = "UPDATE payment_allocations SET is_deleted = 1, sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+            } else {
+                localUpdate = "UPDATE payment_allocations SET is_deleted = 1, sync_status = 'SYNCED', updated_at = datetime('now') WHERE uuid = ?";
+            }
+            try (PreparedStatement ps = con.prepareStatement(localUpdate)) {
+                ps.setString(1, allocUuid);
+                ps.executeUpdate();
+            }
+
+            String invoiceUuid = null;
+            String invSql = "SELECT invoice_uuid FROM payment_allocations WHERE uuid = ?";
+            try (PreparedStatement ps = con.prepareStatement(invSql)) {
+                ps.setString(1, allocUuid);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        invoiceUuid = rs.getString(1);
+                    }
+                }
+            }
+
+            // Insert into invoice_history
+            if (invoiceUuid != null) {
+                String invDetailsSql = "SELECT invoice_no, client_uuid, client_name, invoice_date, amount, type FROM invoice_master WHERE uuid = ?";
+                String invNo = "";
+                String clId = clientUuid;
+                String clName = "";
+                String invDate = "";
+                double invAmt = 0.0;
+                String invType = "";
+                try (PreparedStatement ps = con.prepareStatement(invDetailsSql)) {
+                    ps.setString(1, invoiceUuid);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            invNo = rs.getString("invoice_no");
+                            clName = rs.getString("client_name");
+                            invDate = rs.getString("invoice_date");
+                            invAmt = rs.getDouble("amount");
+                            invType = rs.getString("type");
+                        }
+                    }
+                }
+
+                String histSql = """
+                    INSERT INTO invoice_history (invoice_no, client_id, client_name, invoice_date, amount, type, status, file_path)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+                try (PreparedStatement ps = con.prepareStatement(histSql)) {
+                    ps.setString(1, invNo);
+                    ps.setString(2, clId);
+                    ps.setString(3, clName);
+                    ps.setString(4, invDate);
+                    ps.setDouble(5, invAmt);
+                    ps.setString(6, "DOUBLE_SPEND_REJECTION");
+                    ps.setString(7, "REJECTED: Allocation " + allocUuid + " failed validation (negative client balance)");
+                    ps.setString(8, LocalDateTime.now().toString());
+                    ps.executeUpdate();
+                }
+            }
+
+            if (invoiceUuid != null) {
+                new service.InvoiceMasterService().recalculateInvoiceTotals(con, invoiceUuid);
+            }
+
+            try {
+                controller.MainController.showSyncConflictNotification();
+            } catch (Throwable ignored) {}
+
+            return true;
+        }
+
+        return false;
     }
 }

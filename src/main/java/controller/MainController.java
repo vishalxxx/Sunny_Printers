@@ -61,6 +61,7 @@ public class MainController implements Initializable {
 	@FXML
 	private StackPane sidebarStack;
 	private Timeline anim;
+	private boolean isSidebarExpanded = false;
 
 	@FXML
 	private Label lblDashboardGreeting;
@@ -492,26 +493,35 @@ public class MainController implements Initializable {
 			clip.heightProperty().bind(sidebarStack.heightProperty());
 			sidebarStack.setClip(clip);
 
-			// Collapsable Sidebar Code
-			// ✅ Start in collapsed state
+			// Smooth Collapsable Sidebar (Ultra-fast, non-blocking)
 			sidebarStack.setPrefWidth(COLLAPSED_WIDTH);
 			applyCollapsedStyleToAll(true);
-			sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
-			sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
-			// ✅ Hover expand
-			sidebarStack.setOnMouseEntered(e -> expandSidebar());
+			if (!sidebarStack.getStyleClass().contains("sidebar-collapsed-bg")) {
+				sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
+				sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
+			}
+			isSidebarExpanded = false;
 
-			// ✅ Mouse exit collapse
-			sidebarStack.setOnMouseExited(e -> {
-				if (isMouseReallyExited(e)) {
-					collapseSidebar();
+			sidebarStack.setOnMouseEntered(e -> {
+				if (!isSidebarExpanded) {
+					expandSidebar();
 				}
 			});
 
-			// Force layout update during animation to ensure center content shifts smoothly
-			sidebarStack.widthProperty().addListener((obs, oldV, newV) -> {
-				if (root != null) {
-					root.requestLayout();
+			sidebarStack.setOnMouseExited(e -> {
+				if (isSidebarExpanded) {
+					collapseSidebar();
+				}
+			});
+		}
+
+		if (root != null) {
+			root.addEventFilter(javafx.scene.input.MouseEvent.MOUSE_MOVED, e -> {
+				if (isSidebarExpanded && sidebarStack != null) {
+					javafx.geometry.Bounds b = sidebarStack.localToScreen(sidebarStack.getBoundsInLocal());
+					if (b != null && !b.contains(e.getScreenX(), e.getScreenY())) {
+						collapseSidebar();
+					}
 				}
 			});
 		}
@@ -619,6 +629,12 @@ public class MainController implements Initializable {
 
 		refreshProfileHeaderFromSession();
 		setupProfileAccountMenu();
+
+		stage.focusedProperty().addListener((obs, oldVal, isFocused) -> {
+			if (!isFocused && isSidebarExpanded) {
+				collapseSidebar();
+			}
+		});
 	}
 
 	private static User profileUser(String username, String role) {
@@ -1330,20 +1346,25 @@ public class MainController implements Initializable {
 	}
 
 	private void expandSidebar() {
-
+		isSidebarExpanded = true;
 		applyCollapsedStyleToAll(false);
 
-		sidebarStack.getStyleClass().remove("sidebar-collapsed-bg");
-		sidebarStack.getStyleClass().add("sidebar-expanded-bg");
+		if (!sidebarStack.getStyleClass().contains("sidebar-expanded-bg")) {
+			sidebarStack.getStyleClass().remove("sidebar-collapsed-bg");
+			sidebarStack.getStyleClass().add("sidebar-expanded-bg");
+		}
 
 		animateSidebarWidth(EXPANDED_WIDTH);
 	}
 
 	private void collapseSidebar() {
+		isSidebarExpanded = false;
 		collapseAllSubmenus(false); // Instant hide on sidebar collapse to avoid ghosting
 		applyCollapsedStyleToAll(true);
-		sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
-		sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
+		if (!sidebarStack.getStyleClass().contains("sidebar-collapsed-bg")) {
+			sidebarStack.getStyleClass().add("sidebar-collapsed-bg");
+			sidebarStack.getStyleClass().remove("sidebar-expanded-bg");
+		}
 
 		animateSidebarWidth(COLLAPSED_WIDTH);
 	}
@@ -2381,5 +2402,68 @@ public class MainController implements Initializable {
 	@FXML
 	private void handleSyncNow(javafx.event.ActionEvent event) {
 		service.sync.SyncCoordinator.getInstance().syncNow();
+	}
+
+	private static int activeConflictCount = 0;
+	private static HBox activeBanner = null;
+
+	public static void showSyncConflictNotification() {
+		Platform.runLater(() -> {
+			MainController mc = getInstance();
+			if (mc == null || mc.appRoot == null) {
+				return;
+			}
+			activeConflictCount++;
+			
+			if (activeBanner != null) {
+				for (javafx.scene.Node node : activeBanner.getChildren()) {
+					if (node instanceof Label lbl) {
+						lbl.setText("⚠ Sync resolved " + activeConflictCount + " payment conflicts. Click to view.");
+						break;
+					}
+				}
+				return;
+			}
+
+			HBox banner = new HBox(12);
+			banner.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+			banner.setPadding(new javafx.geometry.Insets(10, 16, 10, 16));
+			banner.setStyle("-fx-background-color: #fef3c7; -fx-border-color: #d97706; -fx-border-width: 0 0 2 0; -fx-background-radius: 4; -fx-border-radius: 4; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 4);");
+			banner.setMaxWidth(500);
+			banner.setPrefHeight(40);
+			StackPane.setAlignment(banner, javafx.geometry.Pos.TOP_CENTER);
+			StackPane.setMargin(banner, new javafx.geometry.Insets(15, 0, 0, 0));
+
+			Label label = new Label("⚠ Sync resolved " + activeConflictCount + " payment conflict. Click to view.");
+			label.setStyle("-fx-text-fill: #92400e; -fx-font-weight: bold; -fx-font-size: 13px;");
+			HBox.setHgrow(label, javafx.scene.layout.Priority.ALWAYS);
+
+			Button closeBtn = new Button("✕");
+			closeBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #92400e; -fx-font-weight: bold; -fx-font-size: 14px; -fx-cursor: hand;");
+			closeBtn.setOnAction(e -> {
+				mc.appRoot.getChildren().remove(banner);
+				activeBanner = null;
+				activeConflictCount = 0;
+			});
+
+			banner.getChildren().addAll(label, closeBtn);
+
+			banner.setOnMouseClicked(event -> {
+				if (event.getTarget() != closeBtn) {
+					mc.loadClientLedger();
+					mc.appRoot.getChildren().remove(banner);
+					activeBanner = null;
+					activeConflictCount = 0;
+				}
+			});
+
+			activeBanner = banner;
+			mc.appRoot.getChildren().add(banner);
+
+			banner.setTranslateY(-50);
+			javafx.animation.TranslateTransition transition = new javafx.animation.TranslateTransition(Duration.millis(300), banner);
+			transition.setToY(0);
+			transition.play();
+		});
 	}
 }

@@ -54,9 +54,11 @@ public class InvoiceMasterRepository {
                         last_payment_date, type, status,
                         is_void, void_reason, void_date,
                         replaced_by_invoice_uuid, parent_invoice_uuid, status_updated_by, file_path,
-                        document_series, sync_status, sync_version
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                """;
+                        document_series, sync_status, sync_version, total_after_tax, round_off,
+                    place_of_supply, payment_terms, due_date, vehicle_dispatch,
+                    po_no, po_date, dispatch_through, lr_tracking_no, remarks, eway_bill_no
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """;
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             String uuid = inv.getUuid() != null && !inv.getUuid().isBlank()
@@ -94,6 +96,20 @@ public class InvoiceMasterRepository {
             ps.setString(22, inv.getDocumentSeries());
             ps.setString(23, inv.getSyncStatus());
             ps.setInt(24, inv.getSyncVersion());
+            ps.setDouble(25, inv.getTotalAfterTax());
+            ps.setDouble(26, inv.getRoundOff());
+            
+            // New metadata columns
+            ps.setString(27, inv.getPlaceOfSupply());
+            ps.setString(28, inv.getPaymentTerms());
+            ps.setString(29, toIso(inv.getDueDate()));
+            ps.setString(30, inv.getVehicleDispatch());
+            ps.setString(31, inv.getPoNo());
+            ps.setString(32, toIso(inv.getPoDate()));
+            ps.setString(33, inv.getDispatchThrough());
+            ps.setString(34, inv.getLrTrackingNo());
+            ps.setString(35, inv.getRemarks());
+            ps.setString(36, inv.getEwayBillNo());
 
             ps.executeUpdate();
         }
@@ -171,51 +187,42 @@ public class InvoiceMasterRepository {
         return null;
     }
     
-    /** Legacy alias. */
-    public InvoiceMaster findById(Connection con, int id) throws Exception {
-        return null;
-    }
-
     /*
      * =========================================================
-     * FIND EXISTING BUSINESS INVOICE (by type - legacy)
+     * DELETE INVOICE (used for cancel rollback - no duplicate records)
      * =========================================================
      */
-    public Optional<InvoiceMaster> findActiveByClientPeriodType(
-            Connection con,
-            String clientId,
-            LocalDate from,
-            LocalDate to,
-            String type) throws Exception {
-
-        String sql = """
-                    SELECT * FROM invoice_master
-                    WHERE client_uuid = ?
-                      AND type = ?
-                      AND is_void = 0
-                      AND status IN ('DRAFT', 'FINAL')
-                      AND period_from = ?
-                      AND period_to   = ?
-                    LIMIT 1
-                """;
-
-        try (PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setString(1, clientId);
-            ps.setString(2, type);
-
-            // Use ISO strings for CHECK constraint compatibility
-            ps.setString(3, toIso(from));
-            ps.setString(4, toIso(to));
-
-            ResultSet rs = ps.executeQuery();
-
-            if (rs.next()) {
-                return Optional.of(mapRowPublic(rs));
-            }
-
-            return Optional.empty();
+    public void deleteInvoice(Connection con, String invoiceUuid) throws Exception {
+        if (invoiceUuid == null || invoiceUuid.isBlank()) {
+            return;
         }
+        String sql = "UPDATE invoice_master SET is_deleted = 1, is_active = 0, deleted_at = datetime('now'), sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, invoiceUuid);
+            ps.executeUpdate();
+        }
+        deleteInvoiceOnSupabaseAsync(invoiceUuid);
+    }
+
+    private static void deleteInvoiceOnSupabaseAsync(String invoiceUuid) {
+        if (invoiceUuid == null || invoiceUuid.isBlank()) {
+            return;
+        }
+        api.supabase.SupabaseGate.restClientIfConfigured().ifPresent(http -> java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                String v = java.net.URLEncoder.encode(invoiceUuid.trim(), java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
+                com.google.gson.JsonObject body = new com.google.gson.JsonObject();
+                body.addProperty("uuid", invoiceUuid.trim());
+                body.addProperty("is_deleted", 1);
+                body.addProperty("is_active", 0);
+                body.addProperty("sync_status", "SYNCED");
+                body.addProperty("synced_at", java.time.Instant.now().toString());
+                body.addProperty("deleted_at", java.time.Instant.now().toString());
+                http.patchJson(api.supabase.SupabaseEndpoints.INVOICE_MASTER, "uuid=eq." + v, body.toString(), "return=minimal");
+            } catch (Exception ex) {
+                System.err.println("[Supabase invoices] remote delete/patch failed for uuid=" + invoiceUuid + ": " + ex.getMessage());
+            }
+        }));
     }
 
     /*
@@ -245,47 +252,6 @@ public class InvoiceMasterRepository {
             ps.setString(5, invoiceUuid);
             ps.executeUpdate();
         }
-    }
-
-    /*
-     * =========================================================
-     * DELETE INVOICE (used for cancel rollback - no duplicate records)
-     * =========================================================
-     */
-    public void deleteInvoice(Connection con, String invoiceUuid) throws Exception {
-        if (invoiceUuid == null || invoiceUuid.isBlank()) {
-            return;
-        }
-        String sql = "UPDATE invoice_master SET is_deleted = 1, is_active = 0, deleted_at = datetime('now'), sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
-        try (PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, invoiceUuid);
-            ps.executeUpdate();
-        }
-        deleteInvoiceOnSupabaseAsync(invoiceUuid);
-    }
-    
-    /** Legacy alias. */
-    public void deleteInvoice(Connection con, int id) throws Exception {}
-
-    private static void deleteInvoiceOnSupabaseAsync(String invoiceUuid) {
-        if (invoiceUuid == null || invoiceUuid.isBlank()) {
-            return;
-        }
-        api.supabase.SupabaseGate.restClientIfConfigured().ifPresent(http -> java.util.concurrent.CompletableFuture.runAsync(() -> {
-            try {
-                String v = java.net.URLEncoder.encode(invoiceUuid.trim(), java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
-                com.google.gson.JsonObject body = new com.google.gson.JsonObject();
-                body.addProperty("uuid", invoiceUuid.trim());
-                body.addProperty("is_deleted", 1);
-                body.addProperty("is_active", 0);
-                body.addProperty("sync_status", "SYNCED");
-                body.addProperty("synced_at", java.time.Instant.now().toString());
-                body.addProperty("deleted_at", java.time.Instant.now().toString());
-                http.patchJson(api.supabase.SupabaseEndpoints.INVOICE_MASTER, "uuid=eq." + v, body.toString(), "return=minimal");
-            } catch (Exception ex) {
-                System.err.println("[Supabase invoices] remote delete/patch failed for uuid=" + invoiceUuid + ": " + ex.getMessage());
-            }
-        }));
     }
 
     /*
@@ -378,7 +344,7 @@ public class InvoiceMasterRepository {
      * FIND FILTERED INVOICES (FOR VIEW INVOICES SCREEN)
      * =========================================================
      */
-    public List<InvoiceMaster> findFiltered(Connection con, String clientId, String status, LocalDate start, LocalDate end, String invoiceNo, String documentSeries) throws Exception {
+    public List<InvoiceMaster> findFiltered(Connection con, String clientId, String paymentStatus, String invoiceStatus, LocalDate start, LocalDate end, String invoiceNo, String documentSeries) throws Exception {
         StringBuilder sql = new StringBuilder("SELECT * FROM invoice_master WHERE is_void = 0");
         List<Object> params = new ArrayList<>();
 
@@ -386,9 +352,13 @@ public class InvoiceMasterRepository {
             sql.append(" AND client_uuid = ?");
             params.add(clientId.trim());
         }
-        if (status != null && !status.equalsIgnoreCase("All") && !status.trim().isEmpty()) {
+        if (paymentStatus != null && !paymentStatus.equalsIgnoreCase("All") && !paymentStatus.trim().isEmpty()) {
             sql.append(" AND UPPER(payment_status) = ?");
-            params.add(status.trim().toUpperCase());
+            params.add(paymentStatus.trim().toUpperCase());
+        }
+        if (invoiceStatus != null && !invoiceStatus.equalsIgnoreCase("All") && !invoiceStatus.trim().isEmpty()) {
+            sql.append(" AND UPPER(status) = ?");
+            params.add(invoiceStatus.trim().toUpperCase());
         }
         if (invoiceNo != null && !invoiceNo.trim().isEmpty()) {
             String needle = DocumentNumbering.stripLeadingHash(invoiceNo.trim());
@@ -481,6 +451,20 @@ public class InvoiceMasterRepository {
         inv.setSyncVersion(rs.getInt("sync_version"));
         inv.setCreatedAt(rs.getString("created_at"));
         inv.setUpdatedAt(rs.getString("updated_at"));
+
+        inv.setTotalAfterTax(rs.getDouble("total_after_tax"));
+        inv.setRoundOff(rs.getDouble("round_off"));
+
+        inv.setPlaceOfSupply(readOptionalString(rs, "place_of_supply"));
+        inv.setPaymentTerms(readOptionalString(rs, "payment_terms"));
+        inv.setDueDate(parseDate(readOptionalString(rs, "due_date")));
+        inv.setVehicleDispatch(readOptionalString(rs, "vehicle_dispatch"));
+        inv.setPoNo(readOptionalString(rs, "po_no"));
+        inv.setPoDate(parseDate(readOptionalString(rs, "po_date")));
+        inv.setDispatchThrough(readOptionalString(rs, "dispatch_through"));
+        inv.setLrTrackingNo(readOptionalString(rs, "lr_tracking_no"));
+        inv.setRemarks(readOptionalString(rs, "remarks"));
+        inv.setEwayBillNo(readOptionalString(rs, "eway_bill_no"));
         
         return inv;
     }
@@ -600,6 +584,18 @@ public class InvoiceMasterRepository {
                         void_reason  = ?,
                         void_date    = ?,
                         document_series = ?,
+                        total_after_tax = ?,
+                        round_off = ?,
+                        place_of_supply = ?,
+                        payment_terms = ?,
+                        due_date = ?,
+                        vehicle_dispatch = ?,
+                        po_no = ?,
+                        po_date = ?,
+                        dispatch_through = ?,
+                        lr_tracking_no = ?,
+                        remarks = ?,
+                        eway_bill_no = ?,
                         updated_at   = datetime('now'),
                         sync_status  = 'PENDING'
                     WHERE uuid = ?
@@ -631,8 +627,21 @@ public class InvoiceMasterRepository {
             ps.setString(17, inv.getVoidReason());
             ps.setString(18, toIso(inv.getVoidDate()));
             ps.setString(19, inv.getDocumentSeries());
+            ps.setDouble(20, inv.getTotalAfterTax());
+            ps.setDouble(21, inv.getRoundOff());
             
-            ps.setString(20, inv.getUuid());
+            ps.setString(22, inv.getPlaceOfSupply());
+            ps.setString(23, inv.getPaymentTerms());
+            ps.setString(24, toIso(inv.getDueDate()));
+            ps.setString(25, inv.getVehicleDispatch());
+            ps.setString(26, inv.getPoNo());
+            ps.setString(27, toIso(inv.getPoDate()));
+            ps.setString(28, inv.getDispatchThrough());
+            ps.setString(29, inv.getLrTrackingNo());
+            ps.setString(30, inv.getRemarks());
+            ps.setString(31, inv.getEwayBillNo());
+            
+            ps.setString(32, inv.getUuid());
 
             ps.executeUpdate();
         }
@@ -667,7 +676,7 @@ public class InvoiceMasterRepository {
             SELECT SUM(pa.allocated_amount) 
             FROM payment_allocations pa
             JOIN payments p ON pa.payment_uuid = p.uuid
-            WHERE p.client_uuid = ?
+            WHERE p.client_uuid = ? AND COALESCE(pa.is_deleted, 0) = 0
         """;
         try (PreparedStatement ps = con.prepareStatement(sqlAlloc)) {
             ps.setString(1, clientId);

@@ -48,6 +48,25 @@ public class FakeSupabaseRestClient extends SupabaseRestClient {
         return online;
     }
 
+    private long currentSequenceNumber = 100;
+
+    @Override
+    public HttpResponse<String> postJsonRaw(String pathSegment, String jsonBody, String preferHeader) throws IOException, InterruptedException {
+        if (!online) {
+            throw new IOException("Connection refused (mock offline)");
+        }
+        if (pathSegment != null && pathSegment.contains("increment_number_sequence")) {
+            currentSequenceNumber++;
+            return new MockHttpResponse(200, String.valueOf(currentSequenceNumber));
+        }
+        return new MockHttpResponse(404, "Not Found");
+    }
+
+    @Override
+    public HttpResponse<String> getWithTimeout(SupabaseEndpoints table, String query, java.time.Duration timeout) throws IOException, InterruptedException {
+        return get(table, query);
+    }
+
     @Override
     public HttpResponse<String> get(SupabaseEndpoints table, String query) throws IOException, InterruptedException {
         if (!online) {
@@ -61,6 +80,8 @@ public class FakeSupabaseRestClient extends SupabaseRestClient {
         String uuidFilter = null;
         String updatedAtFilter = null;
         String createdAtFilter = null;
+        String releaseChannelFilter = null;
+        Boolean publishedFilter = null;
 
         if (query != null && !query.isEmpty()) {
             String[] params = query.split("&");
@@ -77,6 +98,10 @@ public class FakeSupabaseRestClient extends SupabaseRestClient {
                     updatedAtFilter = p.substring(14);
                 } else if (p.startsWith("created_at=gt.")) {
                     createdAtFilter = p.substring(14);
+                } else if (p.startsWith("release_channel=eq.")) {
+                    releaseChannelFilter = p.substring(19);
+                } else if (p.startsWith("published=eq.")) {
+                    publishedFilter = Boolean.parseBoolean(p.substring(13));
                 }
             }
         }
@@ -99,6 +124,20 @@ public class FakeSupabaseRestClient extends SupabaseRestClient {
             if (createdAtFilter != null) {
                 String rowCreated = row.has("created_at") && !row.get("created_at").isJsonNull() ? row.get("created_at").getAsString() : null;
                 if (rowCreated == null || !isAfter(rowCreated, createdAtFilter)) {
+                    continue;
+                }
+            }
+
+            if (releaseChannelFilter != null) {
+                String rowChannel = row.has("release_channel") && !row.get("release_channel").isJsonNull() ? row.get("release_channel").getAsString() : null;
+                if (!releaseChannelFilter.equals(rowChannel)) {
+                    continue;
+                }
+            }
+
+            if (publishedFilter != null) {
+                boolean rowPublished = row.has("published") && !row.get("published").isJsonNull() && row.get("published").getAsBoolean();
+                if (publishedFilter != rowPublished) {
                     continue;
                 }
             }

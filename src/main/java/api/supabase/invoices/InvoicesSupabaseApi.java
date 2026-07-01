@@ -52,6 +52,8 @@ public final class InvoicesSupabaseApi {
 		addDateOrNull(o, "period_from", inv.getPeriodFrom());
 		addDateOrNull(o, "period_to", inv.getPeriodTo());
 		o.addProperty("amount", inv.getAmount());
+		o.addProperty("total_after_tax", inv.getTotalAfterTax());
+		o.addProperty("round_off", inv.getRoundOff());
 		o.addProperty("paid_amount", inv.getPaidAmount());
 		o.addProperty("due_amount", inv.getDueAmount());
 		o.addProperty("payment_status", nz(inv.getPaymentStatus()));
@@ -66,6 +68,18 @@ public final class InvoicesSupabaseApi {
 		o.addProperty("status_updated_by", nz(inv.getStatusUpdatedBy()));
 		o.addProperty("file_path", nz(inv.getFilePath()));
 		o.addProperty("document_series", nz(inv.getDocumentSeries()));
+		
+		o.addProperty("place_of_supply", nz(inv.getPlaceOfSupply()));
+		o.addProperty("payment_terms", nz(inv.getPaymentTerms()));
+		addDateOrNull(o, "due_date", inv.getDueDate());
+		o.addProperty("vehicle_dispatch", nz(inv.getVehicleDispatch()));
+		o.addProperty("po_no", nz(inv.getPoNo()));
+		addDateOrNull(o, "po_date", inv.getPoDate());
+		o.addProperty("dispatch_through", nz(inv.getDispatchThrough()));
+		o.addProperty("lr_tracking_no", nz(inv.getLrTrackingNo()));
+		o.addProperty("remarks", nz(inv.getRemarks()));
+		o.addProperty("eway_bill_no", nz(inv.getEwayBillNo()));
+
 		o.addProperty("is_deleted", inv.getIsDeleted());
 		o.addProperty("is_active", inv.getIsActive() > 0);
 		o.addProperty("sync_version", Math.max(1, inv.getSyncVersion()));

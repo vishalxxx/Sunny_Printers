@@ -820,7 +820,7 @@ public class AddJobController implements utils.DirtySupport {
 
 	private void clearPrintingFields() {
 		printQtyField.clear();
-		printUnitsCombo.setValue(null);
+		printUnitsCombo.setValue("Sheet");
 		printSetField.clear();
 		printColorCombo.setValue(null);
 		sideDoubleBtn.setSelected(true);
@@ -1412,6 +1412,7 @@ public class AddJobController implements utils.DirtySupport {
 		java.util.List<String> printUnits = new java.util.ArrayList<>(java.util.List.of("Select Unit", "Copies", "Sets", "Rim", "Pkt", "Sheet"));
 		utils.ComboBoxSorter.sortStrings(printUnits);
 		printUnitsCombo.getItems().setAll(printUnits);
+		printUnitsCombo.setValue("Sheet");
 
 		java.util.List<String> printColors = new java.util.ArrayList<>(java.util.List.of("Select Color", "1", "2", "4", "4+4", "Spot", "Custom"));
 		utils.ComboBoxSorter.sortStrings(printColors);

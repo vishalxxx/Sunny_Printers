@@ -6,6 +6,7 @@ import java.sql.Connection;
 
 import java.sql.PreparedStatement;
 
+import java.sql.ResultSet;
 import java.util.List;
 
 import java.util.concurrent.CompletableFuture;
@@ -303,7 +304,7 @@ public final class UniversalSyncEngine {
 
 		String pending = PendingSyncFilters.PENDING_STATUS;
 
-		try (Connection conn = DBConnection.getConnection()) {
+		try (Connection conn = DBConnection.getExclusiveConnection()) {
 
 			int total = 0;
 
@@ -383,6 +384,28 @@ public final class UniversalSyncEngine {
 
 
 
+	public static boolean isValidUuid(String uuid) {
+		if (uuid == null || uuid.isBlank() || uuid.length() != 36) return false;
+		try {
+			java.util.UUID.fromString(uuid);
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	public static void markTableSyncError(String table, String idCol, String id, String errorMsg) {
+		try (Connection conn = utils.DBConnection.getConnection();
+				java.sql.PreparedStatement ps = conn.prepareStatement(
+						"UPDATE " + table + " SET sync_status='SYNC_ERROR' WHERE " + idCol + "=?")) {
+			ps.setString(1, id);
+			ps.executeUpdate();
+			System.err.println("[UniversalSyncEngine] Marked " + table + " " + id + " as SYNC_ERROR: " + errorMsg);
+		} catch (Exception e) {
+			System.err.println("Failed to update status to SYNC_ERROR for table " + table + ": " + e.getMessage());
+		}
+	}
+
 	private static boolean sqliteColumnExists(Connection conn, String table, String column) throws Exception {
 
 		try (var ps = conn.prepareStatement("PRAGMA table_info(" + table + ")")) {
@@ -412,25 +435,39 @@ public final class UniversalSyncEngine {
 	private int syncPendingClients(SupabaseRestClient http, SyncReport report) {
 		int synced = 0;
 		ClientsSupabaseApi api = new ClientsSupabaseApi(http);
-		for (Client client : clientRepo.findPendingForSync()) {
+		var pendingList = clientRepo.findPendingForSync();
+		System.out.println("[PUSH] Found " + pendingList.size() + " pending clients");
+		for (Client client : pendingList) {
+			System.out.println("[PUSH] Processing client UUID " + client.getClientUuid());
 			if (client == null || !client.hasClientUuid()) {
+				System.out.println("[PUSH] Client skipped because uuid is null");
+				continue;
+			}
+			if (!isValidUuid(client.getClientUuid())) {
+				markTableSyncError("clients", "uuid", client.getClientUuid(), "Invalid UUID format");
 				continue;
 			}
 			if (DocumentNumbering.isTemporaryNumber(client.getClientCode())) {
+				System.out.println("[PUSH] Client skipped because code is temporary: " + client.getClientCode());
 				continue;
 			}
 			try {
 				boolean wasWaiting = "WAITING_DEPENDENCY".equalsIgnoreCase(client.getSyncStatus());
 
-				try (Connection conn = utils.DBConnection.getConnection()) {
+				try (Connection conn = utils.DBConnection.getExclusiveConnection()) {
 					List<String> colsList = SyncConflictResolver.getColumns(conn, "clients");
 					if (SyncConflictResolver.checkPushConflictAndResolve(conn, http, "clients", SupabaseEndpoints.CLIENTS, client.getClientUuid(), client.getUpdatedAt(), colsList)) {
+						System.out.println("[PUSH] Client skipped because of conflict resolver");
 						synced++;
 						continue;
 					}
-				} catch (Exception ignored) {}
+				} catch (Exception ignored) {
+					System.out.println("[PUSH] Exception in conflict resolver block: " + ignored.getMessage());
+				}
 
+				System.out.println("[PUSH] Dependency check PASSED. Executing POST /clients for " + client.getClientUuid());
 				api.upsert(client);
+				System.out.println("[PUSH] Marking client SYNCED");
 				markTableSynced("clients", client.getClientUuid());
 				synced++;
 				if (wasWaiting) {
@@ -438,8 +475,11 @@ public final class UniversalSyncEngine {
 				}
 			} catch (Exception e) {
 				if (isForeignKeyFailure(e)) {
+					System.out.println("[PUSH] Client skipped because WAITING_DEPENDENCY: " + e.getMessage());
 					markTableWaitingDependency("clients", "uuid", client.getClientUuid());
 				} else {
+					System.out.println("[PUSH] Client skipped because exception: " + e.getMessage());
+					e.printStackTrace();
 					report.failures++;
 				}
 				System.err.println("[UniversalSyncEngine] client " + client.getClientUuid() + ": " + e.getMessage());
@@ -454,13 +494,21 @@ public final class UniversalSyncEngine {
 			if (job == null || !job.hasUuid()) {
 				continue;
 			}
+			if (!isValidUuid(job.getUuid())) {
+				markTableSyncError("jobs", "uuid", job.getUuid(), "Invalid UUID format");
+				continue;
+			}
 			if (DocumentNumbering.isTemporaryNumber(job.getJobCode())) {
 				continue;
 			}
 			try {
+				if (!isParentSynced("clients", "uuid", job.getClientUuid())) {
+					markTableWaitingDependency("jobs", "uuid", job.getUuid());
+					continue;
+				}
 				boolean wasWaiting = "WAITING_DEPENDENCY".equalsIgnoreCase(job.getSyncStatus());
 
-				try (Connection conn = utils.DBConnection.getConnection()) {
+				try (Connection conn = utils.DBConnection.getExclusiveConnection()) {
 					List<String> colsList = SyncConflictResolver.getColumns(conn, "jobs");
 					if (SyncConflictResolver.checkPushConflictAndResolve(conn, http, "jobs", SupabaseEndpoints.JOBS, job.getUuid(), job.getUpdatedAt(), colsList)) {
 						synced++;
@@ -493,13 +541,21 @@ public final class UniversalSyncEngine {
 			if (inv == null || inv.getUuid() == null || inv.getUuid().isBlank()) {
 				continue;
 			}
+			if (!isValidUuid(inv.getUuid())) {
+				markTableSyncError("invoice_master", "uuid", inv.getUuid(), "Invalid UUID format");
+				continue;
+			}
 			if (DocumentNumbering.isTemporaryNumber(inv.getInvoiceNo())) {
 				continue;
 			}
 			try {
+				if (!isParentSynced("clients", "uuid", inv.getClientUuid())) {
+					markTableWaitingDependency("invoice_master", "uuid", inv.getUuid());
+					continue;
+				}
 				boolean wasWaiting = "WAITING_DEPENDENCY".equalsIgnoreCase(inv.getSyncStatus());
 
-				try (Connection conn = utils.DBConnection.getConnection()) {
+				try (Connection conn = utils.DBConnection.getExclusiveConnection()) {
 					List<String> colsList = SyncConflictResolver.getColumns(conn, "invoice_master");
 					if (SyncConflictResolver.checkPushConflictAndResolve(conn, http, "invoice_master", SupabaseEndpoints.INVOICE_MASTER, inv.getUuid(), inv.getUpdatedAt(), colsList)) {
 						synced++;
@@ -532,10 +588,18 @@ public final class UniversalSyncEngine {
 			if (payment == null || payment.getUuid() == null || payment.getUuid().isBlank()) {
 				continue;
 			}
+			if (!isValidUuid(payment.getUuid())) {
+				markTableSyncError("payments", "uuid", payment.getUuid(), "Invalid UUID format");
+				continue;
+			}
 			try {
+				if (!isParentSynced("clients", "uuid", payment.getClientUuid())) {
+					markTableWaitingDependency("payments", "uuid", payment.getUuid());
+					continue;
+				}
 				boolean wasWaiting = "WAITING_DEPENDENCY".equalsIgnoreCase(payment.getSyncStatus());
 
-				try (Connection conn = utils.DBConnection.getConnection()) {
+				try (Connection conn = utils.DBConnection.getExclusiveConnection()) {
 					List<String> colsList = SyncConflictResolver.getColumns(conn, "payments");
 					if (SyncConflictResolver.checkPushConflictAndResolve(conn, http, "payments", SupabaseEndpoints.PAYMENTS, payment.getUuid(), payment.getUpdatedAt(), colsList)) {
 						synced++;
@@ -571,7 +635,7 @@ public final class UniversalSyncEngine {
 
 		}
 
-		try (Connection conn = DBConnection.getConnection();
+		try (Connection conn = DBConnection.getExclusiveConnection();
 
 				PreparedStatement ps = conn.prepareStatement(
 
@@ -604,19 +668,32 @@ public final class UniversalSyncEngine {
 		return false;
 	}
 
-	public static void markTableWaitingDependency(String table, String uuidColumn, String uuid) {
-		if (uuid == null || uuid.isBlank()) {
-			return;
-		}
-		try (Connection conn = DBConnection.getConnection();
+	public static void markTableWaitingDependency(String table, String idCol, String id) {
+		try (Connection conn = utils.DBConnection.getConnection();
 				PreparedStatement ps = conn.prepareStatement(
-						"UPDATE " + table + " SET sync_status='WAITING_DEPENDENCY' WHERE " + uuidColumn + "=?")) {
-			ps.setString(1, uuid.trim());
+						"UPDATE " + table + " SET sync_status='WAITING_DEPENDENCY' WHERE " + idCol + "=?")) {
+			ps.setString(1, id);
 			ps.executeUpdate();
-			System.out.println("[UniversalSyncEngine] Marked " + table + " " + uuid + " as WAITING_DEPENDENCY due to FK violation (23503)");
+			System.out.println("[UniversalSyncEngine] Marked " + table + " " + id + " as WAITING_DEPENDENCY due to FK violation (23503)");
 		} catch (Exception e) {
 			System.err.println("Failed to update status to WAITING_DEPENDENCY for table " + table + ": " + e.getMessage());
 		}
 	}
 
+	public static boolean isParentSynced(String table, String uuidCol, String uuidVal) {
+		if (uuidVal == null || uuidVal.isBlank()) return true;
+		try (Connection conn = utils.DBConnection.getConnection();
+				PreparedStatement ps = conn.prepareStatement(
+						"SELECT sync_status FROM " + table + " WHERE " + uuidCol + " = ?")) {
+			ps.setString(1, uuidVal);
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) {
+					return "SYNCED".equalsIgnoreCase(rs.getString(1));
+				}
+			}
+		} catch (Exception e) {
+			System.err.println("[UniversalSyncEngine] Failed to verify parent status for " + table + " " + uuidVal + ": " + e.getMessage());
+		}
+		return false;
+	}
 }

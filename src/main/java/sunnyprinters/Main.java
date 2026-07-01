@@ -24,6 +24,17 @@ public class Main extends Application {
 		// Load bundled fonts once (works offline)
 		loadBundledFonts();
 
+		// Trigger First-Run Database and Folder Initialization
+		try {
+			utils.DBConnection.ensureDatabaseParentDirectory();
+			// Referencing DBConnection class forces static block execution to setup schema
+			String dbUrl = utils.DBConnection.getUrl();
+			System.out.println("[Main] Database initialized on startup: " + dbUrl);
+		} catch (Exception ex) {
+			System.err.println("[Main] Error during database initialization: " + ex.getMessage());
+			ex.printStackTrace();
+		}
+
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
 		Parent root = loader.load();
 
@@ -46,6 +57,23 @@ public class Main extends Application {
 		});
 
 		primaryStage.show();
+
+		// Asynchronous, non-blocking check for stable software updates at startup
+		java.util.concurrent.CompletableFuture.runAsync(() -> {
+			try {
+				service.UpdateService updateService = new service.UpdateService();
+				service.UpdateService.UpdateCheckResult result = updateService.checkForUpdates(false);
+				if (result.getStatus() != service.UpdateService.UpdateStatus.NO_UPDATE) {
+					javafx.application.Platform.runLater(() -> {
+						controller.UpdateDialog dialog = new controller.UpdateDialog(result);
+						dialog.initOwner(primaryStage);
+						dialog.showAndWait();
+					});
+				}
+			} catch (Exception ex) {
+				System.err.println("[Main] Asynchronous startup update check failed: " + ex.getMessage());
+			}
+		});
 	}
 
 	private static void loadBundledFonts() {

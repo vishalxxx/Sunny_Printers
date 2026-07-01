@@ -54,7 +54,7 @@ public class PushConflictResolutionTest {
 
     @Test
     public void testOlderLocalRecordDoesNotOverwriteNewerRemote() throws Exception {
-        String clientUuid = "client-push-conflict-123";
+        String clientUuid = "00000000-0000-0000-0000-000000001001";
 
         // 1. Remote is newer (12:00:00)
         JsonObject remoteObj = new JsonObject();
@@ -100,7 +100,7 @@ public class PushConflictResolutionTest {
 
     @Test
     public void testNewerLocalRecordOverwritesOlderRemote() throws Exception {
-        String clientUuid = "client-push-ok-123";
+        String clientUuid = "00000000-0000-0000-0000-000000001002";
 
         // 1. Remote is older (10:00:00)
         JsonObject remoteObj = new JsonObject();
@@ -140,7 +140,7 @@ public class PushConflictResolutionTest {
 
     @Test
     public void testEqualTimestampsNoUpdates() throws Exception {
-        String clientUuid = "client-push-equal-123";
+        String clientUuid = "00000000-0000-0000-0000-000000001003";
 
         // 1. Remote (11:00:00)
         JsonObject remoteObj = new JsonObject();
@@ -176,14 +176,14 @@ public class PushConflictResolutionTest {
 
     @Test
     public void testAsyncPatchRequestSkippedWhenRemoteIsNewer() throws Exception {
-        String clientUuid = "client-async-patch-123";
+        String clientUuid = "00000000-0000-0000-0000-000000001004";
 
         // 1. Remote is newer (12:00:00)
         JsonObject remoteObj = new JsonObject();
         remoteObj.addProperty("uuid", clientUuid);
         remoteObj.addProperty("client_code", "CL-04");
         remoteObj.addProperty("client_name", "Remote Version (Newer)");
-        remoteObj.addProperty("updated_at", "2026-06-13 12:00:00");
+        remoteObj.addProperty("updated_at", "2028-06-13 12:00:00");
         fakeSupabase.getTableData(SupabaseEndpoints.CLIENTS).add(remoteObj);
 
         // 2. Save a local baseline
@@ -210,7 +210,7 @@ public class PushConflictResolutionTest {
         repo.update(updatedClient);
 
         // Wait brief moment for async CompletableFuture task
-        Thread.sleep(200);
+        Thread.sleep(800);
 
         // 5. Verify Remote remains "Remote Version (Newer)"
         JsonObject finalRemote = fakeSupabase.getTableData(SupabaseEndpoints.CLIENTS).get(0);

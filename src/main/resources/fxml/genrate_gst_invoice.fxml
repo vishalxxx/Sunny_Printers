@@ -27,7 +27,7 @@
             <VBox.margin>
                 <Insets top="-10"/>
             </VBox.margin>
-            <Button fx:id="btnSaveDraft" onAction="#handleSaveDraft" text="Save Draft" styleClass="action-btn-custom, btn-light-orange" prefWidth="120"/>
+            <Button fx:id="btnPreviewInvoice" onAction="#handlePreviewInvoice" text="Preview Invoice" styleClass="action-btn-custom, btn-light-orange" prefWidth="150"/>
             <Button fx:id="btnGenerateInvoice" onAction="#handleGenerateInvoice" text="Generate Invoice" styleClass="action-btn-custom, btn-terracotta" prefWidth="150"/>
         </HBox>
 
@@ -120,14 +120,39 @@
                     <DatePicker fx:id="dpDueDate" styleClass="compact-datepicker, gst-input" editable="false" maxWidth="Infinity"/>
                 </VBox>
 
-                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="5" GridPane.hgrow="ALWAYS">
+                  <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="3" GridPane.hgrow="ALWAYS">
                     <Label text="Vehicle / Dispatch" styleClass="gst-label-xs"/>
                     <TextField fx:id="txtVehicleDispatch" promptText="Transport" styleClass="compact-field, gst-input" maxWidth="Infinity"/>
                 </VBox>
 
-                <VBox spacing="6" GridPane.columnIndex="5" GridPane.rowIndex="1" GridPane.columnSpan="5" GridPane.hgrow="ALWAYS">
+                <VBox spacing="6" GridPane.columnIndex="3" GridPane.rowIndex="1" GridPane.columnSpan="3" GridPane.hgrow="ALWAYS">
                     <Label text="Reference / PO No." styleClass="gst-label-xs"/>
                     <TextField fx:id="txtPoNo" promptText="PO/..." styleClass="compact-field, gst-input" maxWidth="Infinity"/>
+                </VBox>
+
+                <VBox spacing="6" GridPane.columnIndex="6" GridPane.rowIndex="1" GridPane.columnSpan="4" GridPane.hgrow="ALWAYS">
+                    <Label text="E-Way Bill No. (Optional)" styleClass="gst-label-xs"/>
+                    <TextField fx:id="txtEwayBillNo" promptText="12-digit E-Way Bill No." styleClass="compact-field, gst-input" maxWidth="Infinity"/>
+                </VBox>
+
+                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="2" GridPane.hgrow="ALWAYS">
+                    <Label text="PO Date" styleClass="gst-label-xs"/>
+                    <DatePicker fx:id="dpPoDate" styleClass="compact-datepicker, gst-input" editable="false" maxWidth="Infinity"/>
+                </VBox>
+
+                <VBox spacing="6" GridPane.columnIndex="2" GridPane.rowIndex="2" GridPane.columnSpan="4" GridPane.hgrow="ALWAYS">
+                    <Label text="Dispatch Through / Courier" styleClass="gst-label-xs"/>
+                    <TextField fx:id="txtDispatchThrough" promptText="Courier / Transport Name" styleClass="compact-field, gst-input" maxWidth="Infinity"/>
+                </VBox>
+
+                <VBox spacing="6" GridPane.columnIndex="6" GridPane.rowIndex="2" GridPane.columnSpan="4" GridPane.hgrow="ALWAYS">
+                    <Label text="LR / Tracking No." styleClass="gst-label-xs"/>
+                    <TextField fx:id="txtLrTrackingNo" promptText="LR No. / Docket No." styleClass="compact-field, gst-input" maxWidth="Infinity"/>
+                </VBox>
+
+                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="3" GridPane.columnSpan="10" GridPane.hgrow="ALWAYS">
+                    <Label text="Remarks / Terms of Delivery" styleClass="gst-label-xs"/>
+                    <TextField fx:id="txtRemarks" promptText="Terms of delivery, packaging details, etc." styleClass="compact-field, gst-input" maxWidth="Infinity"/>
                 </VBox>
             </GridPane>
         </VBox>
@@ -381,25 +406,16 @@
                     </columnConstraints>
 
                     <Label text="Select Bank" styleClass="gst-muted" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                    <ComboBox fx:id="comboBankDetails" promptText="INDIAN OVERSEAS BANK" styleClass="card-combo" maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1">
-                        <items>
-                            <FXCollections fx:factory="observableArrayList">
-                                <String fx:value="INDIAN OVERSEAS BANK"/>
-                                <String fx:value="STATE BANK OF INDIA"/>
-                                <String fx:value="HDFC BANK"/>
-                                <String fx:value="ICICI BANK"/>
-                            </FXCollections>
-                        </items>
-                    </ComboBox>
+                    <ComboBox fx:id="comboBankDetails" promptText="Select Bank" styleClass="card-combo" maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
                     <Label text="A/c Holder’s Name" styleClass="gst-muted" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                    <Label text="SUNNY PRINTER" styleClass="gst-strong" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                    <Label fx:id="lblBankHolder" text="—" styleClass="gst-strong" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
                     <Label text="A/c No." styleClass="gst-muted" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                    <Label text="15980200000000780" styleClass="gst-strong" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                    <Label fx:id="lblBankAccountNo" text="—" styleClass="gst-strong" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
 
                     <Label text="Branch &amp; IFSC" styleClass="gst-muted" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-                    <Label text="PITAMPURA &amp; IOBA0001598" styleClass="gst-strong" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                    <Label fx:id="lblBankBranchIfsc" text="—" styleClass="gst-strong" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
                 </GridPane>
             </VBox>
         </HBox>

@@ -43,7 +43,7 @@ public class ConflictResolutionTest {
 
     @Test
     public void testLastWriteWinsConflict() throws Exception {
-        String clientUuid = "client-uuid-1234-conflict";
+        String clientUuid = "00000000-0000-0000-0000-000000001234";
         
         // 1. Setup client on Machine A and sync to Supabase
         DBConnection.setUrl(dbA);
@@ -67,20 +67,20 @@ public class ConflictResolutionTest {
         assertNotNull(cB, "Client should be replicated to Machine B");
         
         // 3. Simulate conflicts with distinct timestamps
-        // Machine A updates to "Delhi Branch" at 10:00:00
+        // Machine A updates to "Delhi Branch" (relative future)
         DBConnection.setUrl(dbA);
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(
-                 "UPDATE clients SET client_name = 'Delhi Branch', updated_at = '2026-06-13 10:00:00', sync_status = 'PENDING' WHERE uuid = ?")) {
+                 "UPDATE clients SET client_name = 'Delhi Branch', updated_at = datetime('now', '+1 hour'), sync_status = 'PENDING' WHERE uuid = ?")) {
             ps.setString(1, clientUuid);
             ps.executeUpdate();
         }
         
-        // Machine B updates to "Noida Branch" at 11:00:00 (Newer)
+        // Machine B updates to "Noida Branch" (relative further future)
         DBConnection.setUrl(dbB);
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(
-                 "UPDATE clients SET client_name = 'Noida Branch', updated_at = '2026-06-13 11:00:00', sync_status = 'PENDING' WHERE uuid = ?")) {
+                 "UPDATE clients SET client_name = 'Noida Branch', updated_at = datetime('now', '+2 hours'), sync_status = 'PENDING' WHERE uuid = ?")) {
             ps.setString(1, clientUuid);
             ps.executeUpdate();
         }

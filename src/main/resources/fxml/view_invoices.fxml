@@ -9,7 +9,7 @@
 
 <ScrollPane xmlns="http://javafx.com/javafx/23" 
             xmlns:fx="http://javafx.com/fxml/1"
-            fitToWidth="true" 
+            fitToWidth="true" fitToHeight="true"
             styleClass="main-scroll-pane, view-invoices-root"
             stylesheets="@../css/theme.css, @../css/view_invoices.css"
             fx:controller="controller.ViewInvoicesController">
@@ -59,8 +59,12 @@
                 <ComboBox fx:id="clientComboBox" promptText="All Clients" styleClass="taste-combo" maxWidth="Infinity"/>
             </VBox>
             <VBox spacing="4" minWidth="140">
-                <Label text="Invoice Status" styleClass="filter-label-taste"/>
+                <Label text="Payment Status" styleClass="filter-label-taste"/>
                 <ComboBox fx:id="statusComboBox" promptText="All" styleClass="taste-combo" maxWidth="Infinity"/>
+            </VBox>
+            <VBox spacing="4" minWidth="140">
+                <Label text="Invoice Status" styleClass="filter-label-taste"/>
+                <ComboBox fx:id="invoiceStatusComboBox" promptText="All" styleClass="taste-combo" maxWidth="Infinity"/>
             </VBox>
             <VBox spacing="4" minWidth="140">
                 <Label text="Document Type" styleClass="filter-label-taste"/>
@@ -70,22 +74,20 @@
                 <Label text="From Date" styleClass="filter-label-taste"/>
                 <DatePicker fx:id="startDatePicker" styleClass="taste-datepicker" maxWidth="Infinity" editable="false"/>
             </VBox>
-            <VBox spacing="4" minWidth="130">
+            <VBox spacing="4" minWidth="160">
                 <Label text="To Date" styleClass="filter-label-taste"/>
-                <DatePicker fx:id="endDatePicker" styleClass="taste-datepicker" maxWidth="Infinity" editable="false"/>
-            </VBox>
-            <Region HBox.hgrow="ALWAYS" />
-            <VBox spacing="4" alignment="CENTER_LEFT" fillWidth="false" minWidth="180">
-                <Label text="&#160;" styleClass="filter-label-taste" />
-                <Button text="Clear filters" onAction="#handleClear" styleClass="vi-btn-filter-clear"
-                        minWidth="172" mnemonicParsing="false">
-                    <graphic><Region styleClass="vi-icon-clear" /></graphic>
-                </Button>
+                <HBox spacing="8">
+                    <DatePicker fx:id="endDatePicker" styleClass="taste-datepicker" maxWidth="Infinity" editable="false" HBox.hgrow="ALWAYS"/>
+                    <Button onAction="#handleClear" styleClass="vi-btn-filter-clear" mnemonicParsing="false">
+                        <tooltip><Tooltip text="Clear filters"/></tooltip>
+                        <graphic><Region styleClass="vi-icon-clear" /></graphic>
+                    </Button>
+                </HBox>
             </VBox>
         </HBox>
 
         <!-- 4. MAIN SPLIT LAYOUT -->
-        <HBox spacing="16" styleClass="vi-main-row" VBox.vgrow="ALWAYS">
+        <HBox spacing="16" styleClass="vi-main-row" VBox.vgrow="ALWAYS" minHeight="750">
             <!-- Left: Table Area -->
             <VBox spacing="0" HBox.hgrow="ALWAYS" styleClass="vi-left-stack">
                 <VBox styleClass="content-card-premium, vi-table-shell" VBox.vgrow="ALWAYS">

@@ -33,14 +33,15 @@ public class NumberSequenceRepository {
 	public void upsert(Connection con, NumberSequence row) throws Exception {
 		try (PreparedStatement ps = con.prepareStatement("""
 				INSERT INTO number_sequences
-				(sequence_key, display_name, prefix, current_number, digit_width, financial_year, updated_at)
-				VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+				(sequence_key, display_name, prefix, current_number, digit_width, financial_year, sync_status, updated_at)
+				VALUES (?, ?, ?, ?, ?, ?, 'SYNCED', datetime('now'))
 				ON CONFLICT(sequence_key) DO UPDATE SET
 				  display_name = excluded.display_name,
 				  prefix = excluded.prefix,
 				  current_number = excluded.current_number,
 				  digit_width = excluded.digit_width,
 				  financial_year = excluded.financial_year,
+				  sync_status = 'SYNCED',
 				  updated_at = datetime('now')
 				""")) {
 			ps.setString(1, row.getSequenceKey());
@@ -149,8 +150,8 @@ public class NumberSequenceRepository {
 		for (ModuleDef def : NumberSequenceCatalog.ALL) {
 			try (PreparedStatement ps = con.prepareStatement("""
 					INSERT OR IGNORE INTO number_sequences
-					(sequence_key, display_name, prefix, current_number, digit_width, financial_year)
-					VALUES (?, ?, ?, 0, ?, ?)
+					(sequence_key, display_name, prefix, current_number, digit_width, financial_year, sync_status)
+					VALUES (?, ?, ?, 0, ?, ?, 'SYNCED')
 					""")) {
 				ps.setString(1, def.moduleName());
 				ps.setString(2, def.displayName());

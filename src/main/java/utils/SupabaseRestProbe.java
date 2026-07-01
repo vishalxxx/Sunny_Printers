@@ -35,7 +35,7 @@ public final class SupabaseRestProbe {
 
 	/** PostgREST often returns 401 on bare {@code /rest/v1/}; use a real table URL for health checks. */
 	private static String restV1ClientsProbeUrl(String projectRoot) {
-		return projectRoot + "/rest/v1/clients?select=id&limit=1";
+		return projectRoot + "/rest/v1/clients?select=uuid&limit=1";
 	}
 
 	private static String authHealthUrl(String projectRoot) {

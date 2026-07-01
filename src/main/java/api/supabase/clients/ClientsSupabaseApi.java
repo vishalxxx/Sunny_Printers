@@ -93,16 +93,20 @@ public final class ClientsSupabaseApi {
 		throw new IOException("HTTP " + code + " " + res.body());
 	}
 
-	/**
-	 * Deletes the remote row by stable {@code client_uuid} (never local SQLite
-	 * {@code id}).
-	 */
 	public void deleteByClientUuid(String clientUuid) throws IOException, InterruptedException {
 		if (clientUuid == null || clientUuid.isBlank()) {
 			return;
 		}
+		JsonObject body = new JsonObject();
+		body.addProperty(COL_UUID, clientUuid.trim());
+		body.addProperty("is_deleted", true);
+		body.addProperty("is_active", false);
+		body.addProperty("sync_status", "SYNCED");
+		body.addProperty("synced_at", Instant.now().toString());
+		body.addProperty("deleted_at", Instant.now().toString());
 		String v = URLEncoder.encode(clientUuid.trim(), StandardCharsets.UTF_8).replace("+", "%20");
-		HttpResponse<String> res = http.delete(SupabaseEndpoints.CLIENTS, COL_UUID + "=eq." + v);
+		HttpResponse<String> res = http.patchJson(SupabaseEndpoints.CLIENTS, COL_UUID + "=eq." + v, body.toString(),
+				"return=minimal");
 		int code = res.statusCode();
 		if (code >= 200 && code < 300) {
 			return;
@@ -135,6 +139,7 @@ public final class ClientsSupabaseApi {
 		o.addProperty("balance_type", nz(c.getBalanceType()));
 		o.addProperty("is_active", c.isActive());
 		o.addProperty("notes", nz(c.getNotes()));
+		o.addProperty("state", nz(c.getState()));
 		o.addProperty("sync_version", c.getSyncVersion());
 		o.addProperty("is_deleted", c.isDeleted());
 		String deletedAt = c.getDeletedAt();
@@ -180,6 +185,7 @@ public final class ClientsSupabaseApi {
 		putStrIfChanged(o, "balance_type", after.getBalanceType(), before.getBalanceType());
 		putBoolIfChanged(o, "is_active", after.isActive(), before.isActive());
 		putStrIfChanged(o, "notes", after.getNotes(), before.getNotes());
+		putStrIfChanged(o, "state", after.getState(), before.getState());
 		putIntIfChanged(o, "sync_version", after.getSyncVersion(), before.getSyncVersion());
 		putBoolIfChanged(o, "is_deleted", after.isDeleted(), before.isDeleted());
 		putDeletedAtIfChanged(o, after.getDeletedAt(), before.getDeletedAt());
@@ -281,6 +287,7 @@ public final class ClientsSupabaseApi {
 					jstr(o, "notes"));
 			c.setClientUuid(jstrUuid(o));
 			c.setClientCode(jstr(o, "client_code"));
+			c.setState(jstr(o, "state"));
 			c.setClientType(jstr(o, "client_type"));
 			c.setPriceCategory(jstr(o, "price_category"));
 			c.setPaymentTerms(jstr(o, "payment_terms"));

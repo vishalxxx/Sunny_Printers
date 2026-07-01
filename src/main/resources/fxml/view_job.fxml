@@ -33,12 +33,10 @@
             <ComboBox fx:id="statusFilterComboBox" promptText="All Status" styleClass="taste-combo" prefWidth="180" />
             <DatePicker fx:id="fromDatePicker" promptText="From Date" styleClass="taste-datepicker" prefWidth="160"/>
             <DatePicker fx:id="toDatePicker" promptText="To Date" styleClass="taste-datepicker" prefWidth="160"/>
-            <Button styleClass="view-clear-btn" onAction="#clearFilters" >
+            <Button styleClass="view-clear-btn" onAction="#clearFilters" mnemonicParsing="false">
+                <tooltip><Tooltip text="Clear Filters"/></tooltip>
                 <graphic>
-                    <HBox spacing="8" alignment="CENTER">
-                        <Region styleClass="filter-icon" />
-                        <Label text="Clear Filters" style="-fx-text-fill: #3E312D;" />
-                    </HBox>
+                    <Region styleClass="filter-icon" />
                 </graphic>
             </Button>
         </HBox>

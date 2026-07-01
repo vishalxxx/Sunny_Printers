@@ -58,11 +58,16 @@ public class SupabaseRestClient {
 
 	public HttpResponse<String> get(SupabaseEndpoints table, String queryWithoutLeadingQuestion)
 			throws IOException, InterruptedException {
+		return getWithTimeout(table, queryWithoutLeadingQuestion, REQUEST_TIMEOUT);
+	}
+
+	public HttpResponse<String> getWithTimeout(SupabaseEndpoints table, String queryWithoutLeadingQuestion, Duration timeout)
+			throws IOException, InterruptedException {
 		String q = queryWithoutLeadingQuestion == null || queryWithoutLeadingQuestion.isBlank()
 				? ""
 				: "?" + queryWithoutLeadingQuestion;
 		URI uri = URI.create(restV1Base + table.pathSegment() + q);
-		HttpRequest.Builder gb = HttpRequest.newBuilder(uri).GET().timeout(REQUEST_TIMEOUT);
+		HttpRequest.Builder gb = HttpRequest.newBuilder(uri).GET().timeout(timeout);
 		applyDefaultHeaders(gb);
 		return send(gb.build());
 	}
@@ -133,13 +138,9 @@ public class SupabaseRestClient {
 
 	public HttpResponse<String> delete(SupabaseEndpoints table, String postgrestFilter)
 			throws IOException, InterruptedException {
-		String q = postgrestFilter == null || postgrestFilter.isBlank()
-				? ""
-				: "?" + postgrestFilter;
-		URI uri = URI.create(restV1Base + table.pathSegment() + q);
-		HttpRequest.Builder b = HttpRequest.newBuilder(uri).DELETE().timeout(REQUEST_TIMEOUT);
-		applyDefaultHeaders(b);
-		return send(b.build());
+		throw new UnsupportedOperationException(
+				"Physical HTTP DELETE on business table '" + (table != null ? table.pathSegment() : "unknown")
+						+ "' is permanently blocked by architectural policy. Use soft-delete (PATCH) instead.");
 	}
 
 	public HttpResponse<String> postJsonRaw(String pathSegment, String jsonBody, String preferHeader)

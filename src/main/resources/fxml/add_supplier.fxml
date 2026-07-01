@@ -55,16 +55,49 @@
                         <VBox styleClass="supplier-field-container" GridPane.columnIndex="1" GridPane.rowIndex="1">
                             <Label text="GSTIN" styleClass="supplier-field-label" />
                             <TextField fx:id="gstinField" styleClass="supplier-input-field" promptText="22AAAAA0000A1Z5" maxWidth="Infinity" />
+                            <Label fx:id="lblGstValidation" style="-fx-text-fill: #e74c3c; -fx-font-size: 11px;" wrapText="true" />
+                            <VBox fx:id="panGstDetails" spacing="8" style="-fx-background-color: #f8f9fa; -fx-border-color: #e9ecef; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-padding: 12px; -fx-margin-top: 10px;" visible="false" managed="false">
+                                <Label text="Extracted GSTIN Details (Verified Offline)" style="-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #2c3e50;" />
+                                <GridPane hgap="10" vgap="4">
+                                    <columnConstraints>
+                                        <ColumnConstraints minWidth="120" prefWidth="120" />
+                                        <ColumnConstraints hgrow="ALWAYS" />
+                                    </columnConstraints>
+                                    <rowConstraints>
+                                        <RowConstraints minHeight="18" />
+                                        <RowConstraints minHeight="18" />
+                                        <RowConstraints minHeight="18" />
+                                        <RowConstraints minHeight="18" />
+                                        <RowConstraints minHeight="18" />
+                                    </rowConstraints>
+                                    <Label text="GSTIN:" GridPane.columnIndex="0" GridPane.rowIndex="0" style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;" />
+                                    <Label fx:id="lblGstDetailsGstin" GridPane.columnIndex="1" GridPane.rowIndex="0" style="-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #2c3e50;" />
+                                    
+                                    <Label text="State Code &amp; Name:" GridPane.columnIndex="0" GridPane.rowIndex="1" style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;" />
+                                    <Label fx:id="lblGstDetailsState" GridPane.columnIndex="1" GridPane.rowIndex="1" style="-fx-font-size: 11px; -fx-text-fill: #2c3e50;" />
+                                    
+                                    <Label text="Extracted PAN:" GridPane.columnIndex="0" GridPane.rowIndex="2" style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;" />
+                                    <Label fx:id="lblGstDetailsPan" GridPane.columnIndex="1" GridPane.rowIndex="2" style="-fx-font-size: 11px; -fx-text-fill: #2c3e50;" />
+                                    
+                                    <Label text="Registration Type:" GridPane.columnIndex="0" GridPane.rowIndex="3" style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;" />
+                                    <Label fx:id="lblGstDetailsType" GridPane.columnIndex="1" GridPane.rowIndex="3" style="-fx-font-size: 11px; -fx-text-fill: #2c3e50;" />
+
+                                    <Label text="Validation Status:" GridPane.columnIndex="0" GridPane.rowIndex="4" style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;" />
+                                    <Label fx:id="lblGstDetailsStatus" GridPane.columnIndex="1" GridPane.rowIndex="4" style="-fx-font-size: 11px; -fx-text-fill: #27ae60; -fx-font-weight: bold;" />
+                                </GridPane>
+                            </VBox>
                         </VBox>
                         
                         <VBox styleClass="supplier-field-container" GridPane.columnIndex="0" GridPane.rowIndex="2">
                             <Label text="Mobile Number" styleClass="supplier-field-label" />
                             <TextField fx:id="mobileField" styleClass="supplier-input-field" promptText="+91 99999 99999" maxWidth="Infinity" />
+                            <Label fx:id="lblPhoneValidation" style="-fx-text-fill: #e74c3c; -fx-font-size: 11px;" wrapText="true" />
                         </VBox>
                         
                         <VBox styleClass="supplier-field-container" GridPane.columnIndex="1" GridPane.rowIndex="2">
                             <Label text="Alt Mobile" styleClass="supplier-field-label" />
                             <TextField fx:id="phoneField" styleClass="supplier-input-field" promptText="Landline / Alternate" maxWidth="Infinity" />
+                            <Label fx:id="lblAltPhoneValidation" style="-fx-text-fill: #e74c3c; -fx-font-size: 11px;" wrapText="true" />
                         </VBox>
                         
                         <VBox styleClass="supplier-field-container" GridPane.columnIndex="0" GridPane.rowIndex="3">

@@ -11,7 +11,7 @@ import java.sql.Types;
 import java.time.LocalDate;
 
 public class DatabaseInitializer {
-    
+
     private static final String SYNC_COLUMNS = """
             sync_status TEXT DEFAULT 'PENDING',
             sync_version INTEGER DEFAULT 1,
@@ -23,23 +23,27 @@ public class DatabaseInitializer {
             deleted_at TEXT DEFAULT NULL
             """;
 
-    /** SQLite expression for a new random UUID v4-style string. Never pass through {@code String.formatted} (contains {@code %}). */
-    private static final String NEW_UUID_SQL =
-            "lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))";
+    /**
+     * SQLite expression for a new random UUID v4-style string. Never pass through
+     * {@code String.formatted} (contains {@code %}).
+     */
+    private static final String NEW_UUID_SQL = "lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))";
 
     /**
-     * Local SQLite bootstrap. Remote parity: {@code supabase/migrations/012_invoice_and_payments_uuid_schema.sql}
-     * (after clients/jobs UUID migrations). Legacy integer-PK SQLite DBs are upgraded on startup.
+     * Local SQLite bootstrap. Remote parity:
+     * {@code supabase/migrations/012_invoice_and_payments_uuid_schema.sql}
+     * (after clients/jobs UUID migrations). Legacy integer-PK SQLite DBs are
+     * upgraded on startup.
      */
-    public static void initialize() throws Exception
- {
+    public static void initialize() throws Exception {
 
-		Files.createDirectories(Path.of("database"));
+        Files.createDirectories(Path.of("database"));
 
-        // Open a direct JDBC connection here to avoid calling DBConnection.getConnection()
+        // Open a direct JDBC connection here to avoid calling
+        // DBConnection.getConnection()
         // which itself calls DatabaseInitializer.initialize() and causes recursion.
         try (Connection conn = DriverManager.getConnection(DBConnection.getUrl());
-             Statement stmt = conn.createStatement()) {
+                Statement stmt = conn.createStatement()) {
 
             dropLeftoverMigrationBackupTables(conn, stmt);
 
@@ -123,19 +127,8 @@ public class DatabaseInitializer {
 
             stmt.execute(JOBS_DDL);
 
-            // ================== BILLING TABLE ==================
-            stmt.execute("""
-					    CREATE TABLE IF NOT EXISTS billing (
-					        uuid TEXT PRIMARY KEY NOT NULL,
-					        job_uuid TEXT,
-					        client_uuid TEXT,
-					        amount REAL,
-					        bill_date TEXT,
-					        %s,
-					        FOREIGN KEY(job_uuid) REFERENCES jobs(uuid),
-					        FOREIGN KEY(client_uuid) REFERENCES clients(uuid)
-					    );
-					""".formatted(SYNC_COLUMNS));
+            // ================== CREATE DUMMY BILLING TABLE FOR COMPATIBILITY ==================
+            stmt.execute("CREATE TABLE IF NOT EXISTS billing (uuid TEXT PRIMARY KEY);");
 
             stmt.execute(PAYMENTS_DDL);
             stmt.execute(PAYMENT_ALLOCATIONS_DDL);
@@ -160,7 +153,8 @@ public class DatabaseInitializer {
                 if (hasTable && (!hasUuid || hasEmail)) {
                     needUsersMigration = true;
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
 
             if (needUsersMigration) {
                 System.out.println("⚠ Migration: Recreating users table without email column...");
@@ -168,14 +162,14 @@ public class DatabaseInitializer {
             }
 
             stmt.execute("""
-					    CREATE TABLE IF NOT EXISTS users (
-					        uuid TEXT PRIMARY KEY NOT NULL,
-					        username TEXT UNIQUE,
-					        password TEXT,
-					        role TEXT,
-					        %s
-					    );
-					""".formatted(SYNC_COLUMNS));
+                        CREATE TABLE IF NOT EXISTS users (
+                            uuid TEXT PRIMARY KEY NOT NULL,
+                            username TEXT UNIQUE,
+                            password TEXT,
+                            role TEXT,
+                            %s
+                        );
+                    """.formatted(SYNC_COLUMNS));
 
             stmt.execute("""
                     INSERT OR IGNORE INTO users
@@ -183,113 +177,152 @@ public class DatabaseInitializer {
                     VALUES ('00000000-0000-0000-0000-00000000000a', 'Admin', 'admin', 'ADMIN', 'SYNCED');
                     """);
 
+            stmt.execute("""
+                    INSERT OR IGNORE INTO clients
+                    (uuid, client_code, client_name, is_active, sync_status)
+                    VALUES ('', 'SYSTEM-DRAFT', 'System Draft Client', 0, 'SYNCED');
+                    """);
+
             stmt.execute(INVOICE_MASTER_DDL);
             stmt.execute(INVOICE_ADJUSTMENTS_DDL);
 
-            // ================== MIGRATION: REMOVE RESTRICTIVE CHECK CONSTRAINT ==================
-            // SQLite doesn't support DROP CONSTRAINT. We must check if the constraint exists by 
+            // ================== MIGRATION: REMOVE RESTRICTIVE CHECK CONSTRAINT
+            // ==================
+            // SQLite doesn't support DROP CONSTRAINT. We must check if the constraint
+            // exists by
             // inspecting the schema and if so, recreate the table.
             try {
                 String currentSchema = "";
-                try (java.sql.ResultSet rs = stmt.executeQuery("SELECT sql FROM sqlite_master WHERE type='table' AND name='invoice_master'")) {
-                    if (rs.next()) currentSchema = rs.getString(1);
+                try (java.sql.ResultSet rs = stmt
+                        .executeQuery("SELECT sql FROM sqlite_master WHERE type='table' AND name='invoice_master'")) {
+                    if (rs.next())
+                        currentSchema = rs.getString(1);
                 }
-                
-                if (currentSchema.contains("CHECK(due_amount = amount - paid_amount)") || currentSchema.contains("CHECK (due_amount = amount - paid_amount)")) {
+
+                if (currentSchema.contains("CHECK(due_amount = amount - paid_amount)")
+                        || currentSchema.contains("CHECK (due_amount = amount - paid_amount)")) {
                     System.out.println("⚠ Migration: Removing restrictive CHECK constraint from invoice_master...");
-                    
+
                     // 1. Rename old table
                     stmt.execute("ALTER TABLE invoice_master RENAME TO invoice_master_old;");
-                    
+
                     // 2. Create new table without the constraint
                     stmt.execute("""
-                        CREATE TABLE invoice_master (
-                            uuid TEXT PRIMARY KEY NOT NULL,
-                            invoice_no TEXT,
-                            client_uuid TEXT,
-                            client_name TEXT,
-                            invoice_date TEXT,
-                            period_from TEXT,
-                            period_to TEXT,
-                            amount REAL DEFAULT 0,
-                            paid_amount REAL DEFAULT 0,
-                            due_amount REAL DEFAULT 0,
-                            payment_status TEXT,
-                            last_payment_date TEXT,
-                            type TEXT,
-                            status TEXT,
-                            is_void INTEGER DEFAULT 0,
-                            void_reason TEXT,
-                            void_date TEXT,
-                            replaced_by_invoice_uuid TEXT,
-                            parent_invoice_uuid TEXT,
-                            status_updated_by TEXT,
-                            file_path TEXT,
-                            document_series TEXT,
-                            %s,
-                            FOREIGN KEY (client_uuid) REFERENCES clients(uuid)
-                        );
-                    """.formatted(SYNC_COLUMNS));
-                    
+                                CREATE TABLE invoice_master (
+                                    uuid TEXT PRIMARY KEY NOT NULL,
+                                    invoice_no TEXT,
+                                    client_uuid TEXT,
+                                    client_name TEXT,
+                                    invoice_date TEXT,
+                                    period_from TEXT,
+                                    period_to TEXT,
+                                    amount REAL DEFAULT 0,
+                                    paid_amount REAL DEFAULT 0,
+                                    due_amount REAL DEFAULT 0,
+                                    payment_status TEXT,
+                                    last_payment_date TEXT,
+                                    type TEXT,
+                                    status TEXT,
+                                    is_void INTEGER DEFAULT 0,
+                                    void_reason TEXT,
+                                    void_date TEXT,
+                                    replaced_by_invoice_uuid TEXT,
+                                    parent_invoice_uuid TEXT,
+                                    status_updated_by TEXT,
+                                    file_path TEXT,
+                                    document_series TEXT,
+                                    total_after_tax REAL DEFAULT 0,
+                                    round_off REAL DEFAULT 0,
+                                    %s,
+                                    FOREIGN KEY (client_uuid) REFERENCES clients(uuid)
+                                );
+                            """.formatted(SYNC_COLUMNS));
+
                     // 3. Copy data
-                    stmt.execute("""
-                        INSERT INTO invoice_master (
-                            uuid, invoice_no, client_uuid, client_name, invoice_date, period_from, period_to,
-                            amount, paid_amount, due_amount, payment_status, last_payment_date,
-                            type, status, is_void, void_reason, void_date,
-                            status_updated_by, file_path, created_at
-                        )
-                        SELECT 
-                            COALESCE(uuid, lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))),
-                            invoice_no, client_id, client_name, invoice_date, period_from, period_to,
-                            amount, paid_amount, due_amount, payment_status, last_payment_date,
-                            type, status, is_void, void_reason, void_date,
-                            status_updated_by, file_path, created_at
-                        FROM invoice_master_old;
-                    """);
-                    
+                    stmt.execute(
+                            """
+                                        INSERT INTO invoice_master (
+                                            uuid, invoice_no, client_uuid, client_name, invoice_date, period_from, period_to,
+                                            amount, paid_amount, due_amount, payment_status, last_payment_date,
+                                            type, status, is_void, void_reason, void_date,
+                                            status_updated_by, file_path, created_at
+                                        )
+                                        SELECT
+                                            COALESCE(uuid, lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))),
+                                            invoice_no, client_id, client_name, invoice_date, period_from, period_to,
+                                            amount, paid_amount, due_amount, payment_status, last_payment_date,
+                                            type, status, is_void, void_reason, void_date,
+                                            status_updated_by, file_path, created_at
+                                        FROM invoice_master_old;
+                                    """);
+
                     // 4. Drop old table
                     stmt.execute("DROP TABLE invoice_master_old;");
-                    
+
                     // 5. Recreate indexes
-                    try { stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_invoice_no ON invoice_master(invoice_no);"); } catch (Exception e) {}
-                    try { stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_invoice_master_uuid ON invoice_master(uuid);"); } catch (Exception e) {}
-                    
+                    try {
+                        stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_invoice_no ON invoice_master(invoice_no);");
+                    } catch (Exception e) {
+                    }
+                    try {
+                        stmt.execute(
+                                "CREATE UNIQUE INDEX IF NOT EXISTS ux_invoice_master_uuid ON invoice_master(uuid);");
+                    } catch (Exception e) {
+                    }
+
                     System.out.println("✔ Migration: Successfully updated invoice_master to UUID PK schema.");
                 }
             } catch (Exception e) {
                 System.err.println("❌ Migration failed: " + e.getMessage());
-                // If it fails, we try to recover by renaming back if needed, but SQLite RENAME is usually safe.
+                // If it fails, we try to recover by renaming back if needed, but SQLite RENAME
+                // is usually safe.
             }
 
             // ================== INVOICE_MASTER TABLE MIGRATIONS ==================
             try {
-                stmt.execute("ALTER TABLE invoice_master ADD COLUMN parent_invoice_id INTEGER REFERENCES invoice_master(id);");
+                stmt.execute(
+                        "ALTER TABLE invoice_master ADD COLUMN parent_invoice_id INTEGER REFERENCES invoice_master(id);");
                 System.out.println("✔ Migration: Added parent_invoice_id to invoice_master");
             } catch (Exception e) {
                 // Ignore if exists
             }
-            
+
             try {
-                stmt.execute("ALTER TABLE invoice_master ADD COLUMN replaced_by_invoice_id INTEGER REFERENCES invoice_master(id);");
-            } catch (Exception e) { }
+                stmt.execute(
+                        "ALTER TABLE invoice_master ADD COLUMN replaced_by_invoice_id INTEGER REFERENCES invoice_master(id);");
+            } catch (Exception e) {
+            }
 
             try {
                 stmt.execute("ALTER TABLE invoice_master ADD COLUMN document_series TEXT;");
-            } catch (Exception e) { }
-            
-            // 🔥 Fix for Invoice Revisions: Relax uniqueness to allow "REVISED" invoices to coexist with the new DRAFT
+            } catch (Exception e) {
+            }
+
+            // 🔥 Fix for Invoice Revisions: Relax uniqueness to allow "REVISED" invoices to
+            // coexist with the new DRAFT
             // We drop all possible variations of the restrictive index
-            try { stmt.execute("DROP INDEX IF EXISTS ux_invoice_master_client_period;"); } catch (Exception e) { }
-            try { stmt.execute("DROP INDEX IF EXISTS ux_invoice_master_client_type_period;"); } catch (Exception e) { }
-            try { stmt.execute("DROP INDEX IF EXISTS ux_invoice_active_period;"); } catch (Exception e) { }
-            
+            try {
+                stmt.execute("DROP INDEX IF EXISTS ux_invoice_master_client_period;");
+            } catch (Exception e) {
+            }
+            try {
+                stmt.execute("DROP INDEX IF EXISTS ux_invoice_master_client_type_period;");
+            } catch (Exception e) {
+            }
+            try {
+                stmt.execute("DROP INDEX IF EXISTS ux_invoice_active_period;");
+            } catch (Exception e) {
+            }
+
             try {
                 // Only enforce uniqueness for active invoices (not void, not revised)
-                // We include 'type' to ensure it covers both monthly and range-based rules if they were separate
-                // Uniqueness on period is no longer enforced to allow multiple invoices for same period if desired.
+                // We include 'type' to ensure it covers both monthly and range-based rules if
+                // they were separate
+                // Uniqueness on period is no longer enforced to allow multiple invoices for
+                // same period if desired.
                 // We only enforce invoice number uniqueness.
-            } catch (Exception e) { }
+            } catch (Exception e) {
+            }
 
             try {
                 stmt.execute("""
@@ -297,145 +330,174 @@ public class DatabaseInitializer {
                         ON invoice_master(invoice_no)
                         WHERE invoice_no IS NOT NULL AND is_deleted = 0
                         """);
-            } catch (Exception e) { }
+            } catch (Exception e) {
+            }
 
             try {
                 // Ensure cancelled invoices remain visible in the list (not hidden like VOID)
-                stmt.execute("UPDATE invoice_master SET is_void = 0 WHERE (status = 'CANCELLED' OR status = 'REVISED') AND is_void = 1;");
-            } catch (Exception e) { }
+                stmt.execute(
+                        "UPDATE invoice_master SET is_void = 0 WHERE (status = 'CANCELLED' OR status = 'REVISED') AND is_void = 1;");
+            } catch (Exception e) {
+            }
 
             stmt.execute("""
-			        CREATE TABLE IF NOT EXISTS system_settings (
-			            uuid TEXT PRIMARY KEY NOT NULL,
-			            invoice_mode TEXT NOT NULL CHECK (invoice_mode IN ('AUTO','MANUAL')),
-			            invoice_prefix TEXT,
-			            invoice_start_no INTEGER,
-			            invoice_padding INTEGER,
-			            %s
-			        );
-			""".formatted(SYNC_COLUMNS));
+                            CREATE TABLE IF NOT EXISTS system_settings (
+                                uuid TEXT PRIMARY KEY NOT NULL,
+                                invoice_mode TEXT NOT NULL CHECK (invoice_mode IN ('AUTO','MANUAL')),
+                                invoice_prefix TEXT,
+                                invoice_start_no INTEGER,
+                                invoice_padding INTEGER,
+                                %s
+                            );
+                    """.formatted(SYNC_COLUMNS));
 
             // Ensure default configuration row exists
             stmt.execute("""
-			        INSERT OR IGNORE INTO system_settings
-			        (uuid, invoice_mode, invoice_prefix, invoice_start_no, invoice_padding)
-			        VALUES ('00000000-0000-0000-0000-000000000001', 'AUTO', 'INV-', 1, 4);
-			""");
+                            INSERT OR IGNORE INTO system_settings
+                            (uuid, invoice_mode, invoice_prefix, invoice_start_no, invoice_padding)
+                            VALUES ('00000000-0000-0000-0000-000000000001', 'AUTO', 'INV-', 1, 4);
+                    """);
 
-            // Columns expected by SystemSettingsRepository / numbering (safe on existing DBs)
-            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_invoice_no INTEGER DEFAULT 0;"); } catch (Exception e) {}
-            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_job_no INTEGER DEFAULT 0;"); } catch (Exception e) {}
-            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN job_prefix TEXT DEFAULT 'SUN-';"); } catch (Exception e) {}
-            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN job_start_no INTEGER DEFAULT 1;"); } catch (Exception e) {}
-            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN job_padding INTEGER DEFAULT 4;"); } catch (Exception e) {}
-			
+            // Columns expected by SystemSettingsRepository / numbering (safe on existing
+            // DBs)
+            try {
+                stmt.execute("ALTER TABLE system_settings ADD COLUMN last_invoice_no INTEGER DEFAULT 0;");
+            } catch (Exception e) {
+            }
+            try {
+                stmt.execute("ALTER TABLE system_settings ADD COLUMN last_job_no INTEGER DEFAULT 0;");
+            } catch (Exception e) {
+            }
+            try {
+                stmt.execute("ALTER TABLE system_settings ADD COLUMN job_prefix TEXT DEFAULT 'SUN-';");
+            } catch (Exception e) {
+            }
+            try {
+                stmt.execute("ALTER TABLE system_settings ADD COLUMN job_start_no INTEGER DEFAULT 1;");
+            } catch (Exception e) {
+            }
+            try {
+                stmt.execute("ALTER TABLE system_settings ADD COLUMN job_padding INTEGER DEFAULT 4;");
+            } catch (Exception e) {
+            }
+
             // ================== EMAIL SETTINGS TABLE ==================
             stmt.execute("""
-                    CREATE TABLE IF NOT EXISTS email_settings (
-                        uuid TEXT PRIMARY KEY NOT NULL,
-                        smtp_host TEXT,
-                        smtp_port TEXT,
-                        sender_email TEXT,
-                        sender_password TEXT,
-                        %s
-                    );
-            """.formatted(SYNC_COLUMNS));
+                            CREATE TABLE IF NOT EXISTS email_settings (
+                                uuid TEXT PRIMARY KEY NOT NULL,
+                                smtp_host TEXT,
+                                smtp_port TEXT,
+                                sender_email TEXT,
+                                sender_password TEXT,
+                                %s
+                            );
+                    """.formatted(SYNC_COLUMNS));
             stmt.execute("""
-                    INSERT OR IGNORE INTO email_settings 
-                    (uuid, smtp_host, smtp_port, sender_email, sender_password) 
-                    VALUES ('00000000-0000-0000-0000-000000000002', 'smtp.gmail.com', '587', '', '');
-            """);
+                            INSERT OR IGNORE INTO email_settings
+                            (uuid, smtp_host, smtp_port, sender_email, sender_password)
+                            VALUES ('00000000-0000-0000-0000-000000000002', 'smtp.gmail.com', '587', '', '');
+                    """);
 
             // ================== MIGRATION: FIX BROKEN FOREIGN KEYS ==================
-            // After renaming invoice_master to invoice_master_old, some tables might have their 
+            // After renaming invoice_master to invoice_master_old, some tables might have
+            // their
             // FKs stuck pointing to the old (now deleted) table.
             try {
                 String fullSchema = "";
                 try (java.sql.ResultSet rs = stmt.executeQuery("SELECT sql FROM sqlite_master WHERE type='table'")) {
-                    while (rs.next()) fullSchema += rs.getString(1) + "\n";
+                    while (rs.next())
+                        fullSchema += rs.getString(1) + "\n";
                 }
-                
+
                 if (fullSchema.contains("invoice_master_old")) {
                     System.out.println("⚠ Migration: Fixing broken foreign key references to 'invoice_master_old'...");
                     stmt.execute("PRAGMA foreign_keys = OFF;");
-                    
+
                     // 1. Fix invoice_adjustments
-                    if (fullSchema.contains("CREATE TABLE invoice_adjustments") && (fullSchema.contains("REFERENCES \"invoice_master_old\"") || fullSchema.contains("invoice_id INTEGER"))) {
+                    if (fullSchema.contains("CREATE TABLE invoice_adjustments")
+                            && (fullSchema.contains("REFERENCES \"invoice_master_old\"")
+                                    || fullSchema.contains("invoice_id INTEGER"))) {
                         stmt.execute("ALTER TABLE invoice_adjustments RENAME TO invoice_adjustments_old;");
                         stmt.execute("""
-                            CREATE TABLE invoice_adjustments (
-                                uuid TEXT PRIMARY KEY NOT NULL,
-                                invoice_uuid TEXT NOT NULL,
-                                type TEXT NOT NULL CHECK (type IN ('Credit Note', 'Debit Note')),
-                                note_no TEXT UNIQUE NOT NULL,
-                                amount REAL NOT NULL,
-                                reason TEXT,
-                                date TEXT DEFAULT (date('now')),
-                                %s,
-                                FOREIGN KEY (invoice_uuid) REFERENCES invoice_master(uuid)
-                            );
-                        """.formatted(SYNC_COLUMNS));
+                                    CREATE TABLE invoice_adjustments (
+                                        uuid TEXT PRIMARY KEY NOT NULL,
+                                        invoice_uuid TEXT NOT NULL,
+                                        type TEXT NOT NULL CHECK (type IN ('Credit Note', 'Debit Note')),
+                                        note_no TEXT UNIQUE NOT NULL,
+                                        amount REAL NOT NULL,
+                                        reason TEXT,
+                                        date TEXT DEFAULT (date('now')),
+                                        %s,
+                                        FOREIGN KEY (invoice_uuid) REFERENCES invoice_master(uuid)
+                                    );
+                                """.formatted(SYNC_COLUMNS));
                         // Re-map IDs to UUIDs if needed, or just generate fresh UUIDs
-                        stmt.execute("""
-                            INSERT INTO invoice_adjustments (uuid, invoice_uuid, type, note_no, amount, reason, date, created_at)
-                            SELECT 
-                                lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
-                                (SELECT im.uuid FROM invoice_master im WHERE im.id = old.invoice_id),
-                                type, note_no, amount, reason, date, created_at
-                            FROM invoice_adjustments_old old;
-                        """);
+                        stmt.execute(
+                                """
+                                            INSERT INTO invoice_adjustments (uuid, invoice_uuid, type, note_no, amount, reason, date, created_at)
+                                            SELECT
+                                                lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
+                                                (SELECT im.uuid FROM invoice_master im WHERE im.id = old.invoice_id),
+                                                type, note_no, amount, reason, date, created_at
+                                            FROM invoice_adjustments_old old;
+                                        """);
                         stmt.execute("DROP TABLE invoice_adjustments_old;");
                     }
-                    
+
                     // 2. Fix payment_allocations
-                    if (fullSchema.contains("CREATE TABLE payment_allocations") && (fullSchema.contains("REFERENCES \"invoice_master_old\"") || fullSchema.contains("invoice_id INTEGER"))) {
+                    if (fullSchema.contains("CREATE TABLE payment_allocations")
+                            && (fullSchema.contains("REFERENCES \"invoice_master_old\"")
+                                    || fullSchema.contains("invoice_id INTEGER"))) {
                         stmt.execute("ALTER TABLE payment_allocations RENAME TO payment_allocations_old;");
                         stmt.execute("""
-                            CREATE TABLE payment_allocations (
-                                uuid TEXT PRIMARY KEY NOT NULL,
-                                payment_uuid TEXT NOT NULL,
-                                invoice_uuid TEXT NOT NULL,
-                                allocated_amount REAL NOT NULL,
-                                sync_status TEXT DEFAULT 'PENDING',
-                                sync_version INTEGER DEFAULT 1,
-                                is_deleted INTEGER DEFAULT 0,
-                                is_active INTEGER DEFAULT 1,
-                                created_at TEXT DEFAULT (datetime('now')),
-                                updated_at TEXT DEFAULT (datetime('now')),
-                                synced_at TEXT DEFAULT NULL,
-                                deleted_at TEXT DEFAULT NULL,
-                                FOREIGN KEY (payment_uuid) REFERENCES payments(uuid),
-                                FOREIGN KEY (invoice_uuid) REFERENCES invoice_master(uuid)
-                            );
-                        """);
-                        stmt.execute("""
-                            INSERT INTO payment_allocations (uuid, payment_uuid, invoice_uuid, allocated_amount, created_at)
-                            SELECT 
-                                lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
-                                COALESCE(payment_uuid, (SELECT p.uuid FROM payments p WHERE p.id = old.payment_id)),
-                                COALESCE(invoice_uuid, (SELECT im.uuid FROM invoice_master im WHERE im.id = old.invoice_id)),
-                                allocated_amount, created_at
-                            FROM payment_allocations_old old;
-                        """);
+                                    CREATE TABLE payment_allocations (
+                                        uuid TEXT PRIMARY KEY NOT NULL,
+                                        payment_uuid TEXT NOT NULL,
+                                        invoice_uuid TEXT NOT NULL,
+                                        allocated_amount REAL NOT NULL,
+                                        sync_status TEXT DEFAULT 'PENDING',
+                                        sync_version INTEGER DEFAULT 1,
+                                        is_deleted INTEGER DEFAULT 0,
+                                        is_active INTEGER DEFAULT 1,
+                                        created_at TEXT DEFAULT (datetime('now')),
+                                        updated_at TEXT DEFAULT (datetime('now')),
+                                        synced_at TEXT DEFAULT NULL,
+                                        deleted_at TEXT DEFAULT NULL,
+                                        FOREIGN KEY (payment_uuid) REFERENCES payments(uuid),
+                                        FOREIGN KEY (invoice_uuid) REFERENCES invoice_master(uuid)
+                                    );
+                                """);
+                        stmt.execute(
+                                """
+                                            INSERT INTO payment_allocations (uuid, payment_uuid, invoice_uuid, allocated_amount, created_at)
+                                            SELECT
+                                                lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
+                                                COALESCE(payment_uuid, (SELECT p.uuid FROM payments p WHERE p.id = old.payment_id)),
+                                                COALESCE(invoice_uuid, (SELECT im.uuid FROM invoice_master im WHERE im.id = old.invoice_id)),
+                                                allocated_amount, created_at
+                                            FROM payment_allocations_old old;
+                                        """);
                         stmt.execute("DROP TABLE payment_allocations_old;");
                     }
-                    
+
                     // 3. Fix jobs
-                    if (fullSchema.contains("CREATE TABLE jobs") && fullSchema.contains("REFERENCES \"invoice_master_old\"")) {
+                    if (fullSchema.contains("CREATE TABLE jobs")
+                            && fullSchema.contains("REFERENCES \"invoice_master_old\"")) {
                         stmt.execute("ALTER TABLE jobs RENAME TO jobs_old;");
                         stmt.execute(JOBS_DDL);
-                        stmt.execute("""
-                            INSERT INTO jobs (uuid, client_uuid, invoice_uuid, job_code, job_title, status, created_at, updated_at)
-                            SELECT 
-                                lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
-                                client_id,
-                                (SELECT im.uuid FROM invoice_master im WHERE im.id = old.invoice_id),
-                                job_no, job_title, status, created_at, updated_at
-                            FROM jobs_old old;
-                        """);
+                        stmt.execute(
+                                """
+                                            INSERT INTO jobs (uuid, client_uuid, invoice_uuid, job_code, job_title, status, created_at, updated_at)
+                                            SELECT
+                                                lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
+                                                client_id,
+                                                (SELECT im.uuid FROM invoice_master im WHERE im.id = old.invoice_id),
+                                                job_no, job_title, status, created_at, updated_at
+                                            FROM jobs_old old;
+                                        """);
                         stmt.execute("DROP TABLE jobs_old;");
                     }
-                    
+
                     stmt.execute("PRAGMA foreign_keys = ON;");
                     System.out.println("✔ Migration: All foreign keys fixed.");
                 }
@@ -448,37 +510,43 @@ public class DatabaseInitializer {
             try {
                 stmt.execute("ALTER TABLE payments ADD COLUMN type TEXT DEFAULT 'Payment';");
                 System.out.println("✔ Migration: Added type to payments table");
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            }
 
             try {
                 String paSchema = "";
-                try (java.sql.ResultSet rs = stmt.executeQuery("SELECT sql FROM sqlite_master WHERE type='table' AND name='payment_allocations'")) {
-                    if (rs.next()) paSchema = rs.getString(1);
+                try (java.sql.ResultSet rs = stmt.executeQuery(
+                        "SELECT sql FROM sqlite_master WHERE type='table' AND name='payment_allocations'")) {
+                    if (rs.next())
+                        paSchema = rs.getString(1);
                 }
-                
+
                 // If it contains the positive check, we need to recreate it to allow refunds
-                if (paSchema.contains("CHECK(allocated_amount > 0)") || paSchema.contains("CHECK (allocated_amount > 0)")) {
-                    System.out.println("⚠ Migration: Removing restrictive CHECK constraint from payment_allocations for Refund support...");
+                if (paSchema.contains("CHECK(allocated_amount > 0)")
+                        || paSchema.contains("CHECK (allocated_amount > 0)")) {
+                    System.out.println(
+                            "⚠ Migration: Removing restrictive CHECK constraint from payment_allocations for Refund support...");
                     stmt.execute("ALTER TABLE payment_allocations RENAME TO pa_old;");
                     stmt.execute("""
-                        CREATE TABLE payment_allocations (
-                            uuid TEXT PRIMARY KEY NOT NULL,
-                            payment_uuid TEXT NOT NULL,
-                            invoice_uuid TEXT NOT NULL,
-                            allocated_amount REAL NOT NULL,
-                            sync_status TEXT DEFAULT 'PENDING',
-                            sync_version INTEGER DEFAULT 1,
-                            is_deleted INTEGER DEFAULT 0,
-                            is_active INTEGER DEFAULT 1,
-                            created_at TEXT DEFAULT (datetime('now')),
-                            updated_at TEXT DEFAULT (datetime('now')),
-                            synced_at TEXT DEFAULT NULL,
-                            deleted_at TEXT DEFAULT NULL,
-                            FOREIGN KEY (payment_uuid) REFERENCES payments(uuid),
-                            FOREIGN KEY (invoice_uuid) REFERENCES invoice_master(uuid)
-                        );
-                    """);
-                    stmt.execute("INSERT INTO payment_allocations (id, payment_id, invoice_id, allocated_amount, created_at) SELECT id, payment_id, invoice_id, allocated_amount, created_at FROM pa_old;");
+                                CREATE TABLE payment_allocations (
+                                    uuid TEXT PRIMARY KEY NOT NULL,
+                                    payment_uuid TEXT NOT NULL,
+                                    invoice_uuid TEXT NOT NULL,
+                                    allocated_amount REAL NOT NULL,
+                                    sync_status TEXT DEFAULT 'PENDING',
+                                    sync_version INTEGER DEFAULT 1,
+                                    is_deleted INTEGER DEFAULT 0,
+                                    is_active INTEGER DEFAULT 1,
+                                    created_at TEXT DEFAULT (datetime('now')),
+                                    updated_at TEXT DEFAULT (datetime('now')),
+                                    synced_at TEXT DEFAULT NULL,
+                                    deleted_at TEXT DEFAULT NULL,
+                                    FOREIGN KEY (payment_uuid) REFERENCES payments(uuid),
+                                    FOREIGN KEY (invoice_uuid) REFERENCES invoice_master(uuid)
+                                );
+                            """);
+                    stmt.execute(
+                            "INSERT INTO payment_allocations (id, payment_id, invoice_id, allocated_amount, created_at) SELECT id, payment_id, invoice_id, allocated_amount, created_at FROM pa_old;");
                     stmt.execute("DROP TABLE pa_old;");
                     System.out.println("✔ Migration: payment_allocations updated.");
                 }
@@ -490,171 +558,229 @@ public class DatabaseInitializer {
 
             // ================== PRINTING ITEMS TABLE ==================
             stmt.execute("""
-                CREATE TABLE IF NOT EXISTS printing_items (
-                    uuid TEXT PRIMARY KEY NOT NULL,
-                    job_item_uuid TEXT NOT NULL UNIQUE,
-                    qty INTEGER DEFAULT 0,
-                    units TEXT,
-                    sets TEXT,
-                    color TEXT,
-                    side TEXT,
-                    with_ctp INTEGER DEFAULT 0,
-                    notes TEXT,
-                    amount REAL DEFAULT 0,
-                    %s,
-                    FOREIGN KEY (job_item_uuid) REFERENCES job_items(uuid) ON DELETE CASCADE
-                );
-            """.formatted(SYNC_COLUMNS));
+                        CREATE TABLE IF NOT EXISTS printing_items (
+                            uuid TEXT PRIMARY KEY NOT NULL,
+                            job_item_uuid TEXT NOT NULL UNIQUE,
+                            qty INTEGER DEFAULT 0,
+                            units TEXT,
+                            sets TEXT,
+                            color TEXT,
+                            side TEXT,
+                            with_ctp INTEGER DEFAULT 0,
+                            notes TEXT,
+                            amount REAL DEFAULT 0,
+                            %s,
+                            FOREIGN KEY (job_item_uuid) REFERENCES job_items(uuid) ON DELETE CASCADE
+                        );
+                    """.formatted(SYNC_COLUMNS));
 
             // ================== PAPER ITEMS TABLE ==================
             stmt.execute("""
-                CREATE TABLE IF NOT EXISTS paper_items (
-                    uuid TEXT PRIMARY KEY NOT NULL,
-                    job_item_uuid TEXT NOT NULL UNIQUE,
-                    qty INTEGER DEFAULT 0,
-                    units TEXT,
-                    size TEXT,
-                    gsm TEXT,
-                    type TEXT,
-                    source TEXT,
-                    supplier_uuid TEXT,
-                    supplier_name TEXT,
-                    notes TEXT,
-                    amount REAL DEFAULT 0,
-                    %s,
-                    FOREIGN KEY (job_item_uuid) REFERENCES job_items(uuid) ON DELETE CASCADE,
-                    FOREIGN KEY (supplier_uuid) REFERENCES suppliers(uuid)
-                );
-            """.formatted(SYNC_COLUMNS));
+                        CREATE TABLE IF NOT EXISTS paper_items (
+                            uuid TEXT PRIMARY KEY NOT NULL,
+                            job_item_uuid TEXT NOT NULL UNIQUE,
+                            qty INTEGER DEFAULT 0,
+                            units TEXT,
+                            size TEXT,
+                            gsm TEXT,
+                            type TEXT,
+                            source TEXT,
+                            supplier_uuid TEXT,
+                            supplier_name TEXT,
+                            notes TEXT,
+                            amount REAL DEFAULT 0,
+                            %s,
+                            FOREIGN KEY (job_item_uuid) REFERENCES job_items(uuid) ON DELETE CASCADE,
+                            FOREIGN KEY (supplier_uuid) REFERENCES suppliers(uuid)
+                        );
+                    """.formatted(SYNC_COLUMNS));
 
             // ================== BINDING ITEMS TABLE ==================
             stmt.execute("""
-                CREATE TABLE IF NOT EXISTS binding_items (
-                    uuid TEXT PRIMARY KEY NOT NULL,
-                    job_item_uuid TEXT NOT NULL UNIQUE,
-                    process TEXT,
-                    qty INTEGER DEFAULT 0,
-                    rate REAL DEFAULT 0,
-                    notes TEXT,
-                    amount REAL DEFAULT 0,
-                    %s,
-                    FOREIGN KEY (job_item_uuid) REFERENCES job_items(uuid) ON DELETE CASCADE
-                );
-            """.formatted(SYNC_COLUMNS));
+                        CREATE TABLE IF NOT EXISTS binding_items (
+                            uuid TEXT PRIMARY KEY NOT NULL,
+                            job_item_uuid TEXT NOT NULL UNIQUE,
+                            process TEXT,
+                            qty INTEGER DEFAULT 0,
+                            rate REAL DEFAULT 0,
+                            notes TEXT,
+                            amount REAL DEFAULT 0,
+                            %s,
+                            FOREIGN KEY (job_item_uuid) REFERENCES job_items(uuid) ON DELETE CASCADE
+                        );
+                    """.formatted(SYNC_COLUMNS));
 
             // ================== LAMINATION ITEMS TABLE ==================
             stmt.execute("""
-                CREATE TABLE IF NOT EXISTS lamination_items (
-                    uuid TEXT PRIMARY KEY NOT NULL,
-                    job_item_uuid TEXT NOT NULL UNIQUE,
-                    qty INTEGER DEFAULT 0,
-                    unit TEXT,
-                    type TEXT,
-                    side TEXT,
-                    size TEXT,
-                    notes TEXT,
-                    amount REAL DEFAULT 0,
-                    %s,
-                    FOREIGN KEY (job_item_uuid) REFERENCES job_items(uuid) ON DELETE CASCADE
-                );
-            """.formatted(SYNC_COLUMNS));
+                        CREATE TABLE IF NOT EXISTS lamination_items (
+                            uuid TEXT PRIMARY KEY NOT NULL,
+                            job_item_uuid TEXT NOT NULL UNIQUE,
+                            qty INTEGER DEFAULT 0,
+                            unit TEXT,
+                            type TEXT,
+                            side TEXT,
+                            size TEXT,
+                            notes TEXT,
+                            amount REAL DEFAULT 0,
+                            %s,
+                            FOREIGN KEY (job_item_uuid) REFERENCES job_items(uuid) ON DELETE CASCADE
+                        );
+                    """.formatted(SYNC_COLUMNS));
 
             // ================== CTP ITEMS TABLE ==================
             stmt.execute("""
-                CREATE TABLE IF NOT EXISTS ctp_items (
-                    uuid TEXT PRIMARY KEY NOT NULL,
-                    job_item_uuid TEXT NOT NULL UNIQUE,
-                    qty INTEGER DEFAULT 0,
-                    plate_size TEXT,
-                    gauge TEXT,
-                    backing TEXT,
-                    color TEXT,
-                    supplier_uuid TEXT,
-                    supplier_name TEXT,
-                    notes TEXT,
-                    amount REAL DEFAULT 0,
-                    %s,
-                    FOREIGN KEY (job_item_uuid) REFERENCES job_items(uuid) ON DELETE CASCADE,
-                    FOREIGN KEY (supplier_uuid) REFERENCES suppliers(uuid)
-                );
-            """.formatted(SYNC_COLUMNS));
+                        CREATE TABLE IF NOT EXISTS ctp_items (
+                            uuid TEXT PRIMARY KEY NOT NULL,
+                            job_item_uuid TEXT NOT NULL UNIQUE,
+                            qty INTEGER DEFAULT 0,
+                            plate_size TEXT,
+                            gauge TEXT,
+                            backing TEXT,
+                            color TEXT,
+                            supplier_uuid TEXT,
+                            supplier_name TEXT,
+                            notes TEXT,
+                            amount REAL DEFAULT 0,
+                            %s,
+                            FOREIGN KEY (job_item_uuid) REFERENCES job_items(uuid) ON DELETE CASCADE,
+                            FOREIGN KEY (supplier_uuid) REFERENCES suppliers(uuid)
+                        );
+                    """.formatted(SYNC_COLUMNS));
 
             // ================== HSN / SAC MASTER TABLE (GST) ==================
-            // Stores HSN/SAC + GST rate mapping per job item type (PRINTING/PAPER/BINDING/LAMINATION/CTP).
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS hsn_sac_master (
-                    uuid TEXT PRIMARY KEY NOT NULL,
-                    item_type TEXT NOT NULL,                  -- PRINTING | PAPER | BINDING | LAMINATION | CTP | OTHER
-                    item_name TEXT NOT NULL DEFAULT '',
-                    keyword TEXT NOT NULL DEFAULT '',          -- optional: description keyword match (case-insensitive)
-                    code_type TEXT NOT NULL DEFAULT 'HSN',
-                    hsn_sac TEXT NOT NULL,
-                    gst_rate REAL NOT NULL DEFAULT 0.18,      -- e.g. 0.18 for 18%%
-                    unit_default TEXT,                        -- optional override: PCS/SHEET/SET etc.
-                    description TEXT NOT NULL DEFAULT '',
-                    is_favorite INTEGER NOT NULL DEFAULT 0,
-                    created_by_user_uuid TEXT DEFAULT NULL,
-                    updated_by_user_uuid TEXT DEFAULT NULL,
-                    %s,
-                    UNIQUE(item_type, keyword)
-                );
-            """.formatted(SYNC_COLUMNS));
+            // Stores HSN/SAC + GST rate mapping per job item type
+            // (PRINTING/PAPER/BINDING/LAMINATION/CTP).
+            stmt.execute(
+                    """
+                                CREATE TABLE IF NOT EXISTS hsn_sac_master (
+                                    uuid TEXT PRIMARY KEY NOT NULL,
+                                    item_type TEXT NOT NULL,                  -- PRINTING | PAPER | BINDING | LAMINATION | CTP | OTHER
+                                    item_name TEXT NOT NULL DEFAULT '',
+                                    keyword TEXT NOT NULL DEFAULT '',          -- optional: description keyword match (case-insensitive)
+                                    code_type TEXT NOT NULL DEFAULT 'HSN',
+                                    hsn_sac TEXT NOT NULL,
+                                    gst_rate REAL NOT NULL DEFAULT 0.18,      -- e.g. 0.18 for 18%%
+                                    unit_default TEXT,                        -- optional override: PCS/SHEET/SET etc.
+                                    description TEXT NOT NULL DEFAULT '',
+                                    is_favorite INTEGER NOT NULL DEFAULT 0,
+                                    created_by_user_uuid TEXT DEFAULT NULL,
+                                    updated_by_user_uuid TEXT DEFAULT NULL,
+                                    %s
+                                );
+                            """
+                            .formatted(SYNC_COLUMNS));
 
+            migrateTableToUuidPrimaryKey(conn, "hsn_sac_master",
+                    """
+                                CREATE TABLE IF NOT EXISTS hsn_sac_master (
+                                    uuid TEXT PRIMARY KEY NOT NULL,
+                                    item_type TEXT NOT NULL,                  -- PRINTING | PAPER | BINDING | LAMINATION | CTP | OTHER
+                                    item_name TEXT NOT NULL DEFAULT '',
+                                    keyword TEXT NOT NULL DEFAULT '',          -- optional: description keyword match (case-insensitive)
+                                    code_type TEXT NOT NULL DEFAULT 'HSN',
+                                    hsn_sac TEXT NOT NULL,
+                                    gst_rate REAL NOT NULL DEFAULT 0.18,      -- e.g. 0.18 for 18%%
+                                    unit_default TEXT,                        -- optional override: PCS/SHEET/SET etc.
+                                    description TEXT NOT NULL DEFAULT '',
+                                    is_favorite INTEGER NOT NULL DEFAULT 0,
+                                    created_by_user_uuid TEXT DEFAULT NULL,
+                                    updated_by_user_uuid TEXT DEFAULT NULL,
+                                    %s
+                                );
+                            """
+                            .formatted(SYNC_COLUMNS));
             migrateHsnSacMasterIfNeeded(conn);
+            stmt.execute("UPDATE hsn_sac_master SET code_type = 'HSN' WHERE code_type IS NULL OR trim(code_type) = ''");
+            stmt.execute("UPDATE hsn_sac_master SET keyword = item_name WHERE keyword IS NULL OR trim(keyword) = '' OR keyword = '—'");
             seedDefaultHsnSacRows(stmt);
 
-            // ================== BANK DETAILS (INVOICE FOOTER / GST BANK BLOCK) ==================
+            // ================== BANK DETAILS (INVOICE FOOTER / GST BANK BLOCK)
+            // ==================
+            migrateTableToUuidPrimaryKey(conn, "bank_details", """
+                    CREATE TABLE IF NOT EXISTS bank_details (
+                        uuid TEXT PRIMARY KEY NOT NULL,
+                        bank_name TEXT NOT NULL,
+                        account_holder_name TEXT NOT NULL DEFAULT '',
+                        account_no TEXT NOT NULL DEFAULT '',
+                        branch_ifsc TEXT NOT NULL DEFAULT '',
+                        branch_name TEXT NOT NULL DEFAULT '',
+                        ifsc_code TEXT NOT NULL DEFAULT '',
+                        is_default INTEGER NOT NULL DEFAULT 0,
+                        created_by_user_uuid TEXT DEFAULT NULL,
+                        updated_by_user_uuid TEXT DEFAULT NULL,
+                        %s
+                    );
+                    """.formatted(SYNC_COLUMNS));
             stmt.execute("""
-                CREATE TABLE IF NOT EXISTS bank_details (
-                    uuid TEXT PRIMARY KEY NOT NULL,
-                    bank_name TEXT NOT NULL,
-                    account_holder_name TEXT NOT NULL DEFAULT '',
-                    account_no TEXT NOT NULL DEFAULT '',
-                    branch_ifsc TEXT NOT NULL DEFAULT '',
-                    branch_name TEXT NOT NULL DEFAULT '',
-                    ifsc_code TEXT NOT NULL DEFAULT '',
-                    is_default INTEGER NOT NULL DEFAULT 0,
-                    created_by_user_uuid TEXT DEFAULT NULL,
-                    updated_by_user_uuid TEXT DEFAULT NULL,
-                    %s
-                );
-                """.formatted(SYNC_COLUMNS));
+                    CREATE TABLE IF NOT EXISTS bank_details (
+                        uuid TEXT PRIMARY KEY NOT NULL,
+                        bank_name TEXT NOT NULL,
+                        account_holder_name TEXT NOT NULL DEFAULT '',
+                        account_no TEXT NOT NULL DEFAULT '',
+                        branch_ifsc TEXT NOT NULL DEFAULT '',
+                        branch_name TEXT NOT NULL DEFAULT '',
+                        ifsc_code TEXT NOT NULL DEFAULT '',
+                        is_default INTEGER NOT NULL DEFAULT 0,
+                        created_by_user_uuid TEXT DEFAULT NULL,
+                        updated_by_user_uuid TEXT DEFAULT NULL,
+                        %s
+                    );
+                    """.formatted(SYNC_COLUMNS));
             try {
-                stmt.execute("""
-                    INSERT INTO bank_details (uuid, bank_name, account_holder_name, account_no, branch_ifsc, is_default, is_active)
-                    SELECT lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
-                           'INDIAN OVERSEAS BANK', 'SUNNY PRINTER', '15980200000000780', 'PITAMPURA & IOBA0001598', 1, 1
-                    WHERE NOT EXISTS (SELECT 1 FROM bank_details)
-                    """);
+                stmt.execute(
+                        """
+                                INSERT INTO bank_details (uuid, bank_name, account_holder_name, account_no, branch_ifsc, is_default, is_active)
+                                SELECT lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
+                                       'INDIAN OVERSEAS BANK', 'SUNNY PRINTER', '15980200000000780', 'PITAMPURA & IOBA0001598', 1, 1
+                                WHERE NOT EXISTS (SELECT 1 FROM bank_details)
+                                """);
             } catch (Exception e) {
             }
 
             // ================== COMPANY DETAILS (MULTI-COMPANY) ==================
+            migrateTableToUuidPrimaryKey(conn, "company_details", """
+                    CREATE TABLE IF NOT EXISTS company_details (
+                        uuid TEXT PRIMARY KEY NOT NULL,
+                        trade_name TEXT NOT NULL,
+                        address TEXT NOT NULL DEFAULT '',
+                        phone TEXT NOT NULL DEFAULT '',
+                        alt_phone TEXT NOT NULL DEFAULT '',
+                        email TEXT NOT NULL DEFAULT '',
+                        gstin TEXT NOT NULL DEFAULT '',
+                        state TEXT NOT NULL DEFAULT '',
+                        is_default INTEGER NOT NULL DEFAULT 0,
+                        created_by_user_uuid TEXT DEFAULT NULL,
+                        updated_by_user_uuid TEXT DEFAULT NULL,
+                        %s
+                    );
+                    """.formatted(SYNC_COLUMNS));
             stmt.execute("""
-                CREATE TABLE IF NOT EXISTS company_details (
-                    uuid TEXT PRIMARY KEY NOT NULL,
-                    trade_name TEXT NOT NULL,
-                    address TEXT NOT NULL DEFAULT '',
-                    phone TEXT NOT NULL DEFAULT '',
-                    alt_phone TEXT NOT NULL DEFAULT '',
-                    email TEXT NOT NULL DEFAULT '',
-                    gstin TEXT NOT NULL DEFAULT '',
-                    state TEXT NOT NULL DEFAULT '',
-                    is_default INTEGER NOT NULL DEFAULT 0,
-                    created_by_user_uuid TEXT DEFAULT NULL,
-                    updated_by_user_uuid TEXT DEFAULT NULL,
-                    %s
-                );
-                """.formatted(SYNC_COLUMNS));
+                    CREATE TABLE IF NOT EXISTS company_details (
+                        uuid TEXT PRIMARY KEY NOT NULL,
+                        trade_name TEXT NOT NULL,
+                        address TEXT NOT NULL DEFAULT '',
+                        phone TEXT NOT NULL DEFAULT '',
+                        alt_phone TEXT NOT NULL DEFAULT '',
+                        email TEXT NOT NULL DEFAULT '',
+                        gstin TEXT NOT NULL DEFAULT '',
+                        state TEXT NOT NULL DEFAULT '',
+                        is_default INTEGER NOT NULL DEFAULT 0,
+                        created_by_user_uuid TEXT DEFAULT NULL,
+                        updated_by_user_uuid TEXT DEFAULT NULL,
+                        %s
+                    );
+                    """.formatted(SYNC_COLUMNS));
             try {
                 String trade = utils.CompanyProfile.getName().replace("'", "''");
                 String addr = utils.CompanyProfile.getAddress().replace("'", "''");
                 String phone = utils.CompanyProfile.getPhone().replace("'", "''");
                 String email = utils.CompanyProfile.getEmail().replace("'", "''");
                 String gst = utils.CompanyProfile.getGst().replace("'", "''");
-                stmt.execute("INSERT INTO company_details (uuid,trade_name,address,phone,alt_phone,email,gstin,state,is_default,is_active) "
-                        + "SELECT '" + java.util.UUID.randomUUID().toString() + "','" + trade + "','" + addr + "','" + phone + "','','" + email + "','" + gst
-                        + "','',1,1 WHERE NOT EXISTS (SELECT 1 FROM company_details)");
+                stmt.execute(
+                        "INSERT INTO company_details (uuid,trade_name,address,phone,alt_phone,email,gstin,state,is_default,is_active) "
+                                + "SELECT '" + java.util.UUID.randomUUID().toString() + "','" + trade + "','" + addr
+                                + "','" + phone + "','','" + email + "','" + gst
+                                + "','',1,1 WHERE NOT EXISTS (SELECT 1 FROM company_details)");
             } catch (Exception e) {
             }
 
@@ -676,27 +802,65 @@ public class DatabaseInitializer {
 
             ensureInvoiceMasterUuid(conn, stmt);
             ensureJobsTable(conn, stmt);
-            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_temp_invoice_no INTEGER DEFAULT 0;"); } catch (Exception e) {}
-            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN numbering_fy TEXT DEFAULT '';"); } catch (Exception e) {}
-            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_inv INTEGER DEFAULT 0;"); } catch (Exception e) {}
-            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_pi INTEGER DEFAULT 0;"); } catch (Exception e) {}
-            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_cn INTEGER DEFAULT 0;"); } catch (Exception e) {}
-            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_dn INTEGER DEFAULT 0;"); } catch (Exception e) {}
-            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_qtn INTEGER DEFAULT 0;"); } catch (Exception e) {}
-            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_po INTEGER DEFAULT 0;"); } catch (Exception e) {}
-            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_job INTEGER DEFAULT 0;"); } catch (Exception e) {}
-            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_tkt INTEGER DEFAULT 0;"); } catch (Exception e) {}
-            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_dc INTEGER DEFAULT 0;"); } catch (Exception e) {}
-            try { stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_ewb INTEGER DEFAULT 0;"); } catch (Exception e) {}
             try {
-                stmt.execute("""
-                        UPDATE system_settings SET
-                          numbering_fy = CASE WHEN numbering_fy IS NULL OR numbering_fy = '' THEN '' ELSE numbering_fy END,
-                          last_seq_inv = CASE WHEN last_seq_inv IS NULL OR last_seq_inv = 0 THEN COALESCE(last_invoice_no, 0) ELSE last_seq_inv END,
-                          last_seq_job = CASE WHEN last_seq_job IS NULL OR last_seq_job = 0 THEN COALESCE(last_job_no, 0) ELSE last_seq_job END
-                        WHERE uuid = '00000000-0000-0000-0000-000000000001'
-                        """);
-            } catch (Exception e) { }
+                stmt.execute("ALTER TABLE system_settings ADD COLUMN last_temp_invoice_no INTEGER DEFAULT 0;");
+            } catch (Exception e) {
+            }
+            try {
+                stmt.execute("ALTER TABLE system_settings ADD COLUMN numbering_fy TEXT DEFAULT '';");
+            } catch (Exception e) {
+            }
+            try {
+                stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_inv INTEGER DEFAULT 0;");
+            } catch (Exception e) {
+            }
+            try {
+                stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_pi INTEGER DEFAULT 0;");
+            } catch (Exception e) {
+            }
+            try {
+                stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_cn INTEGER DEFAULT 0;");
+            } catch (Exception e) {
+            }
+            try {
+                stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_dn INTEGER DEFAULT 0;");
+            } catch (Exception e) {
+            }
+            try {
+                stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_qtn INTEGER DEFAULT 0;");
+            } catch (Exception e) {
+            }
+            try {
+                stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_po INTEGER DEFAULT 0;");
+            } catch (Exception e) {
+            }
+            try {
+                stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_job INTEGER DEFAULT 0;");
+            } catch (Exception e) {
+            }
+            try {
+                stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_tkt INTEGER DEFAULT 0;");
+            } catch (Exception e) {
+            }
+            try {
+                stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_dc INTEGER DEFAULT 0;");
+            } catch (Exception e) {
+            }
+            try {
+                stmt.execute("ALTER TABLE system_settings ADD COLUMN last_seq_ewb INTEGER DEFAULT 0;");
+            } catch (Exception e) {
+            }
+            try {
+                stmt.execute(
+                        """
+                                UPDATE system_settings SET
+                                  numbering_fy = CASE WHEN numbering_fy IS NULL OR numbering_fy = '' THEN '' ELSE numbering_fy END,
+                                  last_seq_inv = CASE WHEN last_seq_inv IS NULL OR last_seq_inv = 0 THEN COALESCE(last_invoice_no, 0) ELSE last_seq_inv END,
+                                  last_seq_job = CASE WHEN last_seq_job IS NULL OR last_seq_job = 0 THEN COALESCE(last_job_no, 0) ELSE last_seq_job END
+                                WHERE uuid = '00000000-0000-0000-0000-000000000001'
+                                """);
+            } catch (Exception e) {
+            }
 
             ensureNumberSequences(conn, stmt);
 
@@ -714,21 +878,24 @@ public class DatabaseInitializer {
                         SET invoice_no = TRIM(SUBSTR(invoice_no, 2))
                         WHERE invoice_no LIKE '#%' AND LENGTH(invoice_no) > 1
                         """);
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            }
             try {
                 stmt.execute("""
                         UPDATE invoice_history
                         SET invoice_no = TRIM(SUBSTR(invoice_no, 2))
                         WHERE invoice_no LIKE '#%' AND LENGTH(invoice_no) > 1
                         """);
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            }
             try {
                 stmt.execute("""
                         UPDATE invoice_adjustments
                         SET note_no = TRIM(SUBSTR(note_no, 2))
                         WHERE note_no LIKE '#%' AND LENGTH(note_no) > 1
                         """);
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            }
 
             ensureInvoicePaymentCanonicalSchema(conn, stmt);
             ensureUuidOnlySchema(conn, stmt);
@@ -747,7 +914,8 @@ public class DatabaseInitializer {
     }
 
     /**
-     * Seed baseline Tax Master rows after {@link #migrateHsnSacMasterIfNeeded(Connection)}.
+     * Seed baseline Tax Master rows after
+     * {@link #migrateHsnSacMasterIfNeeded(Connection)}.
      */
     public static void seedDefaultHsnSacRows(Statement stmt) {
         String[][] rows = {
@@ -759,14 +927,16 @@ public class DatabaseInitializer {
         };
         for (String[] r : rows) {
             try {
-                stmt.execute("""
-                        INSERT INTO hsn_sac_master (uuid, item_type, item_name, keyword, code_type, hsn_sac, gst_rate, unit_default, description, is_favorite, sync_status)
-                        SELECT lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
-                               '%s', '%s', '', 'HSN', '—', 0.18, 'PCS', '', 0, 'PENDING'
-                        WHERE NOT EXISTS (
-                          SELECT 1 FROM hsn_sac_master WHERE upper(item_type)=upper('%s') AND trim(coalesce(keyword,''))='' AND hsn_sac='—'
-                        )
-                        """.formatted(r[0], r[1].replace("'", "''"), r[0]));
+                stmt.execute(
+                        """
+                                INSERT INTO hsn_sac_master (uuid, item_type, item_name, keyword, code_type, hsn_sac, gst_rate, unit_default, description, is_favorite, sync_status)
+                                SELECT lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
+                                       '%s', '%s', '', 'HSN', '—', 0.18, 'PCS', '', 0, 'PENDING'
+                                WHERE NOT EXISTS (
+                                  SELECT 1 FROM hsn_sac_master WHERE upper(item_type)=upper('%s') AND trim(coalesce(keyword,''))='' AND hsn_sac='—'
+                                )
+                                """
+                                .formatted(r[0], r[1].replace("'", "''"), r[0]));
             } catch (Exception ignored) {
             }
         }
@@ -786,7 +956,10 @@ public class DatabaseInitializer {
             );
             """;
 
-    /** Canonical {@code clients} shape (SQLite). Primary key is UUID v7 in {@code uuid}. */
+    /**
+     * Canonical {@code clients} shape (SQLite). Primary key is UUID v7 in
+     * {@code uuid}.
+     */
     private static final String CLIENTS_DDL = """
             CREATE TABLE IF NOT EXISTS clients (
                 uuid TEXT PRIMARY KEY NOT NULL,
@@ -840,8 +1013,10 @@ public class DatabaseInitializer {
     }
 
     /**
-     * Replaces {@code clients} with the canonical schema and clears all client rows. Unlinks {@code client_id} on
-     * jobs, invoices, payments, and billing so FK constraints do not block the drop.
+     * Replaces {@code clients} with the canonical schema and clears all client
+     * rows. Unlinks {@code client_id} on
+     * jobs, invoices, payments, and billing so FK constraints do not block the
+     * drop.
      */
     private static void migrateClientsResetToCanonicalSchema(Connection conn, Statement stmt) throws Exception {
         stmt.execute("PRAGMA foreign_keys=OFF");
@@ -891,7 +1066,7 @@ public class DatabaseInitializer {
             migrateClientsToUuidPrimaryKey(conn, stmt);
         }
         ensureUniqueSqliteClientCodeConstraint(conn, stmt);
-        
+
         if (!columnExists(conn, "clients", "created_by_user_uuid")) {
             stmt.execute("ALTER TABLE clients ADD COLUMN created_by_user_uuid TEXT DEFAULT NULL;");
             System.out.println("✔ Migration: Added created_by_user_uuid column to clients table.");
@@ -942,7 +1117,9 @@ public class DatabaseInitializer {
             )
             """;
 
-    /** Mirrors {@code supabase/migrations/012_invoice_and_payments_uuid_schema.sql}. */
+    /**
+     * Mirrors {@code supabase/migrations/012_invoice_and_payments_uuid_schema.sql}.
+     */
     private static final String INVOICE_MASTER_DDL = """
             CREATE TABLE IF NOT EXISTS invoice_master (
                 uuid TEXT PRIMARY KEY NOT NULL,
@@ -967,6 +1144,18 @@ public class DatabaseInitializer {
                 status_updated_by TEXT DEFAULT '',
                 file_path TEXT DEFAULT '',
                 document_series TEXT DEFAULT 'GST_INVOICE',
+                total_after_tax REAL NOT NULL DEFAULT 0,
+                round_off REAL NOT NULL DEFAULT 0,
+                place_of_supply TEXT DEFAULT '',
+                payment_terms TEXT DEFAULT '',
+                due_date TEXT DEFAULT NULL,
+                vehicle_dispatch TEXT DEFAULT '',
+                po_no TEXT DEFAULT '',
+                po_date TEXT DEFAULT NULL,
+                dispatch_through TEXT DEFAULT '',
+                lr_tracking_no TEXT DEFAULT '',
+                remarks TEXT DEFAULT '',
+                eway_bill_no TEXT DEFAULT '',
                 %s,
                 FOREIGN KEY (client_uuid) REFERENCES clients(uuid) ON DELETE SET NULL,
                 FOREIGN KEY (parent_invoice_uuid) REFERENCES invoice_master(uuid) ON DELETE SET NULL,
@@ -1003,6 +1192,7 @@ public class DatabaseInitializer {
                 FOREIGN KEY (invoice_uuid) REFERENCES invoice_master(uuid) ON DELETE CASCADE
             )
             """.formatted(SYNC_COLUMNS);
+
 
     private static final String INVOICE_JOB_MAPPING_DDL = """
             CREATE TABLE IF NOT EXISTS invoice_job_mapping (
@@ -1141,9 +1331,92 @@ public class DatabaseInitializer {
             stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_invoice_master_uuid ON invoice_master(uuid)");
         } catch (Exception ignored) {
         }
+        if (!columnExists(conn, "invoice_master", "total_after_tax")) {
+            try {
+                stmt.execute("ALTER TABLE invoice_master ADD COLUMN total_after_tax REAL NOT NULL DEFAULT 0;");
+                System.out.println("✔ Migration: Added total_after_tax column to invoice_master.");
+            } catch (Exception ignored) {
+            }
+        }
+        if (!columnExists(conn, "invoice_master", "round_off")) {
+            try {
+                stmt.execute("ALTER TABLE invoice_master ADD COLUMN round_off REAL NOT NULL DEFAULT 0;");
+                System.out.println("✔ Migration: Added round_off column to invoice_master.");
+            } catch (Exception ignored) {
+            }
+        }
+        if (!columnExists(conn, "invoice_master", "place_of_supply")) {
+            try {
+                stmt.execute("ALTER TABLE invoice_master ADD COLUMN place_of_supply TEXT DEFAULT '';");
+            } catch (Exception ignored) {
+            }
+        }
+        if (!columnExists(conn, "invoice_master", "payment_terms")) {
+            try {
+                stmt.execute("ALTER TABLE invoice_master ADD COLUMN payment_terms TEXT DEFAULT '';");
+            } catch (Exception ignored) {
+            }
+        }
+        if (!columnExists(conn, "invoice_master", "due_date")) {
+            try {
+                stmt.execute("ALTER TABLE invoice_master ADD COLUMN due_date TEXT DEFAULT NULL;");
+            } catch (Exception ignored) {
+            }
+        }
+        if (!columnExists(conn, "invoice_master", "vehicle_dispatch")) {
+            try {
+                stmt.execute("ALTER TABLE invoice_master ADD COLUMN vehicle_dispatch TEXT DEFAULT '';");
+            } catch (Exception ignored) {
+            }
+        }
+        if (!columnExists(conn, "invoice_master", "po_no")) {
+            try {
+                stmt.execute("ALTER TABLE invoice_master ADD COLUMN po_no TEXT DEFAULT '';");
+            } catch (Exception ignored) {
+            }
+        }
+        if (!columnExists(conn, "invoice_master", "po_date")) {
+            try {
+                stmt.execute("ALTER TABLE invoice_master ADD COLUMN po_date TEXT DEFAULT NULL;");
+            } catch (Exception ignored) {
+            }
+        }
+        if (!columnExists(conn, "invoice_master", "dispatch_through")) {
+            try {
+                stmt.execute("ALTER TABLE invoice_master ADD COLUMN dispatch_through TEXT DEFAULT '';");
+            } catch (Exception ignored) {
+            }
+        }
+        if (!columnExists(conn, "invoice_master", "lr_tracking_no")) {
+            try {
+                stmt.execute("ALTER TABLE invoice_master ADD COLUMN lr_tracking_no TEXT DEFAULT '';");
+            } catch (Exception ignored) {
+            }
+        }
+        if (!columnExists(conn, "invoice_master", "remarks")) {
+            try {
+                stmt.execute("ALTER TABLE invoice_master ADD COLUMN remarks TEXT DEFAULT '';");
+            } catch (Exception ignored) {
+            }
+        }
+        if (!columnExists(conn, "invoice_master", "eway_bill_no")) {
+            try {
+                stmt.execute("ALTER TABLE invoice_master ADD COLUMN eway_bill_no TEXT DEFAULT '';");
+            } catch (Exception ignored) {
+            }
+        }
+        if (!columnExists(conn, "clients", "state")) {
+            try {
+                stmt.execute("ALTER TABLE clients ADD COLUMN state TEXT DEFAULT '';");
+            } catch (Exception ignored) {
+            }
+        }
     }
 
-    /** Legacy DBs use {@code client_id}; application code expects {@code client_uuid}. */
+    /**
+     * Legacy DBs use {@code client_id}; application code expects
+     * {@code client_uuid}.
+     */
     private static void ensureInvoiceMasterClientUuid(Connection conn, Statement stmt) throws Exception {
         if (!tableExists(conn, "invoice_master")) {
             return;
@@ -1239,7 +1512,8 @@ public class DatabaseInitializer {
                         deleted_at TEXT DEFAULT NULL
                     )
                     """);
-            stmt.execute("CREATE TEMP TABLE IF NOT EXISTS _job_id_map (old_id INTEGER PRIMARY KEY, new_uuid TEXT NOT NULL)");
+            stmt.execute(
+                    "CREATE TEMP TABLE IF NOT EXISTS _job_id_map (old_id INTEGER PRIMARY KEY, new_uuid TEXT NOT NULL)");
             String insertJob = """
                     INSERT INTO jobs_uuid_pk (
                         uuid, client_uuid, invoice_uuid, job_code, job_title, job_type, description, amount,
@@ -1333,32 +1607,36 @@ public class DatabaseInitializer {
 
         // Note: We'll need to generate fresh UUIDs for existing items
         try (Connection con = stmt.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT * FROM job_items");
-             ResultSet rs = ps.executeQuery()) {
-            
+                PreparedStatement ps = con.prepareStatement("SELECT * FROM job_items");
+                ResultSet rs = ps.executeQuery()) {
+
             while (rs.next()) {
                 int oldJobId = rs.getInt("job_id");
                 String newJobUuid = null;
                 // Get new job uuid from the map table created in migrateJobsToUuidPrimaryKey
-                try (PreparedStatement mapSt = con.prepareStatement("SELECT new_uuid FROM _job_id_map WHERE old_id = ?")) {
+                try (PreparedStatement mapSt = con
+                        .prepareStatement("SELECT new_uuid FROM _job_id_map WHERE old_id = ?")) {
                     mapSt.setInt(1, oldJobId);
                     try (ResultSet mapRs = mapSt.executeQuery()) {
-                        if (mapRs.next()) newJobUuid = mapRs.getString(1);
+                        if (mapRs.next())
+                            newJobUuid = mapRs.getString(1);
                     }
                 }
-                
+
                 if (newJobUuid != null) {
-                    try (PreparedStatement ins = con.prepareStatement("""
-                            INSERT INTO job_items_uuid (uuid, job_uuid, type, description, amount, sort_order, created_at)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
-                            """)) {
+                    try (PreparedStatement ins = con.prepareStatement(
+                            """
+                                    INSERT INTO job_items_uuid (uuid, job_uuid, type, description, amount, sort_order, created_at)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                                    """)) {
                         ins.setString(1, utils.ClientIdentifiers.newUuidV7String());
                         ins.setString(2, newJobUuid);
                         ins.setString(3, rs.getString("type"));
                         ins.setString(4, rs.getString("description"));
                         ins.setDouble(5, rs.getDouble("amount"));
                         ins.setInt(6, rs.getInt("sort_order"));
-                        ins.setString(7, rs.getString("created_at") != null ? rs.getString("created_at") : "datetime('now')");
+                        ins.setString(7,
+                                rs.getString("created_at") != null ? rs.getString("created_at") : "datetime('now')");
                         ins.executeUpdate();
                     }
                 }
@@ -1385,29 +1663,32 @@ public class DatabaseInitializer {
                 """.formatted(SYNC_COLUMNS));
 
         try (Connection con = stmt.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT * FROM invoice_job_mapping");
-             ResultSet rs = ps.executeQuery()) {
-            
+                PreparedStatement ps = con.prepareStatement("SELECT * FROM invoice_job_mapping");
+                ResultSet rs = ps.executeQuery()) {
+
             while (rs.next()) {
                 int oldJobId = rs.getInt("job_id");
                 int oldInvoiceId = rs.getInt("invoice_id");
-                
+
                 String newJobUuid = null;
-                try (PreparedStatement mapSt = con.prepareStatement("SELECT new_uuid FROM _job_id_map WHERE old_id = ?")) {
+                try (PreparedStatement mapSt = con
+                        .prepareStatement("SELECT new_uuid FROM _job_id_map WHERE old_id = ?")) {
                     mapSt.setInt(1, oldJobId);
                     try (ResultSet mapRs = mapSt.executeQuery()) {
-                        if (mapRs.next()) newJobUuid = mapRs.getString(1);
+                        if (mapRs.next())
+                            newJobUuid = mapRs.getString(1);
                     }
                 }
-                
+
                 String newInvoiceUuid = null;
                 try (PreparedStatement invSt = con.prepareStatement("SELECT uuid FROM invoice_master WHERE id = ?")) {
                     invSt.setInt(1, oldInvoiceId);
                     try (ResultSet invRs = invSt.executeQuery()) {
-                        if (invRs.next()) newInvoiceUuid = invRs.getString(1);
+                        if (invRs.next())
+                            newInvoiceUuid = invRs.getString(1);
                     }
                 }
-                
+
                 if (newJobUuid != null && newInvoiceUuid != null) {
                     try (PreparedStatement ins = con.prepareStatement("""
                             INSERT INTO invoice_job_mapping_uuid (uuid, invoice_uuid, job_uuid, created_at)
@@ -1416,7 +1697,8 @@ public class DatabaseInitializer {
                         ins.setString(1, utils.ClientIdentifiers.newUuidV7String());
                         ins.setString(2, newInvoiceUuid);
                         ins.setString(3, newJobUuid);
-                        ins.setString(4, rs.getString("created_at") != null ? rs.getString("created_at") : "datetime('now')");
+                        ins.setString(4,
+                                rs.getString("created_at") != null ? rs.getString("created_at") : "datetime('now')");
                         ins.executeUpdate();
                     }
                 }
@@ -1446,7 +1728,8 @@ public class DatabaseInitializer {
     }
 
     /**
-     * Preserves client rows: fills missing {@code uuid} with v7, rewrites child {@code client_id} to uuid strings,
+     * Preserves client rows: fills missing {@code uuid} with v7, rewrites child
+     * {@code client_id} to uuid strings,
      * rebuilds {@code clients} without integer {@code id}.
      */
     private static void migrateClientsToUuidPrimaryKey(Connection conn, Statement stmt) throws Exception {
@@ -1505,14 +1788,14 @@ public class DatabaseInitializer {
             stmt.execute("""
                     INSERT INTO clients_uuid_pk (
                         uuid, client_code, client_name, business_name, mobile, alternate_mobile, email,
-                        gstin, pan_number, billing_address, shipping_address,
+                        gstin, pan_number, state, billing_address, shipping_address,
                         client_type, price_category, credit_limit, payment_terms, opening_balance, balance_type,
                         is_active, notes, sync_status, sync_version, is_deleted, deleted_at,
                         created_at, updated_at, synced_at, created_by_user_uuid, updated_by_user_uuid
                     )
                     SELECT
                         uuid, client_code, client_name, business_name, mobile, alternate_mobile, email,
-                        gstin, pan_number, billing_address, shipping_address,
+                        gstin, pan_number, '', billing_address, shipping_address,
                         client_type, price_category, credit_limit, payment_terms, opening_balance, balance_type,
                         is_active, notes, sync_status, sync_version, is_deleted, deleted_at,
                         created_at, updated_at, synced_at, NULL, NULL
@@ -1579,7 +1862,8 @@ public class DatabaseInitializer {
     }
 
     /**
-     * Legacy {@code ALTER TABLE ADD COLUMN client_code} cannot attach {@code UNIQUE}; dedupe then add a unique index.
+     * Legacy {@code ALTER TABLE ADD COLUMN client_code} cannot attach
+     * {@code UNIQUE}; dedupe then add a unique index.
      */
     private static void ensureUniqueSqliteClientCodeConstraint(Connection conn, Statement stmt) throws Exception {
         if (!columnExists(conn, "clients", "client_code")) {
@@ -1630,7 +1914,8 @@ public class DatabaseInitializer {
     private static boolean tableExists(Connection conn, String table) throws java.sql.SQLException {
         String safe = table.replace("'", "''");
         try (Statement st = conn.createStatement();
-                ResultSet rs = st.executeQuery("SELECT 1 FROM sqlite_master WHERE type='table' AND name='" + safe + "'")) {
+                ResultSet rs = st
+                        .executeQuery("SELECT 1 FROM sqlite_master WHERE type='table' AND name='" + safe + "'")) {
             return rs.next();
         }
     }
@@ -1647,7 +1932,9 @@ public class DatabaseInitializer {
         return false;
     }
 
-    /** {@code im.col} when present on invoice_master, else a SQL literal/expression. */
+    /**
+     * {@code im.col} when present on invoice_master, else a SQL literal/expression.
+     */
     private static String imCol(Connection conn, String column, String ifAbsent) throws Exception {
         return columnExists(conn, "invoice_master", column) ? "im." + column : ifAbsent;
     }
@@ -1671,7 +1958,10 @@ public class DatabaseInitializer {
         return "COALESCE(NULLIF(TRIM(" + alias + "." + column + "), ''), " + NEW_UUID_SQL + ")";
     }
 
-    /** {@code old.col} when present on a *_old migration table, else a SQL literal/expression. */
+    /**
+     * {@code old.col} when present on a *_old migration table, else a SQL
+     * literal/expression.
+     */
     private static String oldCol(Connection conn, String oldTable, String column, String ifAbsent) throws Exception {
         return columnExists(conn, oldTable, column) ? "old." + column : ifAbsent;
     }
@@ -1684,8 +1974,10 @@ public class DatabaseInitializer {
     }
 
     /**
-     * Removes {@code *_old} / {@code *_uuid_pk} tables left by interrupted migrations. Their FKs
-     * often still reference legacy {@code invoice_master(id)} and break all SQLite writes.
+     * Removes {@code *_old} / {@code *_uuid_pk} tables left by interrupted
+     * migrations. Their FKs
+     * often still reference legacy {@code invoice_master(id)} and break all SQLite
+     * writes.
      */
     private static void dropLeftoverMigrationBackupTables(Connection conn, Statement stmt) throws Exception {
         stmt.execute("PRAGMA foreign_keys=OFF");
@@ -1709,8 +2001,70 @@ public class DatabaseInitializer {
         }
     }
 
+    private static void migrateTableToUuidPrimaryKey(Connection conn, String tableName, String createSql)
+            throws Exception {
+        if (!tableExists(conn, tableName))
+            return;
+
+        // Check if uuid is already primary key
+        boolean needsMigration = true;
+        try (Statement st = conn.createStatement();
+                java.sql.ResultSet rs = st.executeQuery("PRAGMA table_info(" + tableName + ")")) {
+            while (rs.next()) {
+                String name = rs.getString("name");
+                int pk = rs.getInt("pk");
+                if ("uuid".equalsIgnoreCase(name) && pk > 0) {
+                    needsMigration = false;
+                    break;
+                }
+            }
+        }
+
+        if (!needsMigration)
+            return;
+
+        System.out.println("Migrating table " + tableName + " to enforce uuid PRIMARY KEY...");
+
+        // We need to copy-and-swap
+        try (Statement st = conn.createStatement()) {
+            st.execute("PRAGMA foreign_keys=off;");
+
+            // Rename to old
+            st.execute("ALTER TABLE " + tableName + " RENAME TO " + tableName + "_old_migration;");
+
+            // Create new
+            st.execute(createSql);
+
+            // Get columns of new table to safely copy
+            java.util.List<String> newCols = new java.util.ArrayList<>();
+            try (java.sql.ResultSet rs = st.executeQuery("PRAGMA table_info(" + tableName + ")")) {
+                while (rs.next()) {
+                    newCols.add(rs.getString("name"));
+                }
+            }
+            java.util.List<String> oldCols = new java.util.ArrayList<>();
+            try (java.sql.ResultSet rs = st.executeQuery("PRAGMA table_info(" + tableName + "_old_migration)")) {
+                while (rs.next()) {
+                    oldCols.add(rs.getString("name"));
+                }
+            }
+
+            newCols.retainAll(oldCols);
+            String cols = String.join(", ", newCols);
+            st.execute("INSERT OR IGNORE INTO " + tableName + " (" + cols + ") SELECT " + cols + " FROM " + tableName
+                    + "_old_migration;");
+
+            // Drop old
+            st.execute("DROP TABLE " + tableName + "_old_migration;");
+
+            st.execute("PRAGMA foreign_keys=on;");
+            System.out.println("Migration of " + tableName + " completed successfully.");
+        }
+    }
+
     /**
-     * Upgrade legacy hsn_sac_master (no item_name / fixed UNIQUE) to Tax Master schema.
+     * Upgrade legacy hsn_sac_master (no item_name / fixed UNIQUE) to Tax Master
+     * schema.
      */
     private static void migrateHsnSacMasterIfNeeded(Connection conn) throws java.sql.SQLException {
         if (!tableExists(conn, "hsn_sac_master")) {
@@ -1739,28 +2093,31 @@ public class DatabaseInitializer {
                         UNIQUE(item_type, keyword)
                     )
                     """.formatted(SYNC_COLUMNS));
-            st.executeUpdate("""
-                    INSERT INTO hsn_sac_master (uuid, item_type, item_name, keyword, code_type, hsn_sac, gst_rate, unit_default, description, is_favorite, created_at)
-                    SELECT lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
-                           item_type,
-                           CASE WHEN trim(coalesce(keyword,'')) = '' THEN item_type || ' default'
-                                ELSE trim(keyword) END,
-                           coalesce(keyword,''),
-                           'HSN',
-                           hsn_sac,
-                           gst_rate,
-                           coalesce(unit_default,'PCS'),
-                           '',
-                           0,
-                           created_at
-                    FROM hsn_sac_master_legacy
-                    """);
+            st.executeUpdate(
+                    """
+                            INSERT INTO hsn_sac_master (uuid, item_type, item_name, keyword, code_type, hsn_sac, gst_rate, unit_default, description, is_favorite, created_at)
+                            SELECT lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
+                                   item_type,
+                                   CASE WHEN trim(coalesce(keyword,'')) = '' THEN item_type || ' default'
+                                        ELSE trim(keyword) END,
+                                   coalesce(keyword,''),
+                                   'HSN',
+                                   hsn_sac,
+                                   gst_rate,
+                                   coalesce(unit_default,'PCS'),
+                                   '',
+                                   0,
+                                   created_at
+                            FROM hsn_sac_master_legacy
+                            """);
             st.executeUpdate("DROP TABLE hsn_sac_master_legacy");
         }
         System.out.println("✔ Migration: hsn_sac_master upgraded for Tax Master");
     }
 
-    /** Mirrors Supabase {@code public.number_sequences} — per-module FY counters. */
+    /**
+     * Mirrors Supabase {@code public.number_sequences} — per-module FY counters.
+     */
     private static final String NUMBER_SEQUENCES_DDL = """
             CREATE TABLE IF NOT EXISTS number_sequences (
                 sequence_key TEXT PRIMARY KEY NOT NULL,
@@ -1784,6 +2141,7 @@ public class DatabaseInitializer {
     private static void ensureNumberSequences(Connection conn, Statement stmt) throws Exception {
         stmt.execute(NUMBER_SEQUENCES_DDL);
         migrateNumberSequencesDropModuleName(conn, stmt);
+        ensureChildTableSyncColumns(conn, stmt, "number_sequences");
         try {
             stmt.execute("ALTER TABLE number_sequences ADD COLUMN offline_current_number INTEGER NOT NULL DEFAULT 0;");
         } catch (Exception ignored) {
@@ -1821,7 +2179,8 @@ public class DatabaseInitializer {
     }
 
     /**
-     * Pull legacy counters from {@code system_settings} into {@code number_sequences} without lowering values.
+     * Pull legacy counters from {@code system_settings} into
+     * {@code number_sequences} without lowering values.
      */
     private static void migrateNumberSequencesFromSystemSettings(Connection conn) throws Exception {
         if (!tableExists(conn, "system_settings")) {
@@ -1830,7 +2189,8 @@ public class DatabaseInitializer {
         String fy = DocumentNumbering.financialYearLabel(LocalDate.now());
         int pad = 4;
         try (Statement st = conn.createStatement();
-                ResultSet rs = st.executeQuery("SELECT * FROM system_settings WHERE uuid = '00000000-0000-0000-0000-000000000001'")) {
+                ResultSet rs = st.executeQuery(
+                        "SELECT * FROM system_settings WHERE uuid = '00000000-0000-0000-0000-000000000001'")) {
             if (!rs.next()) {
                 return;
             }
@@ -1880,22 +2240,23 @@ public class DatabaseInitializer {
             stmt.execute("ALTER TABLE number_sequences RENAME TO ns_old");
             stmt.execute(NUMBER_SEQUENCES_DDL);
             stmt.execute("""
-                INSERT INTO number_sequences (
-                    sequence_key, display_name, prefix, current_number,
-                    digit_width, financial_year, offline_current_number, created_at, updated_at
-                )
-                SELECT 
-                    sequence_key, display_name, prefix, current_number,
-                    digit_width, financial_year, offline_current_number, created_at, updated_at
-                FROM ns_old
-            """);
+                        INSERT INTO number_sequences (
+                            sequence_key, display_name, prefix, current_number,
+                            digit_width, financial_year, offline_current_number, created_at, updated_at
+                        )
+                        SELECT
+                            sequence_key, display_name, prefix, current_number,
+                            digit_width, financial_year, offline_current_number, created_at, updated_at
+                        FROM ns_old
+                    """);
             stmt.execute("DROP TABLE ns_old");
             System.out.println("✔ Migration: Recreated number_sequences without module_name");
         }
     }
 
     private static void ensureSystemSettingsUuid(Connection conn, Statement stmt) throws Exception {
-        if (!tableExists(conn, "system_settings")) return;
+        if (!tableExists(conn, "system_settings"))
+            return;
         if (!columnExists(conn, "system_settings", "uuid")) {
             System.out.println("? Migration: Adding uuid to system_settings...");
             stmt.execute("ALTER TABLE system_settings RENAME TO system_settings_old;");
@@ -1943,7 +2304,7 @@ public class DatabaseInitializer {
                         last_seq_qtn, last_seq_po, last_seq_job, last_seq_tkt,
                         last_seq_dc, last_seq_ewb %s
                     )
-                    SELECT 
+                    SELECT
                         '00000000-0000-0000-0000-000000000001', invoice_mode, invoice_prefix, invoice_start_no, invoice_padding,
                         COALESCE(last_invoice_no, 0), COALESCE(last_job_no, 0), COALESCE(job_prefix, 'SUN-'),
                         COALESCE(job_start_no, 1), COALESCE(job_padding, 4),
@@ -1952,7 +2313,8 @@ public class DatabaseInitializer {
                         COALESCE(last_seq_qtn, 0), COALESCE(last_seq_po, 0), COALESCE(last_seq_job, 0), COALESCE(last_seq_tkt, 0),
                         COALESCE(last_seq_dc, 0), COALESCE(last_seq_ewb, 0) %s
                     FROM system_settings_old WHERE id = 1;
-                    """.formatted(hasCreatedAt ? ", created_at" : "", hasCreatedAt ? ", created_at" : "");
+                    """
+                    .formatted(hasCreatedAt ? ", created_at" : "", hasCreatedAt ? ", created_at" : "");
             stmt.execute(insertSql);
             stmt.execute("DROP TABLE system_settings_old;");
             System.out.println("? Migration: system_settings updated to uuid PK.");
@@ -1960,7 +2322,8 @@ public class DatabaseInitializer {
     }
 
     private static void ensureEmailSettingsUuid(Connection conn, Statement stmt) throws Exception {
-        if (!tableExists(conn, "email_settings")) return;
+        if (!tableExists(conn, "email_settings"))
+            return;
         if (!columnExists(conn, "email_settings", "uuid")) {
             System.out.println("? Migration: Adding uuid to email_settings...");
             stmt.execute("ALTER TABLE email_settings RENAME TO email_settings_old;");
@@ -1996,7 +2359,8 @@ public class DatabaseInitializer {
     }
 
     private static void ensureSupabaseSettingsUuid(Connection conn, Statement stmt) throws Exception {
-        if (!tableExists(conn, "supabase_settings")) return;
+        if (!tableExists(conn, "supabase_settings"))
+            return;
         if (!columnExists(conn, "supabase_settings", "uuid")) {
             System.out.println("? Migration: Adding uuid to supabase_settings...");
             stmt.execute("ALTER TABLE supabase_settings RENAME TO supabase_settings_old;");
@@ -2042,7 +2406,8 @@ public class DatabaseInitializer {
     }
 
     /**
-     * Legacy detail tables used {@code job_item_id INTEGER}; code expects {@code uuid} + {@code job_item_uuid}.
+     * Legacy detail tables used {@code job_item_id INTEGER}; code expects
+     * {@code uuid} + {@code job_item_uuid}.
      */
     private static void ensureJobItemDetailTablesUuid(Connection conn, Statement stmt) throws Exception {
         String jobItemUuidExpr = legacyJobItemUuidSelect(conn);
@@ -2242,53 +2607,56 @@ public class DatabaseInitializer {
     }
 
     private static void ensureJobItemsUuid(Connection conn, Statement stmt) throws Exception {
-        if (!tableExists(conn, "job_items")) return;
+        if (!tableExists(conn, "job_items"))
+            return;
         if (!columnExists(conn, "job_items", "uuid")) {
             System.out.println("? Migration: Adding uuid to job_items...");
             stmt.execute("ALTER TABLE job_items RENAME TO job_items_old;");
             stmt.execute("""
-            CREATE TABLE job_items (
-                uuid TEXT PRIMARY KEY NOT NULL,
-                job_uuid TEXT NOT NULL,
-                type TEXT NOT NULL,
-                description TEXT,
-                amount REAL DEFAULT 0,
-                sort_order INTEGER DEFAULT 0,
-                sync_status TEXT DEFAULT 'PENDING',
-                sync_version INTEGER DEFAULT 1,
-                is_deleted INTEGER DEFAULT 0,
-                is_active INTEGER DEFAULT 1,
-                created_at TEXT DEFAULT (datetime('now')),
-                updated_at TEXT DEFAULT (datetime('now')),
-                synced_at TEXT DEFAULT NULL,
-                deleted_at TEXT DEFAULT NULL,
-                FOREIGN KEY (job_uuid) REFERENCES jobs(uuid) ON DELETE CASCADE
-            )
-            """);
-            
+                    CREATE TABLE job_items (
+                        uuid TEXT PRIMARY KEY NOT NULL,
+                        job_uuid TEXT NOT NULL,
+                        type TEXT NOT NULL,
+                        description TEXT,
+                        amount REAL DEFAULT 0,
+                        sort_order INTEGER DEFAULT 0,
+                        sync_status TEXT DEFAULT 'PENDING',
+                        sync_version INTEGER DEFAULT 1,
+                        is_deleted INTEGER DEFAULT 0,
+                        is_active INTEGER DEFAULT 1,
+                        created_at TEXT DEFAULT (datetime('now')),
+                        updated_at TEXT DEFAULT (datetime('now')),
+                        synced_at TEXT DEFAULT NULL,
+                        deleted_at TEXT DEFAULT NULL,
+                        FOREIGN KEY (job_uuid) REFERENCES jobs(uuid) ON DELETE CASCADE
+                    )
+                    """);
+
             boolean hasJobId = columnExists(conn, "job_items_old", "job_id");
-            
+
             boolean hasCreatedAt = columnExists(conn, "job_items_old", "created_at");
-            
+
             if (hasJobId) {
                 String insertSql = """
                         INSERT INTO job_items (uuid, job_uuid, type, description, amount, sort_order %s)
-                        SELECT 
+                        SELECT
                             lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
                             (SELECT uuid FROM jobs WHERE id = old.job_id),
                             type, description, amount, sort_order %s
                         FROM job_items_old old;
-                        """.formatted(hasCreatedAt ? ", created_at" : "", hasCreatedAt ? ", created_at" : "");
+                        """
+                        .formatted(hasCreatedAt ? ", created_at" : "", hasCreatedAt ? ", created_at" : "");
                 stmt.execute(insertSql);
             } else {
-                 String insertSql = """
+                String insertSql = """
                         INSERT INTO job_items (uuid, job_uuid, type, description, amount, sort_order %s)
-                        SELECT 
+                        SELECT
                             COALESCE(uuid, lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))),
                             job_uuid, type, description, amount, sort_order %s
                         FROM job_items_old;
-                        """.formatted(hasCreatedAt ? ", created_at" : "", hasCreatedAt ? ", created_at" : "");
-                 stmt.execute(insertSql);
+                        """
+                        .formatted(hasCreatedAt ? ", created_at" : "", hasCreatedAt ? ", created_at" : "");
+                stmt.execute(insertSql);
             }
             stmt.execute("DROP TABLE job_items_old;");
         }
@@ -2299,7 +2667,8 @@ public class DatabaseInitializer {
     }
 
     private static void ensureSuppliersUuid(Connection conn, Statement stmt) throws Exception {
-        if (!tableExists(conn, "suppliers")) return;
+        if (!tableExists(conn, "suppliers"))
+            return;
         if (!columnExists(conn, "suppliers", "uuid")) {
             System.out.println("✔ Migration: Adding uuid to suppliers...");
             stmt.execute("ALTER TABLE suppliers RENAME TO suppliers_old;");
@@ -2327,18 +2696,20 @@ public class DatabaseInitializer {
             boolean hasCreatedAt = columnExists(conn, "suppliers_old", "created_at");
             String insertSql = """
                     INSERT INTO suppliers (uuid, supplier_code, name, business_name, type, phone, address, gst_number, created_by_user_uuid, updated_by_user_uuid %s)
-                    SELECT 
+                    SELECT
                         lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
                         '', name, business_name, type, phone, address, gst_number, NULL, NULL %s
                     FROM suppliers_old;
-                    """.formatted(hasCreatedAt ? ", created_at" : "", hasCreatedAt ? ", created_at" : "");
+                    """
+                    .formatted(hasCreatedAt ? ", created_at" : "", hasCreatedAt ? ", created_at" : "");
             stmt.execute(insertSql);
             stmt.execute("DROP TABLE suppliers_old;");
         }
     }
 
     private static void ensurePaymentsUuid(Connection conn, Statement stmt) throws Exception {
-        if (!tableExists(conn, "payments")) return;
+        if (!tableExists(conn, "payments"))
+            return;
         if (!columnExists(conn, "payments", "uuid")) {
             System.out.println("✔ Migration: Adding uuid to payments...");
             stmt.execute("ALTER TABLE payments RENAME TO payments_old;");
@@ -2346,19 +2717,21 @@ public class DatabaseInitializer {
             boolean hasCreatedAt = columnExists(conn, "payments_old", "created_at");
             String insertSql = """
                     INSERT INTO payments (uuid, client_uuid, amount, payment_date, method, type %s)
-                    SELECT 
+                    SELECT
                         lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
                         (SELECT uuid FROM clients WHERE id = old.client_id),
                         amount, payment_date, method, COALESCE(type, 'Payment') %s
                     FROM payments_old old;
-                    """.formatted(hasCreatedAt ? ", created_at" : "", hasCreatedAt ? ", created_at" : "");
+                    """
+                    .formatted(hasCreatedAt ? ", created_at" : "", hasCreatedAt ? ", created_at" : "");
             stmt.execute(insertSql);
             stmt.execute("DROP TABLE payments_old;");
         }
     }
 
     private static void ensureInvoiceAdjustmentsUuid(Connection conn, Statement stmt) throws Exception {
-        if (!tableExists(conn, "invoice_adjustments")) return;
+        if (!tableExists(conn, "invoice_adjustments"))
+            return;
         if (!columnExists(conn, "invoice_adjustments", "uuid")) {
             System.out.println("✔ Migration: Adding uuid to invoice_adjustments...");
             stmt.execute("ALTER TABLE invoice_adjustments RENAME TO invoice_adjustments_old;");
@@ -2366,19 +2739,21 @@ public class DatabaseInitializer {
             boolean hasCreatedAt = columnExists(conn, "invoice_adjustments_old", "created_at");
             String insertSql = """
                     INSERT INTO invoice_adjustments (uuid, invoice_uuid, type, note_no, amount, reason, date %s)
-                    SELECT 
+                    SELECT
                         lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
                         (SELECT uuid FROM invoice_master WHERE id = old.invoice_id),
                         type, note_no, amount, reason, date %s
                     FROM invoice_adjustments_old old;
-                    """.formatted(hasCreatedAt ? ", created_at" : "", hasCreatedAt ? ", created_at" : "");
+                    """
+                    .formatted(hasCreatedAt ? ", created_at" : "", hasCreatedAt ? ", created_at" : "");
             stmt.execute(insertSql);
             stmt.execute("DROP TABLE invoice_adjustments_old;");
         }
     }
 
     /**
-     * Maps offline {@code TEMP-*} numbers to permanent codes allocated from remote {@code number_sequences}.
+     * Maps offline {@code TEMP-*} numbers to permanent codes allocated from remote
+     * {@code number_sequences}.
      */
     private static void ensureDocumentNumberMappingsTable(Connection conn, Statement stmt) throws Exception {
         stmt.execute(DOCUMENT_NUMBER_MAPPINGS_DDL);
@@ -2386,7 +2761,8 @@ public class DatabaseInitializer {
         try {
             stmt.execute(
                     "CREATE INDEX IF NOT EXISTS idx_dnm_permanent ON document_number_mappings(permanent_number);");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_dnm_entity ON document_number_mappings(entity_type, entity_uuid);");
+            stmt.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_dnm_entity ON document_number_mappings(entity_type, entity_uuid);");
         } catch (Exception ignored) {
         }
     }
@@ -2395,18 +2771,19 @@ public class DatabaseInitializer {
      * Ensure paper_items table has supplier_uuid and supplier_name columns.
      */
     private static void ensurePaperItemsSupplierColumns(Connection conn, Statement stmt) throws Exception {
-        if (!tableExists(conn, "paper_items")) return;
-        
+        if (!tableExists(conn, "paper_items"))
+            return;
+
         if (!columnExists(conn, "paper_items", "supplier_uuid")) {
             System.out.println("✔ Migration: Adding supplier_uuid to paper_items...");
             stmt.execute("ALTER TABLE paper_items ADD COLUMN supplier_uuid TEXT;");
         }
-        
+
         if (!columnExists(conn, "paper_items", "supplier_name")) {
             System.out.println("✔ Migration: Adding supplier_name to paper_items...");
             stmt.execute("ALTER TABLE paper_items ADD COLUMN supplier_name TEXT;");
         }
-        
+
         try {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_paper_items_supplier_uuid ON paper_items(supplier_uuid);");
         } catch (Exception ignored) {
@@ -2414,7 +2791,8 @@ public class DatabaseInitializer {
     }
 
     /**
-     * Align invoice/payment tables with Supabase 012: UUID PKs, sync columns, indexes, defaults.
+     * Align invoice/payment tables with Supabase 012: UUID PKs, sync columns,
+     * indexes, defaults.
      */
     private static void ensureInvoicePaymentCanonicalSchema(Connection conn, Statement stmt) throws Exception {
         dropLeftoverMigrationBackupTables(conn, stmt);
@@ -2427,6 +2805,21 @@ public class DatabaseInitializer {
         stmt.execute(PAYMENT_DETAILS_DDL);
         stmt.execute(JOB_CANCELLATION_AUDIT_DDL);
 
+        stmt.execute("""
+                    CREATE TABLE IF NOT EXISTS invoice_history (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        invoice_no TEXT,
+                        client_id TEXT,
+                        client_name TEXT,
+                        invoice_date TEXT,
+                        amount REAL,
+                        type TEXT,
+                        status TEXT,
+                        file_path TEXT,
+                        created_at TEXT DEFAULT (datetime('now'))
+                    )
+                """);
+
         migrateInvoiceMasterToCanonicalIfNeeded(conn, stmt);
         migratePaymentAllocationsToCanonicalIfNeeded(conn, stmt);
         migratePaymentDetailsToCanonicalIfNeeded(conn, stmt);
@@ -2437,6 +2830,10 @@ public class DatabaseInitializer {
         ensureChildTableSyncColumns(conn, stmt, "payment_allocations");
         ensureChildTableSyncColumns(conn, stmt, "payment_details");
         ensureChildTableSyncColumns(conn, stmt, "job_cancellation_audit");
+        ensureChildTableSyncColumns(conn, stmt, "hsn_sac_master");
+        ensureChildTableSyncColumns(conn, stmt, "bank_details");
+        ensureChildTableSyncColumns(conn, stmt, "company_details");
+        ensureChildTableSyncColumns(conn, stmt, "number_sequences");
         ensurePaymentDetailsHaveUuid(conn, stmt);
 
         ensureInvoiceMasterColumnDefaults(conn, stmt);
@@ -2484,7 +2881,8 @@ public class DatabaseInitializer {
     }
 
     /**
-     * Final pass: every business table uses {@code uuid} TEXT PRIMARY KEY only — no integer {@code id}
+     * Final pass: every business table uses {@code uuid} TEXT PRIMARY KEY only — no
+     * integer {@code id}
      * or legacy {@code *_id} FK columns.
      */
     private static void ensureUuidOnlySchema(Connection conn, Statement stmt) throws Exception {
@@ -2519,7 +2917,8 @@ public class DatabaseInitializer {
     }
 
     private static void migrateInvoiceMasterToCanonicalIfNeeded(Connection conn, Statement stmt) throws Exception {
-        if (!hasAnyLegacyColumn(conn, "invoice_master", "id", "client_id", "parent_invoice_id", "replaced_by_invoice_id")) {
+        if (!hasAnyLegacyColumn(conn, "invoice_master", "id", "client_id", "parent_invoice_id",
+                "replaced_by_invoice_id")) {
             return;
         }
         ensureInvoiceMasterUuid(conn, stmt);
@@ -2527,43 +2926,56 @@ public class DatabaseInitializer {
         stmt.execute("PRAGMA foreign_keys=OFF");
         stmt.execute("BEGIN IMMEDIATE");
         try {
-            stmt.execute("""
-                    CREATE TABLE invoice_master_uuid_pk (
-                        uuid TEXT PRIMARY KEY NOT NULL,
-                        invoice_no TEXT,
-                        client_uuid TEXT,
-                        client_name TEXT DEFAULT '',
-                        invoice_date TEXT,
-                        period_from TEXT,
-                        period_to TEXT,
-                        amount REAL NOT NULL DEFAULT 0,
-                        paid_amount REAL NOT NULL DEFAULT 0,
-                        due_amount REAL NOT NULL DEFAULT 0,
-                        payment_status TEXT DEFAULT 'UNPAID',
-                        last_payment_date TEXT,
-                        type TEXT DEFAULT '',
-                        status TEXT DEFAULT 'DRAFT',
-                        is_void INTEGER NOT NULL DEFAULT 0,
-                        void_reason TEXT DEFAULT '',
-                        void_date TEXT,
-                        replaced_by_invoice_uuid TEXT,
-                        parent_invoice_uuid TEXT,
-                        status_updated_by TEXT DEFAULT '',
-                        file_path TEXT DEFAULT '',
-                        document_series TEXT DEFAULT 'GST_INVOICE',
-                        sync_status TEXT DEFAULT 'PENDING',
-                        sync_version INTEGER DEFAULT 1,
-                        is_deleted INTEGER DEFAULT 0,
-                        is_active INTEGER DEFAULT 1,
-                        created_at TEXT DEFAULT (datetime('now')),
-                        updated_at TEXT DEFAULT (datetime('now')),
-                        synced_at TEXT DEFAULT NULL,
-                        deleted_at TEXT DEFAULT NULL,
-                        FOREIGN KEY (client_uuid) REFERENCES clients(uuid) ON DELETE SET NULL,
-                        FOREIGN KEY (parent_invoice_uuid) REFERENCES invoice_master_uuid_pk(uuid) ON DELETE SET NULL,
-                        FOREIGN KEY (replaced_by_invoice_uuid) REFERENCES invoice_master_uuid_pk(uuid) ON DELETE SET NULL
-                    )
-                    """);
+            stmt.execute(
+                    """
+                            CREATE TABLE invoice_master_uuid_pk (
+                                uuid TEXT PRIMARY KEY NOT NULL,
+                                invoice_no TEXT,
+                                client_uuid TEXT,
+                                client_name TEXT DEFAULT '',
+                                invoice_date TEXT,
+                                period_from TEXT,
+                                period_to TEXT,
+                                amount REAL NOT NULL DEFAULT 0,
+                                paid_amount REAL NOT NULL DEFAULT 0,
+                                due_amount REAL NOT NULL DEFAULT 0,
+                                payment_status TEXT DEFAULT 'UNPAID',
+                                last_payment_date TEXT,
+                                type TEXT DEFAULT '',
+                                status TEXT DEFAULT 'DRAFT',
+                                is_void INTEGER NOT NULL DEFAULT 0,
+                                void_reason TEXT DEFAULT '',
+                                void_date TEXT,
+                                replaced_by_invoice_uuid TEXT,
+                                parent_invoice_uuid TEXT,
+                                status_updated_by TEXT DEFAULT '',
+                                file_path TEXT DEFAULT '',
+                                document_series TEXT DEFAULT 'GST_INVOICE',
+                                total_after_tax REAL NOT NULL DEFAULT 0,
+                                round_off REAL NOT NULL DEFAULT 0,
+                                place_of_supply TEXT DEFAULT '',
+                                payment_terms TEXT DEFAULT '',
+                                due_date TEXT DEFAULT NULL,
+                                vehicle_dispatch TEXT DEFAULT '',
+                                po_no TEXT DEFAULT '',
+                                po_date TEXT DEFAULT NULL,
+                                dispatch_through TEXT DEFAULT '',
+                                lr_tracking_no TEXT DEFAULT '',
+                                remarks TEXT DEFAULT '',
+                                eway_bill_no TEXT DEFAULT '',
+                                sync_status TEXT DEFAULT 'PENDING',
+                                sync_version INTEGER DEFAULT 1,
+                                is_deleted INTEGER DEFAULT 0,
+                                is_active INTEGER DEFAULT 1,
+                                created_at TEXT DEFAULT (datetime('now')),
+                                updated_at TEXT DEFAULT (datetime('now')),
+                                synced_at TEXT DEFAULT NULL,
+                                deleted_at TEXT DEFAULT NULL,
+                                FOREIGN KEY (client_uuid) REFERENCES clients(uuid) ON DELETE SET NULL,
+                                FOREIGN KEY (parent_invoice_uuid) REFERENCES invoice_master_uuid_pk(uuid) ON DELETE SET NULL,
+                                FOREIGN KEY (replaced_by_invoice_uuid) REFERENCES invoice_master_uuid_pk(uuid) ON DELETE SET NULL
+                            )
+                            """);
             boolean hasClientId = columnExists(conn, "invoice_master", "client_id");
             boolean hasClientUuid = columnExists(conn, "invoice_master", "client_uuid");
             boolean hasParentId = columnExists(conn, "invoice_master", "parent_invoice_id");
@@ -2656,9 +3068,9 @@ public class DatabaseInitializer {
                         """
                     + selectCols
                     + """
-                    
-                    FROM invoice_master im
-                    """);
+
+                            FROM invoice_master im
+                            """);
             stmt.execute("DROP TABLE invoice_master");
             stmt.execute("ALTER TABLE invoice_master_uuid_pk RENAME TO invoice_master");
             stmt.execute("COMMIT");
@@ -2725,9 +3137,9 @@ public class DatabaseInitializer {
                     """
                 + allocCols
                 + """
-                
-                FROM payment_allocations_old old
-                WHERE """
+
+                        FROM payment_allocations_old old
+                        WHERE """
                 + " " + payExpr + " IS NOT NULL AND " + invExpr + " IS NOT NULL");
         stmt.execute("DROP TABLE payment_allocations_old");
         stmt.execute("PRAGMA foreign_keys=ON");
@@ -2780,9 +3192,9 @@ public class DatabaseInitializer {
                     """
                 + detailCols
                 + """
-                
-                FROM payment_details_old old
-                WHERE """
+
+                        FROM payment_details_old old
+                        WHERE """
                 + " " + payExpr + " IS NOT NULL");
         stmt.execute("DROP TABLE payment_details_old");
         stmt.execute("PRAGMA foreign_keys=ON");
@@ -2822,17 +3234,19 @@ public class DatabaseInitializer {
                 + oldColCoalesce(conn, "invoice_job_mapping_old", "created_at", "datetime('now')") + ", "
                 + oldColCoalesce(conn, "invoice_job_mapping_old", "updated_at", "datetime('now')")
                 + """
-                
-                FROM invoice_job_mapping_old old
-                WHERE """
+
+                        FROM invoice_job_mapping_old old
+                        WHERE """
                 + " " + invExpr + " IS NOT NULL AND " + jobExpr + " IS NOT NULL");
         stmt.execute("DROP TABLE invoice_job_mapping_old");
         stmt.execute("PRAGMA foreign_keys=ON");
     }
 
     /**
-     * Recreates {@code invoice_master} rows when jobs still reference an invoice UUID but the master
-     * row was removed (e.g. {@code deleteEmptyInvoices} ran before {@code invoice_job_mapping} existed).
+     * Recreates {@code invoice_master} rows when jobs still reference an invoice
+     * UUID but the master
+     * row was removed (e.g. {@code deleteEmptyInvoices} ran before
+     * {@code invoice_job_mapping} existed).
      */
     private static void reconcileOrphanedInvoiceMasters(Connection conn, Statement stmt) throws Exception {
         if (!tableExists(conn, "invoice_master") || !tableExists(conn, "jobs")) {
@@ -2916,19 +3330,23 @@ public class DatabaseInitializer {
 
     private static void ensureInvoiceJobMappingFromJobs(Statement stmt) {
         try {
-            stmt.execute("""
-                    INSERT OR IGNORE INTO invoice_job_mapping (uuid, invoice_uuid, job_uuid, sync_status, created_at, updated_at)
-                    SELECT
-                        lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
-                        j.invoice_uuid, j.uuid, 'PENDING', datetime('now'), datetime('now')
-                    FROM jobs j
-                    WHERE j.invoice_uuid IS NOT NULL AND TRIM(j.invoice_uuid) != ''
-                    """);
+            stmt.execute(
+                    """
+                            INSERT OR IGNORE INTO invoice_job_mapping (uuid, invoice_uuid, job_uuid, sync_status, created_at, updated_at)
+                            SELECT
+                                lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
+                                j.invoice_uuid, j.uuid, 'PENDING', datetime('now'), datetime('now')
+                            FROM jobs j
+                            WHERE j.invoice_uuid IS NOT NULL AND TRIM(j.invoice_uuid) != ''
+                            """);
         } catch (Exception ignored) {
         }
     }
 
-    /** Rows inserted without uuid (legacy linkJobUuidsToInvoice) never synced and break invoice job views. */
+    /**
+     * Rows inserted without uuid (legacy linkJobUuidsToInvoice) never synced and
+     * break invoice job views.
+     */
     private static void backfillInvoiceJobMappingUuids(Statement stmt) {
         try {
             int n = stmt.executeUpdate("""
@@ -2949,7 +3367,9 @@ public class DatabaseInitializer {
         }
     }
 
-    /** Align {@code jobs.amount} with sum of active {@code job_items} (legacy rows). */
+    /**
+     * Align {@code jobs.amount} with sum of active {@code job_items} (legacy rows).
+     */
     private static void syncAllJobAmountsFromItems(Statement stmt) {
         try {
             int updated = stmt.executeUpdate("""
@@ -2975,7 +3395,10 @@ public class DatabaseInitializer {
         }
     }
 
-    /** Fills {@code jobs.invoice_uuid} when mapping exists but the job row was never updated. */
+    /**
+     * Fills {@code jobs.invoice_uuid} when mapping exists but the job row was never
+     * updated.
+     */
     private static void syncJobsInvoiceUuidFromMappings(Statement stmt) {
         try {
             int updated = stmt.executeUpdate("""
@@ -2994,7 +3417,8 @@ public class DatabaseInitializer {
                       )
                     """);
             if (updated > 0) {
-                System.out.println("Migration: set jobs.invoice_uuid on " + updated + " row(s) from invoice_job_mapping");
+                System.out
+                        .println("Migration: set jobs.invoice_uuid on " + updated + " row(s) from invoice_job_mapping");
             }
         } catch (Exception e) {
             System.err.println("Migration: sync jobs.invoice_uuid from mapping failed: " + e.getMessage());
@@ -3055,12 +3479,16 @@ public class DatabaseInitializer {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_invoice_master_client_uuid ON invoice_master(client_uuid)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_invoice_master_sync_status ON invoice_master(sync_status)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_invoice_master_status ON invoice_master(status)");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_invoice_adjustments_invoice_uuid ON invoice_adjustments(invoice_uuid)");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_invoice_job_mapping_job_uuid ON invoice_job_mapping(job_uuid)");
+            stmt.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_invoice_adjustments_invoice_uuid ON invoice_adjustments(invoice_uuid)");
+            stmt.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_invoice_job_mapping_job_uuid ON invoice_job_mapping(job_uuid)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_payments_client_uuid ON payments(client_uuid)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_payments_sync_status ON payments(sync_status)");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_payment_allocations_payment_uuid ON payment_allocations(payment_uuid)");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_payment_allocations_invoice_uuid ON payment_allocations(invoice_uuid)");
+            stmt.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_payment_allocations_payment_uuid ON payment_allocations(payment_uuid)");
+            stmt.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_payment_allocations_invoice_uuid ON payment_allocations(invoice_uuid)");
         } catch (Exception ignored) {
         }
     }
@@ -3088,20 +3516,22 @@ public class DatabaseInitializer {
         String clientExpr = hasClientId
                 ? "COALESCE(NULLIF(TRIM(old.client_uuid), ''), (SELECT c.uuid FROM clients c WHERE c.uuid = CAST(old.client_id AS TEXT) OR c.id = old.client_id LIMIT 1))"
                 : "old.client_uuid";
-        stmt.execute("""
-                INSERT INTO payments (
-                    uuid, client_uuid, amount, payment_date, method, type,
-                    sync_status, sync_version, is_deleted, is_active, created_at, updated_at, synced_at, deleted_at
-                )
-                SELECT
-                    COALESCE(NULLIF(TRIM(old.uuid), ''), lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))),
-                    %s, COALESCE(old.amount, 0), old.payment_date, COALESCE(old.method, ''), COALESCE(old.type, 'Payment'),
-                    COALESCE(old.sync_status, 'PENDING'), COALESCE(old.sync_version, 1),
-                    COALESCE(old.is_deleted, 0), COALESCE(old.is_active, 1),
-                    COALESCE(old.created_at, datetime('now')), COALESCE(old.updated_at, datetime('now')),
-                    old.synced_at, old.deleted_at
-                FROM payments_old old
-                """.formatted(clientExpr));
+        stmt.execute(
+                """
+                        INSERT INTO payments (
+                            uuid, client_uuid, amount, payment_date, method, type,
+                            sync_status, sync_version, is_deleted, is_active, created_at, updated_at, synced_at, deleted_at
+                        )
+                        SELECT
+                            COALESCE(NULLIF(TRIM(old.uuid), ''), lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))),
+                            %s, COALESCE(old.amount, 0), old.payment_date, COALESCE(old.method, ''), COALESCE(old.type, 'Payment'),
+                            COALESCE(old.sync_status, 'PENDING'), COALESCE(old.sync_version, 1),
+                            COALESCE(old.is_deleted, 0), COALESCE(old.is_active, 1),
+                            COALESCE(old.created_at, datetime('now')), COALESCE(old.updated_at, datetime('now')),
+                            old.synced_at, old.deleted_at
+                        FROM payments_old old
+                        """
+                        .formatted(clientExpr));
         stmt.execute("DROP TABLE payments_old");
         stmt.execute("PRAGMA foreign_keys=ON");
     }
@@ -3122,21 +3552,23 @@ public class DatabaseInitializer {
         String invExpr = hasInvoiceId
                 ? "COALESCE(NULLIF(TRIM(old.invoice_uuid), ''), (SELECT im.uuid FROM invoice_master im WHERE im.uuid = CAST(old.invoice_id AS TEXT) OR im.id = old.invoice_id LIMIT 1))"
                 : "old.invoice_uuid";
-        stmt.execute("""
-                INSERT INTO invoice_adjustments (
-                    uuid, invoice_uuid, type, note_no, amount, reason, date,
-                    sync_status, sync_version, is_deleted, is_active, created_at, updated_at, synced_at, deleted_at
-                )
-                SELECT
-                    COALESCE(NULLIF(TRIM(old.uuid), ''), lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))),
-                    %s, old.type, old.note_no, old.amount, COALESCE(old.reason, ''), COALESCE(old.date, date('now')),
-                    COALESCE(old.sync_status, 'PENDING'), COALESCE(old.sync_version, 1),
-                    COALESCE(old.is_deleted, 0), COALESCE(old.is_active, 1),
-                    COALESCE(old.created_at, datetime('now')), COALESCE(old.updated_at, datetime('now')),
-                    old.synced_at, old.deleted_at
-                FROM invoice_adjustments_old old
-                WHERE %s IS NOT NULL
-                """.formatted(invExpr, invExpr));
+        stmt.execute(
+                """
+                        INSERT INTO invoice_adjustments (
+                            uuid, invoice_uuid, type, note_no, amount, reason, date,
+                            sync_status, sync_version, is_deleted, is_active, created_at, updated_at, synced_at, deleted_at
+                        )
+                        SELECT
+                            COALESCE(NULLIF(TRIM(old.uuid), ''), lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))),
+                            %s, old.type, old.note_no, old.amount, COALESCE(old.reason, ''), COALESCE(old.date, date('now')),
+                            COALESCE(old.sync_status, 'PENDING'), COALESCE(old.sync_version, 1),
+                            COALESCE(old.is_deleted, 0), COALESCE(old.is_active, 1),
+                            COALESCE(old.created_at, datetime('now')), COALESCE(old.updated_at, datetime('now')),
+                            old.synced_at, old.deleted_at
+                        FROM invoice_adjustments_old old
+                        WHERE %s IS NOT NULL
+                        """
+                        .formatted(invExpr, invExpr));
         stmt.execute("DROP TABLE invoice_adjustments_old");
         stmt.execute("PRAGMA foreign_keys=ON");
     }
@@ -3167,26 +3599,28 @@ public class DatabaseInitializer {
         String codeExpr = columnExists(conn, "jobs_old", "job_code")
                 ? "COALESCE(NULLIF(TRIM(old.job_code), ''), NULLIF(TRIM(old.job_no), ''), '')"
                 : "COALESCE(NULLIF(TRIM(old.job_no), ''), '')";
-        stmt.execute("""
-                INSERT INTO jobs (
-                    uuid, client_uuid, invoice_uuid, job_code, job_title, job_type, description, amount,
-                    status, child_status, job_number_mode, image_path, remarks, job_date, delivery_date,
-                    sync_status, sync_version, is_deleted, is_active, created_at, updated_at, synced_at, deleted_at
-                )
-                SELECT
-                    COALESCE(NULLIF(TRIM(old.uuid), ''), lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))),
-                    %s, %s, %s,
-                    COALESCE(old.job_title, ''), COALESCE(old.job_type, ''), COALESCE(old.description, ''),
-                    COALESCE(old.amount, 0), COALESCE(old.status, 'Draft'), COALESCE(old.child_status, ''),
-                    COALESCE(old.job_number_mode, 'AUTO'), COALESCE(old.image_path, ''), COALESCE(old.remarks, ''),
-                    COALESCE(old.job_date, datetime('now')), old.delivery_date,
-                    COALESCE(old.sync_status, 'PENDING'), COALESCE(old.sync_version, 1),
-                    COALESCE(old.is_deleted, 0), COALESCE(old.is_active, 1),
-                    COALESCE(old.created_at, datetime('now')), COALESCE(old.updated_at, datetime('now')),
-                    old.synced_at, old.deleted_at
-                FROM jobs_old old
-                WHERE TRIM(%s) != ''
-                """.formatted(clientExpr, invExpr, codeExpr, codeExpr));
+        stmt.execute(
+                """
+                        INSERT INTO jobs (
+                            uuid, client_uuid, invoice_uuid, job_code, job_title, job_type, description, amount,
+                            status, child_status, job_number_mode, image_path, remarks, job_date, delivery_date,
+                            sync_status, sync_version, is_deleted, is_active, created_at, updated_at, synced_at, deleted_at
+                        )
+                        SELECT
+                            COALESCE(NULLIF(TRIM(old.uuid), ''), lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))),
+                            %s, %s, %s,
+                            COALESCE(old.job_title, ''), COALESCE(old.job_type, ''), COALESCE(old.description, ''),
+                            COALESCE(old.amount, 0), COALESCE(old.status, 'Draft'), COALESCE(old.child_status, ''),
+                            COALESCE(old.job_number_mode, 'AUTO'), COALESCE(old.image_path, ''), COALESCE(old.remarks, ''),
+                            COALESCE(old.job_date, datetime('now')), old.delivery_date,
+                            COALESCE(old.sync_status, 'PENDING'), COALESCE(old.sync_version, 1),
+                            COALESCE(old.is_deleted, 0), COALESCE(old.is_active, 1),
+                            COALESCE(old.created_at, datetime('now')), COALESCE(old.updated_at, datetime('now')),
+                            old.synced_at, old.deleted_at
+                        FROM jobs_old old
+                        WHERE TRIM(%s) != ''
+                        """
+                        .formatted(clientExpr, invExpr, codeExpr, codeExpr));
         stmt.execute("DROP TABLE jobs_old");
         stmt.execute("PRAGMA foreign_keys=ON");
     }
@@ -3207,112 +3641,30 @@ public class DatabaseInitializer {
         String jobExpr = hasJobId
                 ? "COALESCE(NULLIF(TRIM(old.job_uuid), ''), (SELECT j.uuid FROM jobs j WHERE j.uuid = CAST(old.job_id AS TEXT) OR j.id = old.job_id LIMIT 1))"
                 : "old.job_uuid";
-        stmt.execute("""
-                INSERT INTO job_items (
-                    uuid, job_uuid, type, description, amount, sort_order,
-                    sync_status, sync_version, is_deleted, is_active, created_at, updated_at, synced_at, deleted_at
-                )
-                SELECT
-                    COALESCE(NULLIF(TRIM(old.uuid), ''), lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))),
-                    %s, old.type, old.description, COALESCE(old.amount, 0), COALESCE(old.sort_order, 0),
-                    COALESCE(old.sync_status, 'PENDING'), COALESCE(old.sync_version, 1),
-                    COALESCE(old.is_deleted, 0), COALESCE(old.is_active, 1),
-                    COALESCE(old.created_at, datetime('now')), COALESCE(old.updated_at, datetime('now')),
-                    old.synced_at, old.deleted_at
-                FROM job_items_old old
-                WHERE %s IS NOT NULL
-                """.formatted(jobExpr, jobExpr));
+        stmt.execute(
+                """
+                        INSERT INTO job_items (
+                            uuid, job_uuid, type, description, amount, sort_order,
+                            sync_status, sync_version, is_deleted, is_active, created_at, updated_at, synced_at, deleted_at
+                        )
+                        SELECT
+                            COALESCE(NULLIF(TRIM(old.uuid), ''), lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))),
+                            %s, old.type, old.description, COALESCE(old.amount, 0), COALESCE(old.sort_order, 0),
+                            COALESCE(old.sync_status, 'PENDING'), COALESCE(old.sync_version, 1),
+                            COALESCE(old.is_deleted, 0), COALESCE(old.is_active, 1),
+                            COALESCE(old.created_at, datetime('now')), COALESCE(old.updated_at, datetime('now')),
+                            old.synced_at, old.deleted_at
+                        FROM job_items_old old
+                        WHERE %s IS NOT NULL
+                        """
+                        .formatted(jobExpr, jobExpr));
         stmt.execute("DROP TABLE job_items_old");
         stmt.execute("PRAGMA foreign_keys=ON");
     }
 
     private static void migrateBillingToCanonicalIfNeeded(Connection conn, Statement stmt) throws Exception {
-        if (!hasAnyLegacyColumn(conn, "billing", "id", "job_id", "client_id")) {
-            return;
-        }
-        System.out.println("Migration: billing → uuid PK (strip id / job_id / client_id)");
-        stmt.execute("PRAGMA foreign_keys=OFF");
-        stmt.execute("ALTER TABLE billing RENAME TO billing_old");
-        stmt.execute("""
-                CREATE TABLE billing (
-                    uuid TEXT PRIMARY KEY NOT NULL,
-                    job_uuid TEXT,
-                    client_uuid TEXT,
-                    amount REAL,
-                    bill_date TEXT,
-                    sync_status TEXT DEFAULT 'PENDING',
-                    sync_version INTEGER DEFAULT 1,
-                    is_deleted INTEGER DEFAULT 0,
-                    is_active INTEGER DEFAULT 1,
-                    created_at TEXT DEFAULT (datetime('now')),
-                    updated_at TEXT DEFAULT (datetime('now')),
-                    synced_at TEXT DEFAULT NULL,
-                    deleted_at TEXT DEFAULT NULL,
-                    FOREIGN KEY(job_uuid) REFERENCES jobs(uuid) ON DELETE SET NULL,
-                    FOREIGN KEY(client_uuid) REFERENCES clients(uuid) ON DELETE SET NULL
-                )
-                """);
-        String oldTable = "billing_old";
-        boolean hasJobId = columnExists(conn, oldTable, "job_id");
-        boolean hasJobUuid = columnExists(conn, oldTable, "job_uuid");
-        boolean hasClientId = columnExists(conn, oldTable, "client_id");
-        boolean hasClientUuid = columnExists(conn, oldTable, "client_uuid");
-        boolean jobsHasId = columnExists(conn, "jobs", "id");
-        boolean clientsHasId = columnExists(conn, "clients", "id");
-        String jobFromId = jobsHasId
-                ? "(SELECT j.uuid FROM jobs j WHERE j.id = old.job_id LIMIT 1)"
-                : "(SELECT j.uuid FROM jobs j WHERE j.uuid = CAST(old.job_id AS TEXT) LIMIT 1)";
-        String jobExpr;
-        if (hasJobId) {
-            jobExpr = hasJobUuid
-                    ? "COALESCE(NULLIF(TRIM(old.job_uuid), ''), " + jobFromId + ")"
-                    : jobFromId;
-        } else if (hasJobUuid) {
-            jobExpr = "old.job_uuid";
-        } else {
-            jobExpr = "NULL";
-        }
-        String clientFromId = clientsHasId
-                ? "(SELECT c.uuid FROM clients c WHERE c.id = old.client_id LIMIT 1)"
-                : "(SELECT c.uuid FROM clients c WHERE c.uuid = CAST(old.client_id AS TEXT) LIMIT 1)";
-        String clientExpr;
-        if (hasClientId) {
-            clientExpr = hasClientUuid
-                    ? "COALESCE(NULLIF(TRIM(old.client_uuid), ''), " + clientFromId + ")"
-                    : clientFromId;
-        } else if (hasClientUuid) {
-            clientExpr = "old.client_uuid";
-        } else {
-            clientExpr = "NULL";
-        }
-        String billingCols = String.join(",\n                    ",
-                sqlCoalesceNewUuid("old", "uuid", columnExists(conn, oldTable, "uuid")),
-                jobExpr,
-                clientExpr,
-                oldCol(conn, oldTable, "amount", "NULL"),
-                oldCol(conn, oldTable, "bill_date", "NULL"),
-                oldColCoalesce(conn, oldTable, "sync_status", "'PENDING'"),
-                oldColCoalesce(conn, oldTable, "sync_version", "1"),
-                oldColCoalesce(conn, oldTable, "is_deleted", "0"),
-                oldColCoalesce(conn, oldTable, "is_active", "1"),
-                oldColCoalesce(conn, oldTable, "created_at", "datetime('now')"),
-                oldColCoalesce(conn, oldTable, "updated_at", "datetime('now')"),
-                oldCol(conn, oldTable, "synced_at", "NULL"),
-                oldCol(conn, oldTable, "deleted_at", "NULL"));
-        stmt.execute("""
-                INSERT INTO billing (
-                    uuid, job_uuid, client_uuid, amount, bill_date,
-                    sync_status, sync_version, is_deleted, is_active, created_at, updated_at, synced_at, deleted_at
-                )
-                SELECT
-                    """
-                + billingCols
-                + """
-                
-                FROM billing_old old
-                """);
-        stmt.execute("DROP TABLE billing_old");
-        stmt.execute("PRAGMA foreign_keys=ON");
+        stmt.execute("CREATE TABLE IF NOT EXISTS billing (uuid TEXT PRIMARY KEY)");
+        stmt.execute("DROP TABLE IF EXISTS billing_old");
     }
 
     private static void migrateSuppliersToCanonicalIfNeeded(Connection conn, Statement stmt) throws Exception {
@@ -3348,22 +3700,23 @@ public class DatabaseInitializer {
                     deleted_at TEXT DEFAULT NULL
                 )
                 """);
-        stmt.execute("""
-                INSERT INTO suppliers (
-                    uuid, supplier_code, name, business_name, type, phone, address, gst_number,
-                    created_by_user_uuid, updated_by_user_uuid,
-                    sync_status, sync_version, is_deleted, is_active, created_at, updated_at, synced_at, deleted_at
-                )
-                SELECT
-                    COALESCE(NULLIF(TRIM(old.uuid), ''), lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))),
-                    COALESCE(old.supplier_code, ''), name, business_name, type, phone, address, gst_number,
-                    NULL, NULL,
-                    COALESCE(sync_status, 'PENDING'), COALESCE(sync_version, 1),
-                    COALESCE(is_deleted, 0), COALESCE(is_active, 1),
-                    COALESCE(created_at, datetime('now')), COALESCE(updated_at, datetime('now')),
-                    synced_at, deleted_at
-                FROM suppliers_old old
-                """);
+        stmt.execute(
+                """
+                        INSERT INTO suppliers (
+                            uuid, supplier_code, name, business_name, type, phone, address, gst_number,
+                            created_by_user_uuid, updated_by_user_uuid,
+                            sync_status, sync_version, is_deleted, is_active, created_at, updated_at, synced_at, deleted_at
+                        )
+                        SELECT
+                            COALESCE(NULLIF(TRIM(old.uuid), ''), lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))),
+                            COALESCE(old.supplier_code, ''), name, business_name, type, phone, address, gst_number,
+                            NULL, NULL,
+                            COALESCE(sync_status, 'PENDING'), COALESCE(sync_version, 1),
+                            COALESCE(is_deleted, 0), COALESCE(is_active, 1),
+                            COALESCE(created_at, datetime('now')), COALESCE(updated_at, datetime('now')),
+                            synced_at, deleted_at
+                        FROM suppliers_old old
+                        """);
         stmt.execute("DROP TABLE suppliers_old");
         stmt.execute("PRAGMA foreign_keys=ON");
     }
@@ -3376,7 +3729,8 @@ public class DatabaseInitializer {
         };
         for (String table : tables) {
             if (tableExists(conn, table) && columnExists(conn, table, "id")) {
-                System.err.println("WARNING: table " + table + " still has integer column 'id' — run DB repair or delete database/sunnyprinters.db for clean bootstrap");
+                System.err.println("WARNING: table " + table
+                        + " still has integer column 'id' — run DB repair or delete database/sunnyprinters.db for clean bootstrap");
             }
         }
     }

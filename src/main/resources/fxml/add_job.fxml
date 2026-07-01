@@ -135,7 +135,7 @@
                     </VBox>
                     <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="0">
                         <Label text="UNITS" styleClass="field-heading-sm"/>
-                        <ComboBox fx:id="printUnitsCombo" promptText="Copies" styleClass="card-combo" maxWidth="Infinity"/>
+                        <ComboBox fx:id="printUnitsCombo" promptText="Sheet" styleClass="card-combo" maxWidth="Infinity"/>
                     </VBox>
                     <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="0" GridPane.columnSpan="2">
                         <Label text="PLATE PROCESSING" styleClass="field-heading-sm"/>

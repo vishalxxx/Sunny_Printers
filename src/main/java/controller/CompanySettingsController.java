@@ -110,7 +110,7 @@ public class CompanySettingsController implements Initializable {
 
 	private void updateDeleteState() {
 		if (deleteBtn == null) return;
-		deleteBtn.setDisable(editing == null || editing.getId() <= 0);
+		deleteBtn.setDisable(editing == null || editing.getUuid() == null || editing.getUuid().isBlank());
 	}
 
 	private void applyToForm(CompanyDetails c) {
@@ -160,7 +160,7 @@ public class CompanySettingsController implements Initializable {
 
 		if (companyTable != null) {
 			for (int i = 0; i < rows.size(); i++) {
-				if (rows.get(i).getId() == saved.getId()) {
+				if (rows.get(i).getUuid() != null && rows.get(i).getUuid().equals(saved.getUuid())) {
 					companyTable.getSelectionModel().select(i);
 					break;
 				}
@@ -173,7 +173,7 @@ public class CompanySettingsController implements Initializable {
 	private void deleteSelected() {
 		if (companyTable == null) return;
 		CompanyDetails selected = companyTable.getSelectionModel().getSelectedItem();
-		if (selected == null || selected.getId() <= 0) return;
+		if (selected == null || selected.getUuid() == null || selected.getUuid().isBlank()) return;
 
 		Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
 				"Delete company '" + nz(selected.getTradeName()) + "'?",
@@ -183,7 +183,7 @@ public class CompanySettingsController implements Initializable {
 		ButtonType res = confirm.showAndWait().orElse(ButtonType.CANCEL);
 		if (res != ButtonType.OK) return;
 
-		companyService.delete(selected.getId());
+		companyService.delete(selected.getUuid());
 		loadData();
 		selectFirstRow();
 		showInfo("Deleted.");
@@ -198,7 +198,7 @@ public class CompanySettingsController implements Initializable {
 
 	private static CompanyDetails copyOf(CompanyDetails src) {
 		CompanyDetails c = new CompanyDetails();
-		c.setId(src.getId());
+		c.setUuid(src.getUuid());
 		c.setTradeName(src.getTradeName());
 		c.setAddress(src.getAddress());
 		c.setPhone(src.getPhone());

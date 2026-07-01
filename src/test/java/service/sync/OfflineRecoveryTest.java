@@ -56,13 +56,13 @@ public class OfflineRecoveryTest {
 
         // Create client locally while offline
         Client c1 = new Client("Offline Corp", "Jane Doe", "999", "", "", "", "", "Delhi", "", "");
-        c1.setClientUuid("uuid-offline-1");
+        c1.setClientUuid("00000000-0000-0000-0000-000000009001");
         c1.setClientCode("CL-OFF1");
         c1.setSyncStatus("PENDING");
         repo.save(c1);
 
         // Verify local state is PENDING and remote has 0 records (offline)
-        Client localC1 = repo.findByUuid("uuid-offline-1");
+        Client localC1 = repo.findByUuid("00000000-0000-0000-0000-000000009001");
         assertNotNull(localC1);
         assertEquals("PENDING", localC1.getSyncStatus());
         
@@ -74,7 +74,7 @@ public class OfflineRecoveryTest {
         UniversalSyncEngine.syncAllPending();
 
         // Verify local status is updated to SYNCED
-        localC1 = repo.findByUuid("uuid-offline-1");
+        localC1 = repo.findByUuid("00000000-0000-0000-0000-000000009001");
         assertEquals("SYNCED", localC1.getSyncStatus());
 
         // Verify remote got the record

@@ -9,6 +9,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.concurrent.CancellationException;
 import javafx.application.Platform;
@@ -791,7 +792,7 @@ public class GenerateInvoiceController {
                 String biz = j.getClientBusinessName();
                 String subtitle = (biz != null && !biz.isBlank() ? biz + " · " : "") + j.getJobNo();
                 String cid = j.getClientId();
-                monthlyMasterJobs.add(new JobItem(
+                JobItem item = new JobItem(
                         j.getUuid(),
                         cid,
                         j.getJobTitle(),
@@ -799,7 +800,9 @@ public class GenerateInvoiceController {
                         dateStr,
                         "1",
                         totalStr,
-                        totalStr));
+                        totalStr);
+                item.setSelected(true);
+                monthlyMasterJobs.add(item);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -1038,10 +1041,11 @@ public class GenerateInvoiceController {
     }
 
     private void loadJobsForClient(Client client) {
-        if (client == null)
-            return;
-
         masterJobs.clear();
+        if (client == null) {
+            updateSummary();
+            return;
+        }
         try {
             System.out.println("DEBUG: Loading jobs for client ID: " + client.getClientUuid());
             List<model.Job> jobs = jobService.getCompletedJobsByClient(client.getClientUuid());
@@ -1118,6 +1122,10 @@ public class GenerateInvoiceController {
 
     @FXML
     private void handlePreview() {
+        if (activeTab == BillingTab.MONTHLY) {
+            toast("Preview is not supported for Monthly batch generation. Click Generate to create drafts.");
+            return;
+        }
         Client client = clientComboBox.getValue();
         if (client == null) {
             toast("Please select a client first.");
@@ -1189,7 +1197,7 @@ public class GenerateInvoiceController {
                         throw new CancellationException();
                     }
                     if (invoice.getJobs().isEmpty()) {
-                        throw new RuntimeException("No invoice lines found.");
+                        throw new IllegalStateException("No billable jobs found. Please ensure selected jobs have items added.");
                     }
 
                     updateMessage("Generating PDF...");
@@ -1232,7 +1240,12 @@ public class GenerateInvoiceController {
                 progress.hide();
                 rootStackPane.getChildren().remove(progressRoot);
                 Throwable ex = task.getException();
-                toast("Preview failed: " + (ex != null ? ex.getMessage() : "Unknown"));
+                if (ex instanceof IllegalStateException) {
+                    toast(ex.getMessage());
+                } else {
+                    toast("Preview failed: " + (ex != null ? ex.getMessage() : "Unknown"));
+                    if (ex != null) ex.printStackTrace();
+                }
             });
 
             new Thread(task).start();
@@ -1244,19 +1257,124 @@ public class GenerateInvoiceController {
 
     @FXML
     private void handleGenerate() {
-        Client client = clientComboBox.getValue();
-        if (client == null) {
-            toast("Please select a client first.");
-            return;
-        }
         if (rootStackPane == null) {
             toast("Unable to show progress.");
             return;
         }
 
-        final LocalDate invoiceDate = invoiceDatePicker.getValue();
         final boolean dateRangeMode = activeTab == BillingTab.DATE_RANGE;
         final boolean monthlyMode = activeTab == BillingTab.MONTHLY;
+
+        if (monthlyMode) {
+            Month month = monthlyMonthCombo != null ? monthlyMonthCombo.getValue() : null;
+            Integer year = monthlyYearCombo != null ? monthlyYearCombo.getValue() : null;
+
+            if (month == null || year == null) {
+                toast("Please select Month and Year.");
+                return;
+            }
+
+            final int monthValue = month.getValue();
+            final YearMonth ym = YearMonth.of(year, month);
+
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/progress_dialog.fxml"));
+                StackPane progressRoot = loader.load();
+                ProgressDialogController progress = loader.getController();
+
+                rootStackPane.getChildren().add(progressRoot);
+                progress.show("Running batch process");
+
+                final List<String> newlyCreatedIds = new ArrayList<>();
+
+                Task<Void> task = new Task<>() {
+                    @Override
+                    protected Void call() throws Exception {
+                        updateMessage("Loading clients...");
+                        LocalDate customDate = invoiceDatePicker != null ? invoiceDatePicker.getValue() : LocalDate.now();
+                        Map<String, Invoice> invoiceMap = invoiceBuilder.buildMonthlyInvoicesForAllClients(year,
+                                monthValue, customDate);
+
+                        if (invoiceMap == null || invoiceMap.isEmpty())
+                            throw new IllegalStateException("No completed billable jobs found for the selected month.");
+
+                        MasterDocumentSeries series = selectedDocumentSeriesForGeneration();
+                        for (Invoice inv : invoiceMap.values()) {
+                            inv.setMasterDocumentSeries(series);
+                        }
+
+                        if (isCancelled()) throw new CancellationException();
+
+                        updateMessage("Saving Draft Invoices...");
+                        for (Invoice inv : invoiceMap.values()) {
+                            if (isCancelled()) throw new CancellationException();
+                            CreateOrGetResult reserved = invoiceMasterService.createNewDraftInvoice(inv, "MONTHLY_PROFORMA", null);
+                            if (reserved != null && reserved.wasNewlyCreated()) {
+                                newlyCreatedIds.add(reserved.master().getUuid());
+                            }
+                        }
+
+                        if (isCancelled()) throw new CancellationException();
+
+                        LocalDate fromDate = ym.atDay(1);
+                        LocalDate toDate = ym.atEndOfMonth();
+                        invoiceMasterService.registerMonthlyInvoices(invoiceMap, fromDate, toDate, "MONTHLY_PROFORMA", null);
+
+                        updateProgress(1, 1);
+                        updateMessage("Completed");
+                        return null;
+                    }
+                };
+
+                progress.setOnCancel(task::cancel);
+
+                task.setOnSucceeded(ev -> {
+                    progress.hide();
+                    rootStackPane.getChildren().remove(progressRoot);
+                    refreshMonthlyJobs();
+                    if (monthlyMonthCombo != null) monthlyMonthCombo.getSelectionModel().clearSelection();
+                    if (monthlyYearCombo != null) monthlyYearCombo.getSelectionModel().clearSelection();
+                    if (clientComboBox != null) clientComboBox.getSelectionModel().clearSelection();
+                    if (invoiceDatePicker != null) invoiceDatePicker.setValue(LocalDate.now());
+                    toast("✅ Draft Invoices created successfully!");
+                });
+
+                task.setOnCancelled(ev -> {
+                    new Thread(() -> invoiceMasterService.deleteInvoicesIfCancelled(newlyCreatedIds)).start();
+                    progress.hide();
+                    rootStackPane.getChildren().remove(progressRoot);
+                    toast("⚠ Process cancelled.");
+                });
+
+                task.setOnFailed(ev -> {
+                    new Thread(() -> invoiceMasterService.deleteInvoicesIfCancelled(newlyCreatedIds)).start();
+                    progress.hide();
+                    rootStackPane.getChildren().remove(progressRoot);
+                    Throwable ex = task.getException();
+                    if (ex instanceof IllegalStateException) {
+                        toast(ex.getMessage());
+                    } else {
+                        toast("❌ Error: " + (ex != null ? ex.getMessage() : "Unknown"));
+                        if (ex != null) ex.printStackTrace();
+                    }
+                });
+
+                new Thread(task).start();
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                toast("Failed to start batch process");
+            }
+            return;
+        }
+
+        Client client = clientComboBox.getValue();
+        if (client == null) {
+            toast("Please select a client first.");
+            return;
+        }
+
+        final LocalDate invoiceDate = invoiceDatePicker.getValue();
         final LocalDate drFromGen;
         final LocalDate drToGen;
         final List<String> generateJobUuids;
@@ -1319,7 +1437,7 @@ public class GenerateInvoiceController {
                         throw new CancellationException();
                     }
                     if (invoice.getJobs().isEmpty()) {
-                        throw new RuntimeException("No invoice lines found.");
+                        throw new IllegalStateException("No billable jobs found. Please ensure selected jobs have items added.");
                     }
 
                     if (dateRangeMode) {
@@ -1355,11 +1473,17 @@ public class GenerateInvoiceController {
                 rootStackPane.getChildren().remove(progressRoot);
                 if (dateRangeMode) {
                     refreshDateRangeLive();
+                    if (dateRangeFromPicker != null) dateRangeFromPicker.setValue(null);
+                    if (dateRangeToPicker != null) dateRangeToPicker.setValue(null);
                 } else if (monthlyMode) {
                     refreshMonthlyJobs();
                 } else {
-                    loadJobsForClient(client);
+                    loadJobsForClient(null);
                 }
+                
+                if (clientComboBox != null) clientComboBox.getSelectionModel().clearSelection();
+                if (invoiceDatePicker != null) invoiceDatePicker.setValue(LocalDate.now());
+                
                 toast("Draft invoice created successfully.");
             });
 
@@ -1373,10 +1497,18 @@ public class GenerateInvoiceController {
             });
 
             task.setOnFailed(ev -> {
+                if (dateRangeMode) {
+                    new Thread(() -> invoiceMasterService.deleteInvoicesIfCancelled(newlyCreatedIds)).start();
+                }
                 progress.hide();
                 rootStackPane.getChildren().remove(progressRoot);
                 Throwable ex = task.getException();
-                toast("Failed: " + (ex != null ? ex.getMessage() : "Unknown"));
+                if (ex instanceof IllegalStateException) {
+                    toast(ex.getMessage());
+                } else {
+                    toast("Error: " + (ex != null ? ex.getMessage() : "Unknown error"));
+                    if (ex != null) ex.printStackTrace();
+                }
             });
 
             new Thread(task).start();

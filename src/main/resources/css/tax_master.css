@@ -630,11 +630,17 @@
     -fx-font-size: 11px;
 }
 
-/* Toolbar combos: align height with compact search strip */
-.settings-master-scroll.settings-screen-compact.tax-master-compact .tax-master-toolbar .tax-master-toolbar-combo {
+/* Toolbar combos: align height with compact search strip and ensure text is clean without clipping */
+.settings-master-scroll .tax-master-toolbar .tax-master-toolbar-combo {
     -fx-min-height: 26;
     -fx-pref-height: 28;
     -fx-max-height: 28;
+    -fx-font-size: 11px;
+}
+.settings-master-scroll .tax-master-toolbar .tax-master-toolbar-combo .list-cell {
+    -fx-padding: 0 4 0 6;
+    -fx-font-size: 11px;
+    -fx-alignment: CENTER_LEFT;
 }
 
 /* Description TextArea: strip default white .content (match taste-field cream) */
