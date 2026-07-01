@@ -55,6 +55,17 @@ public class DatabaseResetUtility {
 
 		// Setup Supabase Client
 		SupabaseSettings s = new SupabaseSettingsRepository().load();
+		if (s.getSupabaseUrl() == null || s.getSupabaseUrl().isBlank()) {
+			s.setSupabaseUrl(System.getenv("SUPABASE_URL"));
+		}
+		if (s.getAnonKey() == null || s.getAnonKey().isBlank()) {
+			s.setAnonKey(System.getenv("SUPABASE_KEY"));
+		}
+		
+		if (s.getSupabaseUrl() == null || s.getSupabaseUrl().isBlank()) {
+			System.out.println("Supabase credentials not found. Skipping database reset.");
+			return;
+		}
 		SupabaseRestClient http = new SupabaseRestClient(s.getSupabaseUrl(), s.getAnonKey());
 
 		try (Connection conn = DBConnection.getExclusiveConnection()) {
