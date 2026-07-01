@@ -1,0 +1,117 @@
+name: Sunny Printers Release
+
+on:
+
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+
+  release:
+
+    name: Enterprise Release Pipeline
+
+    runs-on: windows-latest
+
+    timeout-minutes: 90
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      #######################################
+      # Validate
+      #######################################
+
+      - name: Validate
+        run: mvn validate
+
+      #######################################
+      # UNIT
+      #######################################
+
+      - name: Unit Tests
+        run: mvn test -Punit
+
+      #######################################
+      # SANITY
+      #######################################
+
+      - name: Sanity Tests
+        run: mvn test -Psanity
+
+      #######################################
+      # INTEGRATION
+      #######################################
+
+      - name: Integration Tests
+        env:
+          TEST_DB_DIR: database_test
+        run: mvn verify -Pintegration
+
+      #######################################
+      # PERFORMANCE
+      #######################################
+
+      - name: Performance Tests
+        run: mvn verify -Pperformance
+
+      #######################################
+      # CHAOS
+      #######################################
+
+      - name: Chaos Tests
+        run: mvn verify -Pchaos
+
+      #######################################
+      # RELEASE CERTIFICATION
+      #######################################
+
+      - name: Release Certification
+        run: mvn verify -Prelease
+
+      #######################################
+      # LIVE TESTS
+      #######################################
+
+      - name: Live Supabase Tests
+        env:
+          SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.TEST_SUPABASE_KEY }}
+          SUPABASE_BUCKET: ${{ secrets.TEST_SUPABASE_BUCKET }}
+        run: mvn verify -Plive
+
+      #######################################
+      # PACKAGE
+      #######################################
+
+      - name: Package Application
+        run: |
+          powershell ./release.bat -Increment patch
+
+      #######################################
+      # Upload Build Artifacts
+      #######################################
+
+      - name: Upload Release Files
+        uses: actions/upload-artifact@v4
+        with:
+          name: SunnyPrintersRelease
+          path: |
+            target/dist/**
+            target/*.jar
+            target/**/*.msi
+            target/**/*.zip
+            target/**/*.sha256
+          if-no-files-found: ignore
