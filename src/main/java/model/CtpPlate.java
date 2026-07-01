@@ -5,13 +5,14 @@ import java.util.Objects;
 
 public class CtpPlate implements Serializable {
 
-    /* ================= DB FIELDS ================= */
+    /* ================= IDENTIFIERS ================= */
 
-    private int id;
-    private int jobItemId;
+    private String uuid;
+    private String jobItemUuid;
 
-    private int supplierId;
-    private String supplierName;
+    private String supplierUuid;
+
+    /* ================= DATA ================= */
 
     private int qty;
     private String plateSize;
@@ -21,14 +22,21 @@ public class CtpPlate implements Serializable {
     private String notes;
     private double amount;
 
+    private String syncStatus = "PENDING";
+    private int syncVersion = 1;
+    private int isDeletedSync = 0;
+    private int isActive = 1;
     private String createdAt;
     private String updatedAt;
+    private String syncedAt;
+    private String deletedAt;
 
     /* ================= UI FLAGS ================= */
 
     private transient boolean isNew;
     private transient boolean isUpdated;
     private transient boolean isDeleted;
+    private boolean includeNotesInInvoice = true;
 
     /* ================= SNAPSHOT ================= */
 
@@ -40,9 +48,9 @@ public class CtpPlate implements Serializable {
 
     public CtpPlate copy() {
         CtpPlate c = new CtpPlate();
-        c.jobItemId = this.jobItemId;
-        c.supplierId = this.supplierId;
-        c.supplierName = this.supplierName;
+        c.uuid = this.uuid;
+        c.jobItemUuid = this.jobItemUuid;
+        c.supplierUuid = this.supplierUuid;
         c.qty = this.qty;
         c.plateSize = this.plateSize;
         c.gauge = this.gauge;
@@ -50,6 +58,7 @@ public class CtpPlate implements Serializable {
         c.color = this.color;
         c.notes = this.notes;
         c.amount = this.amount;
+        c.includeNotesInInvoice = this.includeNotesInInvoice;
         return c;
     }
 
@@ -64,7 +73,6 @@ public class CtpPlate implements Serializable {
         if (originalSnapshot == null) return true; // new item
 
         return qty != originalSnapshot.qty
-            || !Objects.equals(supplierName, originalSnapshot.supplierName)
             || !Objects.equals(plateSize, originalSnapshot.plateSize)
             || !Objects.equals(gauge, originalSnapshot.gauge)
             || !Objects.equals(backing, originalSnapshot.backing)
@@ -78,7 +86,6 @@ public class CtpPlate implements Serializable {
         if (originalSnapshot == null) return false;
 
         return qty == originalSnapshot.qty
-            && Objects.equals(supplierName, originalSnapshot.supplierName)
             && Objects.equals(plateSize, originalSnapshot.plateSize)
             && Objects.equals(gauge, originalSnapshot.gauge)
             && Objects.equals(backing, originalSnapshot.backing)
@@ -106,17 +113,14 @@ public class CtpPlate implements Serializable {
 
     /* ================= GETTERS / SETTERS ================= */
 
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    public String getUuid() { return uuid; }
+    public void setUuid(String uuid) { this.uuid = uuid; }
 
-    public int getJobItemId() { return jobItemId; }
-    public void setJobItemId(int jobItemId) { this.jobItemId = jobItemId; }
+    public String getJobItemUuid() { return jobItemUuid; }
+    public void setJobItemUuid(String jobItemUuid) { this.jobItemUuid = jobItemUuid; }
 
-    public int getSupplierId() { return supplierId; }
-    public void setSupplierId(int supplierId) { this.supplierId = supplierId; }
-
-    public String getSupplierName() { return supplierName; }
-    public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
+    public String getSupplierUuid() { return supplierUuid; }
+    public void setSupplierUuid(String supplierUuid) { this.supplierUuid = supplierUuid; }
 
     public int getQty() { return qty; }
     public void setQty(int qty) { this.qty = qty; }
@@ -139,11 +143,32 @@ public class CtpPlate implements Serializable {
     public double getAmount() { return amount; }
     public void setAmount(double amount) { this.amount = amount; }
 
+    public String getSyncStatus() { return syncStatus; }
+    public void setSyncStatus(String syncStatus) { this.syncStatus = syncStatus; }
+
+    public int getSyncVersion() { return syncVersion; }
+    public void setSyncVersion(int syncVersion) { this.syncVersion = syncVersion; }
+
+    public int getIsDeletedSync() { return isDeletedSync; }
+    public void setIsDeletedSync(int isDeletedSync) { this.isDeletedSync = isDeletedSync; }
+
+    public int getIsActive() { return isActive; }
+    public void setIsActive(int isActive) { this.isActive = isActive; }
+
     public String getCreatedAt() { return createdAt; }
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
 
     public String getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getSyncedAt() { return syncedAt; }
+    public void setSyncedAt(String syncedAt) { this.syncedAt = syncedAt; }
+
+    public String getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(String deletedAt) { this.deletedAt = deletedAt; }
+
+    public boolean isIncludeNotesInInvoice() { return includeNotesInInvoice; }
+    public void setIncludeNotesInInvoice(boolean includeNotesInInvoice) { this.includeNotesInInvoice = includeNotesInInvoice; }
 
     /* ================= DEBUG ================= */
 

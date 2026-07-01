@@ -3,7 +3,6 @@ package repository;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,15 +30,18 @@ public class TaxMasterRepository {
 		return out;
 	}
 
-	public TaxMasterItem findById(Connection con, int id) throws Exception {
+	public TaxMasterItem findByUuid(Connection con, String uuid) throws Exception {
+		if (uuid == null || uuid.isBlank()) {
+			return null;
+		}
 		String sql = """
-				SELECT id, item_type, item_name, keyword, code_type, hsn_sac, gst_rate,
+				SELECT uuid, item_type, item_name, keyword, code_type, hsn_sac, gst_rate,
 				       unit_default, description, is_favorite, is_active, created_at
 				FROM hsn_sac_master
-				WHERE id = ?
+				WHERE uuid = ?
 				""";
 		try (PreparedStatement ps = con.prepareStatement(sql)) {
-			ps.setInt(1, id);
+			ps.setString(1, uuid.trim());
 			try (ResultSet rs = ps.executeQuery()) {
 				return rs.next() ? map(rs) : null;
 			}
@@ -64,7 +66,7 @@ public class TaxMasterRepository {
 			String codeTypeOrNull, Integer activeFilter, int offset, int limit) throws Exception {
 		QueryParts q = buildFilterSql(search, categoryOrNull, codeTypeOrNull, activeFilter, false);
 		String sql = q.sql() + """
-				ORDER BY is_active DESC, is_favorite DESC, item_name COLLATE NOCASE, id
+				ORDER BY is_active DESC, is_favorite DESC, item_name COLLATE NOCASE, uuid
 				LIMIT ? OFFSET ?
 				""";
 		try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -101,18 +103,18 @@ public class TaxMasterRepository {
 			Integer activeFilter, boolean countOnly) {
 		StringBuilder sb = new StringBuilder();
 		if (countOnly) {
-			sb.append("SELECT COUNT(*) FROM hsn_sac_master WHERE 1=1 ");
+			sb.append("SELECT COUNT(*) FROM hsn_sac_master WHERE IFNULL(is_deleted, 0) = 0 ");
 		} else {
 			sb.append("""
-					SELECT id, item_type, item_name, keyword, code_type, hsn_sac, gst_rate,
+					SELECT uuid, item_type, item_name, keyword, code_type, hsn_sac, gst_rate,
 					       unit_default, description, is_favorite, is_active, created_at
 					FROM hsn_sac_master
-					WHERE 1=1
+					WHERE IFNULL(is_deleted, 0) = 0
 					""");
 		}
 		List<Object> params = new ArrayList<>();
 		if (activeFilter != null) {
-			sb.append(" AND is_active = ? ");
+			sb.append(" AND IFNULL(is_active, 1) = ? ");
 			params.add(activeFilter.intValue() != 0 ? 1 : 0);
 		}
 		if (categoryOrNull != null && !categoryOrNull.isBlank()) {
@@ -120,8 +122,13 @@ public class TaxMasterRepository {
 			params.add(categoryOrNull.trim());
 		}
 		if (codeTypeOrNull != null && !codeTypeOrNull.isBlank()) {
-			sb.append(" AND upper(trim(code_type)) = upper(?) ");
-			params.add(codeTypeOrNull.trim());
+			String cType = codeTypeOrNull.trim().toUpperCase(java.util.Locale.ROOT);
+			if ("HSN".equals(cType)) {
+				sb.append(" AND (upper(trim(COALESCE(code_type, ''))) = 'HSN' OR trim(COALESCE(code_type, '')) = '') ");
+			} else {
+				sb.append(" AND upper(trim(COALESCE(code_type, ''))) = ? ");
+				params.add(cType);
+			}
 		}
 		if (search != null && !search.isBlank()) {
 			String term = "%" + search.trim().replace("%", "\\%").replace("_", "\\_") + "%";
@@ -139,43 +146,53 @@ public class TaxMasterRepository {
 		return new QueryParts(sb.toString(), params);
 	}
 
-	public int insert(Connection con, TaxMasterItem row) throws Exception {
+	public String insert(Connection con, TaxMasterItem row) throws Exception {
+		String uuid = row.getUuid();
+		if (uuid == null || uuid.isBlank()) {
+			uuid = java.util.UUID.randomUUID().toString();
+			row.setUuid(uuid);
+		}
 		String sql = """
 				INSERT INTO hsn_sac_master (
-				  item_type, item_name, keyword, code_type, hsn_sac, gst_rate,
-				  unit_default, description, is_favorite, is_active
-				) VALUES (?,?,?,?,?,?,?,?,?,?)
+				  uuid, item_type, item_name, keyword, code_type, hsn_sac, gst_rate,
+				  unit_default, description, is_favorite, is_active, sync_status
+				) VALUES (?,?,?,?,?,?,?,?,?,?,?, 'PENDING')
 				""";
-		try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-			fill(ps, row);
+		try (PreparedStatement ps = con.prepareStatement(sql)) {
+			ps.setString(1, uuid);
+			ps.setString(2, nz(row.getItemType()));
+			ps.setString(3, nz(row.getItemName()));
+			ps.setString(4, nz(row.getKeyword()));
+			ps.setString(5, nz(row.getCodeType()));
+			ps.setString(6, nz(row.getHsnSac()));
+			ps.setDouble(7, row.getGstRate());
+			ps.setString(8, nz(row.getUnitDefault()));
+			ps.setString(9, nz(row.getDescription()));
+			ps.setInt(10, row.isFavorite() ? 1 : 0);
+			ps.setInt(11, row.isActive() ? 1 : 0);
 			ps.executeUpdate();
-			try (ResultSet keys = ps.getGeneratedKeys()) {
-				if (keys.next()) {
-					return keys.getInt(1);
-				}
-			}
 		}
-		return 0;
+		return uuid;
 	}
 
 	public void update(Connection con, TaxMasterItem row) throws Exception {
 		String sql = """
 				UPDATE hsn_sac_master SET
 				  item_type = ?, item_name = ?, keyword = ?, code_type = ?, hsn_sac = ?, gst_rate = ?,
-				  unit_default = ?, description = ?, is_favorite = ?, is_active = ?
-				WHERE id = ?
+				  unit_default = ?, description = ?, is_favorite = ?, is_active = ?, sync_status = 'PENDING', updated_at = datetime('now')
+				WHERE uuid = ?
 				""";
 		try (PreparedStatement ps = con.prepareStatement(sql)) {
 			int i = fill(ps, row);
-			ps.setInt(i, row.getId());
+			ps.setString(i, row.getUuid());
 			ps.executeUpdate();
 		}
 	}
 
-	public void setActive(Connection con, int id, boolean active) throws Exception {
-		try (PreparedStatement ps = con.prepareStatement("UPDATE hsn_sac_master SET is_active = ? WHERE id = ?")) {
+	public void setActive(Connection con, String uuid, boolean active) throws Exception {
+		try (PreparedStatement ps = con.prepareStatement("UPDATE hsn_sac_master SET is_active = ?, sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?")) {
 			ps.setInt(1, active ? 1 : 0);
-			ps.setInt(2, id);
+			ps.setString(2, uuid);
 			ps.executeUpdate();
 		}
 	}
@@ -196,7 +213,7 @@ public class TaxMasterRepository {
 
 	private static TaxMasterItem map(ResultSet rs) throws Exception {
 		TaxMasterItem r = new TaxMasterItem();
-		r.setId(rs.getInt("id"));
+		r.setUuid(rs.getString("uuid"));
 		r.setItemType(rs.getString("item_type"));
 		r.setItemName(rs.getString("item_name"));
 		r.setKeyword(rs.getString("keyword"));

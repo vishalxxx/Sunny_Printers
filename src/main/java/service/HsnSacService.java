@@ -32,5 +32,24 @@ public class HsnSacService {
             throw new RuntimeException("Failed to load HSN/SAC list", e);
         }
     }
+
+    public List<HsnSacInfo> listAllActiveHsnSac() {
+        try (Connection con = DBConnection.getConnection()) {
+            return repo.listAllActiveHsnSac(con);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load active HSN/SAC list", e);
+        }
+    }
+
+    public HsnSacInfo findBestMatchByNameOrDesc(String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+        try (Connection con = DBConnection.getConnection()) {
+            return repo.findBestMatchByNameOrDesc(con, name);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to lookup HSN/SAC by name", e);
+        }
+    }
 }
 

@@ -192,9 +192,9 @@ public class PrintingTabController {
         this.currentJob = job;
         printingTable.getItems().clear();
 
-        for (JobItem ji : jobItemService.getJobItems(job.getId())) {
+        for (JobItem ji : jobItemService.getJobItems(job.getUuid())) {
             if ("PRINTING".equalsIgnoreCase(ji.getType())) {
-                Printing p = printingRepo.findByJobItemId(ji.getId());
+                Printing p = printingRepo.findByJobItemUuid(ji.getUuid());
                 if (p != null) {
                     p.captureOriginal(); // 🔥 critical
                     printingTable.getItems().add(p);
@@ -210,7 +210,7 @@ public class PrintingTabController {
     private void applyInvoicedState(boolean isNewSelection) {
         boolean isJobStatusInvoiced = currentJob != null && "invoiced".equalsIgnoreCase(currentJob.getStatus());
         String invStatus = (currentJob != null && currentJob.getInvoiceStatus() != null) ? currentJob.getInvoiceStatus().trim().toLowerCase() : "";
-        boolean isLocked = isJobStatusInvoiced && !(invStatus.equals("draft") || invStatus.equals("final"));
+        boolean isLocked = isJobStatusInvoiced && !invStatus.equals("draft");
 
         qtyField.setDisable(isLocked);
         unitsField.setDisable(isLocked);
@@ -351,3 +351,4 @@ public class PrintingTabController {
         return printingTable.getItems().stream().anyMatch(p -> p.isNew() || p.isUpdated() || p.isDeleted());
     }
 }
+

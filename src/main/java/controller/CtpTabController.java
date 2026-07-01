@@ -10,8 +10,10 @@ import javafx.scene.layout.VBox;
 import model.CtpPlate;
 import model.Job;
 import model.JobItem;
+import model.Supplier;
 import repository.CtpItemRepository;
 import service.JobItemService;
+import service.SupplierService;
 
 public class CtpTabController {
 
@@ -32,7 +34,7 @@ public class CtpTabController {
 
     /* ================= EDITOR ================= */
 
-    @FXML private ComboBox<String> supplierField;
+    @FXML private ComboBox<Supplier> supplierField;
     @FXML private TextField qtyField;
     @FXML private ComboBox<String> plateSizeField;
     @FXML private ComboBox<String> gaugeField;
@@ -54,13 +56,45 @@ public class CtpTabController {
 
     private final JobItemService jobItemService = new JobItemService();
     private final CtpItemRepository ctpRepo = new CtpItemRepository();
+    private final SupplierService supplierService = new SupplierService();
+    private final java.util.Map<String, String> supplierNameMap = new java.util.HashMap<>();
 
     /* ================= INIT ================= */
 
     @FXML
     private void initialize() {
 
-        supplierCol.setCellValueFactory(new PropertyValueFactory<>("supplierName"));
+        supplierCol.setCellValueFactory(new PropertyValueFactory<>("supplierUuid"));
+        supplierCol.setCellFactory(col -> new TableCell<CtpPlate, String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    String name = supplierNameMap.get(item.trim().toLowerCase());
+                    setText(name != null ? name : item);
+                    setGraphic(null);
+                }
+            }
+        });
+
+        supplierField.setCellFactory(cb -> new ListCell<Supplier>() {
+            @Override
+            protected void updateItem(Supplier s, boolean empty) {
+                super.updateItem(s, empty);
+                setText(empty || s == null ? null : s.getbusinessName() + " | " + s.getName());
+            }
+        });
+
+        supplierField.setButtonCell(new ListCell<Supplier>() {
+            @Override
+            protected void updateItem(Supplier s, boolean empty) {
+                super.updateItem(s, empty);
+                setText(empty || s == null ? null : s.getbusinessName());
+            }
+        });
         qtyCol.setCellValueFactory(new PropertyValueFactory<>("qty"));
         plateSizeCol.setCellValueFactory(new PropertyValueFactory<>("plateSize"));
         gaugeCol.setCellValueFactory(new PropertyValueFactory<>("gauge"));
@@ -184,14 +218,26 @@ public class CtpTabController {
     /* ================= LOAD ================= */
 
     public void loadForJob(Job job) {
+        supplierNameMap.clear();
+        for (Supplier s : supplierService.getAllSuppliers()) {
+            String displayName = s.getbusinessName();
+            if (displayName == null || displayName.isBlank()) {
+                displayName = s.getName();
+            }
+            if (s.getUuid() != null) {
+                supplierNameMap.put(s.getUuid().trim().toLowerCase(), displayName);
+            }
+        }
+        supplierField.getItems().setAll(supplierService.getSuppliersByType("CTP"));
+
         currentJob = job;
         ctpTable.getItems().clear();
 
-        for (JobItem ji : jobItemService.getJobItems(job.getId())) {
+        for (JobItem ji : jobItemService.getJobItems(job.getUuid())) {
             if ("CTP".equalsIgnoreCase(ji.getType())) {
-                CtpPlate p = ctpRepo.findByJobItemId(ji.getId());
+                CtpPlate p = ctpRepo.findByJobItemUuid(ji.getUuid());
                 if (p != null) {
-                    p.setJobItemId(ji.getId());
+                    p.setJobItemUuid(ji.getUuid());
                     p.resetFlags();
                     p.captureOriginal();
                     ctpTable.getItems().add(p);
@@ -206,7 +252,7 @@ public class CtpTabController {
     private void applyInvoicedState(boolean isNewSelection) {
         boolean isJobStatusInvoiced = currentJob != null && "invoiced".equalsIgnoreCase(currentJob.getStatus());
         String invStatus = (currentJob != null && currentJob.getInvoiceStatus() != null) ? currentJob.getInvoiceStatus().trim().toLowerCase() : "";
-        boolean isLocked = isJobStatusInvoiced && !(invStatus.equals("draft") || invStatus.equals("final"));
+        boolean isLocked = isJobStatusInvoiced && !invStatus.equals("draft");
 
         qtyField.setDisable(isLocked);
         supplierField.setDisable(isLocked);
@@ -270,7 +316,7 @@ public class CtpTabController {
     /* ================= HELPERS ================= */
 
     private void fillFromEditor(CtpPlate p) {
-        p.setSupplierName(supplierField.getValue());
+        p.setSupplierUuid(supplierField.getValue() != null ? supplierField.getValue().getUuid() : null);
         p.setQty(parseInt(qtyField.getText()));
         p.setPlateSize(plateSizeField.getValue());
         p.setGauge(gaugeField.getValue());
@@ -284,7 +330,10 @@ public class CtpTabController {
         selectedItem = p;
         originalSnapshot = p.copy();
 
-        supplierField.setValue(p.getSupplierName());
+        Supplier found = supplierField.getItems().stream()
+                .filter(s -> s.getUuid().equals(p.getSupplierUuid()))
+                .findFirst().orElse(null);
+        supplierField.setValue(found);
         qtyField.setText(String.valueOf(p.getQty()));
         plateSizeField.setValue(p.getPlateSize());
         gaugeField.setValue(p.getGauge());
@@ -299,8 +348,10 @@ public class CtpTabController {
     private boolean isEditorChanged() {
         if (selectedItem == null || originalSnapshot == null) return false;
 
+        String currentSupplierUuid = supplierField.getValue() != null ? supplierField.getValue().getUuid() : null;
+
         return parseInt(qtyField.getText()) != originalSnapshot.getQty()
-                || !equals(supplierField.getValue(), originalSnapshot.getSupplierName())
+                || !equals(currentSupplierUuid, originalSnapshot.getSupplierUuid())
                 || !equals(plateSizeField.getValue(), originalSnapshot.getPlateSize())
                 || !equals(gaugeField.getValue(), originalSnapshot.getGauge())
                 || !equals(backingField.getValue(), originalSnapshot.getBacking())
@@ -353,3 +404,4 @@ public class CtpTabController {
         return ctpTable.getItems().stream().anyMatch(c -> c.isNew() || c.isUpdated() || c.isDeleted());
     }
 }
+

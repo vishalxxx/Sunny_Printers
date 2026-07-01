@@ -168,15 +168,6 @@
                         <ComboBox fx:id="clientComboBox" promptText="Select client name." styleClass="client-combo" maxWidth="Infinity" editable="false" />
                     </VBox>
 
-                    <VBox spacing="8">
-                        <Label text="DOCUMENT TYPE" styleClass="field-label-xs"/>
-                        <HBox spacing="16" alignment="CENTER_LEFT" styleClass="invoice-doc-type-row">
-                            <RadioButton fx:id="radioGstInvoice" text="GST invoice" styleClass="invoice-doc-type-radio" selected="true"/>
-                            <RadioButton fx:id="radioProformaInvoice" text="Proforma invoice" styleClass="invoice-doc-type-radio"/>
-                        </HBox>
-                        <Label text="Sets which numbering sequence is used when you finalize (Invoice Settings: INV vs PI)." wrapText="true" styleClass="invoice-doc-type-hint"/>
-                    </VBox>
-
                     <HBox spacing="12">
                         <VBox spacing="6" HBox.hgrow="ALWAYS">
                             <Label text="INVOICE NO." styleClass="field-label-xs"/>

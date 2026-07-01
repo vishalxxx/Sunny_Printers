@@ -30,9 +30,16 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Insets;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.DialogPane;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import model.Client;
 import repository.ClientRepository;
+import utils.ClientDeleteHelper;
+import utils.Toast;
 
 public class ViewClientsController implements Initializable {
 
@@ -101,6 +108,12 @@ public class ViewClientsController implements Initializable {
 
         updatePagination();
         updateMetrics();
+	}
+
+	public void refresh() {
+		masterList.setAll(repo.findAllSortedById());
+		calculateAnalytics();
+		applyFilters();
 	}
 
     @FXML
@@ -263,7 +276,8 @@ public class ViewClientsController implements Initializable {
             boolean matchesSearch = keyword.isBlank()
                     || (biz != null && biz.toLowerCase().contains(keyword))
                     || (name != null && name.toLowerCase().contains(keyword))
-                    || String.valueOf(client.getId()).contains(keyword);
+                    || (client.getClientCode() != null && client.getClientCode().toLowerCase().contains(keyword))
+                    || client.getClientUuid().contains(keyword);
 
             boolean matchesInsight = insight == null
                     || "All Insights".equals(insight)
@@ -315,7 +329,7 @@ public class ViewClientsController implements Initializable {
                 case "Most Active":
                     return Integer.compare(c2.getActivityScore(), c1.getActivityScore());
                 default:
-                    return Integer.compare(c1.getId(), c2.getId());
+                    return c1.getBusinessName().compareToIgnoreCase(c2.getBusinessName());
             }
         });
     }
@@ -323,48 +337,46 @@ public class ViewClientsController implements Initializable {
     private void calculateAnalytics() {
         try (java.sql.Connection con = utils.DBConnection.getConnection()) {
             for (Client c : masterList) {
-                int clientId = c.getId();
+                String clientUuid = c.getClientUuid();
                 
                 // 1. LTV Logic: Sum of all invoices (Paid + Unpaid)
                 double ltv = 0;
-                String sqlLtv = "SELECT SUM(amount) FROM invoice_master WHERE client_id = ? AND is_void = 0";
+                String sqlLtv = "SELECT SUM(amount) FROM invoice_master WHERE client_uuid = ? AND is_void = 0";
                 try (java.sql.PreparedStatement ps = con.prepareStatement(sqlLtv)) {
-                    ps.setInt(1, clientId);
+                    ps.setString(1, clientUuid);
                     java.sql.ResultSet rs = ps.executeQuery();
                     if (rs.next()) ltv = rs.getDouble(1);
                 }
                 c.setLtv(ltv);
                 
                 // 2. Balance Logic: Total outstanding - Payments
-                // (Using repo logic for unallocated balance if applicable, or simple aggregation)
-                double totalInvoiced = ltv;
                 double totalPaid = 0;
-                String sqlPaid = "SELECT SUM(amount) FROM payments WHERE client_id = ?";
+                String sqlPaid = "SELECT SUM(amount) FROM payments WHERE client_uuid = ?";
                 try (java.sql.PreparedStatement ps = con.prepareStatement(sqlPaid)) {
-                    ps.setInt(1, clientId);
+                    ps.setString(1, clientUuid);
                     java.sql.ResultSet rs = ps.executeQuery();
                     if (rs.next()) totalPaid = rs.getDouble(1);
                 }
                 
                 // Adjust for CN/DN
                 double adjustments = 0;
-                String sqlAdj = "SELECT SUM(CASE WHEN type='Debit Note' THEN amount ELSE -amount END) FROM invoice_adjustments WHERE invoice_id IN (SELECT id FROM invoice_master WHERE client_id = ?)";
+                String sqlAdj = "SELECT SUM(CASE WHEN type='Debit Note' THEN amount ELSE -amount END) FROM invoice_adjustments WHERE invoice_uuid IN (SELECT uuid FROM invoice_master WHERE client_uuid = ?)";
                 try (java.sql.PreparedStatement ps = con.prepareStatement(sqlAdj)) {
-                    ps.setInt(1, clientId);
+                    ps.setString(1, clientUuid);
                     java.sql.ResultSet rs = ps.executeQuery();
                     if (rs.next()) adjustments = rs.getDouble(1);
                 }
                 
-                double bal = totalInvoiced + adjustments - totalPaid;
+                double bal = ltv + adjustments - totalPaid;
                 c.setBalance(bal);
                 
                 // 3. Activity Score (Simulated: count in last 30 days)
                 int activity = 0;
-                String sqlAct = "SELECT (SELECT COUNT(*) FROM invoice_master WHERE client_id = ? AND invoice_date > date('now','-30 days')) + " +
-                                "(SELECT COUNT(*) FROM payments WHERE client_id = ? AND payment_date > date('now','-30 days'))";
+                String sqlAct = "SELECT (SELECT COUNT(*) FROM invoice_master WHERE client_uuid = ? AND invoice_date > date('now','-30 days')) + " +
+                                "(SELECT COUNT(*) FROM payments WHERE client_uuid = ? AND payment_date > date('now','-30 days'))";
                 try (java.sql.PreparedStatement ps = con.prepareStatement(sqlAct)) {
-                    ps.setInt(1, clientId);
-                    ps.setInt(2, clientId);
+                    ps.setString(1, clientUuid);
+                    ps.setString(2, clientUuid);
                     java.sql.ResultSet rs = ps.executeQuery();
                     if (rs.next()) activity = rs.getInt(1);
                 }
@@ -511,11 +523,16 @@ public class ViewClientsController implements Initializable {
         private final Label lblInsight = new Label();
         private final VBox insightBox = new VBox(2, new Label("INSIGHTS"), lblInsight);
         
+        private final Label lblDeleted = new Label("DELETED");
+        private final StackPane deletedBox = new StackPane(lblDeleted);
+        
         private final HBox activityBox = new HBox(3);
         private final VBox activityContainer = new VBox(2, new Label("ACTIVITY"), activityBox);
         
         private final Button btnProfile = new Button("View Profile");
-        
+        private final Button btnDelete = new Button("Delete");
+        private final Button btnRevive = new Button("Revive");
+
         private final Random rand = new Random();
 
         public ClientCardCell() {
@@ -552,6 +569,12 @@ public class ViewClientsController implements Initializable {
             lblInsight.setStyle("-fx-font-size: 11px; -fx-text-fill: #8E4D21;");
             insightBox.setPrefWidth(120);
             
+            lblDeleted.setStyle("-fx-text-fill: #e53935; -fx-font-weight: bold; -fx-font-size: 11px;");
+            deletedBox.setStyle("-fx-background-color: #ffebee; -fx-background-radius: 4; -fx-padding: 4 8 4 8;");
+            deletedBox.setMinWidth(80);
+            deletedBox.setVisible(false);
+            deletedBox.setManaged(false);
+            
             ((Label)activityContainer.getChildren().get(0)).getStyleClass().add("client-stat-label");
             activityBox.setAlignment(Pos.BOTTOM_CENTER);
             activityBox.setPrefHeight(20);
@@ -566,10 +589,22 @@ public class ViewClientsController implements Initializable {
                 }
             });
 
+            btnDelete.getStyleClass().add("view-clients-delete-btn");
+            btnDelete.setOnAction(e -> handleDeleteClientFromCell());
+
+            btnRevive.getStyleClass().add("action-btn-ghost");
+            btnRevive.setOnAction(e -> {
+                Client client = getItem();
+                ViewClientsController.this.confirmAndReviveClient(client);
+            });
+
+            HBox actionButtons = new HBox(8, btnProfile, btnRevive, btnDelete);
+            actionButtons.setAlignment(Pos.CENTER_RIGHT);
+
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);
 
-            root.getChildren().addAll(iconBox, nameBox, spacer, statusBox, ltvBox, balanceBox, insightBox, activityContainer, btnProfile);
+            root.getChildren().addAll(iconBox, nameBox, spacer, deletedBox, statusBox, ltvBox, balanceBox, insightBox, activityContainer, actionButtons);
         }
 
         @Override
@@ -580,7 +615,26 @@ public class ViewClientsController implements Initializable {
                 setGraphic(null);
             } else {
                 lblBusiness.setText(client.getBusinessName());
-                lblPrimary.setText("Primary: " + (client.getClientName().isBlank() ? "N/A" : client.getClientName()));
+                String clientCodeStr = client.getClientCode() != null && !client.getClientCode().isBlank() ? client.getClientCode() : "N/A";
+                String clientNameStr = client.getClientName() != null && !client.getClientName().isBlank() ? client.getClientName() : "N/A";
+                lblPrimary.setText("ID: " + clientCodeStr + "  |  " + clientNameStr);
+                
+                // Soft-delete tag & revive button toggle
+                if (client.isDeleted()) {
+                    deletedBox.setVisible(true);
+                    deletedBox.setManaged(true);
+                    btnDelete.setVisible(false);
+                    btnDelete.setManaged(false);
+                    btnRevive.setVisible(true);
+                    btnRevive.setManaged(true);
+                } else {
+                    deletedBox.setVisible(false);
+                    deletedBox.setManaged(false);
+                    btnDelete.setVisible(true);
+                    btnDelete.setManaged(true);
+                    btnRevive.setVisible(false);
+                    btnRevive.setManaged(false);
+                }
                 
                 // 1. Segmentation
                 statusBox.getStyleClass().removeAll("status-preferred", "status-active", "status-inactive");
@@ -643,7 +697,7 @@ public class ViewClientsController implements Initializable {
                 
                 // 5. Activity Sparkline
                 activityBox.getChildren().clear();
-                rand.setSeed(client.getId());
+                rand.setSeed(client.getClientUuid().hashCode());
                 int score = client.getActivityScore();
                 
                 if (score == 0) { // Inactive
@@ -668,7 +722,76 @@ public class ViewClientsController implements Initializable {
                 setGraphic(root);
             }
         }
+
+        private void handleDeleteClientFromCell() {
+            Client client = getItem();
+            ViewClientsController.this.confirmAndDeleteClient(client);
+        }
     }
 
 	// (legacy) openEditClient removed — navigation happens via MainController now.
+
+	private void confirmAndDeleteClient(Client client) {
+		Window owner = clientListView != null && clientListView.getScene() != null
+				? clientListView.getScene().getWindow()
+				: null;
+		if (ClientDeleteHelper.confirmAndDelete(owner, client, repo)) {
+			// For admin: hard-delete removes the row; for non-admin: soft-delete keeps it
+			model.User current = utils.SessionManager.getInstance().getCurrentUser();
+			boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
+			if (isAdmin) {
+				// Admins do a hard delete — client was actually removed, so refresh the in-memory model
+				Client refreshed = repo.findByUuid(client.getClientUuid());
+				if (refreshed == null) {
+					// Row was hard-deleted
+					masterList.remove(client);
+				} else {
+					// Admin deleteByUuid actually hard-deletes, but just in case
+					client.setIsDeleted(refreshed.isDeleted());
+					client.setIsActive(refreshed.isActive());
+					clientListView.refresh();
+				}
+			} else {
+				// Non-admin soft-delete — remove from in-memory model so it disappears from UI
+				masterList.remove(client);
+			}
+			updatePagination();
+			updateMetrics();
+		}
+	}
+
+	private void confirmAndReviveClient(Client client) {
+		if (client == null) return;
+
+		String display = client.getBusinessName();
+		if (display == null || display.isBlank()) display = client.getClientName();
+		if (display == null || display.isBlank()) display = client.getClientCode();
+		if (display == null || display.isBlank()) display = "Client";
+
+		Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+		alert.setTitle("Revive Client");
+		alert.setHeaderText("Revive " + display + "?");
+		alert.setContentText("This will restore the client making it visible to all users.");
+		alert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO);
+
+		DialogPane pane = alert.getDialogPane();
+		pane.getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+		pane.getStyleClass().add("atelier-alert");
+
+		java.util.Optional<ButtonType> result = alert.showAndWait();
+		if (result.isPresent() && result.get() == ButtonType.YES) {
+			try {
+				if (repo.reviveByUuid(client.getClientUuid())) {
+					client.setIsDeleted(false);
+					client.setIsActive(true);
+					clientListView.refresh();
+					updateMetrics();
+					Toast.show((Stage) clientListView.getScene().getWindow(), "Client revived successfully!");
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				Toast.show((Stage) clientListView.getScene().getWindow(), "Failed to revive client.");
+			}
+		}
+	}
 }

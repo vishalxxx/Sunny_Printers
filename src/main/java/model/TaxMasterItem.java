@@ -7,7 +7,7 @@ import java.util.Locale;
  */
 public class TaxMasterItem {
 
-	private int id;
+	private String uuid = "";
 	private String itemType = "";
 	private String itemName = "";
 	private String keyword = "";
@@ -19,12 +19,12 @@ public class TaxMasterItem {
 	private boolean favorite;
 	private boolean active = true;
 
-	public int getId() {
-		return id;
+	public String getUuid() {
+		return uuid;
 	}
 
-	public void setId(int id) {
-		this.id = id;
+	public void setUuid(String uuid) {
+		this.uuid = uuid != null ? uuid : "";
 	}
 
 	public String getItemType() {

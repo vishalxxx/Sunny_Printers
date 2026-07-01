@@ -4,12 +4,17 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.*?>
 
-<VBox xmlns="http://javafx.com/javafx/23"
+<ScrollPane xmlns="http://javafx.com/javafx/23"
     xmlns:fx="http://javafx.com/fxml/1"
-    fx:controller="controller.ViewInvoiceJobsController" spacing="8"
-    alignment="TOP_LEFT" fillWidth="true"
-    styleClass="view-invoice-jobs-root, ui-compact, app-page-shell"
-    stylesheets="@../css/theme.css, @../css/view_job.css,@../css/add_job.css">
+    fitToWidth="true"
+    styleClass="main-scroll-pane, view-invoice-jobs-root"
+    stylesheets="@../css/theme.css, @../css/view_job.css,@../css/add_job.css"
+    fx:controller="controller.ViewInvoiceJobsController">
+
+    <VBox spacing="8"
+        alignment="TOP_LEFT" fillWidth="true"
+        styleClass="ui-compact, app-page-shell"
+        style="-fx-padding: 0 24 24 24;">
 
 
     <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT"
@@ -92,14 +97,6 @@
                     style="-fx-shape: 'M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z'; -fx-background-color: #F1ECE6; -fx-min-width: 32; -fx-min-height: 32;" />
             </StackPane>
 
-            <!-- Dynamic Save/Discard Box (Hidden by default but keep references) -->
-            <VBox fx:id="saveDiscardBox" spacing="8" alignment="CENTER_RIGHT" managed="false"
-                visible="false">
-                <Button fx:id="btnSave" text="Save Changes  ✓" onAction="#handleSaveChanges"
-                    styleClass="finish-btn-premium" prefWidth="140" />
-                <Button fx:id="btnDiscard" text="✕  Discard" onAction="#handleDiscardChanges"
-                    styleClass="cancel-btn" />
-            </VBox>
         </HBox>
     </VBox>
 
@@ -143,21 +140,28 @@
         <Region HBox.hgrow="ALWAYS" />
         <Button fx:id="btnAddJob" text="+ Add Jobs" onAction="#handleAddJobsToInvoice"
             styleClass="action-btn-custom, btn-light-green" />
+        <Button fx:id="btnSave" text="Save Changes ✓" onAction="#handleSaveChanges"
+            styleClass="finish-btn-premium" />
+        <Button fx:id="btnDiscard" text="Discard" onAction="#handleDiscardChanges"
+            styleClass="cancel-btn" />
     </HBox>
 
     <VBox VBox.vgrow="ALWAYS" styleClass="invoice-card-container" spacing="12" style="-fx-padding: 14;">
-        <TableView fx:id="jobsTable" styleClass="invoice-jobs-table-premium" VBox.vgrow="ALWAYS" style="-fx-margin: 0 0 0 4;">
+        <TableView fx:id="jobsTable" styleClass="invoice-jobs-table-premium" VBox.vgrow="ALWAYS" minHeight="450" prefHeight="550" style="-fx-margin: 0 0 0 4;">
             <columns>
-                <TableColumn fx:id="selectCol" text="" prefWidth="40" sortable="false" />
-                <TableColumn fx:id="idCol" text="ID" prefWidth="65" />
-                <TableColumn fx:id="jobNoCol" text="Job No" prefWidth="100" />
-                <TableColumn fx:id="titleCol" text="Job Title" prefWidth="280" />
-                <TableColumn fx:id="dateCol" text="Job Date" prefWidth="120" />
-                <TableColumn fx:id="jobTotalCol" text="Job Total" prefWidth="135" />
-                <TableColumn fx:id="statusCol" text="Status" prefWidth="165" />
-                <TableColumn fx:id="remarksCol" text="Remarks" prefWidth="100" />
-                <TableColumn fx:id="actionsCol" text="Actions" prefWidth="120" sortable="false" />
+                <TableColumn fx:id="selectCol" text="" minWidth="40" maxWidth="40" prefWidth="40" resizable="false" sortable="false" />
+                <TableColumn fx:id="idCol" text="ID" minWidth="50" prefWidth="55" />
+                <TableColumn fx:id="jobNoCol" text="Job No" minWidth="140" prefWidth="160" />
+                <TableColumn fx:id="titleCol" text="Job Title" minWidth="240" prefWidth="280" />
+                <TableColumn fx:id="dateCol" text="Job Date" minWidth="110" prefWidth="120" />
+                <TableColumn fx:id="jobTotalCol" text="Job Total" minWidth="120" prefWidth="135" />
+                <TableColumn fx:id="statusCol" text="Status" minWidth="130" prefWidth="150" />
+                <TableColumn fx:id="remarksCol" text="Remarks" minWidth="120" prefWidth="150" />
+                <TableColumn fx:id="actionsCol" text="Actions" minWidth="110" maxWidth="120" prefWidth="120" resizable="false" sortable="false" />
             </columns>
+            <columnResizePolicy>
+                <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />
+            </columnResizePolicy>
         </TableView>
 
         <!-- TABLE FOOTER / PAGINATION -->
@@ -180,4 +184,5 @@
             </HBox>
         </HBox>
     </VBox>
-</VBox>
+    </VBox>
+</ScrollPane>

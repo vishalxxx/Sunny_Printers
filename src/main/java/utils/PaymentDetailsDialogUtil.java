@@ -25,10 +25,14 @@ public final class PaymentDetailsDialogUtil {
 	}
 
 	public static void show(Window owner, int paymentId) {
-		if (owner == null || paymentId <= 0) {
+        // Legacy bridge if needed, but we should use UUID
+    }
+
+    public static void showByUuid(Window owner, String paymentUuid) {
+		if (owner == null || paymentUuid == null || paymentUuid.isBlank()) {
 			return;
 		}
-		PaymentHeader h = loadHeader(paymentId);
+		PaymentHeader h = loadHeaderByUuid(paymentUuid);
 		if (h == null) {
 			return;
 		}
@@ -57,9 +61,9 @@ public final class PaymentDetailsDialogUtil {
 		addDetailRow(grid, r++, "Amount", h.amountDisplay);
 
 		try (Connection con = DBConnection.getConnection()) {
-			String sql = "SELECT field_key, field_value FROM payment_details WHERE payment_id = ?";
+			String sql = "SELECT field_key, field_value FROM payment_details WHERE payment_uuid = ?";
 			try (PreparedStatement ps = con.prepareStatement(sql)) {
-				ps.setInt(1, paymentId);
+				ps.setString(1, paymentUuid);
 				ResultSet rs = ps.executeQuery();
 				while (rs.next()) {
 					String key = rs.getString("field_key").replace("_", " ").toUpperCase();
@@ -70,10 +74,10 @@ public final class PaymentDetailsDialogUtil {
 			String allocSql = """
 					SELECT i.invoice_no, a.allocated_amount
 					FROM payment_allocations a
-					JOIN invoice_master i ON a.invoice_id = i.id
-					WHERE a.payment_id = ?""";
+					JOIN invoice_master i ON a.invoice_uuid = i.uuid
+					WHERE a.payment_uuid = ? AND COALESCE(a.is_deleted, 0) = 0""";
 			try (PreparedStatement ps = con.prepareStatement(allocSql)) {
-				ps.setInt(1, paymentId);
+				ps.setString(1, paymentUuid);
 				ResultSet rs = ps.executeQuery();
 				StringBuilder sb = new StringBuilder();
 				while (rs.next()) {
@@ -106,17 +110,17 @@ public final class PaymentDetailsDialogUtil {
 	private record PaymentHeader(String dateDisplay, String client, String type, String method, String amountDisplay) {
 	}
 
-	private static PaymentHeader loadHeader(int paymentId) {
+	private static PaymentHeader loadHeaderByUuid(String paymentUuid) {
 		NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("en", "IN"));
 		try (Connection con = DBConnection.getConnection()) {
 			String sql = """
 					SELECT p.payment_date, p.type, p.method, p.amount,
 					       c.business_name, c.client_name
 					FROM payments p
-					LEFT JOIN clients c ON c.id = p.client_id
-					WHERE p.id = ?""";
+					LEFT JOIN clients c ON c.uuid = p.client_uuid
+					WHERE p.uuid = ?""";
 			try (PreparedStatement ps = con.prepareStatement(sql)) {
-				ps.setInt(1, paymentId);
+				ps.setString(1, paymentUuid);
 				ResultSet rs = ps.executeQuery();
 				if (!rs.next()) {
 					return null;

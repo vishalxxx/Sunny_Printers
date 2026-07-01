@@ -162,11 +162,11 @@ public class BindingTabController {
         currentJob = job;
         bindingTable.getItems().clear();
 
-        for (JobItem ji : jobItemService.getJobItems(job.getId())) {
+        for (JobItem ji : jobItemService.getJobItems(job.getUuid())) {
             if ("BINDING".equalsIgnoreCase(ji.getType())) {
-                Binding b = repo.findByJobItemId(ji.getId());
+                Binding b = repo.findByJobItemUuid(ji.getUuid());
                 if (b != null) {
-                    b.setJobItemId(ji.getId());
+                    b.setJobItemUuid(ji.getUuid());
                     b.resetFlags();
                     b.captureOriginal();
                     bindingTable.getItems().add(b);
@@ -181,7 +181,7 @@ public class BindingTabController {
     private void applyInvoicedState(boolean isNewSelection) {
         boolean isJobStatusInvoiced = currentJob != null && "invoiced".equalsIgnoreCase(currentJob.getStatus());
         String invStatus = (currentJob != null && currentJob.getInvoiceStatus() != null) ? currentJob.getInvoiceStatus().trim().toLowerCase() : "";
-        boolean isLocked = isJobStatusInvoiced && !(invStatus.equals("draft") || invStatus.equals("final"));
+        boolean isLocked = isJobStatusInvoiced && !invStatus.equals("draft");
 
         qtyField.setDisable(isLocked);
         processField.setDisable(isLocked);
@@ -302,3 +302,4 @@ public class BindingTabController {
         return bindingTable.getItems().stream().anyMatch(b -> b.isNew() || b.isUpdated() || b.isDeleted());
     }
 }
+

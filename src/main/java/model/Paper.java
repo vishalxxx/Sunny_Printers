@@ -5,6 +5,11 @@ import java.util.Objects;
 
 public class Paper implements Serializable {
 
+    private String uuid;
+    private String jobItemUuid;
+    
+    private String supplierUuid;
+    
     private int qty;          // optional
     private String units;     // Sheet/Rim/Bundle/Kg...
     private String size;      // 12x18 / 13x19 ...
@@ -13,11 +18,24 @@ public class Paper implements Serializable {
     private String source;    // Our / Client
     private String notes;     // optional
     private double amount;    // required
+    private boolean includeNotesInInvoice = true;
+    
+    private String syncStatus = "PENDING";
+    private int syncVersion = 1;
+    private int isDeletedSync = 0;
+    private int isActive = 1;
+    private String createdAt;
+    private String updatedAt;
+    private String syncedAt;
+    private String deletedAt;
 
     public Paper() {}
 
     public Paper copy() {
         Paper p = new Paper();
+        p.setUuid(this.uuid);
+        p.setJobItemUuid(this.jobItemUuid);
+        p.setSupplierUuid(this.supplierUuid);
         p.setQty(this.qty);
         p.setUnits(this.units);
         p.setSize(this.size);
@@ -26,6 +44,7 @@ public class Paper implements Serializable {
         p.setSource(this.source);
         p.setNotes(this.notes);
         p.setAmount(this.amount);
+        p.includeNotesInInvoice = this.includeNotesInInvoice;
         return p;
     }
 
@@ -57,17 +76,14 @@ public class Paper implements Serializable {
     public void setAmount(double amount) { this.amount = amount; }
 
     
-    private int jobItemId;
+    public String getUuid() { return uuid; }
+    public void setUuid(String uuid) { this.uuid = uuid; }
 
-    
-    public int getJobItemId() {
-		return jobItemId;
-	}
+    public String getJobItemUuid() { return jobItemUuid; }
+    public void setJobItemUuid(String jobItemUuid) { this.jobItemUuid = jobItemUuid; }
 
-	public void setJobItemId(int jobItemId) {
-		this.jobItemId = jobItemId;
-	}
-
+    public String getSupplierUuid() { return supplierUuid; }
+    public void setSupplierUuid(String supplierUuid) { this.supplierUuid = supplierUuid; }
 
 	private transient boolean isNew;
     private transient boolean isUpdated;
@@ -99,6 +115,9 @@ public class Paper implements Serializable {
         this.deleted = deleted;
     }
 
+    public boolean isIncludeNotesInInvoice() { return includeNotesInInvoice; }
+    public void setIncludeNotesInInvoice(boolean includeNotesInInvoice) { this.includeNotesInInvoice = includeNotesInInvoice; }
+
     
     
     
@@ -118,6 +137,7 @@ public class Paper implements Serializable {
         o.setAmount(this.getAmount());
         o.setSource(this.getSource());
         o.setNotes(this.getNotes());
+        o.setSupplierUuid(this.getSupplierUuid());
 
         this.originalSnapshot = o;
     }
@@ -133,7 +153,8 @@ public class Paper implements Serializable {
             || !java.util.Objects.equals(getType(), originalSnapshot.getType())
             || getAmount() != originalSnapshot.getAmount()
             || !java.util.Objects.equals(getSource(), originalSnapshot.getSource())
-            || !java.util.Objects.equals(getNotes(), originalSnapshot.getNotes());
+            || !java.util.Objects.equals(getNotes(), originalSnapshot.getNotes())
+            || !java.util.Objects.equals(getSupplierUuid(), originalSnapshot.getSupplierUuid());
     }
 
     public boolean isSameAsOriginal() {
@@ -146,7 +167,8 @@ public class Paper implements Serializable {
             && Objects.equals(type, originalSnapshot.type)
             && Objects.equals(source, originalSnapshot.source)
             && Objects.equals(notes, originalSnapshot.notes)
-            && Double.compare(amount, originalSnapshot.amount) == 0;
+            && Double.compare(amount, originalSnapshot.amount) == 0
+            && Objects.equals(supplierUuid, originalSnapshot.supplierUuid);
     }
 
     public void resetFlags() {
@@ -156,5 +178,27 @@ public class Paper implements Serializable {
     }
 
     
+    public String getSyncStatus() { return syncStatus; }
+    public void setSyncStatus(String syncStatus) { this.syncStatus = syncStatus; }
 
+    public int getSyncVersion() { return syncVersion; }
+    public void setSyncVersion(int syncVersion) { this.syncVersion = syncVersion; }
+
+    public int getIsDeletedSync() { return isDeletedSync; }
+    public void setIsDeletedSync(int isDeletedSync) { this.isDeletedSync = isDeletedSync; }
+
+    public int getIsActive() { return isActive; }
+    public void setIsActive(int isActive) { this.isActive = isActive; }
+
+    public String getCreatedAt() { return createdAt; }
+    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
+
+    public String getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getSyncedAt() { return syncedAt; }
+    public void setSyncedAt(String syncedAt) { this.syncedAt = syncedAt; }
+
+    public String getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(String deletedAt) { this.deletedAt = deletedAt; }
 }

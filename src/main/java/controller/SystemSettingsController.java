@@ -7,6 +7,7 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.ResourceBundle;
 
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -23,8 +24,11 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import api.supabase.sequences.NumberSequenceSupabaseSync;
 import model.MasterDocumentSeries;
 import model.SystemSettings;
+import model.User;
+import repository.NumberSequenceRepository;
 import repository.SystemSettingsRepository;
 import utils.AtomicDB;
 import utils.CompanyProfile;
@@ -33,13 +37,24 @@ import utils.DocumentNumbering;
 
 public class SystemSettingsController implements Initializable, utils.DirtySupport {
 
+	private boolean isReadOnly() {
+		User currentUser = utils.SessionManager.getInstance().getCurrentUser();
+		return currentUser == null || currentUser.getRole() == null || 
+		       !(currentUser.getRole().equalsIgnoreCase("ADMIN") || 
+		         currentUser.getRole().equalsIgnoreCase("ADMINISTRATOR"));
+	}
+
 	private final SystemSettingsRepository repo = new SystemSettingsRepository();
+	private final NumberSequenceRepository numberSeqRepo = new NumberSequenceRepository();
 	private SystemSettings settings;
 	private final Map<MasterDocumentSeries, Spinner<Integer>> seriesSpinners = new EnumMap<>(MasterDocumentSeries.class);
 	private final ChangeListener<Node> kpiFocusListener = (obs, prev, cur) -> refreshKpiStrip();
 
 	@Override
 	public boolean hasUnsavedChanges() {
+		if (isReadOnly()) {
+			return false;
+		}
 		if (settings == null || paddingCombo == null) {
 			return false;
 		}
@@ -93,28 +108,59 @@ public class SystemSettingsController implements Initializable, utils.DirtySuppo
 
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
-		utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null,
-				() -> MainController.getInstance().handleBack(null));
+		// FXML may be loaded from a worker thread in MainController; all scene-graph work must run on FX.
+		Platform.runLater(() -> {
+			utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null,
+					() -> MainController.getInstance().handleBack(null));
 
-		if (seriesGrid == null) {
-			return;
-		}
-		paddingCombo.setItems(FXCollections.observableArrayList(1, 2, 3, 4, 5, 6));
-
-		buildSeriesGrid();
-
-		paddingCombo.valueProperty().addListener((o, prev, cur) -> {
-			for (Spinner<Integer> sp : seriesSpinners.values()) {
-				applyPaddedEditorText(sp);
+			if (seriesGrid == null) {
+				return;
 			}
-			refreshKpiStrip();
+			paddingCombo.setItems(FXCollections.observableArrayList(1, 2, 3, 4, 5, 6));
+
+			buildSeriesGrid();
+
+			paddingCombo.valueProperty().addListener((o, prev, cur) -> {
+				for (Spinner<Integer> sp : seriesSpinners.values()) {
+					applyPaddedEditorText(sp);
+				}
+				refreshKpiStrip();
+			});
+
+			installKpiFocusTracking();
+
+			loadSettings();
+
+			if (!isReadOnly()) {
+				saveBtn.setOnAction(e -> save());
+			}
+			applyReadOnlyUi();
 		});
+	}
 
-		installKpiFocusTracking();
-
-		loadSettings();
-
-		saveBtn.setOnAction(e -> save());
+	private void applyReadOnlyUi() {
+		boolean readOnly = isReadOnly();
+		if (saveBtn != null) {
+			saveBtn.setDisable(readOnly);
+			if (readOnly) {
+				saveBtn.setOnAction(null);
+			} else {
+				saveBtn.setOnAction(e -> save());
+			}
+		}
+		if (paddingCombo != null) {
+			paddingCombo.setDisable(readOnly);
+		}
+		if (fyField != null) {
+			fyField.setEditable(false);
+			fyField.setDisable(true);
+		}
+		for (Spinner<Integer> sp : seriesSpinners.values()) {
+			if (sp != null) {
+				sp.setEditable(!readOnly);
+				sp.setDisable(readOnly);
+			}
+		}
 	}
 
 	private void buildSeriesGrid() {
@@ -211,6 +257,7 @@ public class SystemSettingsController implements Initializable, utils.DirtySuppo
 				try {
 					SystemSettings s = repo.load(con);
 					s.alignFinancialYearTo(LocalDate.now());
+					numberSeqRepo.applyToSystemSettings(con, s);
 					repo.save(con, s);
 					return s;
 				} catch (Exception e) {
@@ -232,6 +279,7 @@ public class SystemSettingsController implements Initializable, utils.DirtySuppo
 			formatAllSeriesSpinners();
 			updateFinancialYearField();
 			refreshKpiStrip();
+			NumberSequenceSupabaseSync.syncRemoteToLocalAsync();
 		} catch (Exception e) {
 			showError("Failed to load system settings", e);
 		}
@@ -372,9 +420,22 @@ public class SystemSettingsController implements Initializable, utils.DirtySuppo
 				}
 
 				repo.save(con, s);
+
+				String fy = s.getNumberingFy();
+				if (fy == null || fy.isBlank()) {
+					fy = DocumentNumbering.financialYearLabel(today);
+				}
+				numberSeqRepo.syncFromSystemSettings(con, s, pad, fy);
 				con.commit();
 				settings = s;
 				updateFinancialYearField();
+				model.User currentUser = utils.SessionManager.getInstance().getCurrentUser();
+				boolean isAdminUser = currentUser != null && currentUser.getRole() != null && "ADMIN".equalsIgnoreCase(currentUser.getRole());
+				if (isAdminUser) {
+					NumberSequenceSupabaseSync.syncLocalToRemoteAsync();
+				} else {
+					NumberSequenceSupabaseSync.syncRemoteToLocalAsync();
+				}
 				showInfo("Configuration saved.");
 			} catch (Exception e) {
 				con.rollback();
@@ -386,31 +447,45 @@ public class SystemSettingsController implements Initializable, utils.DirtySuppo
 	}
 
 	private void showInfo(String msg) {
-		Alert alert = new Alert(Alert.AlertType.INFORMATION);
-		alert.setHeaderText("Message");
-		alert.setContentText(msg);
-		alert.initStyle(javafx.stage.StageStyle.TRANSPARENT);
-		alert.getDialogPane().setBackground(null);
-		alert.getDialogPane().getStyleClass().add("settings-warm-dialog");
-		alert.getDialogPane().getStylesheets()
-				.add(getClass().getResource("/css/theme.css").toExternalForm());
-		alert.getDialogPane().getStylesheets()
-				.add(getClass().getResource("/css/settings_screens.css").toExternalForm());
-		alert.showAndWait();
+		Runnable r = () -> {
+			Alert alert = new Alert(Alert.AlertType.INFORMATION);
+			alert.setHeaderText("Message");
+			alert.setContentText(msg);
+			alert.initStyle(javafx.stage.StageStyle.TRANSPARENT);
+			alert.getDialogPane().setBackground(null);
+			alert.getDialogPane().getStyleClass().add("settings-warm-dialog");
+			alert.getDialogPane().getStylesheets()
+					.add(getClass().getResource("/css/theme.css").toExternalForm());
+			alert.getDialogPane().getStylesheets()
+					.add(getClass().getResource("/css/settings_screens.css").toExternalForm());
+			alert.showAndWait();
+		};
+		if (Platform.isFxApplicationThread()) {
+			r.run();
+		} else {
+			Platform.runLater(r);
+		}
 	}
 
 	private void showError(String msg, Exception e) {
 		e.printStackTrace();
-		Alert alert = new Alert(Alert.AlertType.ERROR);
-		alert.setHeaderText("Error");
-		alert.setContentText(msg + "\n" + e.getMessage());
-		alert.initStyle(javafx.stage.StageStyle.TRANSPARENT);
-		alert.getDialogPane().setBackground(null);
-		alert.getDialogPane().getStyleClass().add("settings-warm-dialog");
-		alert.getDialogPane().getStylesheets()
-				.add(getClass().getResource("/css/theme.css").toExternalForm());
-		alert.getDialogPane().getStylesheets()
-				.add(getClass().getResource("/css/settings_screens.css").toExternalForm());
-		alert.showAndWait();
+		Runnable r = () -> {
+			Alert alert = new Alert(Alert.AlertType.ERROR);
+			alert.setHeaderText("Error");
+			alert.setContentText(msg + "\n" + e.getMessage());
+			alert.initStyle(javafx.stage.StageStyle.TRANSPARENT);
+			alert.getDialogPane().setBackground(null);
+			alert.getDialogPane().getStyleClass().add("settings-warm-dialog");
+			alert.getDialogPane().getStylesheets()
+					.add(getClass().getResource("/css/theme.css").toExternalForm());
+			alert.getDialogPane().getStylesheets()
+					.add(getClass().getResource("/css/settings_screens.css").toExternalForm());
+			alert.showAndWait();
+		};
+		if (Platform.isFxApplicationThread()) {
+			r.run();
+		} else {
+			Platform.runLater(r);
+		}
 	}
 }

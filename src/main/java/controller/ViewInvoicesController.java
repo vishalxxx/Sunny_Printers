@@ -45,6 +45,8 @@ public class ViewInvoicesController {
 
     @FXML private ComboBox<Client> clientComboBox;
     @FXML private ComboBox<String> statusComboBox;
+    @FXML private ComboBox<String> invoiceStatusComboBox;
+    @FXML private ComboBox<String> typeComboBox;
     @FXML private DatePicker startDatePicker;
     @FXML private DatePicker endDatePicker;
     @FXML private TextField invoiceSearchField;
@@ -57,9 +59,10 @@ public class ViewInvoicesController {
     @FXML private TableColumn<InvoiceMaster, String> colDueDate;
     @FXML private TableColumn<InvoiceMaster, Double> colAmount;
     @FXML private TableColumn<InvoiceMaster, String> colStatus;
+    @FXML private TableColumn<InvoiceMaster, String> colInvoiceStatus;
     @FXML private TableColumn<InvoiceMaster, Void> colActions;
 
-    @FXML private Button btnEdit, btnFinalize, btnSend, btnPayment, btnCancel, btnRevised, btnRaiseCnDn;
+    @FXML private Button btnEdit, btnFinalize, btnSend, btnDownload, btnPayment, btnCancel, btnRevised, btnRaiseCnDn;
     @FXML private Label paginationInfoLabel;
     @FXML private HBox paginationPagesBox;
     @FXML private TextField goToPageField;
@@ -94,15 +97,16 @@ public class ViewInvoicesController {
     @FXML private HBox viToolbarRow;
 
     public static String pendingSearchInvoiceNo;
-    private static final int ALL_CLIENTS_ID = 0;
+    /** Sentinel combo value: filter all clients (reserved uuid, not a real row). */
+    private static final String ALL_CLIENTS_UUID = "00000000-0000-7000-8000-000000000001";
 
     private static final DateTimeFormatter ISSUE_DUE_FORMAT =
             DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.ENGLISH);
     /** Placeholder band when toolbar actions hidden — same height as last shown bar avoids table jump. */
     private static final double VI_TOOLBAR_MIN_SLOT = 52;
 
-    private final Map<Integer, String> clientIdToEmail = new HashMap<>();
-    private final Set<Integer> selectedInvoiceIds = new HashSet<>();
+    private final Map<String, String> clientIdToEmail = new HashMap<>();
+    private final Set<String> selectedInvoiceUuids = new HashSet<>();
 
     private final ClientService clientService = new ClientService();
     private final InvoiceMasterService invoiceMasterService = new InvoiceMasterService();
@@ -113,6 +117,16 @@ public class ViewInvoicesController {
     private int pageSize = 20;
     /** Last laid-out height of {@link #viToolbarRow} with buttons visible; drives reserved slot when hidden. */
     private double viToolbarReservedHeight = VI_TOOLBAR_MIN_SLOT;
+
+    private boolean isFullTotalsCached = false;
+    private double cachedFullBase = 0;
+    private double cachedFullAdj = 0;
+    private double cachedFullNet = 0;
+    private double cachedFullPaid = 0;
+    private double cachedFullDue = 0;
+    private int cachedFullPaidCount = 0;
+    private int cachedFullUnpaidCount = 0;
+    private int cachedFullOverdueCount = 0;
 
     private static ViewInvoicesController instance;
     public static ViewInvoicesController getInstance() { return instance; }
@@ -128,6 +142,8 @@ public class ViewInvoicesController {
             setupTableColumns();
             loadClients();
             loadStatuses();
+            loadInvoiceStatuses();
+            loadTypes();
             
             utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null, () -> handleBack(null));
             
@@ -135,7 +151,7 @@ public class ViewInvoicesController {
             setupAutoPopupDatePicker(endDatePicker);
 
             if (startDatePicker != null) {
-                startDatePicker.setValue(LocalDate.now().withDayOfMonth(1));
+                startDatePicker.setValue(LocalDate.now().minusMonths(1).withDayOfMonth(1));
             }
             if (endDatePicker != null) {
                 endDatePicker.setValue(LocalDate.now());
@@ -145,11 +161,19 @@ public class ViewInvoicesController {
             setupQuickFilterSync();
             setupLiveFilters();
 
+            invoiceTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
             invoiceTable.setItems(tablePageItems);
             invoiceTable.setFixedCellSize(58);
 
-            invoiceTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
-                updateButtonStates(newSel);
+            invoiceTable.getSelectionModel().getSelectedItems().addListener((javafx.collections.ListChangeListener.Change<? extends InvoiceMaster> c) -> {
+                selectedInvoiceUuids.clear();
+                for (InvoiceMaster inv : invoiceTable.getSelectionModel().getSelectedItems()) {
+                    if (inv != null && inv.getUuid() != null) {
+                        selectedInvoiceUuids.add(inv.getUuid());
+                    }
+                }
+                InvoiceMaster active = invoiceTable.getSelectionModel().getSelectedItem();
+                updateButtonStates(active);
                 refreshInvoiceSummaryPanel();
             });
 
@@ -167,16 +191,70 @@ public class ViewInvoicesController {
                     if (e.getButton() != MouseButton.PRIMARY || row.isEmpty() || invoiceTable == null) {
                         return;
                     }
+                    if (e.isShiftDown() || e.isControlDown() || e.isShortcutDown()) {
+                        return;
+                    }
+                    Node target = (Node) e.getTarget();
+                    boolean isCheckboxClick = false;
+                    for (Node n = target; n != null; n = n.getParent()) {
+                        if (n instanceof TableCell) {
+                            TableCell<?, ?> cell = (TableCell<?, ?>) n;
+                            if (cell.getTableColumn() == colSelect) {
+                                isCheckboxClick = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (isCheckboxClick) {
+                        return;
+                    }
+                    e.consume(); // Prevent default JavaFX selection on press
+                });
+                row.addEventFilter(MouseEvent.MOUSE_RELEASED, e -> {
+                    if (e.getButton() != MouseButton.PRIMARY || row.isEmpty() || invoiceTable == null) {
+                        return;
+                    }
+                    if (e.isShiftDown() || e.isControlDown() || e.isShortcutDown()) {
+                        return;
+                    }
+                    Node target = (Node) e.getTarget();
+                    boolean isCheckboxClick = false;
+                    for (Node n = target; n != null; n = n.getParent()) {
+                        if (n instanceof TableCell) {
+                            TableCell<?, ?> cell = (TableCell<?, ?>) n;
+                            if (cell.getTableColumn() == colSelect) {
+                                isCheckboxClick = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (isCheckboxClick) {
+                        return;
+                    }
                     InvoiceMaster item = row.getItem();
                     if (item != null) {
-                        invoiceTable.getSelectionModel().select(item);
+                        int index = row.getIndex();
+                        invoiceTable.getSelectionModel().clearAndSelect(index);
+                        e.consume();
                     }
                 });
                 row.setOnMouseClicked(event -> {
                     if (event.getClickCount() == 2 && (!row.isEmpty())) {
                         InvoiceMaster selected = row.getItem();
                         String stat = selected.getStatus() != null ? selected.getStatus().toUpperCase() : "";
-                        if ("DRAFT".equals(stat)) {
+                        String ds = selected.getDocumentSeries();
+                        String tp = selected.getType();
+                        boolean isProforma = (ds != null && ("PROFORMA_INVOICE".equalsIgnoreCase(ds) || "PROFORMA".equalsIgnoreCase(ds)))
+                                           || (tp != null && (tp.toUpperCase().contains("PROFORMA") || tp.toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(tp) || "DATE_RANGE".equalsIgnoreCase(tp) || tp.toUpperCase().contains("MONTHLY")))
+                                           || (selected.getInvoiceNo() != null && selected.getInvoiceNo().toUpperCase().contains("/PI/"));
+                        boolean canEdit = false;
+                        if (isProforma) {
+                            canEdit = !"REVISED".equals(stat) && !"CANCELLED".equals(stat) && !"VOID".equals(stat);
+                        } else {
+                            canEdit = "DRAFT".equals(stat) || "FINAL".equals(stat);
+                        }
+                        if (canEdit) {
+                            invoiceTable.getSelectionModel().select(selected);
                             handleEditAction(null);
                         } else {
                             handleViewOnlyAction(selected);
@@ -335,6 +413,12 @@ public class ViewInvoicesController {
         if (statusComboBox != null) {
             statusComboBox.valueProperty().addListener((obs, oldVal, newVal) -> handleSearch(null));
         }
+        if (invoiceStatusComboBox != null) {
+            invoiceStatusComboBox.valueProperty().addListener((obs, oldVal, newVal) -> handleSearch(null));
+        }
+        if (typeComboBox != null) {
+            typeComboBox.valueProperty().addListener((obs, oldVal, newVal) -> handleSearch(null));
+        }
         if (startDatePicker != null) {
             startDatePicker.valueProperty().addListener((obs, oldVal, newVal) -> handleSearch(null));
         }
@@ -426,6 +510,7 @@ public class ViewInvoicesController {
         if (btnEdit != null) btnEdit.setGraphic(createIcon("M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"));
         if (btnFinalize != null) btnFinalize.setGraphic(createIcon("M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"));
         if (btnSend != null) btnSend.setGraphic(createIcon("M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"));
+        if (btnDownload != null) btnDownload.setGraphic(createIcon("M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"));
         if (btnPayment != null) btnPayment.setGraphic(createIcon("M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"));
         if (btnCancel != null) btnCancel.setGraphic(createIcon("M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"));
         if (btnRevised != null) btnRevised.setGraphic(createIcon("M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"));
@@ -437,27 +522,59 @@ public class ViewInvoicesController {
             colSelect.setCellValueFactory(c -> new SimpleStringProperty(""));
             colSelect.setCellFactory(col -> new TableCell<>() {
                 private final CheckBox checkBox = new CheckBox();
+                private final javafx.beans.value.ChangeListener<Boolean> rowSelectionListener = (obs, oldVal, newVal) -> {
+                    checkBox.setSelected(newVal != null && newVal);
+                };
 
                 {
                     checkBox.getStyleClass().add("vi-row-select-cb");
                     checkBox.setFocusTraversable(false);
                     checkBox.setMnemonicParsing(false);
-                    checkBox.setOnAction(e -> {
-                        InvoiceMaster inv = getTableRow().getItem();
-                        if (inv == null) {
-                            return;
+                    
+                    checkBox.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
+                        if (e.getButton() == MouseButton.PRIMARY) {
+                            e.consume();
                         }
-                        if (checkBox.isSelected()) {
-                            selectedInvoiceIds.add(inv.getId());
-                            if (invoiceTable != null) {
-                                Platform.runLater(() -> invoiceTable.getSelectionModel().select(inv));
+                    });
+                    checkBox.addEventFilter(MouseEvent.MOUSE_RELEASED, e -> {
+                        if (e.getButton() == MouseButton.PRIMARY) {
+                            e.consume();
+                            TableRow<?> row = getTableRow();
+                            if (row != null && !row.isEmpty()) {
+                                int index = row.getIndex();
+                                if (invoiceTable != null) {
+                                    invoiceTable.requestFocus();
+                                }
+                                if (invoiceTable.getSelectionModel().isSelected(index)) {
+                                    invoiceTable.getSelectionModel().clearSelection(index);
+                                } else {
+                                    java.util.List<Integer> currentSelected = new java.util.ArrayList<>(invoiceTable.getSelectionModel().getSelectedIndices());
+                                    if (!currentSelected.contains(index)) {
+                                        currentSelected.add(index);
+                                    }
+                                    int[] indicesArray = currentSelected.stream().mapToInt(i -> i).toArray();
+                                    invoiceTable.getSelectionModel().clearSelection();
+                                    if (indicesArray.length > 0) {
+                                        int first = indicesArray[0];
+                                        int[] rest = new int[indicesArray.length - 1];
+                                        System.arraycopy(indicesArray, 1, rest, 0, rest.length);
+                                        invoiceTable.getSelectionModel().selectIndices(first, rest);
+                                    }
+                                }
                             }
+                        }
+                    });
+                    checkBox.addEventFilter(MouseEvent.MOUSE_CLICKED, MouseEvent::consume);
+
+                    tableRowProperty().addListener((obs, oldRow, newRow) -> {
+                        if (oldRow != null) {
+                            oldRow.selectedProperty().removeListener(rowSelectionListener);
+                        }
+                        if (newRow != null) {
+                            newRow.selectedProperty().addListener(rowSelectionListener);
+                            checkBox.setSelected(newRow.isSelected());
                         } else {
-                            selectedInvoiceIds.remove(inv.getId());
-                            if (invoiceTable != null
-                                    && invoiceTable.getSelectionModel().getSelectedItem() == inv) {
-                                Platform.runLater(() -> invoiceTable.getSelectionModel().clearSelection());
-                            }
+                            checkBox.setSelected(false);
                         }
                     });
                 }
@@ -465,17 +582,19 @@ public class ViewInvoicesController {
                 @Override
                 protected void updateItem(String s, boolean empty) {
                     super.updateItem(s, empty);
+                    getStyleClass().remove("vi-cell-center");
                     if (empty) {
                         setGraphic(null);
                     } else {
-                        InvoiceMaster inv = getTableRow().getItem();
-                        if (inv == null) {
-                            setGraphic(null);
-                            return;
+                        TableRow<?> row = getTableRow();
+                        if (row != null) {
+                            checkBox.setSelected(row.isSelected());
+                        } else {
+                            checkBox.setSelected(false);
                         }
-                        checkBox.setSelected(selectedInvoiceIds.contains(inv.getId()));
                         setAlignment(Pos.CENTER);
                         setGraphic(checkBox);
+                        getStyleClass().add("vi-cell-center");
                     }
                 }
             });
@@ -509,7 +628,11 @@ public class ViewInvoicesController {
 
                 {
                     VBox.setVgrow(nameLabel, Priority.NEVER);
+                    HBox.setHgrow(box, Priority.ALWAYS);
+                    box.setMaxWidth(Double.MAX_VALUE);
                     nameLabel.getStyleClass().add("vi-client-name");
+                    nameLabel.setWrapText(true);
+                    nameLabel.maxWidthProperty().bind(colClient.widthProperty().subtract(10));
                     emailLabel.getStyleClass().add("vi-client-email");
                     box.setAlignment(Pos.CENTER_LEFT);
                 }
@@ -526,7 +649,7 @@ public class ViewInvoicesController {
                             return;
                         }
                         nameLabel.setText(inv.getClientName() != null ? inv.getClientName() : "—");
-                        int cid = inv.getClientId();
+                        String cid = inv.getClientId();
                         emailLabel.setText(clientIdToEmail.getOrDefault(cid, "—"));
                         setAlignment(Pos.CENTER_LEFT);
                         setGraphic(box);
@@ -543,14 +666,14 @@ public class ViewInvoicesController {
                 @Override
                 protected void updateItem(String t, boolean empty) {
                     super.updateItem(t, empty);
-                    getStyleClass().remove("vi-date");
+                    getStyleClass().removeAll("vi-date", "vi-cell-center");
                     if (empty || t == null || t.isEmpty()) {
                         setText(null);
                     } else {
                         setText(t);
-                        getStyleClass().add("vi-date");
+                        getStyleClass().addAll("vi-date", "vi-cell-center");
                     }
-                    setAlignment(Pos.CENTER_LEFT);
+                    setAlignment(Pos.CENTER);
                 }
             });
         }
@@ -563,40 +686,41 @@ public class ViewInvoicesController {
                 @Override
                 protected void updateItem(String t, boolean empty) {
                     super.updateItem(t, empty);
-                    getStyleClass().removeAll("vi-date", "vi-date-overdue");
+                    getStyleClass().removeAll("vi-date", "vi-date-overdue", "vi-cell-center");
                     if (empty || t == null || t.isEmpty()) {
                         setText(null);
                     } else {
                         setText(t);
                         InvoiceMaster inv = getTableRow() != null ? getTableRow().getItem() : null;
                         if (inv != null && isDueLineOverdue(inv)) {
-                            getStyleClass().add("vi-date-overdue");
+                            getStyleClass().addAll("vi-date-overdue", "vi-cell-center");
                         } else {
-                            getStyleClass().add("vi-date");
+                            getStyleClass().addAll("vi-date", "vi-cell-center");
                         }
                     }
-                    setAlignment(Pos.CENTER_LEFT);
+                    setAlignment(Pos.CENTER);
                 }
             });
         }
         if (colAmount != null) {
             colAmount.setCellValueFactory(p -> {
                 InvoiceMaster inv = p.getValue();
-                double n = inv != null ? inv.getNetAmount() : 0;
+                // Always show the original invoice total — not affected by payments or CN/DN adjustments
+                double n = inv != null ? inv.getAmount() : 0;
                 return new ReadOnlyObjectWrapper<>(n);
             });
             colAmount.setCellFactory(c -> new TableCell<InvoiceMaster, Double>() {
                 @Override
                 protected void updateItem(Double item, boolean empty) {
                     super.updateItem(item, empty);
-                    getStyleClass().remove("vi-amount");
+                    getStyleClass().removeAll("vi-amount", "vi-cell-center");
                     if (empty || item == null) {
                         setText(null);
                     } else {
                         setText(fmtRupee(item));
-                        getStyleClass().add("vi-amount");
+                        getStyleClass().addAll("vi-amount", "vi-cell-center");
                     }
-                    setAlignment(Pos.CENTER_RIGHT);
+                    setAlignment(Pos.CENTER);
                 }
             });
         }
@@ -605,11 +729,43 @@ public class ViewInvoicesController {
                     p.getValue() == null ? "" : refPillKey(p.getValue())));
             colStatus.setCellFactory(col -> new RefStatusCell());
         }
+        if (colInvoiceStatus != null) {
+            colInvoiceStatus.setCellValueFactory(p -> new SimpleStringProperty(
+                    p.getValue() == null ? "" : p.getValue().getStatus()));
+            colInvoiceStatus.setCellFactory(col -> new TableCell<InvoiceMaster, String>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    getStyleClass().remove("vi-cell-center");
+                    if (empty || item == null) {
+                        setText(null);
+                        setGraphic(null);
+                    } else {
+                        Label pill = new Label(item.toUpperCase());
+                        String color = "#FA8C16"; // Orange for draft/revised/etc.
+                        String bg = "#FFF2E8";
+                        if (item.equalsIgnoreCase("FINAL") || item.equalsIgnoreCase("SENT") || item.equalsIgnoreCase("SENT TO CLIENT")) {
+                            color = "#1890FF"; bg = "#E6F7FF"; // Blue for final/sent
+                        } else if (item.equalsIgnoreCase("CANCELLED")) {
+                            color = "#F5222D"; bg = "#FFF1F0"; // Red
+                        } else if (item.equalsIgnoreCase("REVISED")) {
+                            color = "#722ED1"; bg = "#F9F0FF"; // Purple
+                        }
+                        pill.setStyle("-fx-background-color: " + bg + "; -fx-text-fill: " + color + "; " +
+                                "-fx-padding: 4 10; -fx-background-radius: 6; -fx-font-weight: 800; -fx-font-size: 11px;");
+                        setAlignment(Pos.CENTER);
+                        setGraphic(pill);
+                        getStyleClass().add("vi-cell-center");
+                    }
+                }
+            });
+        }
         if (colActions != null) {
             colActions.setCellFactory(col -> new TableCell<>() {
                 @Override
                 protected void updateItem(Void item, boolean empty) {
                     super.updateItem(item, empty);
+                    getStyleClass().remove("vi-cell-center");
                     setAlignment(Pos.CENTER);
                     if (empty) {
                         setGraphic(null);
@@ -619,6 +775,7 @@ public class ViewInvoicesController {
                             setGraphic(null);
                         } else {
                             setGraphic(buildRowActionsMenuButton(inv));
+                            getStyleClass().add("vi-cell-center");
                         }
                     }
                 }
@@ -709,9 +866,29 @@ public class ViewInvoicesController {
             case "PARTIAL" -> "partial";
             default -> "pending";
         };
+        
+        String bg = "#F3F4F6";
+        String color = "#4B5563";
+        if ("PAID".equals(k)) {
+            bg = "#DCFCE7"; color = "#15803D";
+        } else if ("OVERDUE".equals(k)) {
+            bg = "#FEE2E2"; color = "#B91C1C";
+        } else if ("PARTIAL".equals(k)) {
+            bg = "#FFEDD5"; color = "#C2410C";
+        }
+        
+        pill.setStyle("-fx-background-color: " + bg + "; -fx-text-fill: " + color + "; " +
+                      "-fx-padding: 3 10 3 8; -fx-background-radius: 20; -fx-font-weight: 800; -fx-font-size: 10px;");
+        
         pill.getStyleClass().setAll("ref-pill", "ref-pill--" + slug);
         if (dot != null) {
             dot.getStyleClass().setAll("ref-pill-status-dot", "ref-pill-status-dot--" + slug);
+            
+            String dotColor = "#9CA3AF";
+            if ("PAID".equals(k)) dotColor = "#16A34A";
+            else if ("OVERDUE".equals(k)) dotColor = "#EF4444";
+            else if ("PARTIAL".equals(k)) dotColor = "#EA580C";
+            dot.setStyle("-fx-background-color: " + dotColor + ";");
         }
     }
 
@@ -731,6 +908,7 @@ public class ViewInvoicesController {
         @Override
         protected void updateItem(String key, boolean empty) {
             super.updateItem(key, empty);
+            getStyleClass().remove("vi-cell-center");
             if (empty) {
                 setGraphic(null);
                 setText(null);
@@ -753,6 +931,7 @@ public class ViewInvoicesController {
             setAlignment(Pos.CENTER);
             setGraphic(pillRow);
             setText(null);
+            getStyleClass().add("vi-cell-center");
         }
     }
 
@@ -788,23 +967,52 @@ public class ViewInvoicesController {
                 return new InvoiceActionState(
                         false, false, false, false, false, false, false, "Send", "Cancel");
             }
-        String status = inv.getStatus() != null ? inv.getStatus().toUpperCase() : "";
-        String pStatus = inv.getPaymentStatus() != null ? inv.getPaymentStatus().toUpperCase() : "";
-        boolean isDraft = "DRAFT".equals(status);
-        boolean isFinal = "FINAL".equals(status);
-        boolean isSent = "SENT TO CLIENT".equals(status) || "SENT".equals(status);
-        boolean isPaid = "PAID".equals(pStatus);
-        boolean isPartialPaid = "PARTIAL PAID".equals(pStatus);
-        boolean hasPayments = inv.getPaidAmount() > 0;
-        
-            boolean edit = "DRAFT".equals(status) || "FINAL".equals(status);
+            String status = inv.getStatus() != null ? inv.getStatus().toUpperCase() : "";
+            String pStatus = inv.getPaymentStatus() != null ? inv.getPaymentStatus().toUpperCase() : "";
+            boolean isDraft = "DRAFT".equals(status);
+            boolean isFinal = "FINAL".equals(status);
+            boolean isSent = "SENT TO CLIENT".equals(status) || "SENT".equals(status);
+            boolean isPaid = "PAID".equals(pStatus);
+            boolean isPartialPaid = "PARTIAL PAID".equals(pStatus) || "PARTIAL_PAID".equals(pStatus);
+            boolean isOverdue = "OVERDUE".equals(pStatus);
+            boolean hasPayments = inv.getPaidAmount() > 0;
+            
+            String ds = inv.getDocumentSeries();
+            String tp = inv.getType();
+            boolean isProforma = (ds != null && ("PROFORMA_INVOICE".equalsIgnoreCase(ds) || "PROFORMA".equalsIgnoreCase(ds)))
+                               || (tp != null && (tp.toUpperCase().contains("PROFORMA") || tp.toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(tp) || "DATE_RANGE".equalsIgnoreCase(tp) || tp.toUpperCase().contains("MONTHLY")))
+                               || (inv.getInvoiceNo() != null && inv.getInvoiceNo().toUpperCase().contains("/PI/"));
+
+            boolean edit;
+            boolean cancel;
+            
+            if (isProforma) {
+                // Proforma Payment Rules: Unpaid, Partial Paid, Paid all allow Edit Invoice and Cancel Invoice
+                // But Process Status Revised/Cancelled/Void block them
+                boolean processLocked = "REVISED".equals(status) || "CANCELLED".equals(status) || "VOID".equals(status);
+                edit = !processLocked;
+                cancel = !processLocked;
+            } else {
+                // GST Payment Rules:
+                // Unpaid: Edit = No, Cancel Invoice = Yes (Void)
+                // Partial Paid, Paid, Overdue: Edit = No, Cancel Invoice = No
+                // Also, process status Draft is editable and cancelable (under general matrix)
+                if (isDraft) {
+                    edit = true;
+                    cancel = true;
+                } else {
+                    edit = false;
+                    cancel = "UNPAID".equals(pStatus) && !isPaid && !isPartialPaid && !isOverdue && !"CANCELLED".equals(status) && !"VOID".equals(status);
+                }
+            }
+
             boolean finalize = isDraft;
             boolean send = isFinal || isSent;
             String sendText = isSent ? "Send Again" : "Send";
             boolean revised = (isFinal || isSent) && !hasPayments;
             boolean payment = isSent && !isPaid;
             boolean raiseCnDn = isSent && !"UNPAID".equals(pStatus);
-            boolean cancel = !(isPaid || isPartialPaid || "REVISED".equals(status) || "CANCELLED".equals(status));
+            
             String invNo = inv.getInvoiceNo();
             boolean isTemp = isDraft || (invNo != null && invNo.startsWith("TEMP-"));
             String cancelText = isTemp ? "Delete" : "Cancel";
@@ -814,7 +1022,53 @@ public class ViewInvoicesController {
     }
 
     private void updateButtonStates(InvoiceMaster inv) {
-        applyToolbarFromState(InvoiceActionState.from(inv), inv);
+        java.util.List<InvoiceMaster> selected = invoiceTable != null ? invoiceTable.getSelectionModel().getSelectedItems() : java.util.Collections.emptyList();
+        
+        if (selected.isEmpty()) {
+            applyToolbarFromState(new InvoiceActionState(false, false, false, false, false, false, false, "Send", "Cancel"), null);
+            if (btnDownload != null) btnDownload.setDisable(true);
+            return;
+        }
+
+        if (selected.size() == 1) {
+            applyToolbarFromState(InvoiceActionState.from(selected.get(0)), selected.get(0));
+            if (btnDownload != null) btnDownload.setDisable(false);
+            return;
+        }
+
+        String firstStatus = selected.get(0).getStatus();
+        boolean allSameStatus = true;
+        for (InvoiceMaster item : selected) {
+            if (!java.util.Objects.equals(firstStatus, item.getStatus())) {
+                allSameStatus = false;
+                break;
+            }
+        }
+
+        if (!allSameStatus) {
+            applyToolbarFromState(new InvoiceActionState(false, false, false, false, false, false, false, "Send", "Cancel"), null);
+            if (btnDownload != null) btnDownload.setDisable(false);
+            return;
+        }
+
+        boolean edit = true, finalize = true, send = true, revised = true, payment = true, raiseCnDn = true, cancel = true;
+
+        for (InvoiceMaster item : selected) {
+            InvoiceActionState s = InvoiceActionState.from(item);
+            edit &= s.edit;
+            finalize &= s.finalize;
+            send &= s.send;
+            revised &= s.revised;
+            payment &= s.payment;
+            raiseCnDn &= s.raiseCnDn;
+            cancel &= s.cancel;
+        }
+
+        String sendText = InvoiceActionState.from(selected.get(0)).sendText;
+        String cancelText = InvoiceActionState.from(selected.get(0)).cancelText;
+        applyToolbarFromState(new InvoiceActionState(edit, finalize, send, revised, payment, raiseCnDn, cancel, sendText, cancelText), selected.get(0));
+        
+        if (btnDownload != null) btnDownload.setDisable(false);
     }
 
     /**
@@ -860,7 +1114,10 @@ public class ViewInvoicesController {
         if (inv == null || invoiceTable == null) {
             return;
         }
-        invoiceTable.getSelectionModel().select(inv);
+        if (!invoiceTable.getSelectionModel().getSelectedItems().contains(inv)) {
+            invoiceTable.getSelectionModel().clearSelection();
+            invoiceTable.getSelectionModel().select(inv);
+        }
         if (then != null) {
             then.run();
         }
@@ -904,8 +1161,16 @@ public class ViewInvoicesController {
                 ? (Stage) invoiceTable.getScene().getWindow() : null;
         try {
             InvoiceBuilderService builder = new InvoiceBuilderService();
-            Invoice full = builder.buildInvoiceFromMasterForPdfExport(inv.getId());
-            File created = new PdfInvoiceService().generateSingleInvoicePDF(full);
+            Invoice full = builder.buildInvoiceFromMasterForPdfExport(inv.getUuid());
+            boolean isProformaPdf = (full.getMasterDocumentSeries() == model.MasterDocumentSeries.PROFORMA_INVOICE)
+                                   || (full.getInvoiceType() != null && (full.getInvoiceType().toUpperCase().contains("PROFORMA") || full.getInvoiceType().toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(full.getInvoiceType()) || "DATE_RANGE".equalsIgnoreCase(full.getInvoiceType()) || full.getInvoiceType().toUpperCase().contains("MONTHLY")))
+                                   || (full.getInvoiceNo() != null && full.getInvoiceNo().toUpperCase().contains("/PI/"));
+            File created;
+            if (isProformaPdf) {
+                created = new PdfInvoiceService().generateSingleInvoicePDF(full);
+            } else {
+                created = new service.GstPdfInvoiceService().generateGstInvoice(full);
+            }
             if (stage != null) {
                 Toast.showSmall(stage, "Invoice PDF saved");
             }
@@ -914,6 +1179,67 @@ public class ViewInvoicesController {
             new Alert(Alert.AlertType.ERROR, "Could not save PDF: " + ex.getMessage(), ButtonType.OK)
                     .showAndWait();
         }
+    }
+
+    @FXML
+    private void handleDownloadAction(ActionEvent event) {
+        List<InvoiceMaster> toDownload = new ArrayList<>();
+        if (!selectedInvoiceUuids.isEmpty()) {
+            for (InvoiceMaster inv : fullInvoiceResults) {
+                if (inv.getUuid() != null && selectedInvoiceUuids.contains(inv.getUuid())) {
+                    toDownload.add(inv);
+                }
+            }
+        } else {
+            toDownload.addAll(fullInvoiceResults);
+        }
+
+        if (toDownload.isEmpty()) {
+            toast("No invoices in current filter to download ❌");
+            return;
+        }
+
+        Stage stage = invoiceTable != null && invoiceTable.getScene() != null
+                && invoiceTable.getScene().getWindow() instanceof Stage
+                ? (Stage) invoiceTable.getScene().getWindow() : null;
+
+        new Thread(() -> {
+            int successCount = 0;
+            int total = toDownload.size();
+            for (InvoiceMaster inv : toDownload) {
+                try {
+                     InvoiceBuilderService builder = new InvoiceBuilderService();
+                     Invoice full = builder.buildInvoiceFromMasterForPdfExport(inv.getUuid());
+                     boolean isProformaPdf = (full.getMasterDocumentSeries() == model.MasterDocumentSeries.PROFORMA_INVOICE)
+                                             || (full.getInvoiceType() != null && (full.getInvoiceType().toUpperCase().contains("PROFORMA") || full.getInvoiceType().toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(full.getInvoiceType()) || "DATE_RANGE".equalsIgnoreCase(full.getInvoiceType()) || full.getInvoiceType().toUpperCase().contains("MONTHLY")))
+                                             || (full.getInvoiceNo() != null && full.getInvoiceNo().toUpperCase().contains("/PI/"));
+                      if (isProformaPdf) {
+                          new PdfInvoiceService().generateSingleInvoicePDF(full);
+                      } else {
+                          new service.GstPdfInvoiceService().generateGstInvoice(full);
+                      }
+                     successCount++;
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+            final int finalSuccess = successCount;
+            Platform.runLater(() -> {
+                if (stage != null) {
+                    if (finalSuccess == total) {
+                        if (total == 1) {
+                            utils.Toast.show(stage, "✅ Invoice PDF downloaded successfully!");
+                        } else {
+                            utils.Toast.show(stage, "✅ " + total + " invoices downloaded successfully!");
+                        }
+                    } else if (finalSuccess > 0) {
+                        utils.Toast.show(stage, "⚠️ Downloaded " + finalSuccess + " of " + total + " invoices.");
+                    } else {
+                        utils.Toast.show(stage, "❌ Failed to download invoices.");
+                    }
+                }
+            });
+        }, "bulk-pdf-download").start();
     }
 
     /**
@@ -1019,37 +1345,47 @@ public class ViewInvoicesController {
 
     /** Invoked from live filter listeners and programmatic refresh; not an FXML button. */
     private void handleSearch(ActionEvent event) {
-        final Integer clientId = (clientComboBox != null && clientComboBox.getValue() != null
-                && clientComboBox.getValue().getId() != ALL_CLIENTS_ID)
-                ? clientComboBox.getValue().getId()
+        final String clientId = (clientComboBox != null && clientComboBox.getValue() != null
+                && !ALL_CLIENTS_UUID.equals(clientComboBox.getValue().getClientUuid()))
+                ? clientComboBox.getValue().getClientUuid()
                 : null;
         String status = (statusComboBox != null) ? statusComboBox.getValue() : "All";
+        String invoiceStatus = (invoiceStatusComboBox != null) ? invoiceStatusComboBox.getValue() : "All";
         LocalDate start = (startDatePicker != null) ? startDatePicker.getValue() : null;
         LocalDate end = (endDatePicker != null) ? endDatePicker.getValue() : null;
         String invoiceNo = (invoiceSearchField != null) ? invoiceSearchField.getText() : "";
+        String typeFilterVal = (typeComboBox != null) ? typeComboBox.getValue() : "All";
+        String documentSeries = "All";
+        if ("GST Invoice".equalsIgnoreCase(typeFilterVal)) {
+            documentSeries = "GST_INVOICE";
+        } else if ("Performa Bills".equalsIgnoreCase(typeFilterVal)) {
+            documentSeries = "PROFORMA_INVOICE";
+        }
 
         InvoiceMaster selected = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
-        final Integer selectedId = (selected != null) ? selected.getId() : null;
+        final String selectedUuid = (selected != null) ? selected.getUuid() : null;
 
+        final String finalDocumentSeries = documentSeries;
         new Thread(() -> {
             try {
-                List<InvoiceMaster> results = invoiceMasterService.getFilteredInvoices(clientId, status, start, end, invoiceNo);
+                List<InvoiceMaster> results = invoiceMasterService.getFilteredInvoices(clientId, status, invoiceStatus, start, end, invoiceNo, finalDocumentSeries);
                 Platform.runLater(() -> {
                     fullInvoiceResults.clear();
                     fullInvoiceResults.addAll(results);
-                    selectedInvoiceIds.clear();
+                    isFullTotalsCached = false;
+                    selectedInvoiceUuids.clear();
                     currentPageIndex = 0;
                     repaginate();
 
                     if (invoiceTable != null) {
-                        if (selectedId != null) {
+                        if (selectedUuid != null) {
                             int idx = -1;
                             for (int i = 0; i < fullInvoiceResults.size(); i++) {
-                                if (fullInvoiceResults.get(i).getId() == selectedId) {
+                                if (fullInvoiceResults.get(i).getUuid().equals(selectedUuid)) {
                                     idx = i;
-                                break;
+                                    break;
+                                }
                             }
-                        }
                             if (idx >= 0) {
                                 currentPageIndex = idx / pageSize;
                                 repaginate();
@@ -1080,6 +1416,9 @@ public class ViewInvoicesController {
             if (from < to) {
                 tablePageItems.addAll(fullInvoiceResults.subList(from, to));
             }
+            if (invoiceTable != null) {
+                invoiceTable.refresh();
+            }
             return;
         }
         int total = fullInvoiceResults.size();
@@ -1096,6 +1435,9 @@ public class ViewInvoicesController {
         int fromDisplay = total == 0 ? 0 : from + 1;
         paginationInfoLabel.setText(String.format("Showing %d to %d of %d invoices", fromDisplay, to, total));
         rebuildPaginationControls(pages);
+        if (invoiceTable != null) {
+            invoiceTable.refresh();
+        }
     }
 
     private void pageChange(int newIndex) {
@@ -1193,25 +1535,42 @@ public class ViewInvoicesController {
             return null;
         }
         for (InvoiceMaster inv : fullInvoiceResults) {
-            if (inv.getId() == sel.getId()) {
+            if (inv.getUuid().equals(sel.getUuid())) {
                 return sel;
             }
         }
         return null;
     }
 
+    private List<InvoiceMaster> getSelectedInvoices() {
+        List<InvoiceMaster> selected = new ArrayList<>();
+        if (invoiceTable == null) {
+            return selected;
+        }
+        for (InvoiceMaster inv : fullInvoiceResults) {
+            if (inv != null && selectedInvoiceUuids.contains(inv.getUuid())) {
+                selected.add(inv);
+            }
+        }
+        return selected;
+    }
+
     private void refreshInvoiceSummaryPanel() {
-        InvoiceMaster sel = currentSummaryInvoiceOrNull();
-        updateSummaryContextLabel(sel);
-        updateSummaryBreakdown(sel);
-        updateSidebarTotals(sel);
+        List<InvoiceMaster> selected = getSelectedInvoices();
+        int selSize = selected.size();
+
+        updateSummaryContextLabel(selected);
+        updateSummaryBreakdown(selected.isEmpty() ? null : (selSize == 1 ? selected.get(0) : null));
+        updateSidebarTotals(selected);
+
         if (viStatusOverviewBox != null) {
-            boolean showStatusOverview = (sel == null);
+            boolean showStatusOverview = (selSize > 1);
             viStatusOverviewBox.setVisible(showStatusOverview);
             viStatusOverviewBox.setManaged(showStatusOverview);
         }
-        if (sel == null) {
-            updatePieChartData(null);
+
+        if (selSize > 1) {
+            updatePieChartData(selected);
         }
     }
 
@@ -1228,14 +1587,17 @@ public class ViewInvoicesController {
         summarySingleInvoiceSection.setVisible(false);
     }
 
-    private void updateSummaryContextLabel(InvoiceMaster selectedInFilter) {
+    private void updateSummaryContextLabel(List<InvoiceMaster> selected) {
         if (summaryContextLabel == null) {
             return;
         }
-        if (selectedInFilter != null) {
+        if (selected.size() == 1) {
+            InvoiceMaster selectedInFilter = selected.get(0);
             String client = selectedInFilter.getClientName() != null ? selectedInFilter.getClientName() : "";
             String line2 = client.isEmpty() ? "Selected invoice" : client;
             summaryContextLabel.setText(formatInvoiceId(selectedInFilter.getInvoiceNo()) + "\n" + line2);
+        } else if (selected.size() > 1) {
+            summaryContextLabel.setText(selected.size() + " invoice(s) selected");
         } else {
             int n = fullInvoiceResults.size();
             summaryContextLabel.setText(
@@ -1258,27 +1620,61 @@ public class ViewInvoicesController {
         return "Until " + e.format(ISSUE_DUE_FORMAT);
     }
 
-    /**
-     * @param selectedInFilter null → totals for all rows in current filter (incl. date range);
-     *                         non-null → figures for that invoice only.
-     */
-    private void updateSidebarTotals(InvoiceMaster selectedInFilter) {
-        Iterable<InvoiceMaster> rows =
-                selectedInFilter != null ? Collections.singletonList(selectedInFilter) : fullInvoiceResults;
-        long n = selectedInFilter != null ? 1L : fullInvoiceResults.size();
-        double base = 0;
-        double adj = 0;
-        double net = 0;
-        double paid = 0;
-        double due = 0;
-        for (InvoiceMaster inv : rows) {
-            base += inv.getAmount();
+    private void calculateFullTotalsIfNeeded() {
+        if (isFullTotalsCached) return;
+        cachedFullBase = 0;
+        cachedFullAdj = 0;
+        cachedFullNet = 0;
+        cachedFullPaid = 0;
+        cachedFullDue = 0;
+        cachedFullPaidCount = 0;
+        cachedFullUnpaidCount = 0;
+        cachedFullOverdueCount = 0;
+
+        for (InvoiceMaster inv : fullInvoiceResults) {
+            cachedFullBase += inv.getAmount();
             double cn = inv.getCnAmount() != null ? inv.getCnAmount() : 0;
             double dn = inv.getDnAmount() != null ? inv.getDnAmount() : 0;
-            adj += dn - cn;
-            net += inv.getNetAmount();
-            paid += inv.getPaidAmount();
-            due += inv.getDueAmount();
+            cachedFullAdj += (dn - cn);
+            cachedFullNet += inv.getNetAmount();
+            cachedFullPaid += inv.getPaidAmount();
+            cachedFullDue += inv.getDueAmount();
+
+            String ps = inv.getPaymentStatus() != null ? inv.getPaymentStatus().toUpperCase() : "";
+            if ("PAID".equals(ps)) {
+                cachedFullPaidCount++;
+            } else if ("OVERDUE".equals(ps)) {
+                cachedFullOverdueCount++;
+            } else {
+                cachedFullUnpaidCount++;
+            }
+        }
+        isFullTotalsCached = true;
+    }
+
+    private void updateSidebarTotals(List<InvoiceMaster> selected) {
+        long n;
+        double base = 0, adj = 0, net = 0, paid = 0, due = 0;
+
+        if (selected.isEmpty()) {
+            calculateFullTotalsIfNeeded();
+            n = fullInvoiceResults.size();
+            base = cachedFullBase;
+            adj = cachedFullAdj;
+            net = cachedFullNet;
+            paid = cachedFullPaid;
+            due = cachedFullDue;
+        } else {
+            n = selected.size();
+            for (InvoiceMaster inv : selected) {
+                base += inv.getAmount();
+                double cn = inv.getCnAmount() != null ? inv.getCnAmount() : 0;
+                double dn = inv.getDnAmount() != null ? inv.getDnAmount() : 0;
+                adj += dn - cn;
+                net += inv.getNetAmount();
+                paid += inv.getPaidAmount();
+                due += inv.getDueAmount();
+            }
         }
         if (sumCountLabel != null) {
             sumCountLabel.setText(String.valueOf(n));
@@ -1292,14 +1688,16 @@ public class ViewInvoicesController {
             sumAdjustmentLabel.setOnMouseClicked(null);
             sumAdjustmentLabel.setTooltip(null);
 
-            if (selectedInFilter != null && invoiceHasCnOrDn(selectedInFilter)) {
-                final InvoiceMaster openFor = selectedInFilter;
-                sumAdjustmentLabel.getStyleClass().add("vi-summary-link");
-                sumAdjustmentLabel.setTooltip(new Tooltip("Credit / debit notes and payments"));
-                sumAdjustmentLabel.setOnMouseClicked(e -> {
-                    e.consume();
-                    showAdjustmentsAndPaymentsDialog(openFor);
-                });
+            if (selected.size() == 1) {
+                InvoiceMaster openFor = selected.get(0);
+                if (invoiceHasCnOrDn(openFor)) {
+                    sumAdjustmentLabel.getStyleClass().add("vi-summary-link");
+                    sumAdjustmentLabel.setTooltip(new Tooltip("Credit / debit notes and payments"));
+                    sumAdjustmentLabel.setOnMouseClicked(e -> {
+                        e.consume();
+                        showAdjustmentsAndPaymentsDialog(openFor);
+                    });
+                }
             }
         }
         if (sumNetLabel != null) {
@@ -1313,23 +1711,27 @@ public class ViewInvoicesController {
         }
     }
 
-    private void updatePieChartData(InvoiceMaster selectedInFilter) {
+    private void updatePieChartData(List<InvoiceMaster> selected) {
         if (viDonutArcPaid == null || viDonutArcUnpaid == null || viDonutArcOverdue == null) {
             return;
         }
-        Iterable<InvoiceMaster> rows =
-                selectedInFilter != null ? Collections.singletonList(selectedInFilter) : fullInvoiceResults;
-        int paid = 0;
-        int unpaid = 0;
-        int overdue = 0;
-        for (InvoiceMaster inv : rows) {
-            String ps = inv.getPaymentStatus() != null ? inv.getPaymentStatus().toUpperCase() : "";
-            if ("PAID".equals(ps)) {
-                paid++;
-            } else if ("OVERDUE".equals(ps)) {
-                overdue++;
-            } else {
-                unpaid++;
+        int paid = 0, unpaid = 0, overdue = 0;
+
+        if (selected.isEmpty()) {
+            calculateFullTotalsIfNeeded();
+            paid = cachedFullPaidCount;
+            unpaid = cachedFullUnpaidCount;
+            overdue = cachedFullOverdueCount;
+        } else {
+            for (InvoiceMaster inv : selected) {
+                String ps = inv.getPaymentStatus() != null ? inv.getPaymentStatus().toUpperCase() : "";
+                if ("PAID".equals(ps)) {
+                    paid++;
+                } else if ("OVERDUE".equals(ps)) {
+                    overdue++;
+                } else {
+                    unpaid++;
+                }
             }
         }
         int total = paid + unpaid + overdue;
@@ -1377,11 +1779,17 @@ public class ViewInvoicesController {
         if (statusComboBox != null) {
             statusComboBox.getSelectionModel().selectFirst();
         }
+        if (invoiceStatusComboBox != null) {
+            invoiceStatusComboBox.getSelectionModel().selectFirst();
+        }
+        if (typeComboBox != null) {
+            typeComboBox.getSelectionModel().selectFirst();
+        }
         if (startDatePicker != null) {
-            startDatePicker.setValue(LocalDate.now().withDayOfMonth(1));
+            startDatePicker.setValue(null);
         }
         if (endDatePicker != null) {
-            endDatePicker.setValue(LocalDate.now());
+            endDatePicker.setValue(null);
         }
         if (invoiceSearchField != null) {
             invoiceSearchField.clear();
@@ -1391,27 +1799,63 @@ public class ViewInvoicesController {
     }
 
     @FXML private void handleFinalizeAction(ActionEvent e) {
-        InvoiceMaster inv = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
-        if (inv != null) {
+        if (invoiceTable == null) return;
+        java.util.List<InvoiceMaster> selected = new java.util.ArrayList<>(invoiceTable.getSelectionModel().getSelectedItems());
+        if (selected.isEmpty()) return;
+        
+        int success = 0;
+        int failed = 0;
+        String lastNewNo = null;
+
+        for (InvoiceMaster inv : selected) {
             try {
-                String newNo = invoiceMasterService.finalizeInvoice(inv.getId());
-                handleSearch(null); // Refresh table
-                Toast.show((Stage) invoiceTable.getScene().getWindow(), "✅ Invoice Finalized as: " + newNo);
+                lastNewNo = invoiceMasterService.finalizeInvoice(inv.getUuid());
+                success++;
             } catch (Exception ex) {
                 ex.printStackTrace();
-                Toast.show((Stage) invoiceTable.getScene().getWindow(), "❌ Failed to finalize: " + ex.getMessage());
+                failed++;
             }
+        }
+        
+        handleSearch(null); // Refresh table
+        
+        if (success > 0 && failed == 0) {
+            String msg = success == 1 ? "✅ Invoice Finalized as: " + lastNewNo : "✅ " + success + " Invoices Finalized";
+            Toast.show((Stage) invoiceTable.getScene().getWindow(), msg);
+        } else if (success > 0) {
+            Toast.show((Stage) invoiceTable.getScene().getWindow(), "⚠ " + success + " finalized, " + failed + " failed to finalize");
+        } else if (failed > 0) {
+            Toast.show((Stage) invoiceTable.getScene().getWindow(), "❌ Failed to finalize selected invoice(s)");
         }
     }
     @FXML private void handleSendAction(ActionEvent e) { updateStatus("SENT TO CLIENT"); }
-    @FXML private void handleCancelAction(ActionEvent e) { updateStatus("CANCELLED"); }
+    @FXML private void handleCancelAction(ActionEvent e) {
+        if (invoiceTable == null) return;
+        java.util.List<InvoiceMaster> selected = new java.util.ArrayList<>(invoiceTable.getSelectionModel().getSelectedItems());
+        if (selected.isEmpty()) return;
+
+        for (InvoiceMaster inv : selected) {
+            String ds = inv.getDocumentSeries();
+            String tp = inv.getType();
+            boolean isProforma = (ds != null && ("PROFORMA_INVOICE".equalsIgnoreCase(ds) || "PROFORMA".equalsIgnoreCase(ds)))
+                               || (tp != null && (tp.toUpperCase().contains("PROFORMA") || tp.toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(tp) || "DATE_RANGE".equalsIgnoreCase(tp) || tp.toUpperCase().contains("MONTHLY")))
+                               || (inv.getInvoiceNo() != null && inv.getInvoiceNo().toUpperCase().contains("/PI/"));
+            
+            String st = (!isProforma && !"DRAFT".equals(inv.getStatus())) ? "VOID" : "CANCELLED";
+            invoiceMasterService.updateInvoiceStatus(inv.getUuid(), st);
+        }
+        handleSearch(null);
+    }
 
     private void updateStatus(String status) {
-        InvoiceMaster inv = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
-        if (inv != null) {
-            invoiceMasterService.updateInvoiceStatus(inv.getId(), status);
-            handleSearch(null);
+        if (invoiceTable == null) return;
+        java.util.List<InvoiceMaster> selected = new java.util.ArrayList<>(invoiceTable.getSelectionModel().getSelectedItems());
+        if (selected.isEmpty()) return;
+
+        for (InvoiceMaster inv : selected) {
+            invoiceMasterService.updateInvoiceStatus(inv.getUuid(), status);
         }
+        handleSearch(null);
     }
 
     @FXML private void handleRevisedAction(ActionEvent event) {
@@ -1439,10 +1883,8 @@ public class ViewInvoicesController {
     @FXML private void handleEditAction(ActionEvent event) {
         InvoiceMaster inv = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
         if (inv != null) {
-            String stat = inv.getStatus() != null ? inv.getStatus().toUpperCase() : "";
             ViewInvoiceJobsController.pendingPrefillInvoice = inv;
-            // 🔥 Requirement: FINAL status opens in viewOnly mode via Edit button
-            ViewInvoiceJobsController.viewOnlyMode = "FINAL".equals(stat);
+            ViewInvoiceJobsController.viewOnlyMode = false;
             MainController.getInstance().loadViewInvoiceJobs();
         }
     }
@@ -1468,8 +1910,9 @@ public class ViewInvoicesController {
             return;
         }
         List<Client> all = clientService.getAllClients();
+        utils.ComboBoxSorter.sortClients(all);
         Client sentinel = new Client();
-        sentinel.setId(ALL_CLIENTS_ID);
+        sentinel.setClientUuid(ALL_CLIENTS_UUID);
         sentinel.businessNameProperty().set("All Clients");
         sentinel.clientNameProperty().set("");
         ObservableList<Client> items = FXCollections.observableArrayList(sentinel);
@@ -1483,13 +1926,31 @@ public class ViewInvoicesController {
         clientIdToEmail.clear();
         for (Client c : clientService.getAllClients()) {
             String em = c.getEmail();
-            clientIdToEmail.put(c.getId(), (em != null && !em.isBlank()) ? em.trim() : "—");
+            clientIdToEmail.put(c.getClientUuid(), (em != null && !em.isBlank()) ? em.trim() : "—");
         }
     }
     private void loadStatuses() {
         if (statusComboBox != null) {
-            statusComboBox.getItems().setAll("All", "UNPAID", "PARTIAL PAID", "PAID", "OVERDUE", "CANCELLED");
+            java.util.List<String> list = new java.util.ArrayList<>(java.util.List.of("All", "UNPAID", "PARTIAL PAID", "PAID", "OVERDUE", "CANCELLED"));
+            utils.ComboBoxSorter.sortStrings(list);
+            statusComboBox.getItems().setAll(list);
             statusComboBox.getSelectionModel().selectFirst();
+        }
+    }
+
+    private void loadInvoiceStatuses() {
+        if (invoiceStatusComboBox != null) {
+            java.util.List<String> list = new java.util.ArrayList<>(java.util.List.of("All", "DRAFT", "FINAL", "SENT TO CLIENT", "REVISED", "CANCELLED", "VOID"));
+            invoiceStatusComboBox.getItems().setAll(list);
+            invoiceStatusComboBox.getSelectionModel().selectFirst();
+        }
+    }
+    private void loadTypes() {
+        if (typeComboBox != null) {
+            java.util.List<String> list = new java.util.ArrayList<>(java.util.List.of("All", "GST Invoice", "Performa Bills"));
+            utils.ComboBoxSorter.sortStrings(list);
+            typeComboBox.getItems().setAll(list);
+            typeComboBox.getSelectionModel().selectFirst();
         }
     }
 
@@ -1612,14 +2073,14 @@ public class ViewInvoicesController {
         List<InvoiceAdjustment> adjs = new ArrayList<>();
         try (java.sql.Connection con = utils.DBConnection.getConnection();
              java.sql.PreparedStatement ps = con.prepareStatement(
-                     "SELECT id, type, note_no, amount, reason, date FROM invoice_adjustments "
-                             + "WHERE invoice_id = ? ORDER BY id DESC")) {
-            ps.setInt(1, inv.getId());
+                     "SELECT uuid, type, note_no, amount, reason, date FROM invoice_adjustments "
+                             + "WHERE invoice_uuid = ? ORDER BY date DESC, uuid DESC")) {
+            ps.setString(1, inv.getUuid());
             try (java.sql.ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     InvoiceAdjustment a = new InvoiceAdjustment();
-                    a.setId(rs.getInt("id"));
-                    a.setInvoiceId(inv.getId());
+                    a.setUuid(rs.getString("uuid"));
+                    a.setInvoiceUuid(inv.getUuid());
                     a.setType(rs.getString("type"));
                     a.setNoteNo(rs.getString("note_no"));
                     a.setAmount(rs.getDouble("amount"));
@@ -1688,9 +2149,10 @@ public class ViewInvoicesController {
              java.sql.PreparedStatement ps = con.prepareStatement(
                      "SELECT p.type, p.payment_date, pa.allocated_amount "
                              + "FROM payment_allocations pa "
-                             + "JOIN payments p ON pa.payment_id = p.id "
-                             + "WHERE pa.invoice_id = ? ORDER BY p.payment_date DESC")) {
-            ps.setInt(1, inv.getId());
+                             + "JOIN payments p ON pa.payment_uuid = p.uuid "
+                             + "WHERE pa.invoice_uuid = ? AND COALESCE(pa.is_deleted, 0) = 0 "
+                             + "ORDER BY p.payment_date DESC")) {
+            ps.setString(1, inv.getUuid());
             try (java.sql.ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     PaymentRecord r = new PaymentRecord();

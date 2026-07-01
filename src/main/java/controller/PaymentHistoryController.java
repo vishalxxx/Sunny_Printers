@@ -39,6 +39,7 @@ public class PaymentHistoryController implements Initializable {
     @FXML private TableColumn<PaymentRow, String> colClient;
     @FXML private TableColumn<PaymentRow, String> colType;
     @FXML private TableColumn<PaymentRow, String> colInvoiceRef;
+    @FXML private TableColumn<PaymentRow, String> colReceiptNo;
     @FXML private TableColumn<PaymentRow, String> colMethod;
     @FXML private TableColumn<PaymentRow, String> colAmount;
     @FXML private TableColumn<PaymentRow, String> colReference;
@@ -81,6 +82,7 @@ public class PaymentHistoryController implements Initializable {
         colClient.setCellValueFactory(cell -> cell.getValue().clientProperty());
         colType.setCellValueFactory(cell -> cell.getValue().typeProperty());
         colInvoiceRef.setCellValueFactory(cell -> cell.getValue().invoiceRefProperty());
+        colReceiptNo.setCellValueFactory(cell -> cell.getValue().receiptNoProperty());
         colMethod.setCellValueFactory(cell -> cell.getValue().methodProperty());
         colAmount.setCellValueFactory(cell -> cell.getValue().amountProperty());
         colReference.setCellValueFactory(cell -> cell.getValue().referenceProperty());
@@ -143,7 +145,9 @@ public class PaymentHistoryController implements Initializable {
     private void loadClients() {
         try {
             ClientRepository clientRepo = new ClientRepository();
-            ObservableList<Client> clients = FXCollections.observableArrayList(clientRepo.findAllSortedById());
+            java.util.List<Client> list = clientRepo.findAllSortedById();
+            utils.ComboBoxSorter.sortClients(list);
+            ObservableList<Client> clients = FXCollections.observableArrayList(list);
             setupClientCombo();
             clientCombo.setItems(clients);
         } catch (Exception e) {
@@ -157,10 +161,11 @@ public class PaymentHistoryController implements Initializable {
             InvoiceMasterService invService = new InvoiceMasterService();
             java.util.List<InvoiceMaster> list;
             if (selectedClient != null) {
-                list = invService.getInvoicesByClientId(selectedClient.getId());
+                list = invService.getInvoicesByClientId(selectedClient.getClientUuid());
             } else {
                 list = invService.getRecentInvoices(200);
             }
+            utils.ComboBoxSorter.sortInvoices(list);
             invoiceCombo.setItems(FXCollections.observableArrayList(list));
             
             invoiceCombo.setConverter(new javafx.util.StringConverter<InvoiceMaster>() {
@@ -195,7 +200,7 @@ public class PaymentHistoryController implements Initializable {
                 if (event.getClickCount() == 2 && (!row.isEmpty())) {
                     PaymentRow rowData = row.getItem();
                     if (rowData != null) {
-                        utils.PaymentDetailsDialogUtil.show(paymentsTable.getScene().getWindow(), rowData.getId());
+                        utils.PaymentDetailsDialogUtil.showByUuid(paymentsTable.getScene().getWindow(), rowData.getId());
                     }
                 }
             });
@@ -209,36 +214,37 @@ public class PaymentHistoryController implements Initializable {
 
         StringBuilder sql = new StringBuilder("""
             SELECT 
-                p.id,
+                p.uuid,
                 p.payment_date, 
                 c.business_name, 
                 c.client_name, 
                 p.type,
                 COALESCE(
-                    (SELECT GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_id = i.id WHERE a.payment_id = p.id),
+                    (SELECT GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid),
                     CASE WHEN p.type = 'Refund' THEN 'Advance Refund' ELSE 'Advance' END
                 ) as invoice_ref,
+                (SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'receipt_no') as receipt_no,
                 p.method, 
                 p.amount,
                 CASE p.method
                     WHEN 'Cheque' THEN 
-                        'Cheque No: ' || COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'cheque_number'), 'N/A') || 
-                        ' | Bank: ' || COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'bank_name'), 'N/A') ||
-                        ' | Date: ' || COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'cheque_date'), 'N/A') ||
-                        COALESCE(' | Ref: ' || (SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'reference'), '') ||
-                        COALESCE(' | Notes: ' || (SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'notes'), '')
+                        'Cheque No: ' || COALESCE((SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'cheque_number'), 'N/A') || 
+                        ' | Bank: ' || COALESCE((SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'bank_name'), 'N/A') ||
+                        ' | Date: ' || COALESCE((SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'cheque_date'), 'N/A') ||
+                        COALESCE(' | Ref: ' || (SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'reference'), '') ||
+                        COALESCE(' | Notes: ' || (SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'notes'), '')
                     WHEN 'UPI' THEN 
-                        'UPI ID: ' || COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'upi_id'), 'N/A') || 
-                        ' | UTR: ' || COALESCE((SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'utr'), 'N/A') ||
-                        COALESCE(' | Ref: ' || (SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'reference'), '') ||
-                        COALESCE(' | Notes: ' || (SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'notes'), '')
+                        'UPI ID: ' || COALESCE((SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'upi_id'), 'N/A') || 
+                        ' | UTR: ' || COALESCE((SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'utr'), 'N/A') ||
+                        COALESCE(' | Ref: ' || (SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'reference'), '') ||
+                        COALESCE(' | Notes: ' || (SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'notes'), '')
                     ELSE 
-                        COALESCE('Ref: ' || (SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'reference'), '') ||
-                        CASE WHEN (SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'reference') IS NOT NULL AND (SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'notes') IS NOT NULL THEN ' | ' ELSE '' END ||
-                        COALESCE('Notes: ' || (SELECT field_value FROM payment_details WHERE payment_id = p.id AND field_key = 'notes'), '')
+                        COALESCE('Ref: ' || (SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'reference'), '') ||
+                        CASE WHEN (SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'reference') IS NOT NULL AND (SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'notes') IS NOT NULL THEN ' | ' ELSE '' END ||
+                        COALESCE('Notes: ' || (SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'notes'), '')
                 END as reference
             FROM payments p
-            LEFT JOIN clients c ON p.client_id = c.id
+            LEFT JOIN clients c ON p.client_uuid = c.uuid
             WHERE 1=1
         """);
 
@@ -248,10 +254,10 @@ public class PaymentHistoryController implements Initializable {
         LocalDate to = toDate.getValue();
 
         if (selectedClient != null) {
-            sql.append(" AND p.client_id = ").append(selectedClient.getId());
+            sql.append(" AND p.client_uuid = '").append(selectedClient.getClientUuid().replace("'", "''")).append("'");
         }
         if (selectedInvoice != null) {
-            sql.append(" AND EXISTS (SELECT 1 FROM payment_allocations tx WHERE tx.payment_id = p.id AND tx.invoice_id = ").append(selectedInvoice.getId()).append(")");
+            sql.append(" AND EXISTS (SELECT 1 FROM payment_allocations tx WHERE tx.payment_uuid = p.uuid AND tx.invoice_uuid = '").append(selectedInvoice.getUuid().replace("'", "''")).append("')");
         }
         if (from != null) {
             sql.append(" AND p.payment_date >= '").append(from.toString()).append("'");
@@ -267,7 +273,7 @@ public class PaymentHistoryController implements Initializable {
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
-                int pid = rs.getInt("id");
+                String pid = rs.getString("uuid");
                 String date = rs.getString("payment_date");
                 String bName = rs.getString("business_name");
                 String cName = rs.getString("client_name");
@@ -275,6 +281,7 @@ public class PaymentHistoryController implements Initializable {
                 
                 String typeStr = rs.getString("type");
                 String invRef = rs.getString("invoice_ref");
+                String receiptNo = rs.getString("receipt_no");
                 String method = rs.getString("method");
                 double amount = rs.getDouble("amount");
                 String ref = rs.getString("reference");
@@ -285,6 +292,7 @@ public class PaymentHistoryController implements Initializable {
                     clientDisplay,
                     typeStr,
                     invRef,
+                    receiptNo,
                     method,
                     amount,
                     ref
@@ -298,11 +306,18 @@ public class PaymentHistoryController implements Initializable {
             paymentsTable.setItems(sortedList);
 
             refreshTotal();
+            if (paymentsTable != null) {
+                paymentsTable.refresh();
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("Failed to load payment history: " + e.getMessage());
         }
+    }
+
+    public void refresh() {
+        loadPaymentData();
     }
 
     private void setupSearchFilter() {
@@ -366,17 +381,18 @@ public class PaymentHistoryController implements Initializable {
      * Inner class representing a row in the table.
      */
     public class PaymentRow {
-        private final int id;
+        private final String id;
         private final SimpleStringProperty date;
         private final SimpleStringProperty client;
         private final SimpleStringProperty type;
         private final SimpleStringProperty invoiceRef;
+        private final SimpleStringProperty receiptNo;
         private final SimpleStringProperty method;
         private final SimpleStringProperty amount;
         private final SimpleStringProperty reference;
         private final BigDecimal amountRaw;
  
-        public PaymentRow(int id, String date, String client, String typeStr, String invRef, String method, double amount, String reference) {
+        public PaymentRow(String id, String date, String client, String typeStr, String invRef, String receiptNo, String method, double amount, String reference) {
             this.id = id;
             String formattedDate = "";
             if (date != null && !date.isBlank()) {
@@ -391,17 +407,19 @@ public class PaymentHistoryController implements Initializable {
             this.client = new SimpleStringProperty(client != null ? client : "");
             this.type = new SimpleStringProperty(typeStr != null ? typeStr.toUpperCase() : "PAYMENT");
             this.invoiceRef = new SimpleStringProperty(invRef != null ? invRef : "");
+            this.receiptNo = new SimpleStringProperty(receiptNo != null ? receiptNo : "");
             this.method = new SimpleStringProperty(method != null ? method : "");
             this.amountRaw = BigDecimal.valueOf(amount);
             this.amount = new SimpleStringProperty(currencyFormat.format(amount));
             this.reference = new SimpleStringProperty(reference != null ? reference : "");
         }
  
-        public int getId() { return id; }
+        public String getId() { return id; }
         public String getDate() { return date.get(); }
         public String getClient() { return client.get(); }
         public String getType() { return type.get(); }
         public String getInvoiceRef() { return invoiceRef.get(); }
+        public String getReceiptNo() { return receiptNo.get(); }
         public String getMethod() { return method.get(); }
         public String getAmount() { return amount.get(); }
         public String getReference() { return reference.get(); }
@@ -411,6 +429,7 @@ public class PaymentHistoryController implements Initializable {
         public SimpleStringProperty clientProperty() { return client; }
         public SimpleStringProperty typeProperty() { return type; }
         public SimpleStringProperty invoiceRefProperty() { return invoiceRef; }
+        public SimpleStringProperty receiptNoProperty() { return receiptNo; }
         public SimpleStringProperty methodProperty() { return method; }
         public SimpleStringProperty amountProperty() { return amount; }
         public SimpleStringProperty referenceProperty() { return reference; }

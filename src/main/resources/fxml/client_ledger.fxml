@@ -140,6 +140,13 @@
                         <Label fx:id="recordCountLabel" text="0 Records" styleClass="cl-record-pill"/>
                         <Region HBox.hgrow="ALWAYS"/>
                         <TextField fx:id="searchField" promptText="Search reference, doc…" styleClass="taste-field" prefWidth="220" maxWidth="280"/>
+                        <Button text="PRINT" onAction="#onPrint" styleClass="cl-btn cl-btn-soft"
+                                contentDisplay="LEFT"
+                                style="-fx-background-color: #FFFFFF; -fx-text-fill: #7C2D12; -fx-border-color: #CD7B4E; -fx-border-width: 1.4; -fx-border-radius: 10; -fx-background-radius: 10; -fx-background-insets: 0; -fx-font-size: 12px; -fx-font-weight: 800; -fx-font-family: 'Inter'; -fx-padding: 11 22; -fx-cursor: hand;">
+                            <graphic>
+                                <Label text="🖨" styleClass="cl-btn-icon" style="-fx-text-fill: #CD7B4E;"/>
+                            </graphic>
+                        </Button>
                         <Button text="EXPORT" onAction="#onExport" styleClass="cl-btn cl-btn-soft"
                                 contentDisplay="LEFT"
                                 style="-fx-background-color: #FFFFFF; -fx-text-fill: #7C2D12; -fx-border-color: #CD7B4E; -fx-border-width: 1.4; -fx-border-radius: 10; -fx-background-radius: 10; -fx-background-insets: 0; -fx-font-size: 12px; -fx-font-weight: 800; -fx-font-family: 'Inter'; -fx-padding: 11 22; -fx-cursor: hand;">
@@ -149,10 +156,11 @@
                         </Button>
                     </HBox>
 
-                    <TableView fx:id="ledgerTable" styleClass="cl-ledger-table" VBox.vgrow="ALWAYS">
+                        <TableView fx:id="ledgerTable" styleClass="cl-ledger-table" VBox.vgrow="ALWAYS">
                         <columns>
                             <TableColumn fx:id="colDate" text="DATE" prefWidth="100"/>
-                            <TableColumn fx:id="colRef" text="REFERENCE" prefWidth="350"/>
+                            <TableColumn fx:id="colRef" text="REFERENCE" prefWidth="280"/>
+                            <TableColumn fx:id="colReceiptNo" text="DOC / RCPT NO" prefWidth="130"/>
                             <TableColumn fx:id="colType" text="TYPE" prefWidth="100"/>
                             <TableColumn fx:id="colMode" text="MODE" prefWidth="100"/>
                             <TableColumn fx:id="colDebit" text="DEBIT (-)" prefWidth="110" styleClass="amount-column"/>

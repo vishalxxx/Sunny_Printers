@@ -6,7 +6,7 @@ import java.util.List;
 
 public class InvoiceJob {
 
-	private int jobId;
+	private String jobUuid;
 	private String jobNo;
 	private String jobName;
 	private LocalDate jobDate;
@@ -16,6 +16,7 @@ public class InvoiceJob {
 	private String unit;
 	private double ratePerUnit;
 	private String hsnSac;
+	private double gstRate;
 
 	private List<InvoiceLine> lines = new ArrayList<>();
 
@@ -31,12 +32,21 @@ public class InvoiceJob {
 
 	// -------- getters / setters --------
 
-	public int getJobId() {
-		return jobId;
+	public String getJobUuid() {
+		return jobUuid;
 	}
 
-	public void setJobId(int jobId) {
-		this.jobId = jobId;
+	public void setJobUuid(String jobUuid) {
+		this.jobUuid = jobUuid;
+	}
+
+	/** Alias for {@link #getJobUuid()}. */
+	public String getJobId() {
+		return jobUuid;
+	}
+
+	public void setJobId(String jobUuid) {
+		this.jobUuid = jobUuid;
 	}
 
 	public String getJobNo() {
@@ -93,6 +103,14 @@ public class InvoiceJob {
 
 	public void setHsnSac(String hsnSac) {
 		this.hsnSac = hsnSac;
+	}
+
+	public double getGstRate() {
+		return gstRate;
+	}
+
+	public void setGstRate(double gstRate) {
+		this.gstRate = gstRate;
 	}
 
 	public List<InvoiceLine> getLines() {

@@ -30,13 +30,13 @@
 
         <HBox alignment="CENTER_RIGHT" spacing="16">
             <padding><Insets bottom="8"/></padding>
-            <Button text="Save Configuration" fx:id="saveBtn" styleClass="button, btn-primary"/>
+            <Button text="Save Configuration" fx:id="saveBtn" styleClass="button, btn-primary" disable="true"/>
         </HBox>
 
         <!-- Same pattern as General Settings: card + kicker + GridPane (50/50) -->
         <VBox styleClass="settings-form-card" spacing="16" fillWidth="true">
             <Label text="Document numbering" styleClass="card-title-sm"/>
-            <Label text="Prefix comes from company name in General Settings. FY is April–March. Payment receipts use the payment id in the number (no separate counter)."
+            <Label text="View only — numbering is managed in the database and synced to Supabase. Prefix comes from company name in General Settings. FY is April–March."
                    wrapText="true" styleClass="settings-section-kicker"/>
             <GridPane hgap="16" vgap="16">
                 <columnConstraints>
@@ -49,7 +49,7 @@
                 </VBox>
                 <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="0">
                     <Label text="Digit width" styleClass="field-heading-sm"/>
-                    <ComboBox fx:id="paddingCombo" styleClass="taste-combo" maxWidth="Infinity"/>
+                    <ComboBox fx:id="paddingCombo" styleClass="taste-combo" maxWidth="Infinity" disable="true"/>
                 </VBox>
             </GridPane>
         </VBox>

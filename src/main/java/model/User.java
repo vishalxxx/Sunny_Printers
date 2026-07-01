@@ -3,6 +3,7 @@ package model;
 public class User {
 
 	private int id;
+	private String uuid;
 	private String username;
 	private String password;
 	private String role;
@@ -13,6 +14,14 @@ public class User {
 
 	public void setId(int id) {
 		this.id = id;
+	}
+
+	public String getUuid() {
+		return uuid;
+	}
+
+	public void setUuid(String uuid) {
+		this.uuid = uuid;
 	}
 
 	public String getUsername() {
@@ -47,6 +56,16 @@ public class User {
 
 	public void setProfileImageUrl(String profileImageUrl) {
 		this.profileImageUrl = profileImageUrl;
+	}
+
+	private String syncStatus;
+
+	public String getSyncStatus() {
+		return syncStatus;
+	}
+
+	public void setSyncStatus(String syncStatus) {
+		this.syncStatus = syncStatus;
 	}
 
 }

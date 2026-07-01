@@ -11,6 +11,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
@@ -26,6 +27,7 @@ import javafx.util.StringConverter;
 import model.Binding;
 import model.Client;
 import model.CtpPlate;
+import service.sync.UniversalSyncEngine;
 import model.Job;
 import model.Lamination;
 import model.Paper;
@@ -226,6 +228,8 @@ public class AddJobController implements utils.DirtySupport {
 	@FXML
 	private TextArea printNotesArea;
 	@FXML
+	private CheckBox printIncludeNotesToggle;
+	@FXML
 	private TextField printAmountField;
 
 	/* ========================= CTP PLATE ========================= */
@@ -241,11 +245,20 @@ public class AddJobController implements utils.DirtySupport {
 	@FXML
 	private TextArea ctpNotesArea;
 	@FXML
+	private CheckBox ctpIncludeNotesToggle;
+	@FXML
 	private TextField ctpAmountField;
 	@FXML
 	private ComboBox<Supplier> ctpSupplierCombo;
 	@FXML
 	private ComboBox<String> ctpColorCombo;
+	@FXML
+	private RadioButton ctpOurRadio;
+	@FXML
+	private RadioButton ctpClientRadio;
+	private ToggleGroup ctpSourceGroup;
+	@FXML
+	private VBox ctpSupplierBox;
 
 	/* ========================= PAPER ========================= */
 
@@ -260,7 +273,11 @@ public class AddJobController implements utils.DirtySupport {
 	@FXML
 	private ComboBox<String> paperTypeCombo;
 	@FXML
+	private ComboBox<Supplier> paperSupplierCombo;
+	@FXML
 	private TextArea paperNotesArea;
+	@FXML
+	private CheckBox paperIncludeNotesToggle;
 	@FXML
 	private TextField paperAmountField;
 
@@ -274,6 +291,8 @@ public class AddJobController implements utils.DirtySupport {
 	private TextField bindingRateField;
 	@FXML
 	private TextArea bindingNotesArea;
+	@FXML
+	private CheckBox bindingIncludeNotesToggle;
 	@FXML
 	private TextField bindingAmountField;
 
@@ -289,6 +308,8 @@ public class AddJobController implements utils.DirtySupport {
 	private ComboBox<String> lamSizeCombo;
 	@FXML
 	private TextArea lamNotesArea;
+	@FXML
+	private CheckBox lamIncludeNotesToggle;
 	@FXML
 	private TextField lamAmountField;
 
@@ -331,6 +352,18 @@ public class AddJobController implements utils.DirtySupport {
 		if (currentStep < 6) {
 			currentStep++;
 			updateStepUI();
+		}
+	}
+
+	private void markStepCompleted(int stepIndex) {
+		if (stepButtons[stepIndex] != null) {
+			try {
+				javafx.scene.layout.StackPane sp = (javafx.scene.layout.StackPane) stepButtons[stepIndex].getChildren().get(0);
+				javafx.scene.control.Label lbl = (javafx.scene.control.Label) sp.getChildren().get(1);
+				lbl.setText("✔");
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -389,6 +422,7 @@ public class AddJobController implements utils.DirtySupport {
 			addJobBtn.setVisible(currentStep == 6);
 			addJobBtn.setManaged(currentStep == 6);
 		}
+		updateFormState();
 	}
 
 	/* ========================= CLIENT COMBO STATE ========================= */
@@ -434,8 +468,11 @@ public class AddJobController implements utils.DirtySupport {
 			addLaminationBtn.setDisable(!isLaminationValid());
 		}
 
-		// ✅ disable Add Job button until at least 1 item is added
-		addJobBtn.setDisable(!allowCards || itemCount == 0);
+		// Finish / Add Job: require client, job name, and at least one line item
+		if (addJobBtn != null) {
+			boolean hasItems = !pendingItems.isEmpty();
+			addJobBtn.setDisable(!allowCards || !hasItems);
+		}
 	}
 
 	/* ========================= JOB FLOW ========================= */
@@ -457,6 +494,9 @@ public class AddJobController implements utils.DirtySupport {
 		jobDate.setValue(java.time.LocalDate.now());
 		clientCombo.getSelectionModel().clearSelection();
 		pendingItems.clear();
+		if (ctpOurRadio != null) {
+			ctpOurRadio.setSelected(true);
+		}
 
 		updateItemCount();
 		updateFormState();
@@ -465,9 +505,9 @@ public class AddJobController implements utils.DirtySupport {
 	}
 
 	// This method might be deprecated or used only for actual resumes of saved but incomplete jobs
-	public void openForEdit(int jobId) {
+	public void openForEdit(String jobUuid) {
 		JobService jobService = new JobService();
-		Job job = jobService.getJobById(jobId);
+		Job job = jobService.getJobByUuid(jobUuid);
 		if (job == null) {
 			toast("❌ Job not found");
 			return;
@@ -480,7 +520,7 @@ public class AddJobController implements utils.DirtySupport {
 		jobDate.setValue(currentJob.getJobDate() != null ? currentJob.getJobDate() : java.time.LocalDate.now());
 		
 		// Load items into pending
-		pendingItems.setAll(new JobItemService().getJobItems(jobId));
+		pendingItems.setAll(new JobItemService().loadJobItemCards(jobUuid));
 
 		updateItemCount();
 		updateFormState();
@@ -491,9 +531,9 @@ public class AddJobController implements utils.DirtySupport {
 		if (currentJob == null || currentJob.getClientId() == null)
 			return;
 
-		Integer cid = currentJob.getClientId();
+		String cid = currentJob.getClientId();
 
-		Client match = masterClients.stream().filter(c -> c.getId() == cid).findFirst().orElse(null);
+		Client match = masterClients.stream().filter(c -> cid != null && cid.equals(c.getClientUuid())).findFirst().orElse(null);
 
 		if (match != null) {
 			clientCombo.getSelectionModel().select(match);
@@ -615,42 +655,73 @@ public class AddJobController implements utils.DirtySupport {
 			return;
 		}
 
+		// 1. Validate all child items first. If validation fails, stop save immediately.
+		try {
+			for (Object item : pendingItems) {
+				if (item instanceof model.Printing p) {
+					if (p.getAmount() <= 0) throw new IllegalArgumentException("Printing amount required");
+				} else if (item instanceof model.Paper p) {
+					if (p.getAmount() <= 0) throw new IllegalArgumentException("Paper amount required");
+				} else if (item instanceof model.Binding b) {
+					if (b.getAmount() <= 0) throw new IllegalArgumentException("Binding amount required");
+				} else if (item instanceof model.Lamination l) {
+					if (l.getAmount() <= 0) throw new IllegalArgumentException("Lamination amount required");
+				} else if (item instanceof model.CtpPlate ctp) {
+					if (ctp.getQty() <= 0) throw new IllegalArgumentException("CTP qty required");
+					if (ctp.getAmount() <= 0) throw new IllegalArgumentException("CTP amount required");
+				}
+			}
+		} catch (IllegalArgumentException e) {
+			toast("❌ Validation failed: " + e.getMessage());
+			return;
+		}
+
 		String title = jobName.getText().trim();
-		JobService js = new JobService();
 
 		java.sql.Connection con = null;
 		try {
 			con = utils.DBConnection.getConnection();
 			con.setAutoCommit(false);
 
-			// 1. Create Job or Update existing
-			int jobId = currentJob.getId();
-			if (jobId == 0) {
-				// Create NEW job
-				currentJob.setClientId(selectedClient.getId());
+			String jobUuid = currentJob.getUuid();
+			if (!currentJob.hasUuid()) {
+				currentJob.setClientId(selectedClient.getClientUuid());
 				currentJob.setJobTitle(title);
 				currentJob.setJobDate(date);
 				currentJob.setStatus("Created");
-				
 				repository.JobRepository jobRepo = new repository.JobRepository();
-				currentJob = jobRepo.insertJob(con, currentJob); // Insert full job
-				jobId = currentJob.getId();
+				currentJob = jobRepo.insertJob(con, currentJob);
+				jobUuid = currentJob.getUuid();
 			} else {
-				// Update existing (unlikely in this screen now, but for safety)
-				js.updateJobDetails(jobId, title, date);
-				js.updateJobStatus(jobId, "Created");
+				// Update job details and status in the same transaction
+				String userUuid = null;
+				if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+					userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+				}
+				String updateSql = """
+						UPDATE jobs SET job_title = ?, job_date = ?, status = 'Created', sync_status = 'PENDING',
+						updated_at = datetime('now'), sync_version = sync_version + 1,
+						updated_by_user_uuid = ?
+						WHERE uuid = ?
+						""";
+				try (java.sql.PreparedStatement ps = con.prepareStatement(updateSql)) {
+					ps.setString(1, title);
+					if (date != null) {
+						ps.setString(2, date.toString());
+					} else {
+						ps.setNull(2, java.sql.Types.VARCHAR);
+					}
+					ps.setString(3, userUuid);
+					ps.setString(4, jobUuid);
+					ps.executeUpdate();
+				}
 			}
 
-			// 2. Save Item details
 			JobItemService transJis = new JobItemService(con);
 			for (Object item : pendingItems) {
-				// If item is already a JobItem (from openForEdit), handle update?
-				// For now, simplify: if it doesn't have an ID, add it.
-				// In AddJobController, they are usually new.
-				transJis.addJobItem(con, jobId, item);
+				transJis.addJobItem(con, jobUuid, item);
 			}
 
-			// 3. Save Image
 			if (selectedImageFile != null) {
 				java.io.File dir = new java.io.File("Images");
 				if (!dir.exists()) dir.mkdirs();
@@ -658,21 +729,33 @@ public class AddJobController implements utils.DirtySupport {
 				String name = selectedImageFile.getName();
 				int dotIndex = name.lastIndexOf('.');
 				if (dotIndex > 0) ext = name.substring(dotIndex);
-				String newFileName = "job_" + jobId + "_" + System.currentTimeMillis() + ext;
+				String newFileName = "job_" + jobUuid.replace("-", "") + "_" + System.currentTimeMillis() + ext;
 				java.io.File targetFile = new java.io.File(dir, newFileName);
 				java.nio.file.Files.copy(selectedImageFile.toPath(), targetFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 				String relativePath = "Images/" + newFileName;
-				
-				String updateImgQuery = "UPDATE jobs SET image_path = ? WHERE id = ?";
+				String userUuid = null;
+				if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+					userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+				}
+				String updateImgQuery = """
+						UPDATE jobs SET image_path = ?, sync_status = 'PENDING',
+						updated_at = datetime('now'), sync_version = sync_version + 1,
+						updated_by_user_uuid = ?
+						WHERE uuid = ?
+						""";
 				try (java.sql.PreparedStatement ps = con.prepareStatement(updateImgQuery)) {
 					ps.setString(1, relativePath);
-					ps.setInt(2, jobId);
+					ps.setString(2, userUuid);
+					ps.setString(3, jobUuid);
 					ps.executeUpdate();
 				}
 				currentJob.setImagePath(relativePath);
 			}
 
 			con.commit();
+
+			UniversalSyncEngine.scheduleSyncAsync();
+
 			System.out.println("✅ Finalizing job: " + currentJob.getJobNo());
 			toast("✅ Job Added Successfully!");
 			
@@ -682,7 +765,7 @@ public class AddJobController implements utils.DirtySupport {
 			selectedClient = null;
 			
 			resetUploadView();
-			MainController.getInstance().openCenterDashboard();
+			MainController.getInstance().loadViewJob();
 
 		} catch (Exception e) {
 			if (con != null) { try { con.rollback(); } catch (Exception ex) {} }
@@ -714,6 +797,7 @@ public class AddJobController implements utils.DirtySupport {
 		p.setSide(sideDoubleBtn.isSelected() ? "Double" : "Single");
 		p.setWithCtp("With CTP (Computer to Plate)".equalsIgnoreCase(printCtpCombo.getValue()));
 		p.setNotes(printNotesArea.getText());
+		p.setIncludeNotesInInvoice(printIncludeNotesToggle.isSelected());
 
 		try {
 			if (printAmountField.getText() != null && !printAmountField.getText().isBlank()) {
@@ -727,19 +811,24 @@ public class AddJobController implements utils.DirtySupport {
 
 		pendingItems.add(p);
 		toast("Printing Added ✅");
+		markStepCompleted(1);
 		clearPrintingFields();
 		updateItemCount();
 		updateFormState();
+		handleNextStep();
 	}
 
 	private void clearPrintingFields() {
 		printQtyField.clear();
-		printUnitsCombo.setValue(null);
+		printUnitsCombo.setValue("Sheet");
 		printSetField.clear();
 		printColorCombo.setValue(null);
 		sideDoubleBtn.setSelected(true);
 		printCtpCombo.setValue(null);
 		printNotesArea.clear();
+		if (printIncludeNotesToggle != null) {
+			printIncludeNotesToggle.setSelected(true);
+		}
 		printAmountField.clear();
 	}
 
@@ -761,11 +850,11 @@ public class AddJobController implements utils.DirtySupport {
 		c.setBacking(ctpBackingCombo.getValue());
 		c.setColor(ctpColorCombo.getValue());
 		c.setNotes(ctpNotesArea.getText());
+		c.setIncludeNotesInInvoice(ctpIncludeNotesToggle.isSelected());
 
 		Supplier supplier = ctpSupplierCombo.getValue();
-		if (supplier != null) {
-			c.setSupplierId(supplier.getId());
-			c.setSupplierName(supplier.getName());
+		if (ctpOurRadio.isSelected() && supplier != null && supplier.getUuid() != null && !supplier.getUuid().isBlank()) {
+			c.setSupplierUuid(supplier.getUuid());
 		}
 
 		try {
@@ -780,9 +869,11 @@ public class AddJobController implements utils.DirtySupport {
 
 		pendingItems.add(c);
 		toast("CTP Plate Added ✅");
+		markStepCompleted(2);
 		clearCtpFields();
 		updateItemCount();
 		updateFormState();
+		handleNextStep();
 	}
 
 	private void clearCtpFields() {
@@ -793,7 +884,13 @@ public class AddJobController implements utils.DirtySupport {
 		ctpBackingCombo.setValue(null);
 		ctpSupplierCombo.setValue(null);
 		ctpNotesArea.clear();
+		if (ctpIncludeNotesToggle != null) {
+			ctpIncludeNotesToggle.setSelected(true);
+		}
 		ctpAmountField.clear();
+		if (ctpOurRadio != null) {
+			ctpOurRadio.setSelected(true);
+		}
 	}
 
 	@FXML
@@ -814,11 +911,17 @@ public class AddJobController implements utils.DirtySupport {
 		p.setGsm(paperGsmCombo.getValue());
 		p.setType(paperTypeCombo.getValue());
 		p.setNotes(paperNotesArea.getText());
+		p.setIncludeNotesInInvoice(paperIncludeNotesToggle.isSelected());
 
 		String source = "Our";
 		if (paperClientRadio.isSelected())
 			source = "Client";
 		p.setSource(source);
+
+		Supplier supplier = paperSupplierCombo.getValue();
+		if (supplier != null && supplier.getUuid() != null && !supplier.getUuid().isBlank()) {
+			p.setSupplierUuid(supplier.getUuid());
+		}
 
 		try {
 			if (paperAmountField.getText() != null && !paperAmountField.getText().isBlank()) {
@@ -832,9 +935,11 @@ public class AddJobController implements utils.DirtySupport {
 
 		pendingItems.add(p);
 		toast("Paper Added ✅");
+		markStepCompleted(3);
 		clearPaperFields();
 		updateItemCount();
 		updateFormState();
+		handleNextStep();
 	}
 
 	private void clearPaperFields() {
@@ -843,7 +948,11 @@ public class AddJobController implements utils.DirtySupport {
 		paperSizeCombo.setValue(null);
 		paperGsmCombo.setValue(null);
 		paperTypeCombo.setValue(null);
+		paperSupplierCombo.setValue(null);
 		paperNotesArea.clear();
+		if (paperIncludeNotesToggle != null) {
+			paperIncludeNotesToggle.setSelected(true);
+		}
 		paperAmountField.clear();
 		paperOurRadio.setSelected(true);
 	}
@@ -873,6 +982,7 @@ public class AddJobController implements utils.DirtySupport {
 		}
 
 		b.setNotes(bindingNotesArea.getText());
+		b.setIncludeNotesInInvoice(bindingIncludeNotesToggle.isSelected());
 
 		try {
 			if (bindingAmountField.getText() != null && !bindingAmountField.getText().isBlank()) {
@@ -886,9 +996,11 @@ public class AddJobController implements utils.DirtySupport {
 
 		pendingItems.add(b);
 		toast("Binding Added ✅");
+		markStepCompleted(4);
 		clearBindingFields();
 		updateItemCount();
 		updateFormState();
+		handleNextStep();
 	}
 
 	private void clearBindingFields() {
@@ -896,6 +1008,9 @@ public class AddJobController implements utils.DirtySupport {
 		bindingQtyField.clear();
 		bindingRateField.clear();
 		bindingNotesArea.clear();
+		if (bindingIncludeNotesToggle != null) {
+			bindingIncludeNotesToggle.setSelected(true);
+		}
 		bindingAmountField.clear();
 	}
 
@@ -917,6 +1032,7 @@ public class AddJobController implements utils.DirtySupport {
 		l.setSide(lamDoubleBtn.isSelected() ? "Double Side" : "Single Side");
 		l.setSize(lamSizeCombo.getValue());
 		l.setNotes(lamNotesArea.getText());
+		l.setIncludeNotesInInvoice(lamIncludeNotesToggle.isSelected());
 
 		try {
 			if (lamAmountField.getText() != null && !lamAmountField.getText().isBlank()) {
@@ -930,9 +1046,11 @@ public class AddJobController implements utils.DirtySupport {
 
 		pendingItems.add(l);
 		toast("Lamination Added ✅");
+		markStepCompleted(5);
 		clearLaminationFields();
 		updateItemCount();
 		updateFormState();
+		handleNextStep();
 	}
 
 	private void clearLaminationFields() {
@@ -942,6 +1060,9 @@ public class AddJobController implements utils.DirtySupport {
 		lamDoubleBtn.setSelected(true);
 		lamSizeCombo.setValue(null);
 		lamNotesArea.clear();
+		if (lamIncludeNotesToggle != null) {
+			lamIncludeNotesToggle.setSelected(true);
+		}
 		lamAmountField.clear();
 	}
 
@@ -1038,6 +1159,7 @@ public class AddJobController implements utils.DirtySupport {
 		paperNotesArea.textProperty().addListener((a, b, c) -> validate.run());
 		paperUnitsCombo.valueProperty().addListener((a, b, c) -> validate.run());
 		paperSizeCombo.valueProperty().addListener((a, b, c) -> validate.run());
+		paperSupplierCombo.valueProperty().addListener((a, b, c) -> validate.run());
 
 		validate.run();
 	}
@@ -1093,6 +1215,7 @@ public class AddJobController implements utils.DirtySupport {
 				// Small delay to let UI stabilize
 				Thread.sleep(50);
 				List<Client> clients = clientService.getAllClients();
+				utils.ComboBoxSorter.sortClients(clients);
 				javafx.application.Platform.runLater(() -> {
 					masterClients.setAll(clients);
 					updateFormState();
@@ -1173,8 +1296,8 @@ public class AddJobController implements utils.DirtySupport {
 			clientLocked = true;
 			selectedClient = newClient;
 
-			if (currentJob != null && currentJob.getId() > 0) {
-				new JobService().assignClient(currentJob, newClient.getId());
+			if (currentJob != null && currentJob.hasUuid()) {
+				new JobService().assignClient(currentJob, newClient.getClientUuid());
 			}
 
 			updateFormState();
@@ -1220,6 +1343,17 @@ public class AddJobController implements utils.DirtySupport {
 		paperClientRadio.setToggleGroup(paperSourceGroup);
 		paperOurRadio.setSelected(true);
 
+		// ✅ CTP source
+		ctpSourceGroup = new ToggleGroup();
+		ctpOurRadio.setToggleGroup(ctpSourceGroup);
+		ctpClientRadio.setToggleGroup(ctpSourceGroup);
+		ctpOurRadio.setSelected(true);
+
+		if (ctpSupplierBox != null) {
+			ctpSupplierBox.visibleProperty().bind(ctpOurRadio.selectedProperty());
+			ctpSupplierBox.managedProperty().bind(ctpOurRadio.selectedProperty());
+		}
+
 		// ✅ side toggle
 		sideGroup = new ToggleGroup();
 		sideDoubleBtn.setToggleGroup(sideGroup);
@@ -1242,6 +1376,20 @@ public class AddJobController implements utils.DirtySupport {
 		// ✅ Fill dropdowns
 		populateCombos();
 
+		pendingItems.addListener((javafx.collections.ListChangeListener<Object>) c -> {
+			updateItemCount();
+			updateFormState();
+		});
+
+		if (addJobBtn != null) {
+			addJobBtn.setDisable(true);
+		}
+		setupTabTraversal(printNotesArea);
+		setupTabTraversal(ctpNotesArea);
+		setupTabTraversal(paperNotesArea);
+		setupTabTraversal(bindingNotesArea);
+		setupTabTraversal(lamNotesArea);
+
 		// ✅ initial lock state
 		updateFormState();
 		updateStepUI();
@@ -1255,43 +1403,100 @@ public class AddJobController implements utils.DirtySupport {
 	private void populateCombos() {
 		// Product type (top header)
 		if (productTypeCombo != null) {
-			productTypeCombo.getItems().setAll("Sticker", "Brochure", "Label", "Book");
+			java.util.List<String> list = new java.util.ArrayList<>(java.util.List.of("Sticker / Brochure / Label / Book", "Sticker", "Brochure", "Label", "Book"));
+			utils.ComboBoxSorter.sortStrings(list);
+			productTypeCombo.getItems().setAll(list);
 		}
 
 		// Printing
-		printUnitsCombo.getItems().setAll("Copies", "Sets", "Rim", "Pkt", "Sheet");
-		printColorCombo.getItems().setAll("1", "2", "4", "4+4", "Spot", "Custom");
-		printCtpCombo.getItems().setAll("With CTP (Computer to Plate)", "Without CTP");
+		java.util.List<String> printUnits = new java.util.ArrayList<>(java.util.List.of("Select Unit", "Copies", "Sets", "Rim", "Pkt", "Sheet"));
+		utils.ComboBoxSorter.sortStrings(printUnits);
+		printUnitsCombo.getItems().setAll(printUnits);
+		printUnitsCombo.setValue("Sheet");
+
+		java.util.List<String> printColors = new java.util.ArrayList<>(java.util.List.of("Select Color", "1", "2", "4", "4+4", "Spot", "Custom"));
+		utils.ComboBoxSorter.sortStrings(printColors);
+		printColorCombo.getItems().setAll(printColors);
+
+		java.util.List<String> printCtp = new java.util.ArrayList<>(java.util.List.of("With CTP (Computer to Plate)", "Without CTP"));
+		utils.ComboBoxSorter.sortStrings(printCtp);
+		printCtpCombo.getItems().setAll(printCtp);
 
 		// CTP
-		ctpSizeCombo.getItems().setAll("23x36", "25x36", "19x25", "18x23", "15x20", "20x30", "10x15");
-		ctpGaugeCombo.getItems().setAll("0.15mm", "0.28mm", "0.30mm");
-		ctpColorCombo.getItems().setAll("CMYK (Full)", "Cyan", "Magenta", "Yellow", "Black", "Spot Color");
-		ctpBackingCombo.getItems().setAll("Paper Backing", "Plastic Backing", "None");
+		java.util.List<String> ctpSizes = new java.util.ArrayList<>(java.util.List.of("Select Size", "23x36", "25x36", "19x25", "18x23", "15x20", "20x30", "10x15"));
+		utils.ComboBoxSorter.sortStrings(ctpSizes);
+		ctpSizeCombo.getItems().setAll(ctpSizes);
+
+		java.util.List<String> ctpGauges = new java.util.ArrayList<>(java.util.List.of("Select Gauge", "0.15mm", "0.28mm", "0.30mm"));
+		utils.ComboBoxSorter.sortStrings(ctpGauges);
+		ctpGaugeCombo.getItems().setAll(ctpGauges);
+
+		java.util.List<String> ctpColors = new java.util.ArrayList<>(java.util.List.of("Select Color", "CMYK (Full)", "Cyan", "Magenta", "Yellow", "Black", "Spot Color"));
+		utils.ComboBoxSorter.sortStrings(ctpColors);
+		ctpColorCombo.getItems().setAll(ctpColors);
+
+		java.util.List<String> ctpBackings = new java.util.ArrayList<>(java.util.List.of("Select Backing", "Paper Backing", "Plastic Backing", "None"));
+		utils.ComboBoxSorter.sortStrings(ctpBackings);
+		ctpBackingCombo.getItems().setAll(ctpBackings);
 
 		// Paper
-		paperUnitsCombo.getItems().setAll("Rim", "Sheet", "Pkt", "Kg");
-		paperSizeCombo.getItems().setAll("23x36", "25x36", "18x23", "20x30", "Custom");
-		paperGsmCombo.getItems().setAll("60", "70", "80", "90", "100", "130", "170", "210", "250", "300");
-		paperTypeCombo.getItems().setAll("Art Paper", "Art Card", "Maplitho", "Sunshine", "Chromo", "Mirror Coat", "Texture", "Bond");
+		java.util.List<String> paperUnits = new java.util.ArrayList<>(java.util.List.of("Select Unit", "Rim", "Sheet", "Pkt", "Kg"));
+		utils.ComboBoxSorter.sortStrings(paperUnits);
+		paperUnitsCombo.getItems().setAll(paperUnits);
+
+		java.util.List<String> paperSizes = new java.util.ArrayList<>(java.util.List.of("Select Size", "23x36", "25x36", "18x23", "20x30", "Custom"));
+		utils.ComboBoxSorter.sortStrings(paperSizes);
+		paperSizeCombo.getItems().setAll(paperSizes);
+
+		java.util.List<String> paperGsms = new java.util.ArrayList<>(java.util.List.of("Select GSM", "60", "70", "80", "90", "100", "130", "170", "210", "250", "300"));
+		utils.ComboBoxSorter.sortStrings(paperGsms);
+		paperGsmCombo.getItems().setAll(paperGsms);
+
+		java.util.List<String> paperTypes = new java.util.ArrayList<>(java.util.List.of("Select Type", "Art Paper", "Art Card", "Maplitho", "Sunshine", "Chromo", "Mirror Coat", "Texture", "Bond"));
+		utils.ComboBoxSorter.sortStrings(paperTypes);
+		paperTypeCombo.getItems().setAll(paperTypes);
 
 		// Binding
-		bindingProcessCombo.getItems().setAll("Center Pin", "Perfect Binding", "Hard Bound", "Spiral", "Wire-O", "Crease & Fold", "Cutting Only");
+		java.util.List<String> bindingProcesses = new java.util.ArrayList<>(java.util.List.of("Select Binding", "Center Pin", "Perfect Binding", "Hard Bound", "Spiral", "Wire-O", "Crease & Fold", "Cutting Only"));
+		utils.ComboBoxSorter.sortStrings(bindingProcesses);
+		bindingProcessCombo.getItems().setAll(bindingProcesses);
 
 		// Lamination
-		lamUnitCombo.getItems().setAll("Sq. Inch", "Piece", "Sheet", "Meter");
-		lamTypeCombo.getItems().setAll("Gloss", "Matt", "Velvet", "Thermal Gloss", "Thermal Matt", "UV Coating");
-		lamSizeCombo.getItems().setAll("23x36", "25x36", "18x23", "20x30", "Custom");
+		java.util.List<String> lamUnits = new java.util.ArrayList<>(java.util.List.of("Select Unit", "Sq. Inch", "Piece", "Sheet", "Meter"));
+		utils.ComboBoxSorter.sortStrings(lamUnits);
+		lamUnitCombo.getItems().setAll(lamUnits);
+
+		java.util.List<String> lamTypes = new java.util.ArrayList<>(java.util.List.of("Select Type", "Gloss", "Matt", "Velvet", "Thermal Gloss", "Thermal Matt", "UV Coating"));
+		utils.ComboBoxSorter.sortStrings(lamTypes);
+		lamTypeCombo.getItems().setAll(lamTypes);
+
+		java.util.List<String> lamSizes = new java.util.ArrayList<>(java.util.List.of("Select Size", "23x36", "25x36", "18x23", "20x30", "Custom"));
+		utils.ComboBoxSorter.sortStrings(lamSizes);
+		lamSizeCombo.getItems().setAll(lamSizes);
 	}
 
 	private void loadSuppliers() {
-		ctpSupplierCombo.getItems().setAll(supplierService.getSuppliersByType("CTP"));
+		java.util.List<Supplier> ctpSuppliers = new java.util.ArrayList<>();
+		Supplier selectCtpSupplier = new Supplier();
+		selectCtpSupplier.setUuid("");
+		selectCtpSupplier.setbusinessName("Select Supplier");
+		selectCtpSupplier.setName("");
+		ctpSuppliers.add(selectCtpSupplier);
+		ctpSuppliers.addAll(supplierService.getSuppliersByType("CTP"));
+		utils.ComboBoxSorter.sortSuppliers(ctpSuppliers);
+		ctpSupplierCombo.getItems().setAll(ctpSuppliers);
 
 		ctpSupplierCombo.setCellFactory(cb -> new ListCell<>() {
 			@Override
 			protected void updateItem(Supplier s, boolean empty) {
 				super.updateItem(s, empty);
-				setText(empty || s == null ? null : s.getbusinessName() + " | " + s.getName());
+				if (empty || s == null) {
+					setText(null);
+				} else if (s.getUuid() == null || s.getUuid().isBlank()) {
+					setText("Select Supplier");
+				} else {
+					setText(s.getbusinessName() + " | " + s.getName());
+				}
 			}
 		});
 
@@ -1299,7 +1504,51 @@ public class AddJobController implements utils.DirtySupport {
 			@Override
 			protected void updateItem(Supplier s, boolean empty) {
 				super.updateItem(s, empty);
-				setText(empty || s == null ? null : s.getbusinessName() + " | " + s.getName());
+				if (empty || s == null) {
+					setText(null);
+				} else if (s.getUuid() == null || s.getUuid().isBlank()) {
+					setText("Select Supplier");
+				} else {
+					setText(s.getbusinessName() + " | " + s.getName());
+				}
+			}
+		});
+
+		java.util.List<Supplier> paperSuppliers = new java.util.ArrayList<>();
+		Supplier selectPaperSupplier = new Supplier();
+		selectPaperSupplier.setUuid("");
+		selectPaperSupplier.setbusinessName("Select Supplier");
+		selectPaperSupplier.setName("");
+		paperSuppliers.add(selectPaperSupplier);
+		paperSuppliers.addAll(supplierService.getSuppliersByType("Paper"));
+		utils.ComboBoxSorter.sortSuppliers(paperSuppliers);
+		paperSupplierCombo.getItems().setAll(paperSuppliers);
+
+		paperSupplierCombo.setCellFactory(cb -> new ListCell<>() {
+			@Override
+			protected void updateItem(Supplier s, boolean empty) {
+				super.updateItem(s, empty);
+				if (empty || s == null) {
+					setText(null);
+				} else if (s.getUuid() == null || s.getUuid().isBlank()) {
+					setText("Select Supplier");
+				} else {
+					setText(s.getbusinessName() + " | " + s.getName());
+				}
+			}
+		});
+
+		paperSupplierCombo.setButtonCell(new ListCell<>() {
+			@Override
+			protected void updateItem(Supplier s, boolean empty) {
+				super.updateItem(s, empty);
+				if (empty || s == null) {
+					setText(null);
+				} else if (s.getUuid() == null || s.getUuid().isBlank()) {
+					setText("Select Supplier");
+				} else {
+					setText(s.getbusinessName() + " | " + s.getName());
+				}
 			}
 		});
 	}
@@ -1315,5 +1564,59 @@ public class AddJobController implements utils.DirtySupport {
 	private void toast(String message) {
 		Stage stage = (Stage) ((Node) clientCombo).getScene().getWindow();
 		utils.Toast.show(stage, message);
+	}
+
+	private void setupTabTraversal(TextArea textArea) {
+		if (textArea == null) return;
+		textArea.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+			if (event.getCode() == javafx.scene.input.KeyCode.TAB && !event.isControlDown() && !event.isAltDown()) {
+				event.consume();
+				javafx.scene.Scene scene = textArea.getScene();
+				if (scene != null) {
+					java.util.List<javafx.scene.Node> focusable = new java.util.ArrayList<>();
+					findFocusableNodes(scene.getRoot(), focusable);
+					if (!focusable.isEmpty()) {
+						int index = focusable.indexOf(textArea);
+						if (index >= 0) {
+							int nextIndex;
+							if (event.isShiftDown()) {
+								nextIndex = index - 1;
+								if (nextIndex < 0) {
+									nextIndex = focusable.size() - 1;
+								}
+							} else {
+								nextIndex = index + 1;
+								if (nextIndex >= focusable.size()) {
+									nextIndex = 0;
+								}
+							}
+							focusable.get(nextIndex).requestFocus();
+						}
+					}
+				}
+			}
+		});
+	}
+
+	private void findFocusableNodes(javafx.scene.Parent parent, java.util.List<javafx.scene.Node> result) {
+		for (javafx.scene.Node node : parent.getChildrenUnmodifiable()) {
+			if (node.isFocusTraversable() && isPhysicallyVisibleAndEnabled(node)) {
+				result.add(node);
+			}
+			if (node instanceof javafx.scene.Parent p) {
+				findFocusableNodes(p, result);
+			}
+		}
+	}
+
+	private boolean isPhysicallyVisibleAndEnabled(javafx.scene.Node node) {
+		javafx.scene.Node current = node;
+		while (current != null) {
+			if (!current.isVisible() || current.isDisable()) {
+				return false;
+			}
+			current = current.getParent();
+		}
+		return true;
 	}
 }

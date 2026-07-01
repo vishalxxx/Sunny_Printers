@@ -67,6 +67,7 @@ public class EditJobController implements utils.DirtySupport {
     /* =====================================================
        TABS
        ===================================================== */
+    @FXML private javafx.scene.control.TabPane jobTabPane;
     @FXML private Tab paperTab;
     @FXML private Tab printingTab;
     @FXML private Tab ctpTab;
@@ -145,19 +146,31 @@ public class EditJobController implements utils.DirtySupport {
        OPEN JOB
        ===================================================== */
     public void openForEdit(Job job) {
-        this.currentJob = job;
+        paperLoaded = false;
+        printingLoaded = false;
+        bindingLoaded = false;
+        laminationLoaded = false;
+        ctpLoaded = false;
 
-        jobNumberLabel.setText("Job No. " + job.getId());
+        Job fresh = job != null && job.hasUuid()
+                ? new JobService().getJobByUuid(job.getUuid())
+                : null;
+        this.currentJob = fresh != null ? fresh : job;
+        if (this.currentJob == null) {
+            return;
+        }
+
+        jobNumberLabel.setText("Job No. " + (currentJob.getJobCode() != null ? currentJob.getJobCode() : currentJob.getUuid()));
         jobTitleLabel.setText(
-                job.getJobTitle() == null || job.getJobTitle().isBlank()
+                currentJob.getJobTitle() == null || currentJob.getJobTitle().isBlank()
                         ? "Untitled Job"
-                        : job.getJobTitle()
+                        : currentJob.getJobTitle()
         );
 
         // General Tab
-        if (job.getRemarks() != null) jobRemarksArea.setText(job.getRemarks());
-        if (job.getImagePath() != null && !job.getImagePath().isBlank()) {
-            File f = new File(job.getImagePath());
+        if (currentJob.getRemarks() != null) jobRemarksArea.setText(currentJob.getRemarks());
+        if (currentJob.getImagePath() != null && !currentJob.getImagePath().isBlank()) {
+            File f = new File(currentJob.getImagePath());
             if (f.exists()) {
                 jobImagePreview.setImage(new Image(f.toURI().toString()));
                 jobImagePreview.setVisible(true); jobImagePreview.setManaged(true);
@@ -166,16 +179,46 @@ public class EditJobController implements utils.DirtySupport {
                 setFileMetaVisible(true, f.getName());
             }
         }
-        if (job.getImagePath() == null || job.getImagePath().isBlank()) {
+        if (currentJob.getImagePath() == null || currentJob.getImagePath().isBlank()) {
             setUploadOverlayVisible(true);
             setFileMetaVisible(false, null);
         }
         
         applyInvoicedStateOnGeneralTab();
+        preloadAllItemTabs();
+    }
 
-        if (paperTab.isSelected() && !paperLoaded) {
-            loadPaperTab();
-            paperLoaded = true;
+    /** Item tabs load lazily on first select; preload so saved lines appear without an extra click. */
+    private void preloadAllItemTabs() {
+        if (currentJob == null || !currentJob.hasUuid()) {
+            return;
+        }
+        try {
+            if (!printingLoaded) {
+                loadPrintingTab();
+                printingLoaded = true;
+            }
+            if (!paperLoaded) {
+                loadPaperTab();
+                paperLoaded = true;
+            }
+            if (!bindingLoaded) {
+                loadBindingTab();
+                bindingLoaded = true;
+            }
+            if (!laminationLoaded) {
+                loadLaminationTab();
+                laminationLoaded = true;
+            }
+            if (!ctpLoaded) {
+                loadCtpTab();
+                ctpLoaded = true;
+            }
+            if (jobTabPane != null && !new JobItemService().getJobItems(currentJob.getUuid()).isEmpty()) {
+                jobTabPane.getSelectionModel().select(printingTab);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load job item tabs", e);
         }
     }
 
@@ -183,7 +226,13 @@ public class EditJobController implements utils.DirtySupport {
         if (currentJob == null) return;
         boolean isInvoicedStatus = "invoiced".equalsIgnoreCase(currentJob.getStatus());
         String invStatus = (currentJob.getInvoiceStatus() != null) ? currentJob.getInvoiceStatus().trim().toLowerCase() : "";
-        boolean isLocked = isInvoicedStatus && !(invStatus.equals("draft") || invStatus.equals("final"));
+        String invType = (currentJob.getInvoiceType() != null) ? currentJob.getInvoiceType().toUpperCase() : "";
+        boolean isProforma = invType.contains("PROFORMA") || invType.contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(invType) || "DATE_RANGE".equalsIgnoreCase(invType) || invType.contains("MONTHLY");
+        
+        boolean isLocked = false;
+        if (!isProforma && isInvoicedStatus && !invStatus.equals("draft")) {
+            isLocked = true;
+        }
 
         jobRemarksArea.setDisable(isLocked);
         uploadJobImageBtn.setDisable(isLocked);
@@ -260,6 +309,54 @@ public class EditJobController implements utils.DirtySupport {
 
         if (currentJob == null) return;
 
+        // 1. Validate all child items first. If validation fails, stop save immediately.
+        try {
+            if (paperTabController != null) {
+                for (Paper p : paperTabController.getItems()) {
+                    if (p.isNew() && p.isDeleted()) continue;
+                    if (!p.isDeleted() && p.getAmount() <= 0) {
+                        throw new IllegalArgumentException("Paper amount required");
+                    }
+                }
+            }
+            if (printingTabController != null) {
+                for (Printing p : printingTabController.getItems()) {
+                    if (p.isNew() && p.isDeleted()) continue;
+                    if (!p.isDeleted() && p.getAmount() <= 0) {
+                        throw new IllegalArgumentException("Printing amount required");
+                    }
+                }
+            }
+            if (bindingTabController != null) {
+                for (Binding b : bindingTabController.getItems()) {
+                    if (b.isNew() && b.isDeleted()) continue;
+                    if (!b.isDeleted() && b.getAmount() <= 0) {
+                        throw new IllegalArgumentException("Binding amount required");
+                    }
+                }
+            }
+            if (laminationTabController != null) {
+                for (Lamination l : laminationTabController.getItems()) {
+                    if (l.isNew() && l.isDeleted()) continue;
+                    if (!l.isDeleted() && l.getAmount() <= 0) {
+                        throw new IllegalArgumentException("Lamination amount required");
+                    }
+                }
+            }
+            if (ctpTabController != null) {
+                for (CtpPlate c : ctpTabController.getItems()) {
+                    if (c.isNew() && c.isDeleted()) continue;
+                    if (!c.isDeleted()) {
+                        if (c.getQty() <= 0) throw new IllegalArgumentException("CTP qty required");
+                        if (c.getAmount() <= 0) throw new IllegalArgumentException("CTP amount required");
+                    }
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            Toast.show((Stage) jobNumberLabel.getScene().getWindow(), "❌ Validation failed: " + e.getMessage());
+            return;
+        }
+
         boolean anythingSaved = false;
         Connection con = null;
         
@@ -269,6 +366,61 @@ public class EditJobController implements utils.DirtySupport {
             con.setAutoCommit(false);
             JobItemService jobItemService = new JobItemService(con);
 
+            // 2. Save Parent Job Updates first (remarks and image)
+            if (jobRemarksArea.getText() != null && !jobRemarksArea.getText().equals(currentJob.getRemarks())) {
+                String userUuid = null;
+                if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+                    userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+                }
+                String updateQuery = """
+                        UPDATE jobs SET remarks = ?, sync_status = 'PENDING',
+                        updated_at = datetime('now'), sync_version = sync_version + 1,
+                        updated_by_user_uuid = ?
+                        WHERE uuid = ?
+                        """;
+                try (java.sql.PreparedStatement ps = con.prepareStatement(updateQuery)) {
+                    ps.setString(1, jobRemarksArea.getText());
+                    ps.setString(2, userUuid);
+                    ps.setString(3, currentJob.getUuid());
+                    ps.executeUpdate();
+                }
+                currentJob.setRemarks(jobRemarksArea.getText());
+                anythingSaved = true;
+            }
+
+            if (selectedImageFile != null) {
+                File dir = new File("Images");
+                if (!dir.exists()) dir.mkdirs();
+                String ext = "";
+                String name = selectedImageFile.getName();
+                int dotIndex = name.lastIndexOf('.');
+                if (dotIndex > 0) ext = name.substring(dotIndex);
+                String newFileName = "job_" + currentJob.getUuid().replace("-", "") + "_" + System.currentTimeMillis() + ext;
+                File targetFile = new File(dir, newFileName);
+                Files.copy(selectedImageFile.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                String relativePath = "Images/" + newFileName;
+                
+                String userUuid = null;
+                if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+                    userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+                }
+                String updateImgQuery = """
+                        UPDATE jobs SET image_path = ?, sync_status = 'PENDING',
+                        updated_at = datetime('now'), sync_version = sync_version + 1,
+                        updated_by_user_uuid = ?
+                        WHERE uuid = ?
+                        """;
+                try (java.sql.PreparedStatement ps = con.prepareStatement(updateImgQuery)) {
+                    ps.setString(1, relativePath);
+                    ps.setString(2, userUuid);
+                    ps.setString(3, currentJob.getUuid());
+                    ps.executeUpdate();
+                }
+                currentJob.setImagePath(relativePath);
+                anythingSaved = true;
+            }
+
+            // 3. Save Child Job Items next
             if (paperTabController != null) {
                 paperTabController.commitEditor();
                 anythingSaved |= savePaperItems(con, jobItemService);
@@ -294,39 +446,8 @@ public class EditJobController implements utils.DirtySupport {
                 anythingSaved |= saveCtpItems(con,jobItemService);
             }
 
-            // Save Job Remarks and Image
-            JobService js = new JobService();
-            if (jobRemarksArea.getText() != null && !jobRemarksArea.getText().equals(currentJob.getRemarks())) {
-                String updateQuery = "UPDATE jobs SET remarks = ? WHERE id = ?";
-                try (java.sql.PreparedStatement ps = con.prepareStatement(updateQuery)) {
-                    ps.setString(1, jobRemarksArea.getText());
-                    ps.setInt(2, currentJob.getId());
-                    ps.executeUpdate();
-                }
-                currentJob.setRemarks(jobRemarksArea.getText());
-                anythingSaved = true;
-            }
-
-            if (selectedImageFile != null) {
-                File dir = new File("Images");
-                if (!dir.exists()) dir.mkdirs();
-                String ext = "";
-                String name = selectedImageFile.getName();
-                int dotIndex = name.lastIndexOf('.');
-                if (dotIndex > 0) ext = name.substring(dotIndex);
-                String newFileName = "job_" + currentJob.getId() + "_" + System.currentTimeMillis() + ext;
-                File targetFile = new File(dir, newFileName);
-                Files.copy(selectedImageFile.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                String relativePath = "Images/" + newFileName;
-                
-                String updateImgQuery = "UPDATE jobs SET image_path = ? WHERE id = ?";
-                try (java.sql.PreparedStatement ps = con.prepareStatement(updateImgQuery)) {
-                    ps.setString(1, relativePath);
-                    ps.setInt(2, currentJob.getId());
-                    ps.executeUpdate();
-                }
-                currentJob.setImagePath(relativePath);
-                anythingSaved = true;
+            if (anythingSaved && currentJob.getInvoiceUuid() != null && !currentJob.getInvoiceUuid().isBlank()) {
+                new service.InvoiceMasterService().recalculateInvoiceTotals(con, currentJob.getInvoiceUuid());
             }
 
             con.commit();
@@ -369,36 +490,29 @@ public class EditJobController implements utils.DirtySupport {
         JobItemRepository jobItemRepo = new JobItemRepository();
 
         for (Paper p : paperTabController.getItems()) {
+            if (p.isNew() && p.isDeleted()) continue;
 
-            // 1️⃣ New → Deleted before save → ignore completely
-            if (p.isNew() && p.isDeleted()) {
-                continue;
-            }
-
-            // 2️⃣ Deleted existing item
             if (!p.isNew() && p.isDeleted()) {
-                repo.deleteByJobItemId(con, p.getJobItemId());
+                repo.deleteByJobItemUuid(con, p.getJobItemUuid());
                 changed = true;
                 continue;
             }
 
-            // 3️⃣ Insert new item
             if (p.isNew()) {
-                service.addJobItem(currentJob.getId(), p);
-                p.captureOriginal();   // 🔥 NEW
+                service.addJobItem(con, currentJob.getUuid(), p);
+                p.captureOriginal();
                 p.resetFlags();
                 changed = true;
                 continue;
             }
 
-            // 4️⃣ Update existing item only if actually changed
             if (p.isUpdated()) {
                 if (!p.isSameAsOriginal()) {
                     repo.update(con, p);
-                    jobItemRepo.updateBaseItem(con, p.getJobItemId(), service.buildPaperDescription(p), p.getAmount());
+                    jobItemRepo.updateBaseItem(con, p.getJobItemUuid(), service.buildPaperDescription(p), p.getAmount());
                     changed = true;
                 }
-                p.captureOriginal();   // 🔥 NEW
+                p.captureOriginal();
                 p.resetFlags();
             }
         }
@@ -414,36 +528,29 @@ public class EditJobController implements utils.DirtySupport {
         JobItemRepository jobItemRepo = new JobItemRepository();
 
         for (Printing p : printingTabController.getItems()) {
+            if (p.isNew() && p.isDeleted()) continue;
 
-            // 1️⃣ New → Deleted before save → ignore completely
-            if (p.isNew() && p.isDeleted()) {
-                continue;
-            }
-
-            // 2️⃣ Deleted existing item
             if (!p.isNew() && p.isDeleted()) {
-                repo.deleteByJobItemId(con, p.getJobItemId());
+                repo.deleteByJobItemUuid(con, p.getJobItemUuid());
                 changed = true;
                 continue;
             }
 
-            // 3️⃣ Insert new item
             if (p.isNew()) {
-                service.addJobItem(currentJob.getId(), p);
-                p.captureOriginal();   // 🔥 IMPORTANT
+                service.addJobItem(con, currentJob.getUuid(), p);
+                p.captureOriginal();
                 p.resetFlags();
                 changed = true;
                 continue;
             }
 
-            // 4️⃣ Update existing item only if actually changed
             if (p.isUpdated()) {
                 if (!p.isSameAsOriginal()) {
                     repo.update(con, p);
-                    jobItemRepo.updateBaseItem(con, p.getJobItemId(), service.buildPrintingDescription(p), p.getAmount());
+                    jobItemRepo.updateBaseItem(con, p.getJobItemUuid(), service.buildPrintingDescription(p), p.getAmount());
                     changed = true;
                 }
-                p.captureOriginal();   // 🔥 IMPORTANT
+                p.captureOriginal();
                 p.resetFlags();
             }
         }
@@ -458,36 +565,29 @@ public class EditJobController implements utils.DirtySupport {
         JobItemRepository jobItemRepo = new JobItemRepository();
 
         for (Binding b : bindingTabController.getItems()) {
+            if (b.isNew() && b.isDeleted()) continue;
 
-            // 1️⃣ New → Deleted before save → ignore completely
-            if (b.isNew() && b.isDeleted()) {
-                continue;
-            }
-
-            // 2️⃣ Deleted existing item
             if (!b.isNew() && b.isDeleted()) {
-                repo.deleteByJobItemId(con, b.getJobItemId());
+                repo.deleteByJobItemUuid(con, b.getJobItemUuid());
                 changed = true;
                 continue;
             }
 
-            // 3️⃣ Insert new item
             if (b.isNew()) {
-                service.addJobItem(currentJob.getId(), b);
-                b.captureOriginal();   // 🔥 VERY IMPORTANT
+                service.addJobItem(con, currentJob.getUuid(), b);
+                b.captureOriginal();
                 b.resetFlags();
                 changed = true;
                 continue;
             }
 
-            // 4️⃣ Update existing item only if real change
             if (b.isUpdated()) {
                 if (!b.isSameAsOriginal()) {
                     repo.update(con, b);
-                    jobItemRepo.updateBaseItem(con, b.getJobItemId(), service.buildBindingDescription(b), b.getAmount());
+                    jobItemRepo.updateBaseItem(con, b.getJobItemUuid(), service.buildBindingDescription(b), b.getAmount());
                     changed = true;
                 }
-                b.captureOriginal();   // 🔥 VERY IMPORTANT
+                b.captureOriginal();
                 b.resetFlags();
             }
         }
@@ -502,36 +602,29 @@ public class EditJobController implements utils.DirtySupport {
         JobItemRepository jobItemRepo = new JobItemRepository();
 
         for (Lamination l : laminationTabController.getItems()) {
+            if (l.isNew() && l.isDeleted()) continue;
 
-            // 1️⃣ New + Deleted before save → ignore completely
-            if (l.isNew() && l.isDeleted()) {
-                continue;
-            }
-
-            // 2️⃣ Deleted existing record
             if (!l.isNew() && l.isDeleted()) {
-                repo.deleteByJobItemId(con, l.getJobItemId());
+                repo.deleteByJobItemUuid(con, l.getJobItemUuid());
                 changed = true;
                 continue;
             }
 
-            // 3️⃣ Insert new record
             if (l.isNew()) {
-                service.addJobItem(currentJob.getId(), l);
-                l.captureOriginal();   // 🔥 baseline reset
+                service.addJobItem(con, currentJob.getUuid(), l);
+                l.captureOriginal();
                 l.resetFlags();
                 changed = true;
                 continue;
             }
 
-            // 4️⃣ Update existing record only if really changed
             if (l.isUpdated()) {
                 if (!l.isSameAsOriginal()) {
                     repo.update(con, l);
-                    jobItemRepo.updateBaseItem(con, l.getJobItemId(), service.buildLaminationDescription(l), l.getAmount());
+                    jobItemRepo.updateBaseItem(con, l.getJobItemUuid(), service.buildLaminationDescription(l), l.getAmount());
                     changed = true;
                 }
-                l.captureOriginal();   // 🔥 baseline reset
+                l.captureOriginal();
                 l.resetFlags();
             }
         }
@@ -546,36 +639,29 @@ public class EditJobController implements utils.DirtySupport {
         JobItemRepository jobItemRepo = new JobItemRepository();
 
         for (CtpPlate c : ctpTabController.getItems()) {
+            if (c.isNew() && c.isDeleted()) continue;
 
-            // 1️⃣ New + Deleted before save → ignore completely
-            if (c.isNew() && c.isDeleted()) {
-                continue;
-            }
-
-            // 2️⃣ Deleted existing record
             if (!c.isNew() && c.isDeleted()) {
-                repo.deleteByJobItemId(con, c.getJobItemId());
+                repo.deleteByJobItemUuid(con, c.getJobItemUuid());
                 changed = true;
                 continue;
             }
 
-            // 3️⃣ Insert new record
             if (c.isNew()) {
-                service.addJobItem(currentJob.getId(), c);
-                c.captureOriginal();   // 🔥 reset baseline
+                service.addJobItem(con, currentJob.getUuid(), c);
+                c.captureOriginal();
                 c.resetFlags();
                 changed = true;
                 continue;
             }
 
-            // 4️⃣ Update existing record only if actually changed
             if (c.isUpdated()) {
                 if (!c.isSameAsOriginal()) {
                     repo.update(con, c);
-                    jobItemRepo.updateBaseItem(con, c.getJobItemId(), service.buildCtpDescription(c), c.getAmount());
+                    jobItemRepo.updateBaseItem(con, c.getJobItemUuid(), service.buildCtpDescription(c), c.getAmount());
                     changed = true;
                 }
-                c.captureOriginal();   // 🔥 reset baseline
+                c.captureOriginal();
                 c.resetFlags();
             }
         }
@@ -663,3 +749,4 @@ public class EditJobController implements utils.DirtySupport {
         }
     }
 }
+

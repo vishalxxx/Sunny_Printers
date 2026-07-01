@@ -230,6 +230,10 @@
     -fx-background-radius: 100;
 }
 
+.profile-header-clickable {
+    -fx-cursor: hand;
+}
+
 .notif-dot {
     -fx-background-color: #EF4444;
     -fx-background-radius: 100;

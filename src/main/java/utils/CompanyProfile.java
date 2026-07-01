@@ -11,7 +11,9 @@ public final class CompanyProfile {
 
 	private static final Preferences PREFS = Preferences.userRoot().node("sunny_printers");
 
-	private static final String K_NAME = "company_name";
+	private static final String K_NAME_PRIMARY = "business_name";
+	/** Legacy Java Preferences key (owner letterhead name); read if {@link #K_NAME_PRIMARY} is empty. */
+	private static final String K_NAME_LEGACY = "company_name";
 	private static final String K_ADDRESS = "company_address";
 	private static final String K_PHONE = "company_phone";
 	private static final String K_EMAIL = "company_email";
@@ -26,7 +28,11 @@ public final class CompanyProfile {
 	}
 
 	public static String getName() {
-		return nz(PREFS.get(K_NAME, ""), D_NAME);
+		String v = PREFS.get(K_NAME_PRIMARY, "");
+		if (v == null || v.isBlank()) {
+			v = PREFS.get(K_NAME_LEGACY, "");
+		}
+		return nz(v, D_NAME);
 	}
 
 	public static String getAddress() {
@@ -54,7 +60,11 @@ public final class CompanyProfile {
 	}
 
 	public static void setName(String v) {
-		put(K_NAME, v);
+		put(K_NAME_PRIMARY, v);
+		try {
+			PREFS.remove(K_NAME_LEGACY);
+		} catch (Exception ignored) {
+		}
 	}
 
 	public static void setAddress(String v) {

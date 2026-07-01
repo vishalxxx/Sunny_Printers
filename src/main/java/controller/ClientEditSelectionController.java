@@ -168,8 +168,8 @@ public class ClientEditSelectionController implements Initializable {
             boolean matchesRisk = risk.equals("All Risk Level"); 
             if (!matchesRisk) {
                  String mockRisk = "Low";
-                 if (client.getId() % 3 == 0) mockRisk = "High";
-                 else if (client.getId() % 2 == 0) mockRisk = "Medium";
+                 if (Math.abs(client.getClientUuid().hashCode()) % 3 == 0) mockRisk = "High";
+                 else if (Math.abs(client.getClientUuid().hashCode()) % 2 == 0) mockRisk = "Medium";
                  matchesRisk = mockRisk.equalsIgnoreCase(risk);
             }
             
@@ -329,8 +329,8 @@ public class ClientEditSelectionController implements Initializable {
         riskBox.setAlignment(Pos.CENTER_LEFT);
         Region dot = new Region(); dot.getStyleClass().add("risk-dot");
         String riskLvl = "Low"; String riskClr = "#4A7C59";
-        if (client.getId() % 3 == 0) { riskLvl = "High"; riskClr = "#B45309"; }
-        else if (client.getId() % 2 == 0) { riskLvl = "Medium"; riskClr = "#DC9D38"; }
+        if (Math.abs(client.getClientUuid().hashCode()) % 3 == 0) { riskLvl = "High"; riskClr = "#B45309"; }
+        else if (Math.abs(client.getClientUuid().hashCode()) % 2 == 0) { riskLvl = "Medium"; riskClr = "#DC9D38"; }
         dot.setStyle("-fx-background-color: " + riskClr + ";");
         Label riskLabel = new Label(riskLvl);
         riskLabel.setStyle("-fx-text-fill: " + riskClr + "; -fx-font-weight: 800; -fx-font-size: 14;");

@@ -72,6 +72,28 @@
 }
 .gst-btn-chip:hover { -fx-background-color: #F3DEC8; }
 
+/* MenuButton dropdown specific styling */
+.menu-button.gst-btn-chip {
+    -fx-padding: 6 12;
+}
+.menu-button.gst-btn-chip > .label {
+    -fx-text-fill: #CD7B4E;
+    -fx-font-weight: 800;
+}
+.menu-button.gst-btn-chip > .arrow-button {
+    -fx-padding: 0 0 0 6;
+    -fx-background-color: transparent;
+}
+.menu-button.gst-btn-chip > .arrow-button > .arrow {
+    -fx-background-color: #CD7B4E;
+}
+.menu-button.gst-btn-chip:hover > .label {
+    -fx-text-fill: #A25A31;
+}
+.menu-button.gst-btn-chip:hover > .arrow-button > .arrow {
+    -fx-background-color: #A25A31;
+}
+
 .gst-mini-btn {
     -fx-background-color: #F1EBE5;
     -fx-text-fill: #433934;
@@ -188,6 +210,10 @@
     -fx-alignment: CENTER_LEFT;
 }
 
+.gst-table {
+    -fx-fixed-cell-size: -1;
+}
+
 .gst-table .column-header-background {
     -fx-background-color: #FFF2E5;
 }
@@ -296,3 +322,117 @@
     -fx-border-color: #CD7B4E;
     -fx-background-color: #FFFDFA;
 }
+
+/* Editable Table Cell Styling */
+.invoice-jobs-table-premium .text-field,
+.invoice-jobs-table-premium .combo-box,
+.invoice-jobs-table-premium .text-area {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2D9D2;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 2 4;
+    -fx-font-size: 11px;
+    -fx-text-fill: #3E312D;
+    -fx-max-width: infinity;
+}
+.invoice-jobs-table-premium .text-field:focused,
+.invoice-jobs-table-premium .combo-box:focused,
+.invoice-jobs-table-premium .text-area:focused {
+    -fx-border-color: #CD7B4E;
+}
+.invoice-jobs-table-premium .combo-box > .list-cell {
+    -fx-padding: 2 2;
+}
+
+/* Table Row Gaps for GST Invoice Jobs Table */
+.gst-table .table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent #FAF6F0 transparent;
+    -fx-border-width: 0 0 8 0;
+}
+
+.gst-table .table-row-cell:selected {
+    -fx-background-color: #FFF9F3;
+    -fx-border-color: transparent transparent #FAF6F0 transparent;
+}
+
+.gst-table .table-row-cell:hover {
+    -fx-background-color: #FAF9F6;
+}
+
+.gst-table .table-row-cell:empty {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+/* Description Column Cell Padding & Alignment */
+.gst-table .table-cell.gst-description-col {
+    -fx-padding: 12 10;
+    -fx-alignment: center-left;
+}
+
+/* Tax Amount Box Content Styling */
+.gst-tax-words {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 13px;
+    -fx-font-weight: 900;
+}
+
+/* Editable Text & Combo Box Cell Visual Indicators */
+.gst-table .table-cell.gst-editable-text-cell,
+.gst-table .table-cell.gst-editable-combo-cell {
+    -fx-border-color: transparent transparent #D0C6BE transparent;
+    -fx-border-width: 0 0 1.2 0;
+    -fx-border-style: dashed;
+    -fx-cursor: hand;
+}
+
+.gst-table .table-cell.gst-editable-combo-cell {
+    -fx-padding: 0 2;
+}
+
+.gst-table .table-cell.gst-editable-text-cell:hover,
+.gst-table .table-cell.gst-editable-combo-cell:hover {
+    -fx-background-color: #FFF2E5;
+    -fx-border-color: #CD7B4E;
+    -fx-border-width: 1.2;
+    -fx-border-style: solid;
+    -fx-border-radius: 4;
+}
+
+/* Context Menu/Dropdown styling for Add Item */
+.context-menu {
+    -fx-background-color: #FFFDF9;
+    -fx-border-color: #F0E6DD;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 4 0;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.08), 12, 0, 0, 4);
+}
+
+.context-menu .menu-item {
+    -fx-padding: 8 16;
+    -fx-background-color: transparent;
+}
+
+.context-menu .menu-item .label {
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+}
+
+.context-menu .menu-item:focused,
+.context-menu .menu-item:hover {
+    -fx-background-color: #FFF2E5;
+}
+
+.context-menu .menu-item:focused .label,
+.context-menu .menu-item:hover .label {
+    -fx-text-fill: #CD7B4E;
+}
+
+
+

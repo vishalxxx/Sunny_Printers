@@ -81,13 +81,14 @@
                                    style="-fx-pref-height: 400px;">
                             <columns>
                                 <TableColumn fx:id="colDate" text="DATE" prefWidth="120"/>
-                                <TableColumn fx:id="colClient" text="CLIENT NAME" prefWidth="250"/>
+                                <TableColumn fx:id="colClient" text="CLIENT NAME" prefWidth="200"/>
                                 <TableColumn fx:id="colType" text="TYPE" prefWidth="100"/>
-                                <TableColumn fx:id="colInvoiceRef" text="REFERENCES" prefWidth="220"/>
-                                <TableColumn fx:id="colMethod" text="METHOD" prefWidth="120"/>
-                                <TableColumn fx:id="colAmount" text="AMOUNT (₹)" prefWidth="140"
+                                <TableColumn fx:id="colInvoiceRef" text="REFERENCES" prefWidth="180"/>
+                                <TableColumn fx:id="colReceiptNo" text="RECEIPT NO" prefWidth="130"/>
+                                <TableColumn fx:id="colMethod" text="METHOD" prefWidth="110"/>
+                                <TableColumn fx:id="colAmount" text="AMOUNT (₹)" prefWidth="130"
                                              style="-fx-alignment: CENTER; -fx-font-weight: bold;"/>
-                                <TableColumn fx:id="colReference" text="BANKING DETAILS / UTR" prefWidth="300"/>
+                                <TableColumn fx:id="colReference" text="BANKING DETAILS / UTR" prefWidth="260"/>
                             </columns>
                             <columnResizePolicy>
                                 <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>

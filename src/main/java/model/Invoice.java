@@ -16,12 +16,21 @@ public class Invoice {
 	private String companyContact;
 	private String email;
 	private String clientName;
-	private int clientId;
+	private String clientId;
 	private String invoiceType; // JOB_SPECIFIC / DATE_RANGE / MONTHLY_BULK
 	private String status; // SENT / DRAFT / PAID
+	private BankDetails bankDetails;
+
+	public BankDetails getBankDetails() {
+		return bankDetails;
+	}
+
+	public void setBankDetails(BankDetails bankDetails) {
+		this.bankDetails = bankDetails;
+	}
 
 	/** When non-null, this row is a standalone payment in mini-ledgers (client profile). */
-	private Integer standalonePaymentId;
+	private String standalonePaymentUuid;
 
 	/** Which master numbering sequence to use when the invoice is finalized (GST vs Proforma). */
 	private MasterDocumentSeries masterDocumentSeries = MasterDocumentSeries.GST_INVOICE;
@@ -58,12 +67,21 @@ public class Invoice {
 		this.status = status;
 	}
 
-	public Integer getStandalonePaymentId() {
-		return standalonePaymentId;
+	public String getStandalonePaymentUuid() {
+		return standalonePaymentUuid;
+	}
+	
+	public void setStandalonePaymentUuid(String standalonePaymentUuid) {
+		this.standalonePaymentUuid = standalonePaymentUuid;
 	}
 
-	public void setStandalonePaymentId(Integer standalonePaymentId) {
-		this.standalonePaymentId = standalonePaymentId;
+	/** Legacy alias. */
+	public String getStandalonePaymentId() {
+		return standalonePaymentUuid;
+	}
+
+	public void setStandalonePaymentId(String standalonePaymentUuid) {
+		this.standalonePaymentUuid = standalonePaymentUuid;
 	}
 
 	public MasterDocumentSeries getMasterDocumentSeries() {
@@ -75,11 +93,11 @@ public class Invoice {
 				: MasterDocumentSeries.GST_INVOICE;
 	}
 
-	public int getClientId() {
+	public String getClientId() {
 		return clientId;
 	}
 
-	public void setClientId(int clientId) {
+	public void setClientId(String clientId) {
 		this.clientId = clientId;
 	}
 
@@ -94,6 +112,19 @@ public class Invoice {
 	private List<InvoiceJob> jobs = new ArrayList<>();
 
 	private double grandTotal;
+	private Double totalAfterTax;
+	private Double roundOff;
+
+	private String placeOfSupply;
+	private String paymentTerms;
+	private LocalDate dueDate;
+	private String vehicleDispatch;
+	private String poNo;
+	private LocalDate poDate;
+	private String dispatchThrough;
+	private String lrTrackingNo;
+	private String remarks;
+	private String ewayBillNo;
 
 	// GST/PDF display fields (optional; used by GstPdfInvoiceService)
 	private String buyerAddress;
@@ -222,6 +253,52 @@ public class Invoice {
 	public void setGrandTotal(double grandTotal) {
 		this.grandTotal = grandTotal;
 	}
+
+	public Double getTotalAfterTax() {
+		return totalAfterTax;
+	}
+
+	public void setTotalAfterTax(Double totalAfterTax) {
+		this.totalAfterTax = totalAfterTax;
+	}
+
+	public Double getRoundOff() {
+		return roundOff;
+	}
+
+	public void setRoundOff(Double roundOff) {
+		this.roundOff = roundOff;
+	}
+
+	public String getPlaceOfSupply() { return placeOfSupply; }
+	public void setPlaceOfSupply(String placeOfSupply) { this.placeOfSupply = placeOfSupply; }
+
+	public String getPaymentTerms() { return paymentTerms; }
+	public void setPaymentTerms(String paymentTerms) { this.paymentTerms = paymentTerms; }
+
+	public LocalDate getDueDate() { return dueDate; }
+	public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
+
+	public String getVehicleDispatch() { return vehicleDispatch; }
+	public void setVehicleDispatch(String vehicleDispatch) { this.vehicleDispatch = vehicleDispatch; }
+
+	public String getPoNo() { return poNo; }
+	public void setPoNo(String poNo) { this.poNo = poNo; }
+
+	public LocalDate getPoDate() { return poDate; }
+	public void setPoDate(LocalDate poDate) { this.poDate = poDate; }
+
+	public String getDispatchThrough() { return dispatchThrough; }
+	public void setDispatchThrough(String dispatchThrough) { this.dispatchThrough = dispatchThrough; }
+
+	public String getLrTrackingNo() { return lrTrackingNo; }
+	public void setLrTrackingNo(String lrTrackingNo) { this.lrTrackingNo = lrTrackingNo; }
+
+	public String getRemarks() { return remarks; }
+	public void setRemarks(String remarks) { this.remarks = remarks; }
+
+	public String getEwayBillNo() { return ewayBillNo; }
+	public void setEwayBillNo(String ewayBillNo) { this.ewayBillNo = ewayBillNo; }
 
 	public void addJob(InvoiceJob job) {
 		if (job == null)

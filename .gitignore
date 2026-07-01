@@ -46,3 +46,7 @@ Thumbs.db
 /schema.txt
 /schema_dump.txt
 /status.txt
+
+# Release Manager Configuration and Artifacts
+/release_secrets.env
+/Release/

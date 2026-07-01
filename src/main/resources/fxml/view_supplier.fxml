@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.shape.*?>
+
+<VBox xmlns="http://javafx.com/javafx/23"
+    xmlns:fx="http://javafx.com/fxml/1"
+    fx:controller="controller.ViewSuppliersController" spacing="8"
+    stylesheets="@../css/view_client.css" styleClass="view-clients-root, ui-compact, app-page-shell"
+    alignment="TOP_LEFT">
+    
+    <!-- BREADCRUMBS -->
+    <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8"/>
+
+    <!-- HEADER, FILTER, & ACTION ROW -->
+    <HBox spacing="20" alignment="TOP_LEFT">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <HBox spacing="10" alignment="CENTER_LEFT" styleClass="search-bar-container">
+                <TextField fx:id="searchField"
+                    promptText="Search suppliers..."
+                    styleClass="search-field" prefWidth="250" />
+                <ComboBox fx:id="typeFilterComboBox" promptText="Filter by Type"
+                    prefWidth="170" styleClass="sort-combo" />
+                <Region HBox.hgrow="ALWAYS" />
+            </HBox>
+            <HBox alignment="CENTER_LEFT" spacing="10" styleClass="view-clients-actions">
+                <Button text="Add Supplier" onAction="#handleBtnAddSupplier" styleClass="view-clients-add-btn"/>
+            </HBox>
+        </VBox>
+
+        <!-- KPIs (Consistent Taste System) -->
+        <HBox spacing="12" alignment="TOP_RIGHT">
+            <VBox styleClass="kpi-card" minWidth="140">
+                <Label text="TOTAL SUPPLIERS" styleClass="kpi-label" />
+                <Label fx:id="lblTotalSuppliers" text="--" styleClass="kpi-value-dark" />
+            </VBox>
+
+            <VBox styleClass="kpi-card, kpi-card-green" minWidth="140">
+                <Label text="ACTIVE MASTERS" styleClass="kpi-label" />
+                <Label fx:id="lblActiveSuppliers" text="--" styleClass="kpi-value-green" />
+            </VBox>
+        </HBox>
+    </HBox>
+
+    <!-- LIST VIEW AREA -->
+    <ListView fx:id="supplierListView" styleClass="client-list-view" VBox.vgrow="ALWAYS" />
+
+    <!-- FOOTER -->
+    <HBox alignment="CENTER_LEFT" styleClass="footer-container">
+        <HBox spacing="4">
+            <Label text="Showing" styleClass="footer-text" />
+            <Label fx:id="lblShowingCount" text="0 of 0" styleClass="footer-text" />
+            <Label text="registered suppliers." styleClass="footer-text" />
+        </HBox>
+        <Region HBox.hgrow="ALWAYS" />
+        <HBox fx:id="paginationContainer" spacing="10" alignment="CENTER" />
+    </HBox>
+
+</VBox>

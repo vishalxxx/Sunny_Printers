@@ -52,27 +52,59 @@ public class JobItemService {
        READ OPERATIONS
        ===================================================== */
 
-    public List<JobItem> getJobItems(int jobId) {
-    	List<JobItem> ls = null;
+    public List<JobItem> getJobItems(String jobUuid) {
         try {
-			 ls = jobItemRepo.findByJobId(jobId);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        return ls;
+            return jobItemRepo.findByJobUuid(jobUuid);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load job items", e);
+        }
+    }
+
+    /** Loads typed line-item cards (Printing, Paper, …) for edit/add-job UIs. */
+    public java.util.List<Object> loadJobItemCards(String jobUuid) {
+        if (jobUuid == null || jobUuid.isBlank()) {
+            return java.util.List.of();
+        }
+        java.util.List<Object> cards = new java.util.ArrayList<>();
+        for (JobItem ji : getJobItems(jobUuid)) {
+            String type = ji.getType() != null ? ji.getType().trim().toUpperCase() : "";
+            switch (type) {
+                case "PRINTING" -> {
+                    Printing p = printingRepo.findByJobItemUuid(ji.getUuid());
+                    if (p != null) cards.add(p);
+                }
+                case "PAPER" -> {
+                    Paper p = paperRepo.findByJobItemUuid(ji.getUuid());
+                    if (p != null) cards.add(p);
+                }
+                case "BINDING" -> {
+                    Binding b = bindingRepo.findByJobItemUuid(ji.getUuid());
+                    if (b != null) cards.add(b);
+                }
+                case "LAMINATION" -> {
+                    Lamination l = laminationRepo.findByJobItemUuid(ji.getUuid());
+                    if (l != null) cards.add(l);
+                }
+                case "CTP" -> {
+                    CtpPlate c = ctpRepo.findByJobItemUuid(ji.getUuid());
+                    if (c != null) cards.add(c);
+                }
+                default -> cards.add(ji);
+            }
+        }
+        return cards;
     }
 
     /* =====================================================
        WRITE OPERATION (NO COMMIT HERE)
        ===================================================== */
 
-    public JobItem addJobItem(int jobId, Object cardData) {
+    public JobItem addJobItem(String jobUuid, Object cardData) {
         if (con == null) {
             try (Connection autoCon = DBConnection.getConnection()) {
                 autoCon.setAutoCommit(false);
                 try {
-                    JobItem result = addJobItem(autoCon, jobId, cardData);
+                    JobItem result = addJobItem(autoCon, jobUuid, cardData);
                     autoCon.commit();
                     return result;
                 } catch (Exception e) {
@@ -83,16 +115,16 @@ public class JobItemService {
                 throw new RuntimeException("Failed to add job item: " + e.getMessage(), e);
             }
         } else {
-            return addJobItem(this.con, jobId, cardData);
+            return addJobItem(this.con, jobUuid, cardData);
         }
     }
     
-    public JobItem addJobItem(Connection con, int jobId, Object cardData) {
+    public JobItem addJobItem(Connection con, String jobUuid, Object cardData) {
     	 if (con == null)
              throw new IllegalStateException("Connection not provided (transaction required)");
 
-         if (jobId <= 0)
-             throw new IllegalArgumentException("Invalid job id");
+         if (jobUuid == null || jobUuid.isBlank())
+             throw new IllegalArgumentException("Invalid job uuid");
 
          if (cardData == null)
              throw new IllegalArgumentException("Card data is null");
@@ -103,75 +135,75 @@ public class JobItemService {
          if (cardData instanceof Printing p) {
              validatePrinting(p);
              JobItem ji = new JobItem();
-             ji.setJobId(jobId);
+             ji.setJobUuid(jobUuid);
              ji.setType("PRINTING");
              ji.setDescription(buildPrintingDescription(p));
              ji.setAmount(p.getAmount());
              ji.setSortOrder(1);
 
              savedJobItem = jobItemRepo.save(con, ji);
-             p.setJobItemId(savedJobItem.getId());
-             printingRepo.save(con, savedJobItem.getId(), p);
+             p.setJobItemUuid(savedJobItem.getUuid());
+             printingRepo.save(con, savedJobItem.getUuid(), p);
          }
 
          // ========================= PAPER =========================
          else if (cardData instanceof Paper p) {
              validatePaper(p);
              JobItem ji = new JobItem();
-             ji.setJobId(jobId);
+             ji.setJobUuid(jobUuid);
              ji.setType("PAPER");
              ji.setDescription(buildPaperDescription(p));
              ji.setAmount(p.getAmount());
              ji.setSortOrder(2);
 
              savedJobItem = jobItemRepo.save(con, ji);
-             p.setJobItemId(savedJobItem.getId());
-             paperRepo.save(con, savedJobItem.getId(), p);
+             p.setJobItemUuid(savedJobItem.getUuid());
+             paperRepo.save(con, savedJobItem.getUuid(), p);
          }
 
          // ========================= BINDING =========================
          else if (cardData instanceof Binding b) {
              validateBinding(b);
              JobItem ji = new JobItem();
-             ji.setJobId(jobId);
+             ji.setJobUuid(jobUuid);
              ji.setType("BINDING");
              ji.setDescription(buildBindingDescription(b));
              ji.setAmount(b.getAmount());
              ji.setSortOrder(3);
 
              savedJobItem = jobItemRepo.save(con, ji);
-             b.setJobItemId(savedJobItem.getId());
-             bindingRepo.save(con, savedJobItem.getId(), b);
+             b.setJobItemUuid(savedJobItem.getUuid());
+             bindingRepo.save(con, savedJobItem.getUuid(), b);
          }
 
          // ========================= LAMINATION =========================
          else if (cardData instanceof Lamination l) {
              validateLamination(l);
              JobItem ji = new JobItem();
-             ji.setJobId(jobId);
+             ji.setJobUuid(jobUuid);
              ji.setType("LAMINATION");
              ji.setDescription(buildLaminationDescription(l));
              ji.setAmount(l.getAmount());
              ji.setSortOrder(4);
 
              savedJobItem = jobItemRepo.save(con, ji);
-             l.setJobItemId(savedJobItem.getId());
-             laminationRepo.save(con, savedJobItem.getId(), l);
+             l.setJobItemUuid(savedJobItem.getUuid());
+             laminationRepo.save(con, savedJobItem.getUuid(), l);
          }
 
          // ========================= CTP =========================
          else if (cardData instanceof CtpPlate ctp) {
              validateCtp(ctp);
              JobItem ji = new JobItem();
-             ji.setJobId(jobId);
+             ji.setJobUuid(jobUuid);
              ji.setType("CTP");
              ji.setDescription(buildCtpDescription(ctp));
              ji.setAmount(ctp.getAmount());
              ji.setSortOrder(5);
 
              savedJobItem = jobItemRepo.save(con, ji);
-             ctp.setJobItemId(savedJobItem.getId());
-             ctpRepo.save(con, ctp);
+             ctp.setJobItemUuid(savedJobItem.getUuid());
+             ctpRepo.save(con, savedJobItem.getUuid(), ctp);
          }
 
          else {
@@ -224,11 +256,11 @@ public class JobItemService {
     public String buildPrintingDescription(Printing p) {
         StringBuilder sb = new StringBuilder("Printing ");
         if (p.getQty() > 0) sb.append(p.getQty()).append(" ");
-        if (p.getUnits() != null) sb.append(p.getUnits()).append(" ");
+        if (p.getUnits() != null && !p.getUnits().equalsIgnoreCase("Select Unit")) sb.append(p.getUnits()).append(" ");
         if (p.getSets() != null && !p.getSets().isBlank()) sb.append("[").append(p.getSets()).append(" Sets] ");
-        if (p.getColor() != null) sb.append(p.getColor()).append(" ");
+        if (p.getColor() != null && !p.getColor().equalsIgnoreCase("Select Color")) sb.append(p.getColor()).append(" ");
         if (p.isWithCtp()) sb.append("with CTP ");
-        if (p.getNotes() != null && !p.getNotes().isBlank())
+        if (p.isIncludeNotesInInvoice() && p.getNotes() != null && !p.getNotes().isBlank())
             sb.append("- ").append(p.getNotes());
         return sb.toString().trim();
     }
@@ -236,12 +268,12 @@ public class JobItemService {
     public String buildPaperDescription(Paper p) {
         StringBuilder sb = new StringBuilder("Paper ");
         if (p.getQty() > 0) sb.append(p.getQty()).append(" ");
-        if (p.getUnits() != null) sb.append(p.getUnits()).append(" ");
-        if (p.getSize() != null) sb.append(p.getSize()).append(" ");
-        if (p.getGsm() != null) sb.append(p.getGsm()).append(" GSM ");
-        if (p.getType() != null) sb.append(p.getType()).append(" ");
+        if (p.getUnits() != null && !p.getUnits().equalsIgnoreCase("Select Unit")) sb.append(p.getUnits()).append(" ");
+        if (p.getSize() != null && !p.getSize().equalsIgnoreCase("Select Size")) sb.append(p.getSize()).append(" ");
+        if (p.getGsm() != null && !p.getGsm().equalsIgnoreCase("Select GSM")) sb.append(p.getGsm()).append(" GSM ");
+        if (p.getType() != null && !p.getType().equalsIgnoreCase("Select Type")) sb.append(p.getType()).append(" ");
         if (p.getSource() != null) sb.append("(").append(p.getSource()).append(") ");
-        if (p.getNotes() != null && !p.getNotes().isBlank())
+        if (p.isIncludeNotesInInvoice() && p.getNotes() != null && !p.getNotes().isBlank())
             sb.append("- ").append(p.getNotes());
         return sb.toString().trim();
     }
@@ -249,9 +281,9 @@ public class JobItemService {
     public String buildBindingDescription(Binding b) {
         StringBuilder sb = new StringBuilder("Binding ");
         if (b.getQty() > 0) sb.append(b.getQty()).append(" ");
-        if (b.getProcess() != null) sb.append(b.getProcess()).append(" ");
+        if (b.getProcess() != null && !b.getProcess().equalsIgnoreCase("Select Binding")) sb.append(b.getProcess()).append(" ");
         if (b.getRate() > 0) sb.append("@").append(b.getRate()).append(" ");
-        if (b.getNotes() != null && !b.getNotes().isBlank())
+        if (b.isIncludeNotesInInvoice() && b.getNotes() != null && !b.getNotes().isBlank())
             sb.append("- ").append(b.getNotes());
         return sb.toString().trim();
     }
@@ -259,11 +291,11 @@ public class JobItemService {
     public String buildLaminationDescription(Lamination l) {
         StringBuilder sb = new StringBuilder("Lamination ");
         if (l.getQty() > 0) sb.append(l.getQty()).append(" ");
-        if (l.getUnit() != null) sb.append(l.getUnit()).append(" ");
-        if (l.getType() != null) sb.append(l.getType()).append(" ");
+        if (l.getUnit() != null && !l.getUnit().equalsIgnoreCase("Select Unit")) sb.append(l.getUnit()).append(" ");
+        if (l.getType() != null && !l.getType().equalsIgnoreCase("Select Type")) sb.append(l.getType()).append(" ");
         if (l.getSide() != null) sb.append(l.getSide()).append(" ");
-        if (l.getSize() != null) sb.append(l.getSize()).append(" ");
-        if (l.getNotes() != null && !l.getNotes().isBlank())
+        if (l.getSize() != null && !l.getSize().equalsIgnoreCase("Select Size")) sb.append(l.getSize()).append(" ");
+        if (l.isIncludeNotesInInvoice() && l.getNotes() != null && !l.getNotes().isBlank())
             sb.append("- ").append(l.getNotes());
         return sb.toString().trim();
     }
@@ -271,11 +303,11 @@ public class JobItemService {
     public String buildCtpDescription(CtpPlate ctp) {
         StringBuilder sb = new StringBuilder("CTP Plate ");
         sb.append(ctp.getQty()).append(" pcs ");
-        if (ctp.getPlateSize() != null) sb.append(ctp.getPlateSize()).append(" ");
-        if (ctp.getGauge() != null) sb.append(ctp.getGauge()).append(" ");
-        if (ctp.getBacking() != null) sb.append(ctp.getBacking()).append(" ");
-        if (ctp.getColor() != null) sb.append(ctp.getColor()).append(" ");
-        if (ctp.getNotes() != null && !ctp.getNotes().isBlank())
+        if (ctp.getPlateSize() != null && !ctp.getPlateSize().equalsIgnoreCase("Select Size")) sb.append(ctp.getPlateSize()).append(" ");
+        if (ctp.getGauge() != null && !ctp.getGauge().equalsIgnoreCase("Select Gauge")) sb.append(ctp.getGauge()).append(" ");
+        if (ctp.getBacking() != null && !ctp.getBacking().equalsIgnoreCase("Select Backing")) sb.append(ctp.getBacking()).append(" ");
+        if (ctp.getColor() != null && !ctp.getColor().equalsIgnoreCase("Select Color")) sb.append(ctp.getColor()).append(" ");
+        if (ctp.isIncludeNotesInInvoice() && ctp.getNotes() != null && !ctp.getNotes().isBlank())
             sb.append("- ").append(ctp.getNotes());
         return sb.toString().trim();
     }

@@ -3,19 +3,19 @@ package model;
 import java.time.LocalDate;
 
 public class InvoiceAdjustment {
-    private int id;
-    private int invoiceId;
+    private String uuid;
+    private String invoiceUuid;
     private String type;
     private String noteNo;
     private double amount;
     private String reason;
     private LocalDate date;
 
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    public String getUuid() { return uuid; }
+    public void setUuid(String uuid) { this.uuid = uuid; }
 
-    public int getInvoiceId() { return invoiceId; }
-    public void setInvoiceId(int invoiceId) { this.invoiceId = invoiceId; }
+    public String getInvoiceUuid() { return invoiceUuid; }
+    public void setInvoiceUuid(String invoiceUuid) { this.invoiceUuid = invoiceUuid; }
 
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }

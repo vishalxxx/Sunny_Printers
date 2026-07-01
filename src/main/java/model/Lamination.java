@@ -7,8 +7,8 @@ public class Lamination implements Serializable {
 
     /* ================= IDENTIFIERS ================= */
 
-    private int id;
-    private int jobItemId;
+    private String uuid;
+    private String jobItemUuid;
 
     /* ================= DATA ================= */
 
@@ -20,11 +20,21 @@ public class Lamination implements Serializable {
     private String notes;
     private double amount;
 
+    private String syncStatus = "PENDING";
+    private int syncVersion = 1;
+    private int isDeletedSync = 0;
+    private int isActive = 1;
+    private String createdAt;
+    private String updatedAt;
+    private String syncedAt;
+    private String deletedAt;
+
     /* ================= UI STATE FLAGS ================= */
 
     private transient boolean isNew;
     private transient boolean isUpdated;
     private transient boolean isDeleted;
+    private boolean includeNotesInInvoice = true;
 
     /* ================= ORIGINAL SNAPSHOT ================= */
 
@@ -36,8 +46,8 @@ public class Lamination implements Serializable {
 
     public Lamination copy() {
         Lamination l = new Lamination();
-        l.id = this.id;
-        l.jobItemId = this.jobItemId;
+        l.uuid = this.uuid;
+        l.jobItemUuid = this.jobItemUuid;
         l.qty = this.qty;
         l.unit = this.unit;
         l.type = this.type;
@@ -45,6 +55,7 @@ public class Lamination implements Serializable {
         l.size = this.size;
         l.notes = this.notes;
         l.amount = this.amount;
+        l.includeNotesInInvoice = this.includeNotesInInvoice;
         return l;
     }
 
@@ -99,11 +110,11 @@ public class Lamination implements Serializable {
 
     /* ================= GETTERS / SETTERS ================= */
 
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    public String getUuid() { return uuid; }
+    public void setUuid(String uuid) { this.uuid = uuid; }
 
-    public int getJobItemId() { return jobItemId; }
-    public void setJobItemId(int jobItemId) { this.jobItemId = jobItemId; }
+    public String getJobItemUuid() { return jobItemUuid; }
+    public void setJobItemUuid(String jobItemUuid) { this.jobItemUuid = jobItemUuid; }
 
     public int getQty() { return qty; }
     public void setQty(int qty) { this.qty = qty; }
@@ -125,6 +136,33 @@ public class Lamination implements Serializable {
 
     public double getAmount() { return amount; }
     public void setAmount(double amount) { this.amount = amount; }
+
+    public String getSyncStatus() { return syncStatus; }
+    public void setSyncStatus(String syncStatus) { this.syncStatus = syncStatus; }
+
+    public int getSyncVersion() { return syncVersion; }
+    public void setSyncVersion(int syncVersion) { this.syncVersion = syncVersion; }
+
+    public int getIsDeletedSync() { return isDeletedSync; }
+    public void setIsDeletedSync(int isDeletedSync) { this.isDeletedSync = isDeletedSync; }
+
+    public int getIsActive() { return isActive; }
+    public void setIsActive(int isActive) { this.isActive = isActive; }
+
+    public String getCreatedAt() { return createdAt; }
+    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
+
+    public String getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getSyncedAt() { return syncedAt; }
+    public void setSyncedAt(String syncedAt) { this.syncedAt = syncedAt; }
+
+    public String getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(String deletedAt) { this.deletedAt = deletedAt; }
+
+    public boolean isIncludeNotesInInvoice() { return includeNotesInInvoice; }
+    public void setIncludeNotesInInvoice(boolean includeNotesInInvoice) { this.includeNotesInInvoice = includeNotesInInvoice; }
 
     /* ================= DISPLAY ================= */
 

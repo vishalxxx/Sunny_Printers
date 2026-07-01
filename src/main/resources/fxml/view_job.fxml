@@ -33,12 +33,10 @@
             <ComboBox fx:id="statusFilterComboBox" promptText="All Status" styleClass="taste-combo" prefWidth="180" />
             <DatePicker fx:id="fromDatePicker" promptText="From Date" styleClass="taste-datepicker" prefWidth="160"/>
             <DatePicker fx:id="toDatePicker" promptText="To Date" styleClass="taste-datepicker" prefWidth="160"/>
-            <Button styleClass="view-clear-btn" onAction="#clearFilters" >
+            <Button styleClass="view-clear-btn" onAction="#clearFilters" mnemonicParsing="false">
+                <tooltip><Tooltip text="Clear Filters"/></tooltip>
                 <graphic>
-                    <HBox spacing="8" alignment="CENTER">
-                        <Region styleClass="filter-icon" />
-                        <Label text="Clear Filters" style="-fx-text-fill: #3E312D;" />
-                    </HBox>
+                    <Region styleClass="filter-icon" />
                 </graphic>
             </Button>
         </HBox>
@@ -47,7 +45,7 @@
     <Region prefHeight="8" /> <!-- Spacer -->
 
     <!-- 3. INTEGRATED BULK ACTION BAR (Anchored) -->
-    <VBox fx:id="bulkActionBarContainer" visible="false" managed="false" styleClass="bulk-bar-container">
+    <VBox fx:id="bulkActionBarContainer" visible="true" managed="true" styleClass="bulk-bar-container">
         <HBox fx:id="bulkActionBar" styleClass="bulk-bar-integrated" alignment="CENTER_LEFT" spacing="16">
             <VBox spacing="2">
                 <Label fx:id="selectionCountLabel" text="0 jobs selected" styleClass="bulk-count-label" />

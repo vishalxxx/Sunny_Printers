@@ -10,17 +10,68 @@ import java.util.List;
 import model.Job;
 import model.JobItem;
 import model.JobSummary;
+import service.NumberSequenceAllocationService.AllocatedNumber;
+import service.sync.UniversalNumberAllocator;
 import utils.DBConnection;
+import utils.DocumentNumbering;
+import utils.JobIdentifiers;
 
 public class JobRepository {
 
-    private static String tempJobRowKey() {
-        return "TMP" + System.nanoTime();
-    }
+    private static final String JOB_SELECT = """
+            j.uuid, j.job_code, j.client_uuid, j.job_title, j.job_date, j.job_type, j.description,
+            j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path,
+            CASE
+                WHEN j.invoice_uuid IS NOT NULL AND EXISTS (
+                    SELECT 1 FROM invoice_job_mapping m
+                    WHERE m.job_uuid = j.uuid AND m.invoice_uuid = j.invoice_uuid
+                      AND COALESCE(m.is_deleted, 0) = 0
+                ) THEN j.invoice_uuid
+                ELSE (SELECT m.invoice_uuid FROM invoice_job_mapping m
+                      WHERE m.job_uuid = j.uuid AND COALESCE(m.is_deleted, 0) = 0 LIMIT 1)
+            END AS invoice_uuid,
+            j.amount, j.job_number_mode, j.delivery_date, j.is_deleted, j.is_active, j.sync_status, j.sync_version,
+            j.created_by_user_uuid, j.updated_by_user_uuid,
+            (SELECT inv.invoice_no FROM invoice_master inv WHERE inv.uuid = (
+                CASE
+                    WHEN j.invoice_uuid IS NOT NULL AND EXISTS (
+                        SELECT 1 FROM invoice_job_mapping m
+                        WHERE m.job_uuid = j.uuid AND m.invoice_uuid = j.invoice_uuid
+                          AND COALESCE(m.is_deleted, 0) = 0
+                    ) THEN j.invoice_uuid
+                    ELSE (SELECT m.invoice_uuid FROM invoice_job_mapping m
+                          WHERE m.job_uuid = j.uuid AND COALESCE(m.is_deleted, 0) = 0 LIMIT 1)
+                END
+            )) AS invoice_no,
+            (SELECT inv.status FROM invoice_master inv WHERE inv.uuid = (
+                CASE
+                    WHEN j.invoice_uuid IS NOT NULL AND EXISTS (
+                        SELECT 1 FROM invoice_job_mapping m
+                        WHERE m.job_uuid = j.uuid AND m.invoice_uuid = j.invoice_uuid
+                          AND COALESCE(m.is_deleted, 0) = 0
+                    ) THEN j.invoice_uuid
+                    ELSE (SELECT m.invoice_uuid FROM invoice_job_mapping m
+                          WHERE m.job_uuid = j.uuid AND COALESCE(m.is_deleted, 0) = 0 LIMIT 1)
+                END
+            )) AS invoice_status,
+            (SELECT inv.document_series FROM invoice_master inv WHERE inv.uuid = (
+                CASE
+                    WHEN j.invoice_uuid IS NOT NULL AND EXISTS (
+                        SELECT 1 FROM invoice_job_mapping m
+                        WHERE m.job_uuid = j.uuid AND m.invoice_uuid = j.invoice_uuid
+                          AND COALESCE(m.is_deleted, 0) = 0
+                    ) THEN j.invoice_uuid
+                    ELSE (SELECT m.invoice_uuid FROM invoice_job_mapping m
+                          WHERE m.job_uuid = j.uuid AND COALESCE(m.is_deleted, 0) = 0 LIMIT 1)
+                END
+            )) AS invoice_type,
+            (SELECT COALESCE(SUM(ji.amount), 0) FROM job_items ji
+                WHERE ji.job_uuid = j.uuid AND COALESCE(ji.is_deleted, 0) = 0) AS job_total
+            """;
 
-    private static String canonicalJobNo(int id) {
-        return "JOB-" + id;
-    }
+    private static final String JOB_ITEMS_TOTAL_SUBQUERY =
+            "(SELECT COALESCE(SUM(ji.amount), 0) FROM job_items ji"
+                    + " WHERE ji.job_uuid = j.uuid AND COALESCE(ji.is_deleted, 0) = 0)";
 
     /*
      * =====================================================
@@ -29,74 +80,94 @@ public class JobRepository {
      */
 
     public Job insertDraftJob(Connection con) throws SQLException {
+        String uuid = JobIdentifiers.newUuidString();
+        String code;
+        boolean tempCode;
+        try {
+            AllocatedNumber allocated = UniversalNumberAllocator.getInstance().allocateJobCode(con);
+            code = allocated.value();
+            tempCode = allocated.temporary();
+        } catch (Exception e) {
+            throw new SQLException("Failed to allocate job_code", e);
+        }
+        String syncStatus = tempCode || DocumentNumbering.isTemporaryNumber(code) ? "PENDING" : "PENDING";
+        
+        String userUuid = null;
+        if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+            userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+        }
 
         String sql = """
-                    INSERT INTO jobs (job_no, status)
-                    VALUES (?, 'DRAFT')
+                INSERT INTO jobs (uuid, client_uuid, job_code, status, sync_status, created_by_user_uuid, updated_by_user_uuid)
+                VALUES (?, '', ?, 'DRAFT', ?, ?, ?)
                 """;
-
-        try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-
-            ps.setString(1, tempJobRowKey());
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, uuid);
+            ps.setString(2, code);
+            ps.setString(3, syncStatus);
+            ps.setString(4, userUuid);
+            ps.setString(5, userUuid);
             ps.executeUpdate();
-
-            ResultSet rs = ps.getGeneratedKeys();
-            if (!rs.next()) {
-                throw new SQLException("Failed to create draft job");
-            }
-
-            int id = rs.getInt(1);
-            String jobNo = canonicalJobNo(id);
-            try (PreparedStatement up = con.prepareStatement("UPDATE jobs SET job_no = ? WHERE id = ?")) {
-                up.setString(1, jobNo);
-                up.setInt(2, id);
-                up.executeUpdate();
-            }
-
-            Job job = new Job();
-            job.setId(id);
-            job.setJobNo(jobNo);
-            job.setStatus("DRAFT");
-
-            return job;
         }
+        Job job = new Job();
+        job.setUuid(uuid);
+        job.setJobCode(code);
+        job.setStatus("DRAFT");
+        job.setSyncStatus(syncStatus);
+        job.setCreatedByUserUuid(userUuid);
+        job.setUpdatedByUserUuid(userUuid);
+        return job;
     }
 
     public Job insertJob(Connection con, Job job) throws SQLException {
-        String sql = """
-                    INSERT INTO jobs (job_no, client_id, job_title, job_date, status, image_path, remarks)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                """;
-        try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, tempJobRowKey());
-            ps.setObject(2, job.getClientId());
-            ps.setString(3, job.getJobTitle());
-            if (job.getJobDate() != null) {
-                ps.setString(4, job.getJobDate().toString());
-            } else {
-                ps.setNull(4, java.sql.Types.DATE);
+        String uuid = job.hasUuid() ? job.getUuid() : JobIdentifiers.newUuidString();
+        String code = job.getJobCode();
+        if (code == null || code.isBlank()) {
+            try {
+                AllocatedNumber allocated = UniversalNumberAllocator.getInstance().allocateJobCode(con);
+                code = allocated.value();
+                if (allocated.temporary() || DocumentNumbering.isTemporaryNumber(code)) {
+                    job.setSyncStatus("PENDING");
+                }
+            } catch (Exception e) {
+                throw new SQLException("Failed to allocate job_code", e);
             }
-            ps.setString(5, job.getStatus());
-            ps.setString(6, job.getImagePath());
-            ps.setString(7, job.getRemarks());
-            
-            ps.executeUpdate();
-            
-            ResultSet rs = ps.getGeneratedKeys();
-            if (!rs.next()) {
-                throw new SQLException("Failed to insert job");
-            }
-            int id = rs.getInt(1);
-            String jobNo = canonicalJobNo(id);
-            try (PreparedStatement up = con.prepareStatement("UPDATE jobs SET job_no = ? WHERE id = ?")) {
-                up.setString(1, jobNo);
-                up.setInt(2, id);
-                up.executeUpdate();
-            }
-            job.setId(id);
-            job.setJobNo(jobNo);
-            return job;
         }
+        String userUuid = null;
+        if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+            userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+        }
+        job.setCreatedByUserUuid(userUuid);
+        job.setUpdatedByUserUuid(userUuid);
+
+        String sql = """
+                INSERT INTO jobs (
+                  uuid, client_uuid, job_code, job_title, job_date, status, image_path, remarks, job_type, description,
+                  created_by_user_uuid, updated_by_user_uuid
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, uuid);
+            ps.setString(2, job.getClientUuid() != null ? job.getClientUuid() : "");
+            ps.setString(3, code);
+            ps.setString(4, job.getJobTitle());
+            if (job.getJobDate() != null) {
+                ps.setString(5, job.getJobDate().toString());
+            } else {
+                ps.setNull(5, Types.VARCHAR);
+            }
+            ps.setString(6, job.getStatus());
+            ps.setString(7, job.getImagePath());
+            ps.setString(8, job.getRemarks());
+            ps.setString(9, job.getJobType());
+            ps.setString(10, job.getDescription());
+            ps.setString(11, userUuid);
+            ps.setString(12, userUuid);
+            ps.executeUpdate();
+        }
+        job.setUuid(uuid);
+        job.setJobCode(code);
+        return job;
     }
 
     /*
@@ -107,12 +178,7 @@ public class JobRepository {
 
     public Job findLatestDraftJob() {
 
-        String sql = """
-                    SELECT *
-                    FROM jobs
-                    ORDER BY id DESC
-                    LIMIT 1
-                """;
+        String sql = "SELECT " + JOB_SELECT + " FROM jobs j WHERE UPPER(TRIM(j.status)) = 'DRAFT' ORDER BY j.created_at DESC LIMIT 1";
 
         try (Connection con = DBConnection.getConnection();
                 PreparedStatement ps = con.prepareStatement(sql);
@@ -137,32 +203,22 @@ public class JobRepository {
      * =====================================================
      */
 
-    public Job findJobById(int jobId) {
-
-        String sql = """
-                    SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
-                           j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
-                           (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
-                           (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
-                           (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
-                    FROM jobs j
-                    WHERE j.id = ?
-                """;
-
+    public Job findJobByUuid(String jobUuid) {
+        if (jobUuid == null || jobUuid.isBlank()) {
+            return null;
+        }
+        String sql = "SELECT " + JOB_SELECT + " FROM jobs j WHERE j.uuid = ?";
         try (Connection con = DBConnection.getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setInt(1, jobId);
-            ResultSet rs = ps.executeQuery();
-
-            if (rs.next()) {
-                return mapRowToJob(rs);
+            ps.setString(1, jobUuid.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapRowToJob(rs);
+                }
             }
-
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch job by id=" + jobId, e);
+            throw new RuntimeException("Failed to fetch job uuid=" + jobUuid, e);
         }
-
         return null;
     }
 
@@ -176,15 +232,7 @@ public class JobRepository {
 
         List<Job> list = new ArrayList<>();
 
-        String sql = """
-                    SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
-                           j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
-                           (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
-                           (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
-                           (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
-                    FROM jobs j
-                    ORDER BY DATE(j.job_date) DESC, j.id DESC
-                """;
+        String sql = "SELECT " + JOB_SELECT + " FROM jobs j WHERE (j.job_type IS NULL OR j.job_type != 'CHARGE') ORDER BY COALESCE(j.updated_at, j.created_at) DESC, j.created_at DESC";
 
         try (Connection con = DBConnection.getConnection();
                 PreparedStatement ps = con.prepareStatement(sql);
@@ -211,17 +259,13 @@ public class JobRepository {
 
         List<Job> list = new ArrayList<>();
 
-        String sql = """
-                    SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
-                           j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
-                           (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
-                           (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
-                           (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
-                    FROM jobs j
-                    WHERE LOWER(j.job_no) LIKE ?
-                       OR LOWER(j.job_title) LIKE ?
-                       OR LOWER(j.remarks) LIKE ?
-                    ORDER BY DATE(j.job_date) DESC, j.id DESC
+        String sql = "SELECT " + JOB_SELECT + """
+                 FROM jobs j
+                 WHERE (LOWER(j.job_code) LIKE ?
+                    OR LOWER(j.job_title) LIKE ?
+                    OR LOWER(j.remarks) LIKE ?)
+                   AND (j.job_type IS NULL OR j.job_type != 'CHARGE')
+                 ORDER BY COALESCE(j.updated_at, j.created_at) DESC, j.created_at DESC
                 """;
 
         try (Connection con = DBConnection.getConnection();
@@ -252,27 +296,27 @@ public class JobRepository {
      * =====================================================
      */
 
-    public List<JobItem> findJobItemsByJobId(int jobId) {
+    public List<JobItem> findJobItemsByJobUuid(String jobUuid) {
 
         List<JobItem> list = new ArrayList<>();
 
         String sql = """
-                    SELECT id, job_id, type, description, amount, sort_order
+                    SELECT uuid, job_uuid, type, description, amount, sort_order
                     FROM job_items
-                    WHERE job_id = ?
-                    ORDER BY sort_order ASC, id ASC
+                    WHERE job_uuid = ? AND is_deleted = 0
+                    ORDER BY sort_order ASC, uuid ASC
                 """;
 
         try (Connection con = DBConnection.getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
 
-            ps.setInt(1, jobId);
+            ps.setString(1, jobUuid);
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
                 JobItem item = new JobItem();
-                item.setId(rs.getInt("id"));
-                item.setJobId(rs.getInt("job_id"));
+                item.setUuid(rs.getString("uuid"));
+                item.setJobUuid(rs.getString("job_uuid"));
                 item.setType(rs.getString("type"));
                 item.setDescription(rs.getString("description"));
                 item.setAmount(rs.getDouble("amount"));
@@ -281,7 +325,7 @@ public class JobRepository {
             }
 
         } catch (Exception e) {
-            throw new RuntimeException("Failed to load job items", e);
+            throw new RuntimeException("Failed to load job items for jobUuid=" + jobUuid, e);
         }
 
         return list;
@@ -297,29 +341,45 @@ public class JobRepository {
 
         Job job = new Job();
 
-        job.setId(rs.getInt("id"));
-        job.setJobNo(rs.getString("job_no"));
+        job.setUuid(rs.getString("uuid"));
+        job.setJobCode(rs.getString("job_code"));
         job.setJobTitle(rs.getString("job_title"));
+        job.setJobType(rs.getString("job_type"));
+        job.setDescription(rs.getString("description"));
 
-        int cid = rs.getInt("client_id");
-        job.setClientId(rs.wasNull() ? null : cid);
+        String cid = rs.getString("client_uuid");
+        job.setClientUuid(cid == null || cid.isBlank() ? null : cid.trim());
 
         job.setJobDate(parseJobDateFlexible(rs.getString("job_date")));
+        job.setDeliveryDate(parseJobDateFlexible(rs.getString("delivery_date")));
 
         job.setStatus(rs.getString("status"));
         try {
             job.setChildStatus(rs.getString("child_status"));
         } catch (SQLException ignore) {}
         job.setRemarks(rs.getString("remarks"));
+        try {
+            job.setJobNumberMode(rs.getString("job_number_mode"));
+        } catch (SQLException ignore) {}
+        try {
+            job.setAmount(rs.getDouble("amount"));
+        } catch (SQLException ignore) {}
 
-        // ✅ Keep created_at as String (your current model)
         job.setCreatedAt(rs.getString("created_at"));
         job.setUpdatedAt(rs.getString("updated_at"));
-        
         try {
-            int invId = rs.getInt("invoice_id");
-            job.setInvoiceId(rs.wasNull() ? null : invId);
+            job.setSyncStatus(rs.getString("sync_status"));
+            job.setSyncVersion(rs.getInt("sync_version"));
+            job.setIsDeleted(rs.getInt("is_deleted"));
+            job.setIsActive(rs.getInt("is_active"));
         } catch (SQLException ignore) {}
+        try {
+            job.setCreatedByUserUuid(rs.getString("created_by_user_uuid"));
+            job.setUpdatedByUserUuid(rs.getString("updated_by_user_uuid"));
+        } catch (SQLException ignore) {}
+
+        String invUuid = rs.getString("invoice_uuid");
+        job.setInvoiceUuid(invUuid == null || invUuid.isBlank() ? null : invUuid.trim());
 
         try {
             double total = rs.getDouble("job_total");
@@ -336,6 +396,10 @@ public class JobRepository {
 
         try {
             job.setInvoiceStatus(rs.getString("invoice_status"));
+        } catch (SQLException ignore) {}
+
+        try {
+            job.setInvoiceType(rs.getString("invoice_type"));
         } catch (SQLException ignore) {}
 
         return job;
@@ -371,25 +435,16 @@ public class JobRepository {
         return null;
     }
 
-    public List<Job> findFullJobsByClientId(int clientId) {
+    public List<Job> findFullJobsByClientId(String clientId) {
 
         List<Job> list = new ArrayList<>();
 
-        String sql = """
-                    SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
-                           j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
-                           (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
-                           (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
-                           (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
-                    FROM jobs j
-                    WHERE j.client_id = ?
-                    ORDER BY j.id DESC
-                """;
+        String sql = "SELECT " + JOB_SELECT + " FROM jobs j WHERE j.client_uuid = ? AND (j.job_type IS NULL OR j.job_type != 'CHARGE') ORDER BY j.created_at DESC";
 
         try (Connection con = DBConnection.getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
 
-            ps.setInt(1, clientId);
+            ps.setString(1, clientId);
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
@@ -398,40 +453,39 @@ public class JobRepository {
 
         } catch (Exception e) {
             throw new RuntimeException(
-                    "Failed to fetch full jobs for clientId=" + clientId, e);
+                    "Failed to fetch full jobs for clientUuid=" + clientId, e);
         }
 
         return list;
     }
 
-    public List<JobSummary> findJobsByClientId(int clientId) {
+    public List<JobSummary> findJobsByClientId(String clientId) {
 
         List<JobSummary> list = new ArrayList<>();
 
         String sql = """
-                    SELECT id, job_no, job_title, job_date
+                    SELECT uuid, job_code, job_title, job_date
                     FROM jobs
-                    WHERE client_id = ?
-                      AND invoice_id IS NULL
+                    WHERE client_uuid = ?
+                      AND invoice_uuid IS NULL
+                      AND (job_type IS NULL OR job_type != 'CHARGE')
                       AND LOWER(TRIM(REPLACE(COALESCE(status,''), '_', ' '))) = 'completed'
-                    ORDER BY id DESC
+                    ORDER BY created_at DESC
                 """;
 
         try (Connection con = DBConnection.getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
 
-            ps.setInt(1, clientId);
+            ps.setString(1, clientId);
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
 
-                int id = rs.getInt("id");
-                String jobNo = rs.getString("job_no");
+                String uuid = rs.getString("uuid");
+                String jobCode = rs.getString("job_code");
                 String title = rs.getString("job_title");
-
                 LocalDate jobDate = parseJobDateFlexible(rs.getString("job_date"));
-
-                list.add(new JobSummary(id, jobNo, title, jobDate));
+                list.add(new JobSummary(uuid, jobCode, title, jobDate));
             }
 
         } catch (Exception e) {
@@ -442,30 +496,22 @@ public class JobRepository {
         return list;
     }
 
-    public List<Job> findCompletedJobsByClientId(int clientId) {
+    public List<Job> findCompletedJobsByClientId(String clientId) {
         List<Job> list = new ArrayList<>();
-        String sql = """
-                    SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
-                           j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
-                           (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
-                           (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
-                           (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
-                    FROM jobs j
-                    WHERE j.client_id = ?
-                      AND j.invoice_id IS NULL
-                      AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
-                    ORDER BY j.id DESC
-                """;
+        String sql = "SELECT " + JOB_SELECT + " FROM jobs j "
+                + "WHERE j.client_uuid = ? AND j.invoice_uuid IS NULL "
+                + "AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed' "
+                + "ORDER BY j.created_at DESC";
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, clientId);
+            ps.setString(1, clientId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     list.add(mapRowToJob(rs));
                 }
             }
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch completed jobs for clientId=" + clientId, e);
+            throw new RuntimeException("Failed to fetch completed jobs for clientUuid=" + clientId, e);
         }
         return list;
     }
@@ -480,16 +526,16 @@ public class JobRepository {
         List<model.DashboardJobDTO> list = new ArrayList<>();
         String sql = """
                     SELECT
-                        j.job_no,
+                        j.job_code,
                         COALESCE(c.business_name, c.client_name) as client_name,
                         j.job_title,
                         j.job_date,
                         j.status as workflow,
-                        (SELECT SUM(amount) FROM job_items ji WHERE ji.job_id = j.id) as total_val
+                        (SELECT SUM(amount) FROM job_items ji WHERE ji.job_uuid = j.uuid) as total_val
                     FROM jobs j
-                    LEFT JOIN clients c ON j.client_id = c.id
-                    WHERE j.status != 'DRAFT'
-                    ORDER BY j.id DESC
+                    LEFT JOIN clients c ON j.client_uuid = c.uuid
+                    WHERE j.status != 'DRAFT' AND (j.job_type IS NULL OR j.job_type != 'CHARGE')
+                    ORDER BY j.created_at DESC
                     LIMIT ?
                 """;
 
@@ -500,7 +546,7 @@ public class JobRepository {
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-                String jobNo = rs.getString("job_no");
+                String jobNo = rs.getString("job_code");
                 String cName = rs.getString("client_name");
                 String orderClient = jobNo + (cName != null ? " / " + cName : "");
 
@@ -535,7 +581,7 @@ public class JobRepository {
     public java.util.Map<String, Integer> getJobDistributionCounts() {
         java.util.Map<String, Integer> distribution = new java.util.LinkedHashMap<>();
         String sql = """
-                    SELECT status, COUNT(id) as status_count
+                    SELECT status, COUNT(uuid) as status_count
                     FROM jobs
                     WHERE status != 'DRAFT' AND status IS NOT NULL
                     GROUP BY status
@@ -565,27 +611,26 @@ public class JobRepository {
 
         List<Job> list = new ArrayList<>();
 
-        if (inv == null) {
+        if (inv == null || inv.getUuid() == null) {
             return list;
         }
 
-        String sql = """
-                    SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
-                           j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
-                           (SELECT invoice_no FROM invoice_master invM WHERE invM.id = m.invoice_id) as invoice_no,
-                           (SELECT status FROM invoice_master invM WHERE invM.id = m.invoice_id) as invoice_status,
-                           (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
-                    FROM jobs j
-                    JOIN invoice_job_mapping m ON j.id = m.job_id
-                    WHERE m.invoice_id = ?
-                    ORDER BY DATE(j.job_date) ASC, j.id ASC
+        String sql = "SELECT " + JOB_SELECT + """
+                 FROM jobs j
+                 WHERE j.invoice_uuid = ?
+                    OR j.uuid IN (
+                      SELECT m.job_uuid FROM invoice_job_mapping m
+                      WHERE m.invoice_uuid = ? AND COALESCE(m.is_deleted, 0) = 0
+                    )
+                 ORDER BY DATE(j.job_date) ASC, j.created_at ASC
                 """;
 
         try (Connection con = DBConnection.getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
 
-            ps.setInt(1, inv.getId());
-            
+            ps.setString(1, inv.getUuid());
+            ps.setString(2, inv.getUuid());
+
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 list.add(mapRowToJob(rs));
@@ -601,25 +646,20 @@ public class JobRepository {
     /**
      * Completed, un-invoiced jobs for a client whose job_date falls in [from, to] (inclusive).
      */
-    public List<Job> findCompletedJobsByClientIdInDateRange(int clientId, LocalDate from, LocalDate to) {
+    public List<Job> findCompletedJobsByClientIdInDateRange(String clientId, LocalDate from, LocalDate to) {
         List<Job> list = new ArrayList<>();
-        String sql = """
-                    SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
-                           j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
-                           (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
-                           (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
-                           (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total
-                    FROM jobs j
-                    WHERE j.client_id = ?
-                      AND j.invoice_id IS NULL
-                      AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
-                      AND DATE(j.job_date) >= DATE(?)
-                      AND DATE(j.job_date) <= DATE(?)
-                    ORDER BY j.id DESC
+        String sql = "SELECT " + JOB_SELECT + """
+                 FROM jobs j
+                 WHERE j.client_uuid = ?
+                   AND j.invoice_uuid IS NULL
+                   AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
+                   AND DATE(j.job_date) >= DATE(?)
+                   AND DATE(j.job_date) <= DATE(?)
+                 ORDER BY j.created_at DESC
                 """;
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, clientId);
+            ps.setString(1, clientId);
             ps.setString(2, from.toString());
             ps.setString(3, to.toString());
             try (ResultSet rs = ps.executeQuery()) {
@@ -629,7 +669,7 @@ public class JobRepository {
             }
         } catch (Exception e) {
             throw new RuntimeException(
-                    "Failed to fetch completed jobs in range for clientId=" + clientId, e);
+                    "Failed to fetch completed jobs in range for clientUuid=" + clientId, e);
         }
         return list;
     }
@@ -639,20 +679,13 @@ public class JobRepository {
      */
     public List<Job> findCompletedJobsAllClientsInDateRange(LocalDate from, LocalDate to) {
         List<Job> list = new ArrayList<>();
-        String sql = """
-                    SELECT j.id, j.job_no, j.client_id, j.job_title, j.job_date,
-                           j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_id,
-                           (SELECT invoice_no FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_no,
-                           (SELECT status FROM invoice_master inv WHERE inv.id = j.invoice_id) as invoice_status,
-                           (SELECT COALESCE(SUM(amount), 0) FROM job_items ji WHERE ji.job_id = j.id) as job_total,
-                           c.business_name AS client_business_name
-                    FROM jobs j
-                    INNER JOIN clients c ON c.id = j.client_id
-                    WHERE j.invoice_id IS NULL
-                      AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
-                      AND DATE(j.job_date) BETWEEN DATE(?) AND DATE(?)
-                    ORDER BY c.business_name ASC, DATE(j.job_date) DESC, j.id DESC
-                """;
+        String sql = "SELECT " + JOB_SELECT + ", c.business_name AS client_business_name "
+                + "FROM jobs j "
+                + "INNER JOIN clients c ON c.uuid = j.client_uuid "
+                + "WHERE j.invoice_uuid IS NULL "
+                + "AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed' "
+                + "AND DATE(j.job_date) BETWEEN DATE(?) AND DATE(?) "
+                + "ORDER BY c.business_name ASC, DATE(j.job_date) DESC, j.created_at DESC";
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, from.toString());
@@ -674,47 +707,80 @@ public class JobRepository {
      * IDs only (no row mapping) for completed, un-invoiced jobs in [from, to] by job_date.
      * Avoids date-text parsing in Java so non-ISO {@code job_date} values cannot zero out aggregates.
      */
-    public List<Integer> findCompletedJobIdsByClientIdInDateRange(int clientId, LocalDate from, LocalDate to) {
-        List<Integer> list = new ArrayList<>();
+    public List<String> findCompletedJobUuidsByClientIdInDateRange(String clientId, LocalDate from, LocalDate to) {
+        List<String> list = new ArrayList<>();
         String sql = """
-                    SELECT j.id
+                    SELECT j.uuid
                     FROM jobs j
-                    WHERE j.client_id = ?
-                      AND j.invoice_id IS NULL
+                    WHERE j.client_uuid = ?
+                      AND j.invoice_uuid IS NULL
                       AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
                       AND DATE(j.job_date) BETWEEN DATE(?) AND DATE(?)
-                    ORDER BY j.id DESC
+                    ORDER BY j.created_at DESC
                 """;
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, clientId);
+            ps.setString(1, clientId);
             ps.setString(2, from.toString());
             ps.setString(3, to.toString());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    list.add(rs.getInt("id"));
+                    list.add(rs.getString("uuid"));
                 }
             }
         } catch (Exception e) {
             throw new RuntimeException(
-                    "Failed to fetch completed job ids in range for clientId=" + clientId, e);
+                    "Failed to fetch completed job uuids in range for clientId=" + clientId, e);
         }
         return list;
     }
 
+    /**
+     * Sets {@code jobs.amount} to the sum of active {@code job_items} for the job.
+     * Marks the job pending sync when amount changes.
+     */
+    public static void syncAmountFromJobItems(Connection con, String jobUuid) {
+        if (con == null || jobUuid == null || jobUuid.isBlank()) {
+            return;
+        }
+        String sql = """
+                UPDATE jobs SET
+                  amount = (
+                    SELECT COALESCE(SUM(ji.amount), 0)
+                    FROM job_items ji
+                    WHERE ji.job_uuid = ? AND COALESCE(ji.is_deleted, 0) = 0
+                  ),
+                  sync_status = CASE
+                    WHEN COALESCE(sync_status, '') = 'SYNCED' THEN 'PENDING'
+                    ELSE COALESCE(NULLIF(TRIM(sync_status), ''), 'PENDING')
+                  END,
+                  sync_version = COALESCE(sync_version, 0) + 1,
+                  updated_at = datetime('now')
+                WHERE uuid = ?
+                """;
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            String id = jobUuid.trim();
+            ps.setString(1, id);
+            ps.setString(2, id);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to sync job amount from items for uuid=" + jobUuid, e);
+        }
+    }
+
     /** Sum of job_items.amount for the given jobs (invoice-style line totals). */
-    public double sumJobItemsAmountForJobIds(List<Integer> jobIds) {
-        if (jobIds == null || jobIds.isEmpty()) {
+    public double sumJobItemsAmountForJobUuids(List<String> jobUuids) {
+        if (jobUuids == null || jobUuids.isEmpty()) {
             return 0.0;
         }
-        String placeholders = String.join(",", jobIds.stream().map(x -> "?").toList());
-        String sql = "SELECT COALESCE(SUM(amount), 0) AS total_amt FROM job_items WHERE job_id IN ("
+        String placeholders = String.join(",", jobUuids.stream().map(x -> "?").toList());
+        String sql = "SELECT COALESCE(SUM(amount), 0) AS total_amt FROM job_items WHERE job_uuid IN ("
                 + placeholders + ")";
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             int i = 1;
-            for (Integer id : jobIds) {
-                ps.setInt(i++, id);
+            for (String uuid : jobUuids) {
+                ps.setString(i++, uuid);
             }
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -727,23 +793,23 @@ public class JobRepository {
         return 0.0;
     }
 
-    /** Sum printing quantities for the given job ids (via job_items → printing_items). */
-    public long sumPrintingQtyForJobIds(List<Integer> jobIds) {
-        if (jobIds == null || jobIds.isEmpty()) {
+    /** Sum printing quantities for the given job uuids (via job_items → printing_items). */
+    public long sumPrintingQtyForJobUuids(List<String> jobUuids) {
+        if (jobUuids == null || jobUuids.isEmpty()) {
             return 0L;
         }
-        String placeholders = String.join(",", jobIds.stream().map(x -> "?").toList());
+        String placeholders = String.join(",", jobUuids.stream().map(x -> "?").toList());
         String sql = """
                     SELECT COALESCE(SUM(pi.qty), 0) AS total_qty
                     FROM printing_items pi
-                    INNER JOIN job_items ji ON pi.job_item_id = ji.id
-                    WHERE ji.job_id IN (""" + placeholders + ")";
+                    INNER JOIN job_items ji ON pi.job_item_uuid = ji.uuid
+                    WHERE ji.job_uuid IN (""" + placeholders + ") AND ji.is_deleted = 0 AND pi.is_deleted = 0";
 
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             int i = 1;
-            for (Integer id : jobIds) {
-                ps.setInt(i++, id);
+            for (String uuid : jobUuids) {
+                ps.setString(i++, uuid);
             }
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -756,17 +822,54 @@ public class JobRepository {
         return 0L;
     }
 
-    public void updateChildStatus(Connection con, int jobId, String childStatus) throws SQLException {
-        String sql = "UPDATE jobs SET child_status = ? WHERE id = ?";
+    public void updateChildStatus(Connection con, String jobUuid, String childStatus) throws SQLException {
+        String userUuid = null;
+        if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+            userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+        }
+        String sql = """
+                UPDATE jobs SET child_status = ?, sync_status = 'PENDING',
+                updated_at = datetime('now'), sync_version = sync_version + 1,
+                updated_by_user_uuid = ?
+                WHERE uuid = ?
+                """;
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             if (childStatus == null || childStatus.isBlank()) {
                 ps.setNull(1, Types.VARCHAR);
             } else {
                 ps.setString(1, childStatus);
             }
-            ps.setInt(2, jobId);
+            ps.setString(2, userUuid);
+            ps.setString(3, jobUuid);
             ps.executeUpdate();
         }
+    }
+
+    public List<Job> findPendingForSync() {
+        List<Job> list = new ArrayList<>();
+        String sql = """
+                SELECT j.uuid, j.job_code, j.client_uuid, j.job_title, j.job_date, j.job_type, j.description,
+                       j.status, j.child_status, j.remarks, j.created_at, j.updated_at, j.image_path, j.invoice_uuid,
+                       j.amount, j.job_number_mode, j.delivery_date, j.is_deleted, j.is_active, j.sync_status, j.sync_version,
+                       j.created_by_user_uuid, j.updated_by_user_uuid,
+                       NULL AS invoice_no, NULL AS invoice_status, """
+                + JOB_ITEMS_TOTAL_SUBQUERY + " AS job_total\n"
+                + """
+                FROM jobs j
+                WHERE UPPER(TRIM(COALESCE(j.sync_status, ''))) IN ('', 'PENDING', 'WAITING_DEPENDENCY')
+                  AND j.job_code NOT LIKE 'TEMP-%'
+                ORDER BY j.created_at ASC
+                """;
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(mapRowToJob(rs));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 
 }

@@ -55,7 +55,7 @@
     -fx-border-color: #E9E2DB;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
-    -fx-padding: 0 12;
+    -fx-padding: 6 8;
     -fx-text-fill: #2B2320;
     -fx-font-weight: 700;
     -fx-font-size: 12px;
@@ -73,7 +73,8 @@
 
 
 .filter-icon {
-    -fx-shape: "M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"; -fx-background-color: #C26A2D;
+    -fx-shape: "M10.83 8H21V6H8.83l2 2zM15 12h-2.17l-2-2H15v2zm-4.17 4H6v-2h2.83l2 2zM2.81 2.81L1.39 4.22 4 6.83V8h2.17l2 2H6v2h4.17l2 2H10v2h2v-1.17l6.78 6.78 1.41-1.41L2.81 2.81z";
+    -fx-background-color: #C26A2D;
     -fx-min-width: 14; -fx-max-width: 14; -fx-min-height: 14; -fx-max-height: 14;
 }
 
@@ -84,7 +85,7 @@
     -fx-table-header-border-color: transparent;
     -fx-border-color: #EEECE8; -fx-border-width: 1 0 1 0;
     /* One knob for row height vs. status block (stepper + child panel) */
-    -fx-fixed-cell-size: 106;
+    -fx-fixed-cell-size: 120;
 }
 
 .jobs-table-premium .column-header-background { -fx-background-color: #FAF6F0; -fx-border-color: #EEECE8; -fx-border-width: 0 0 1 0; }
@@ -115,7 +116,6 @@
 
 .jobs-table-premium .table-cell { -fx-padding: 0 4 0 4; -fx-alignment: center; -fx-border-color: transparent;
     -fx-graphic-text-gap: 0;
-    -fx-content-display: graphic-only;
 }
 
 /* Status & Progress: symmetric vertical insets; center graphic so slack is top + bottom, not bottom-only */
@@ -152,7 +152,7 @@
 }
 
 .jobs-table-premium .table-cell.table-cell-job-actions {
-    -fx-alignment: center;
+    -fx-alignment: center-right;
     -fx-padding: 0 8 0 8;
 }
 
@@ -342,6 +342,7 @@
 .row-btn-blue:hover   { -fx-background-color: #E6F7FF; -fx-border-color: #1890FF; }
 .row-btn-orange:hover { -fx-background-color: #FFF1E6; -fx-border-color: #FA8C16; }
 .row-btn-gray:hover   { -fx-background-color: #F5F5F5; -fx-border-color: #8B7E74; }
+.row-btn-red:hover    { -fx-background-color: #FFF1F0; -fx-border-color: #F5222D; }
 
 /* --- 4. ATELIER PAGINATION --- */
 /* ===================== FOOTER / PAGINATION ===================== */
@@ -856,7 +857,7 @@
     -fx-table-cell-border-color: transparent;
     -fx-table-header-border-color: transparent;
     -fx-border-color: transparent;
-    -fx-fixed-cell-size: 60;
+    -fx-fixed-cell-size: 80;
 }
 
 .invoice-jobs-table-premium .column-header-background {
@@ -891,6 +892,18 @@
 .invoice-jobs-table-premium .scroll-bar:horizontal .track { -fx-background-color: #F3F1EF; -fx-background-radius: 999; -fx-border-color: transparent; }
 .invoice-jobs-table-premium .scroll-bar:vertical .thumb,
 .invoice-jobs-table-premium .scroll-bar:horizontal .thumb { -fx-background-color: #D8D2CC; -fx-background-radius: 999; }
+
+.invoice-jobs-table-premium .scroll-bar .increment-button,
+.invoice-jobs-table-premium .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+.invoice-jobs-table-premium .scroll-bar .increment-arrow,
+.invoice-jobs-table-premium .scroll-bar .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-shape: "";
+}
 
 /* Hide empty rows */
 .invoice-jobs-table-premium .table-row-cell:empty {
@@ -1033,6 +1046,13 @@
     -fx-background-color: #FAF9F6;
 }
 
+.invoice-jobs-table-premium .table-row-cell:selected,
+.invoice-jobs-table-premium .table-row-cell:filled:selected,
+.invoice-jobs-table-premium .table-row-cell:selected .table-cell,
+.invoice-jobs-table-premium .table-row-cell:filled:selected .table-cell {
+    -fx-background-color: #FFEDD5 !important;
+}
+
 .invoice-jobs-table-premium .table-cell {
     -fx-border-width: 0;
     -fx-padding: 0 16;
@@ -1148,16 +1168,34 @@
 
 .view-invoice-jobs-root .finish-btn-premium {
     -fx-font-size: 12px;
-    -fx-padding: 8 18;
+    -fx-padding: 6 16;
+    -fx-background-radius: 6;
+    -fx-pref-height: 30;
+    -fx-min-height: 30;
+    -fx-max-height: 30;
 }
 
 .view-invoice-jobs-root .cancel-btn {
-    -fx-font-size: 11px;
+    -fx-font-size: 12px;
+    -fx-padding: 6 14;
+    -fx-background-radius: 6;
+    -fx-pref-height: 30;
+    -fx-min-height: 30;
+    -fx-max-height: 30;
+    -fx-background-color: #f5f0eb;
+    -fx-border-color: #d9cfc8;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+}
+
+.view-invoice-jobs-root .cancel-btn:hover {
+    -fx-background-color: #ede6de;
+    -fx-underline: false;
 }
 
 .view-invoice-jobs-root .invoice-jobs-table-premium {
     /* key knob: more rows visible */
-    -fx-fixed-cell-size: 48;
+    -fx-fixed-cell-size: 80;
 }
 
 .view-invoice-jobs-root .invoice-jobs-table-premium .column-header {
@@ -1172,5 +1210,161 @@
 .view-invoice-jobs-root .invoice-jobs-table-premium .table-cell {
     -fx-padding: 0 12;
     -fx-font-size: 11.5px;
+}
+
+/* Job details popup (double-click): must show text cells, not graphic-only like main jobs grid */
+.job-details-popup-table {
+    -fx-background-color: white;
+    -fx-fixed-cell-size: 40;
+    -fx-table-cell-border-color: #F1ECE6;
+}
+.job-details-popup-table .column-header-background {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #EEECE8;
+    -fx-border-width: 0 0 1 0;
+}
+.job-details-popup-table .column-header .label {
+    -fx-font-weight: 700;
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 12px;
+}
+.job-details-popup-table .table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: #F1ECE6;
+    -fx-border-width: 0 0 1 0;
+}
+.job-details-popup-table .table-cell {
+    -fx-padding: 8 12;
+    -fx-alignment: CENTER_LEFT;
+    -fx-content-display: LEFT;
+    -fx-text-fill: #3E312D;
+    -fx-font-size: 13px;
+}
+.job-details-popup-table .table-cell.job-details-amt-cell {
+    -fx-alignment: CENTER_RIGHT;
+    -fx-font-weight: 700;
+}
+.job-details-popup-table .placeholder .label {
+    -fx-text-fill: #8B7E74;
+    -fx-font-size: 13px;
+}
+
+/* ===================== MAIL POPUP STYLING ===================== */
+.mail-popup-root {
+    -fx-background-color: #FAF6F0;
+    -fx-background-radius: 16px;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 16px;
+    -fx-padding: 24px;
+    -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.18), 35, 0, 0, 15);
+}
+
+.mail-popup-table {
+    -fx-background-color: white;
+    -fx-background-radius: 12px;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 12px;
+    -fx-padding: 2px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.02), 8, 0, 0, 3);
+}
+
+.mail-popup-table .column-header-background {
+    -fx-background-color: #FAF9F6;
+    -fx-background-radius: 10px 10px 0 0;
+    -fx-border-color: #F1ECE6;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.mail-popup-table .column-header {
+    -fx-background-color: transparent;
+    -fx-size: 38px;
+    -fx-padding: 0 12px;
+    -fx-border-width: 0;
+}
+
+.mail-popup-table .column-header .label {
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter', system;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-text-transform: uppercase;
+    -fx-opacity: 0.85;
+}
+
+.mail-popup-table .table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent #F4EFEA transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-cell-size: 40px;
+    -fx-cursor: hand;
+}
+
+.mail-popup-table .table-row-cell:hover {
+    -fx-background-color: #FAF6F0;
+}
+
+.mail-popup-table .table-row-cell:selected {
+    -fx-background-color: #FFF2E8;
+    -fx-border-color: transparent transparent #FFD596 transparent;
+}
+
+.mail-popup-table .table-cell {
+    -fx-padding: 0 12px;
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter', system;
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+}
+
+.mail-popup-table .table-row-cell:selected .table-cell {
+    -fx-text-fill: #CD7B4E;
+    -fx-font-weight: 700;
+}
+
+/* Mail Fields Styling */
+.mail-field {
+    -fx-background-color: white;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 8px 12px;
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter', system;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.mail-field:focused {
+    -fx-border-color: #CD7B4E;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.12), 10, 0, 0, 0);
+}
+
+.mail-area {
+    -fx-background-color: white;
+    -fx-control-inner-background: white;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 8px 12px;
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter', system;
+    -fx-font-size: 13px;
+}
+
+.mail-area .content {
+    -fx-background-color: white !important;
+}
+
+.mail-area:focused {
+    -fx-border-color: #CD7B4E;
+    -fx-effect: dropshadow(three-pass-box, rgba(205, 123, 78, 0.12), 10, 0, 0, 0);
+}
+
+.mail-area:focused .content {
+    -fx-background-color: white !important;
 }
 

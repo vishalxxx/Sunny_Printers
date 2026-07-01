@@ -4,9 +4,16 @@ import model.Invoice;
 import model.InvoiceMaster;
 import model.MasterDocumentSeries;
 import repository.InvoiceMasterRepository;
+import service.NumberSequenceAllocationService.AllocatedNumber;
+import service.sync.UniversalNumberAllocator;
+import service.sync.UniversalSyncEngine;
 import utils.AtomicDB;
+import utils.ClientIdentifiers;
+import utils.DocumentNumbering;
 
 import java.time.LocalDate;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,6 +29,7 @@ public class InvoiceMasterService {
 
     private final InvoiceMasterRepository repo = new InvoiceMasterRepository();
     private final SettingsService settingsService = new SettingsService();
+    private final UniversalNumberAllocator numberAllocator = UniversalNumberAllocator.getInstance();
 
     /*
      * =========================================================
@@ -33,17 +41,27 @@ public class InvoiceMasterService {
             String type,
             String filePath) {
 
-        return AtomicDB.run(con -> {
+        CreateOrGetResult result = AtomicDB.run(con -> {
 
             if (invoice.getJobs() == null || invoice.getJobs().isEmpty()) {
                 throw new RuntimeException("Cannot create an empty invoice. No jobs found.");
             }
 
-            // 🔥 Requirement: Always create a new draft, do not reuse old invoices based on period
-            String tempNo = settingsService.generateNextTempInvoiceNumber(con);
+            MasterDocumentSeries series = invoice.getMasterDocumentSeries();
+            if (series == null) {
+                series = MasterDocumentSeries.GST_INVOICE;
+            }
+            AllocatedNumber allocated;
+            if (series == MasterDocumentSeries.PROFORMA_INVOICE) {
+                allocated = service.sync.UniversalTemporaryNumberEngine.getInstance().allocateTemporary(con, "proforma_invoice");
+            } else {
+                allocated = numberAllocator.allocateInvoiceNumber(con, series, invoice.getInvoiceDate());
+            }
+            String invoiceNo = allocated.value();
+            invoice.setInvoiceNo(invoiceNo);
 
             InvoiceMaster inv = new InvoiceMaster(
-                    tempNo,
+                    invoiceNo,
                     invoice.getClientId(),
                     invoice.getClientName(),
                     invoice.getInvoiceDate(),
@@ -54,60 +72,110 @@ public class InvoiceMasterService {
             inv.setFilePath(filePath);
             inv.setPeriodFrom(invoice.getFromDate());
             inv.setPeriodTo(invoice.getToDate());
-            inv.setDocumentSeries(invoice.getMasterDocumentSeries().name());
+            inv.setDocumentSeries(series.name());
+            inv.setSyncStatus("PENDING");
+            if (invoice.getTotalAfterTax() != null) {
+                inv.setTotalAfterTax(invoice.getTotalAfterTax());
+            } else {
+                inv.setTotalAfterTax(invoice.getGrandTotal());
+            }
+            if (invoice.getRoundOff() != null) {
+                inv.setRoundOff(invoice.getRoundOff());
+            } else {
+                inv.setRoundOff(0.0);
+            }
 
             repo.insert(con, inv);
             return new CreateOrGetResult(inv, true);
         });
+        UniversalSyncEngine.scheduleSyncAsync();
+        return result;
     }
 
     /**
      * Delete invoices created during a cancelled run (avoids duplicate
      * voided+active records).
      */
-    public void deleteInvoicesIfCancelled(List<Integer> invoiceIds) {
-        if (invoiceIds == null || invoiceIds.isEmpty())
+    public void deleteInvoicesIfCancelled(List<String> invoiceUuids) {
+        if (invoiceUuids == null || invoiceUuids.isEmpty())
             return;
         AtomicDB.runVoid(con -> {
-            for (int id : invoiceIds) {
+            for (String uuid : invoiceUuids) {
                 try {
-                    unlinkJobsFromInvoice(con, id);
-                    repo.deleteInvoice(con, id);
+                    unlinkJobsFromInvoice(con, uuid);
+                    repo.deleteInvoice(con, uuid);
                 } catch (Exception e) {
-                    System.err.println("Failed to delete invoice " + id + " on cancel: " + e.getMessage());
+                    System.err.println("Failed to delete invoice " + uuid + " on cancel: " + e.getMessage());
                 }
             }
         });
     }
 
-    public void saveGeneratedInvoice(
+    public String saveGeneratedInvoice(
             Invoice invoice,
             String type,
             String status,
             String filePath) {
-        InvoiceMaster inv = new InvoiceMaster(
-                invoice.getInvoiceNo(),
-                invoice.getClientId(),
-                invoice.getClientName(),
-                invoice.getInvoiceDate(),
-                invoice.getGrandTotal(),
-                type,
-                status);
-
-        inv.setFilePath(filePath);
-
-        inv.setDocumentSeries(invoice.getMasterDocumentSeries().name());
-
         if (invoice.getJobs() == null || invoice.getJobs().isEmpty()) {
             throw new RuntimeException("Cannot save an empty invoice.");
         }
 
-        AtomicDB.runVoid(con -> {
+        String generatedUuid = AtomicDB.runExclusive(con -> {
+            MasterDocumentSeries series = invoice.getMasterDocumentSeries();
+            if (series == null) {
+                series = MasterDocumentSeries.GST_INVOICE;
+            }
+            AllocatedNumber allocated;
+            if (series == MasterDocumentSeries.PROFORMA_INVOICE) {
+                allocated = service.sync.UniversalTemporaryNumberEngine.getInstance().allocateTemporary(con, "proforma_invoice");
+            } else {
+                allocated = numberAllocator.allocateInvoiceNumber(con, series, invoice.getInvoiceDate());
+            }
+            String invoiceNo = allocated.value();
+            invoice.setInvoiceNo(invoiceNo);
+
+            InvoiceMaster inv = new InvoiceMaster(
+                    invoiceNo,
+                    invoice.getClientId(),
+                    invoice.getClientName(),
+                    invoice.getInvoiceDate(),
+                    invoice.getGrandTotal(),
+                    type,
+                    status);
+
+            inv.setFilePath(filePath);
+            inv.setDocumentSeries(series.name());
+            if (invoice.getTotalAfterTax() != null) {
+                inv.setTotalAfterTax(invoice.getTotalAfterTax());
+            } else {
+                inv.setTotalAfterTax(invoice.getGrandTotal());
+            }
+            if (invoice.getRoundOff() != null) {
+                inv.setRoundOff(invoice.getRoundOff());
+            } else {
+                inv.setRoundOff(0.0);
+            }
+
+            inv.setPlaceOfSupply(invoice.getPlaceOfSupply());
+            inv.setPaymentTerms(invoice.getPaymentTerms());
+            inv.setDueDate(invoice.getDueDate());
+            inv.setVehicleDispatch(invoice.getVehicleDispatch());
+            inv.setPoNo(invoice.getPoNo());
+            inv.setPoDate(invoice.getPoDate());
+            inv.setDispatchThrough(invoice.getDispatchThrough());
+            inv.setLrTrackingNo(invoice.getLrTrackingNo());
+            inv.setRemarks(invoice.getRemarks());
+            inv.setEwayBillNo(invoice.getEwayBillNo());
+            inv.setSyncStatus("PENDING");
+
             repo.insert(con, inv);
-            linkJobsToInvoice(con, inv.getId(), invoice);
-            
+            linkJobsToInvoice(con, inv.getUuid(), invoice);
+
             deleteEmptyInvoices(con);
+            return inv.getUuid();
         });
+        UniversalSyncEngine.scheduleSyncAsync();
+        return generatedUuid;
     }
 
     public void registerDateRangeInvoice(
@@ -122,8 +190,23 @@ public class InvoiceMasterService {
             InvoiceMaster existing = repo.findByInvoiceNo(con, invoice.getInvoiceNo());
 
             if (existing != null) {
+                existing.setPlaceOfSupply(invoice.getPlaceOfSupply());
+                existing.setPaymentTerms(invoice.getPaymentTerms());
+                existing.setDueDate(invoice.getDueDate());
+                existing.setVehicleDispatch(invoice.getVehicleDispatch());
+                existing.setPoNo(invoice.getPoNo());
+                existing.setPoDate(invoice.getPoDate());
+                existing.setDispatchThrough(invoice.getDispatchThrough());
+                existing.setLrTrackingNo(invoice.getLrTrackingNo());
+                existing.setRemarks(invoice.getRemarks());
+                existing.setEwayBillNo(invoice.getEwayBillNo());
+                existing.setTotalAfterTax(invoice.getTotalAfterTax() != null ? invoice.getTotalAfterTax() : invoice.getGrandTotal());
+                existing.setRoundOff(invoice.getRoundOff() != null ? invoice.getRoundOff() : 0.0);
+                
+                repo.update(con, existing);
+
                 // Link jobs to the draft created earlier
-                linkJobsToInvoice(con, existing.getId(), invoice);
+                linkJobsToInvoice(con, existing.getUuid(), invoice);
                 return;
             }
 
@@ -151,79 +234,245 @@ public class InvoiceMasterService {
             inv.setPeriodTo(to);
             inv.setFilePath(filePath);
             inv.setDocumentSeries(invoice.getMasterDocumentSeries().name());
+            if (invoice.getTotalAfterTax() != null) {
+                inv.setTotalAfterTax(invoice.getTotalAfterTax());
+            } else {
+                inv.setTotalAfterTax(invoice.getGrandTotal());
+            }
+            if (invoice.getRoundOff() != null) {
+                inv.setRoundOff(invoice.getRoundOff());
+            } else {
+                inv.setRoundOff(0.0);
+            }
+
+            inv.setPlaceOfSupply(invoice.getPlaceOfSupply());
+            inv.setPaymentTerms(invoice.getPaymentTerms());
+            inv.setDueDate(invoice.getDueDate());
+            inv.setVehicleDispatch(invoice.getVehicleDispatch());
+            inv.setPoNo(invoice.getPoNo());
+            inv.setPoDate(invoice.getPoDate());
+            inv.setDispatchThrough(invoice.getDispatchThrough());
+            inv.setLrTrackingNo(invoice.getLrTrackingNo());
+            inv.setRemarks(invoice.getRemarks());
+            inv.setEwayBillNo(invoice.getEwayBillNo());
 
             repo.insert(con, inv);
-            linkJobsToInvoice(con, inv.getId(), invoice);
+            linkJobsToInvoice(con, inv.getUuid(), invoice);
             deleteEmptyInvoices(con);
         });
     }
 
-    private void linkJobsToInvoice(java.sql.Connection con, int invoiceId, Invoice invoice) {
+    private void linkJobsToInvoice(java.sql.Connection con, String invoiceUuid, Invoice invoice) {
         if (invoice == null || invoice.getJobs() == null || invoice.getJobs().isEmpty())
             return;
 
-        List<Integer> jobIds = invoice.getJobs().stream()
-                .map(model.InvoiceJob::getJobId)
-                .toList();
+        List<String> jobUuids = new ArrayList<>();
+        for (model.InvoiceJob job : invoice.getJobs()) {
+            String u = job.getJobUuid();
+            if (u != null && !u.isBlank()) {
+                // Only include if it actually exists in the jobs table
+                String checkSql = "SELECT 1 FROM jobs WHERE uuid = ?";
+                try (java.sql.PreparedStatement ps = con.prepareStatement(checkSql)) {
+                    ps.setString(1, u);
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            jobUuids.add(u);
+                        }
+                    }
+                } catch (SQLException e) {
+                    // ignore
+                }
+            }
+        }
 
-        if (jobIds.isEmpty())
+        if (jobUuids.isEmpty()) {
             return;
+        }
 
-        String placeholders = jobIds.stream().map(i -> "?").collect(java.util.stream.Collectors.joining(","));
-        String updateJobsSql = "UPDATE jobs SET invoice_id = ?, status = 'Invoice Drafted' WHERE id IN (" + placeholders + ")";
-        String insertMappingSql = "INSERT OR IGNORE INTO invoice_job_mapping (invoice_id, job_id) VALUES (?, ?)";
+        linkJobUuidsToInvoice(con, invoiceUuid, jobUuids, "Invoice Drafted");
+    }
 
-        try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql);
-             java.sql.PreparedStatement psMap = con.prepareStatement(insertMappingSql)) {
-            
-            // 1. Update Jobs
-            psUpdate.setInt(1, invoiceId);
-            int idx = 2;
-            for (int jobId : jobIds) {
-                psUpdate.setInt(idx++, jobId);
+    /**
+     * Sets {@code jobs.invoice_uuid} and ensures {@code invoice_job_mapping} rows exist.
+     */
+    public void linkJobUuidsToInvoice(java.sql.Connection con, String invoiceUuid, List<String> jobUuids,
+            String jobStatus) {
+        if (invoiceUuid == null || invoiceUuid.isBlank() || jobUuids == null || jobUuids.isEmpty()) {
+            return;
+        }
+
+        // Verify that none of the jobUuids are cancelled
+        for (String jobUuid : jobUuids) {
+            String checkSql = "SELECT status FROM jobs WHERE uuid = ?";
+            try (java.sql.PreparedStatement psCheck = con.prepareStatement(checkSql)) {
+                psCheck.setString(1, jobUuid);
+                try (java.sql.ResultSet rs = psCheck.executeQuery()) {
+                    if (rs.next()) {
+                        String st = rs.getString(1);
+                        if ("Cancelled".equalsIgnoreCase(st)) {
+                            throw new RuntimeException("Cancelled jobs cannot be linked to invoices or invoiced again.");
+                        }
+                    }
+                }
+            } catch (java.sql.SQLException ex) {
+                throw new RuntimeException("Error checking job status: " + ex.getMessage(), ex);
+            }
+        }
+
+        String status = jobStatus != null && !jobStatus.isBlank() ? jobStatus.trim() : "Invoice Drafted";
+        String placeholders = jobUuids.stream().map(i -> "?").collect(java.util.stream.Collectors.joining(","));
+        String updateJobsSql = "UPDATE jobs SET invoice_uuid = ?, status = ?, sync_status = 'PENDING', "
+                + "sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now') WHERE uuid IN ("
+                + placeholders + ")";
+        try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql)) {
+            psUpdate.setString(1, invoiceUuid);
+            psUpdate.setString(2, status);
+            int idx = 3;
+            for (String jobUuid : jobUuids) {
+                psUpdate.setString(idx++, jobUuid);
             }
             psUpdate.executeUpdate();
 
-            // 2. Insert Mappings
-            for (int jobId : jobIds) {
-                psMap.setInt(1, invoiceId);
-                psMap.setInt(2, jobId);
-                psMap.addBatch();
+            for (String jobUuid : jobUuids) {
+                insertInvoiceJobMapping(con, invoiceUuid, jobUuid);
             }
-            psMap.executeBatch();
-
         } catch (Exception e) {
-            System.err.println("Failed to link jobs to invoice: " + e.getMessage());
+            throw new RuntimeException("Failed to link jobs to invoice: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Junction row for invoice ↔ job (requires uuid PK for SQLite + Supabase sync).
+     */
+    public static void insertInvoiceJobMapping(java.sql.Connection con, String invoiceUuid, String jobUuid)
+            throws SQLException {
+        if (invoiceUuid == null || invoiceUuid.isBlank() || jobUuid == null || jobUuid.isBlank()) {
+            return;
+        }
+        
+        // 1. Existence check to prevent generating a new UUID for an existing mapping.
+        // If we push a new UUID for an existing (invoice, job) pair, Supabase will throw a unique constraint violation.
+        String checkSql = "SELECT uuid FROM invoice_job_mapping WHERE invoice_uuid = ? AND job_uuid = ?";
+        try (java.sql.PreparedStatement psCheck = con.prepareStatement(checkSql)) {
+            psCheck.setString(1, invoiceUuid.trim());
+            psCheck.setString(2, jobUuid.trim());
+            try (java.sql.ResultSet rs = psCheck.executeQuery()) {
+                if (rs.next()) {
+                    String existingUuid = rs.getString("uuid");
+                    String updateSql = "UPDATE invoice_job_mapping SET sync_status = 'PENDING', is_deleted = 0, is_active = 1, updated_at = datetime('now'), sync_version = COALESCE(sync_version, 1) + 1 WHERE uuid = ?";
+                    try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateSql)) {
+                        psUpdate.setString(1, existingUuid);
+                        psUpdate.executeUpdate();
+                    }
+                    return; // Successfully updated existing, skip insert
+                }
+            }
+        }
+
+        // 2. Insert new mapping
+        String sql = """
+                INSERT INTO invoice_job_mapping (
+                  uuid, invoice_uuid, job_uuid, sync_status, sync_version, is_deleted, is_active, created_at, updated_at
+                ) VALUES (?, ?, ?, 'PENDING', 1, 0, 1, datetime('now'), datetime('now'))
+                ON CONFLICT(invoice_uuid, job_uuid) DO UPDATE SET
+                  sync_status = 'PENDING',
+                  sync_version = COALESCE(invoice_job_mapping.sync_version, 1) + 1,
+                  updated_at = datetime('now'),
+                  is_deleted = 0,
+                  is_active = 1
+                """;
+        try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+            String deterministicUuid = java.util.UUID.nameUUIDFromBytes((invoiceUuid.trim() + "_" + jobUuid.trim()).getBytes(java.nio.charset.StandardCharsets.UTF_8)).toString();
+            ps.setString(1, deterministicUuid);
+            ps.setString(2, invoiceUuid.trim());
+            ps.setString(3, jobUuid.trim());
+            ps.executeUpdate();
+        }
+    }
+
+    /** Remove one job from an invoice mapping (local + marks job for re-sync). */
+    public static void deleteInvoiceJobMapping(java.sql.Connection con, String invoiceUuid, String jobUuid)
+            throws SQLException {
+        if (jobUuid == null || jobUuid.isBlank()) {
+            return;
+        }
+
+        String sql = "UPDATE invoice_job_mapping SET is_deleted = 1, sync_status = 'PENDING', updated_at = datetime('now') WHERE job_uuid = ?"
+                + (invoiceUuid != null && !invoiceUuid.isBlank() ? " AND invoice_uuid = ?" : "");
+
+        try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, jobUuid.trim());
+            if (invoiceUuid != null && !invoiceUuid.isBlank()) {
+                ps.setString(2, invoiceUuid.trim());
+            }
+            ps.executeUpdate();
+        }
+    }
+
+    private static String resolveInvoiceUuid(java.sql.Connection con, int invoiceId) {
+        try (java.sql.PreparedStatement ps = con.prepareStatement(
+                "SELECT uuid FROM invoice_master WHERE id = ?")) {
+            ps.setInt(1, invoiceId);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("uuid");
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to resolve invoice uuid: " + e.getMessage());
+        }
+        return null;
     }
 
     public void deleteEmptyInvoices(java.sql.Connection con) {
-        String sql = """
-            DELETE FROM invoice_master 
-            WHERE status = 'DRAFT' 
-              AND invoice_no LIKE 'TEMP-%'
-              AND id NOT IN (SELECT DISTINCT invoice_id FROM invoice_job_mapping)
-        """;
-        try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.executeUpdate();
+        // Find empty draft invoices and cancel them instead of deleting
+        String selectSql = "SELECT uuid FROM invoice_master WHERE status = 'DRAFT' AND uuid NOT IN (SELECT invoice_uuid FROM invoice_job_mapping WHERE invoice_uuid IS NOT NULL AND TRIM(invoice_uuid) <> '' UNION SELECT invoice_uuid FROM jobs WHERE invoice_uuid IS NOT NULL AND TRIM(invoice_uuid) <> '')";
+        try (java.sql.PreparedStatement ps = con.prepareStatement(selectSql);
+             java.sql.ResultSet rs = ps.executeQuery()) {
+            java.util.List<String> uuids = new java.util.ArrayList<>();
+            while (rs.next()) uuids.add(rs.getString(1));
+            
+            String updateInvStatusSql = "UPDATE invoice_master SET status = 'CANCELLED', payment_status = 'Void', amount = 0, due_amount = 0, sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+            try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateInvStatusSql)) {
+                for (String u : uuids) {
+                    psUpdate.setString(1, u);
+                    psUpdate.addBatch();
+                }
+                psUpdate.executeBatch();
+            }
         } catch (Exception e) {
-            System.err.println("Failed to cleanup empty invoices: " + e.getMessage());
+            System.err.println("Failed to cancel empty invoices: " + e.getMessage());
         }
     }
 
-    private void unlinkJobsFromInvoice(java.sql.Connection con, int invoiceId) {
-        String updateJobsSql = "UPDATE jobs SET invoice_id = NULL, status = 'Completed' WHERE invoice_id = ?";
-        String deleteMappingSql = "DELETE FROM invoice_job_mapping WHERE invoice_id = ?";
+    private void unlinkJobsFromInvoice(java.sql.Connection con, String invoiceUuid) {
+        if (invoiceUuid == null || invoiceUuid.isBlank()) {
+            return;
+        }
+
+        String type = "";
+        try (java.sql.PreparedStatement psType = con.prepareStatement("SELECT type FROM invoice_master WHERE uuid = ?")) {
+            psType.setString(1, invoiceUuid);
+            try (java.sql.ResultSet rs = psType.executeQuery()) {
+                if (rs.next()) type = rs.getString(1);
+            }
+        } catch (Exception ignore) {}
+
+        String targetStatus = "Performa Bills".equalsIgnoreCase(type) ? "Cancelled" : "Completed";
+        String updateJobsSql = "UPDATE jobs SET invoice_uuid = NULL, status = ?, sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now') WHERE invoice_uuid = ?";
+        
+        String deleteMappingSql = "UPDATE invoice_job_mapping SET is_deleted = 1, sync_status = 'PENDING', updated_at = datetime('now') WHERE invoice_uuid = ?";
+
         try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql);
              java.sql.PreparedStatement psDelMap = con.prepareStatement(deleteMappingSql)) {
-            
-            psUpdate.setInt(1, invoiceId);
+
+            psUpdate.setString(1, targetStatus);
+            psUpdate.setString(2, invoiceUuid);
             psUpdate.executeUpdate();
-            
-            psDelMap.setInt(1, invoiceId);
+
+            psDelMap.setString(1, invoiceUuid);
             psDelMap.executeUpdate();
             
-            // 🔥 Requirement: if temporary invoice is empty, delete it automatically
             deleteEmptyInvoices(con);
             
         } catch (Exception e) {
@@ -231,11 +480,23 @@ public class InvoiceMasterService {
         }
     }
 
-    private void releaseJobsKeepHistory(java.sql.Connection con, int invoiceId) {
-        // Releases jobs for reuse but keeps the 'invoice_job_mapping' for history
-        String updateJobsSql = "UPDATE jobs SET invoice_id = NULL, status = 'Completed' WHERE invoice_id = ?";
+    private void releaseJobsKeepHistory(java.sql.Connection con, String invoiceUuid) {
+        if (invoiceUuid == null || invoiceUuid.isBlank()) {
+            return;
+        }
+        String type = "";
+        try (java.sql.PreparedStatement psType = con.prepareStatement("SELECT type FROM invoice_master WHERE uuid = ?")) {
+            psType.setString(1, invoiceUuid);
+            try (java.sql.ResultSet rs = psType.executeQuery()) {
+                if (rs.next()) type = rs.getString(1);
+            }
+        } catch (Exception ignore) {}
+
+        String targetStatus = "Performa Bills".equalsIgnoreCase(type) ? "Cancelled" : "Completed";
+        String updateJobsSql = "UPDATE jobs SET invoice_uuid = NULL, status = ?, sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now') WHERE invoice_uuid = ?";
         try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql)) {
-            psUpdate.setInt(1, invoiceId);
+            psUpdate.setString(1, targetStatus);
+            psUpdate.setString(2, invoiceUuid);
             psUpdate.executeUpdate();
         } catch (Exception e) {
             System.err.println("Failed to release jobs for history: " + e.getMessage());
@@ -247,8 +508,8 @@ public class InvoiceMasterService {
      * MARK SENT
      * =========================================================
      */
-    public void markSent(int invoiceId) {
-        AtomicDB.runVoid(con -> repo.updatePayment(con, invoiceId, 0, 0, "SENT", LocalDate.now()));
+    public void markSent(String invoiceUuid) {
+        AtomicDB.runVoid(con -> repo.updatePayment(con, invoiceUuid, 0, 0, "SENT", LocalDate.now()));
     }
 
     /*
@@ -256,15 +517,12 @@ public class InvoiceMasterService {
      * REGISTER PAYMENT / PARTIAL / FULL
      * =========================================================
      */
-    public void registerPayment(int invoiceId, double amount, double totalDue) {
-
-        AtomicDB.runVoid(con -> {
-
+    public void registerPayment(String invoiceUuid, double amount, double totalDue) {
+        AtomicDB.runExclusiveVoid(con -> {
             String status = amount >= totalDue ? "PAID" : "PARTIAL_PAID";
-
             repo.updatePayment(
                     con,
-                    invoiceId,
+                    invoiceUuid,
                     amount,
                     totalDue - amount,
                     status,
@@ -287,11 +545,20 @@ public class InvoiceMasterService {
             String type,
             String filePath) {
 
-        AtomicDB.runVoid(con -> {
+        AtomicDB.runExclusiveVoid(con -> {
 
             for (Invoice invoice : invoiceMap.values()) {
                 // Skip clients with no jobs (Enforce: No empty invoices)
                 if (invoice.getJobs() == null || invoice.getJobs().isEmpty()) {
+                    continue;
+                }
+
+                // Find the master created earlier in this session (by invoice_no)
+                InvoiceMaster existing = repo.findByInvoiceNo(con, invoice.getInvoiceNo());
+
+                if (existing != null) {
+                    // Link jobs to the draft created earlier
+                    linkJobsToInvoice(con, existing.getUuid(), invoice);
                     continue;
                 }
 
@@ -309,9 +576,19 @@ public class InvoiceMasterService {
                 inv.setPeriodTo(to);
                 inv.setFilePath(filePath);
                 inv.setDocumentSeries(invoice.getMasterDocumentSeries().name());
+                if (invoice.getTotalAfterTax() != null) {
+                    inv.setTotalAfterTax(invoice.getTotalAfterTax());
+                } else {
+                    inv.setTotalAfterTax(invoice.getGrandTotal());
+                }
+                if (invoice.getRoundOff() != null) {
+                    inv.setRoundOff(invoice.getRoundOff());
+                } else {
+                    inv.setRoundOff(0.0);
+                }
 
                 repo.insert(con, inv);
-                linkJobsToInvoice(con, inv.getId(), invoice);
+                linkJobsToInvoice(con, inv.getUuid(), invoice);
             }
             deleteEmptyInvoices(con);
         });
@@ -322,11 +599,10 @@ public class InvoiceMasterService {
      * VOID INVOICE
      * =========================================================
      */
-    public void voidInvoice(int invoiceId, String reason) {
-
-        AtomicDB.runVoid(con -> {
-            repo.voidInvoice(con, invoiceId, reason, LocalDate.now());
-            unlinkJobsFromInvoice(con, invoiceId);
+    public void voidInvoice(String invoiceUuid, String reason) {
+        AtomicDB.runExclusiveVoid(con -> {
+            repo.voidInvoice(con, invoiceUuid, reason, LocalDate.now());
+            unlinkJobsFromInvoice(con, invoiceUuid);
         });
     }
 
@@ -340,8 +616,14 @@ public class InvoiceMasterService {
         return AtomicDB.run(con -> repo.findRecent(con, limit));
     }
 
-    public InvoiceMaster getInvoiceById(int invoiceId) {
-        return AtomicDB.run(con -> repo.findById(con, invoiceId));
+    public InvoiceMaster getInvoiceById(String invoiceUuid) {
+        return AtomicDB.run(con -> {
+            try {
+                return repo.findByUuid(con, invoiceUuid);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     public InvoiceMaster getInvoiceByInvoiceNo(String invoiceNo) {
@@ -362,89 +644,744 @@ public class InvoiceMasterService {
      * UPDATE INDIVIDUAL STATUSES
      * =========================================================
      */
-    public void updateInvoiceStatus(int invoiceId, String newStatus) {
+    public InvoiceMaster getInvoiceByUuid(String uuid) {
+        return AtomicDB.run(con -> repo.findByUuid(con, uuid));
+    }
+
+    public void unlinkJobsAndRecalculateProforma(String invoiceUuid, List<String> jobUuids) {
         AtomicDB.runVoid(con -> {
-            InvoiceMaster inv = repo.findById(con, invoiceId);
+            String updateJobsSql = "UPDATE jobs SET invoice_uuid = NULL, status = CASE WHEN status = 'Cancelled' THEN 'Cancelled' ELSE 'Completed' END, sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now') WHERE uuid IN (" + 
+                jobUuids.stream().map(u -> "?").collect(java.util.stream.Collectors.joining(",")) + ")";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(updateJobsSql)) {
+                int idx = 1;
+                for (String u : jobUuids) ps.setString(idx++, u);
+                ps.executeUpdate();
+            }
+            for (String jobUuid : jobUuids) {
+                deleteInvoiceJobMapping(con, invoiceUuid, jobUuid);
+            }
+            recalculateInvoiceTotals(con, invoiceUuid);
+        });
+    }
+
+    public void deallocatePaymentsForInvoice(String invoiceUuid) {
+        AtomicDB.runVoid(con -> {
+            String sql = "UPDATE payment_allocations SET is_deleted = 1, sync_status = 'PENDING', updated_at = datetime('now') WHERE invoice_uuid = ?";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, invoiceUuid);
+                ps.executeUpdate();
+            }
+            String updateInv = "UPDATE invoice_master SET paid_amount = 0, due_amount = amount, sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(updateInv)) {
+                ps.setString(1, invoiceUuid);
+                ps.executeUpdate();
+            }
+        });
+    }
+
+    public void refundAdvanceForInvoice(String invoiceUuid, String clientUuid, double amount) {
+        AtomicDB.runVoid(con -> {
+            String paymentUuid = ClientIdentifiers.newUuidV7String();
+            String allocUuid = ClientIdentifiers.newUuidV7String();
+            String todayStr = LocalDate.now().toString();
+
+            String sqlPay = "INSERT INTO payments (uuid, client_uuid, amount, payment_date, method, type, sync_status, sync_version, is_deleted, is_active, created_at, updated_at) VALUES (?,?,?,?,'Cash','Refund','PENDING',1,0,1,datetime('now'),datetime('now'))";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(sqlPay)) {
+                ps.setString(1, paymentUuid);
+                ps.setString(2, clientUuid);
+                ps.setDouble(3, -amount);
+                ps.setString(4, todayStr);
+                ps.executeUpdate();
+            }
+
+            String sqlAlloc = "INSERT INTO payment_allocations (uuid, payment_uuid, invoice_uuid, allocated_amount, sync_status, created_at, updated_at) VALUES (?,?,?,?,'PENDING',datetime('now'),datetime('now'))";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(sqlAlloc)) {
+                ps.setString(1, allocUuid);
+                ps.setString(2, paymentUuid);
+                ps.setString(3, invoiceUuid);
+                ps.setDouble(4, -amount);
+                ps.executeUpdate();
+            }
+
+            String updateInv = "UPDATE invoice_master SET paid_amount = paid_amount - ?, due_amount = due_amount + ?, sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(updateInv)) {
+                ps.setDouble(1, amount);
+                ps.setDouble(2, amount);
+                ps.setString(3, invoiceUuid);
+                ps.executeUpdate();
+            }
+        });
+    }
+
+    private void adjustAllocationsForExcess(java.sql.Connection con, String invoiceUuid, double excess) throws SQLException {
+        String sql = "SELECT uuid, allocated_amount FROM payment_allocations WHERE invoice_uuid = ? AND COALESCE(is_deleted,0) = 0 ORDER BY created_at DESC";
+        double remainingExcess = excess;
+        try (java.sql.PreparedStatement ps = con.prepareStatement(sql);
+             java.sql.ResultSet rs = ps.executeQuery()) {
+            while (rs.next() && remainingExcess > 0) {
+                String allocUuid = rs.getString("uuid");
+                double currentAlloc = rs.getDouble("allocated_amount");
+                if (currentAlloc >= remainingExcess) {
+                    double newAlloc = currentAlloc - remainingExcess;
+                    String updateSql = "UPDATE payment_allocations SET allocated_amount = ?, sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+                    try (java.sql.PreparedStatement psU = con.prepareStatement(updateSql)) {
+                        psU.setDouble(1, newAlloc);
+                        psU.setString(2, allocUuid);
+                        psU.executeUpdate();
+                    }
+                    remainingExcess = 0;
+                } else {
+                    remainingExcess -= currentAlloc;
+                    String deleteSql = "UPDATE payment_allocations SET is_deleted = 1, sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+                    try (java.sql.PreparedStatement psD = con.prepareStatement(deleteSql)) {
+                        psD.setString(1, allocUuid);
+                        psD.executeUpdate();
+                    }
+                }
+            }
+        }
+        String updatePaid = "UPDATE invoice_master SET paid_amount = paid_amount - ? WHERE uuid = ?";
+        try (java.sql.PreparedStatement ps = con.prepareStatement(updatePaid)) {
+            ps.setDouble(1, excess);
+            ps.setString(2, invoiceUuid);
+            ps.executeUpdate();
+        }
+    }
+
+    private static String extractStateCode(String s) {
+        if (s == null)
+            return "";
+        String trimmed = s.trim();
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\((\\d{2})\\)").matcher(trimmed);
+        if (m.find())
+            return m.group(1);
+        m = java.util.regex.Pattern.compile("^(\\d{2})").matcher(trimmed);
+        if (m.find())
+            return m.group(1);
+        return "";
+    }
+
+    public void recalculateInvoiceTotals(java.sql.Connection con, String invoiceUuid) throws Exception {
+        boolean localCon = false;
+        if (con == null) {
+            con = utils.DBConnection.getConnection();
+            localCon = true;
+        }
+        
+        try {
+            InvoiceMaster inv = repo.findByUuid(con, invoiceUuid);
+            if (inv == null) {
+                return;
+            }
+
+        boolean isProforma = (inv.getDocumentSeries() != null && ("PROFORMA_INVOICE".equalsIgnoreCase(inv.getDocumentSeries()) || "PROFORMA".equalsIgnoreCase(inv.getDocumentSeries())))
+                || (inv.getType() != null && (inv.getType().toUpperCase().contains("PROFORMA") || inv.getType().toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(inv.getType()) || "DATE_RANGE".equalsIgnoreCase(inv.getType()) || inv.getType().toUpperCase().contains("MONTHLY")))
+                || (inv.getInvoiceNo() != null && inv.getInvoiceNo().toUpperCase().contains("/PI/"));
+        boolean isGst = !isProforma;
+
+        boolean intra = true;
+        repository.ClientRepository clientRepo = new repository.ClientRepository();
+        model.Client client = clientRepo.findByUuid(inv.getClientId());
+        if (client != null) {
+            String companyGst = utils.CompanyProfile.getGst();
+            String buyerGst = client.getGst();
+            String companyCode = extractStateCode(companyGst);
+            if (companyCode.isEmpty()) {
+                companyCode = "07";
+            }
+            String buyerCode = extractStateCode(buyerGst);
+            if (!companyCode.isEmpty() && !buyerCode.isEmpty()) {
+                intra = companyCode.equals(buyerCode);
+            }
+        }
+
+        double taxable = 0.0;
+        double totalTax = 0.0;
+
+        String jobsSql = "SELECT uuid FROM jobs WHERE status <> 'Cancelled' AND (invoice_uuid = ? OR uuid IN (SELECT job_uuid FROM invoice_job_mapping WHERE invoice_uuid = ? AND COALESCE(is_deleted, 0) = 0))";
+        java.util.List<String> activeJobUuids = new java.util.ArrayList<>();
+        try (java.sql.PreparedStatement ps = con.prepareStatement(jobsSql)) {
+            ps.setString(1, invoiceUuid);
+            ps.setString(2, invoiceUuid);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    activeJobUuids.add(rs.getString(1));
+                }
+            }
+        }
+
+        if (activeJobUuids.isEmpty()) {
+            String deallocSql = "UPDATE payment_allocations SET is_deleted = 1, sync_status = 'PENDING', updated_at = datetime('now') WHERE invoice_uuid = ?";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(deallocSql)) {
+                ps.setString(1, invoiceUuid);
+                ps.executeUpdate();
+            }
+            String updateInvStatusSql = "UPDATE invoice_master SET status = 'CANCELLED', payment_status = 'Void', amount = 0, paid_amount = 0, due_amount = 0, sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(updateInvStatusSql)) {
+                ps.setString(1, invoiceUuid);
+                ps.executeUpdate();
+            }
+            return;
+        }
+
+        repository.HsnSacRepository hsnRepo = new repository.HsnSacRepository();
+        for (String jobUuid : activeJobUuids) {
+            String itemsSql = "SELECT type, description, amount FROM job_items WHERE job_uuid = ? AND COALESCE(is_deleted, 0) = 0";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(itemsSql)) {
+                ps.setString(1, jobUuid);
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String type = rs.getString("type");
+                        String desc = rs.getString("description");
+                        double amt = rs.getDouble("amount");
+                        taxable += amt;
+
+                        double rate = 0.18;
+                        model.HsnSacInfo hsnInfo = hsnRepo.findBestMatch(con, type, desc);
+                        if (hsnInfo != null && hsnInfo.getGstRate() > 0) {
+                            rate = hsnInfo.getGstRate();
+                        }
+
+                        if (intra) {
+                            double halfRate = rate / 2.0;
+                            double cgst = Math.round(amt * halfRate * 100.0) / 100.0;
+                            double sgst = Math.round(amt * halfRate * 100.0) / 100.0;
+                            totalTax += (cgst + sgst);
+                        } else {
+                            double igst = Math.round(amt * rate * 100.0) / 100.0;
+                            totalTax += igst;
+                        }
+                    }
+                }
+            }
+        }
+
+        taxable = Math.round(taxable * 100.0) / 100.0;
+        totalTax = Math.round(totalTax * 100.0) / 100.0;
+
+        double newAmount;
+        if (isGst) {
+            newAmount = Math.round(taxable + totalTax);
+        } else {
+            newAmount = taxable;
+        }
+        double newTotalAfterTax = isGst ? (taxable + totalTax) : taxable;
+        double newRoundOff = newAmount - newTotalAfterTax;
+
+        if (inv.getPaidAmount() > newAmount) {
+            double excess = inv.getPaidAmount() - newAmount;
+            adjustAllocationsForExcess(con, invoiceUuid, excess);
+        }
+
+        double paidAmount = inv.getPaidAmount();
+        if (paidAmount > newAmount) {
+            paidAmount = newAmount; // Excess adjusted
+        }
+
+        // Fetch adjustments
+        double adjustments = 0.0;
+        String adjSql = """
+            SELECT (SELECT COALESCE(SUM(amount), 0) FROM invoice_adjustments WHERE invoice_uuid = ? AND type = 'Debit Note')
+                 - (SELECT COALESCE(SUM(amount), 0) FROM invoice_adjustments WHERE invoice_uuid = ? AND type = 'Credit Note')
+        """;
+        try (java.sql.PreparedStatement psAdj = con.prepareStatement(adjSql)) {
+            psAdj.setString(1, invoiceUuid);
+            psAdj.setString(2, invoiceUuid);
+            try (java.sql.ResultSet rs = psAdj.executeQuery()) {
+                if (rs.next()) {
+                    adjustments = rs.getDouble(1);
+                }
+            }
+        }
+
+        double newDue = newAmount + adjustments - paidAmount;
+        String newPayStatus;
+        if ("REFUND_PENDING".equals(inv.getPaymentStatus())) {
+            newPayStatus = "REFUND_PENDING";
+        } else if (newDue <= 0.0001) {
+            newPayStatus = "PAID";
+            newDue = 0.0;
+        } else if (paidAmount > 0.0001) {
+            newPayStatus = "PARTIAL PAID";
+        } else {
+            newPayStatus = "UNPAID";
+        }
+
+        String updateSql = """
+            UPDATE invoice_master SET
+              amount = ?,
+              due_amount = ?,
+              payment_status = ?,
+              total_after_tax = ?,
+              round_off = ?,
+              sync_status = 'PENDING',
+              updated_at = datetime('now')
+            WHERE uuid = ?
+        """;
+        try (java.sql.PreparedStatement ps = con.prepareStatement(updateSql)) {
+            ps.setDouble(1, newAmount);
+            ps.setDouble(2, newDue);
+            ps.setString(3, newPayStatus);
+            ps.setDouble(4, newTotalAfterTax);
+            ps.setDouble(5, newRoundOff);
+            ps.setString(6, invoiceUuid);
+            ps.executeUpdate();
+        }
+
+        // Automatically regenerate PDF file if one is already associated
+        if (inv.getFilePath() != null && !inv.getFilePath().isBlank()) {
+            try {
+                service.InvoiceBuilderService builder = new service.InvoiceBuilderService();
+                model.Invoice full = builder.buildInvoiceFromMasterForPdfExport(invoiceUuid);
+                boolean isProformaPdf = (full.getMasterDocumentSeries() == model.MasterDocumentSeries.PROFORMA_INVOICE)
+                                       || (full.getInvoiceType() != null && (full.getInvoiceType().toUpperCase().contains("PROFORMA") || full.getInvoiceType().toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(full.getInvoiceType()) || "DATE_RANGE".equalsIgnoreCase(full.getInvoiceType()) || full.getInvoiceType().toUpperCase().contains("MONTHLY")))
+                                       || (full.getInvoiceNo() != null && full.getInvoiceNo().toUpperCase().contains("/PI/"));
+                if (isProformaPdf) {
+                    new service.PdfInvoiceService().generateSingleInvoicePDF(full);
+                } else {
+                    new service.GstPdfInvoiceService().generateGstInvoice(full);
+                }
+            } catch (Exception ex) {
+                System.err.println("Failed to regenerate invoice PDF: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+        }
+        } finally {
+            if (localCon && con != null) {
+                con.close();
+            }
+        }
+    }
+
+    public void reallocatePaymentsOnJobCancellation(java.sql.Connection con, String invoiceUuid, List<String> cancelledJobUuids, String reason, String cancelledBy) throws Exception {
+        if (invoiceUuid == null || invoiceUuid.isBlank() || cancelledJobUuids == null || cancelledJobUuids.isEmpty()) {
+            return;
+        }
+
+        InvoiceMaster inv = repo.findByUuid(con, invoiceUuid);
+        if (inv == null) {
+            return;
+        }
+
+        boolean isProforma = (inv.getDocumentSeries() != null && ("PROFORMA_INVOICE".equalsIgnoreCase(inv.getDocumentSeries()) || "PROFORMA".equalsIgnoreCase(inv.getDocumentSeries())))
+                || (inv.getType() != null && (inv.getType().toUpperCase().contains("PROFORMA") || inv.getType().toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(inv.getType()) || "DATE_RANGE".equalsIgnoreCase(inv.getType()) || inv.getType().toUpperCase().contains("MONTHLY")))
+                || (inv.getInvoiceNo() != null && inv.getInvoiceNo().toUpperCase().contains("/PI/"));
+        boolean isGst = !isProforma;
+
+        boolean intra = true;
+        repository.ClientRepository clientRepo = new repository.ClientRepository();
+        model.Client client = clientRepo.findByUuid(inv.getClientId());
+        if (client != null) {
+            String companyGst = utils.CompanyProfile.getGst();
+            String buyerGst = client.getGst();
+            String companyCode = extractStateCode(companyGst);
+            if (companyCode.isEmpty()) {
+                companyCode = "07";
+            }
+            String buyerCode = extractStateCode(buyerGst);
+            if (!companyCode.isEmpty() && !buyerCode.isEmpty()) {
+                intra = companyCode.equals(buyerCode);
+            }
+        }
+
+        // Get all active jobs before cancellation
+        String jobsSql = "SELECT uuid FROM jobs WHERE status <> 'Cancelled' AND (invoice_uuid = ? OR uuid IN (SELECT job_uuid FROM invoice_job_mapping WHERE invoice_uuid = ? AND COALESCE(is_deleted, 0) = 0))";
+        java.util.List<String> allJobUuids = new java.util.ArrayList<>();
+        try (java.sql.PreparedStatement ps = con.prepareStatement(jobsSql)) {
+            ps.setString(1, invoiceUuid);
+            ps.setString(2, invoiceUuid);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    allJobUuids.add(rs.getString(1));
+                }
+            }
+        }
+
+        if (allJobUuids.isEmpty()) {
+            return;
+        }
+
+        // Calculate each job's total, taxable, and GST amounts
+        repository.HsnSacRepository hsnRepo = new repository.HsnSacRepository();
+        java.util.Map<String, Double> jobTotals = new java.util.HashMap<>();
+        java.util.Map<String, JobTaxDetails> jobTaxMap = new java.util.HashMap<>();
+        double originalCalculatedTotal = 0.0;
+        for (String jobUuid : allJobUuids) {
+            JobTaxDetails details = getJobTaxDetails(con, jobUuid, isGst, intra, hsnRepo);
+            double jobTotal = isGst ? Math.round(details.taxable + details.gst) : details.taxable;
+            jobTotals.put(jobUuid, jobTotal);
+            jobTaxMap.put(jobUuid, details);
+            originalCalculatedTotal += jobTotal;
+        }
+
+        double originalPaidAmount = inv.getPaidAmount();
+
+        // Calculate proportional allocation for each job
+        java.util.Map<String, Double> allocations = new java.util.HashMap<>();
+        double totalFreedPayment = 0.0;
+        for (String jobUuid : allJobUuids) {
+            double jobTotal = jobTotals.getOrDefault(jobUuid, 0.0);
+            double allocated = 0.0;
+            if (originalCalculatedTotal > 0) {
+                allocated = (jobTotal / originalCalculatedTotal) * originalPaidAmount;
+            }
+            allocated = Math.min(allocated, jobTotal);
+            allocations.put(jobUuid, allocated);
+
+            if (cancelledJobUuids.contains(jobUuid)) {
+                totalFreedPayment += allocated;
+            }
+        }
+
+        // Identify remaining jobs and categorize them
+        java.util.List<String> remainingJobUuids = allJobUuids.stream()
+                .filter(u -> !cancelledJobUuids.contains(u))
+                .toList();
+
+        double reallocatedSum = 0.0;
+        double refundPendingSum = 0.0;
+        boolean refundPending = false;
+
+        if (!remainingJobUuids.isEmpty()) {
+            java.util.List<String> unpaidJobs = new java.util.ArrayList<>();
+            java.util.List<String> partiallyPaidJobs = new java.util.ArrayList<>();
+
+            for (String jobUuid : remainingJobUuids) {
+                double alloc = allocations.getOrDefault(jobUuid, 0.0);
+                double total = jobTotals.getOrDefault(jobUuid, 0.0);
+                if (alloc <= 0.0001) {
+                    unpaidJobs.add(jobUuid);
+                } else if (alloc < total - 0.0001) {
+                    partiallyPaidJobs.add(jobUuid);
+                }
+            }
+
+            double remainingFreed = totalFreedPayment;
+
+            // 1. Reallocate to unpaid jobs
+            for (String jobUuid : unpaidJobs) {
+                if (remainingFreed <= 0) break;
+                double total = jobTotals.getOrDefault(jobUuid, 0.0);
+                double needed = total;
+                double toAlloc = Math.min(remainingFreed, needed);
+                allocations.put(jobUuid, toAlloc);
+                reallocatedSum += toAlloc;
+                remainingFreed -= toAlloc;
+            }
+
+            // 2. Reallocate to partially paid jobs
+            for (String jobUuid : partiallyPaidJobs) {
+                if (remainingFreed <= 0) break;
+                double total = jobTotals.getOrDefault(jobUuid, 0.0);
+                double currentAlloc = allocations.getOrDefault(jobUuid, 0.0);
+                double needed = total - currentAlloc;
+                double toAlloc = Math.min(remainingFreed, needed);
+                allocations.put(jobUuid, currentAlloc + toAlloc);
+                reallocatedSum += toAlloc;
+                remainingFreed -= toAlloc;
+            }
+
+            refundPendingSum = remainingFreed;
+            if (refundPendingSum > 0.0001) {
+                refundPending = true;
+            }
+        } else {
+            // No remaining jobs, all freed payments become refund pending
+            refundPendingSum = totalFreedPayment;
+            if (refundPendingSum > 0.0001) {
+                refundPending = true;
+            }
+        }
+
+        if (refundPending) {
+            String paymentUuid = ClientIdentifiers.newUuidV7String();
+            String todayStr = LocalDate.now().toString();
+            String sqlPay = "INSERT INTO payments (uuid, client_uuid, amount, payment_date, method, type, sync_status, sync_version, is_deleted, is_active, created_at, updated_at) VALUES (?,?,?,?,'Cash','REFUND_PENDING','PENDING',1,0,1,datetime('now'),datetime('now'))";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(sqlPay)) {
+                ps.setString(1, paymentUuid);
+                ps.setString(2, inv.getClientId());
+                ps.setDouble(3, -refundPendingSum);
+                ps.setString(4, todayStr);
+                ps.executeUpdate();
+            }
+        }
+
+        // Calculate proportional audit splits for each cancelled job
+        double reallocationRatio = totalFreedPayment > 0.0001 ? reallocatedSum / totalFreedPayment : 0.0;
+        String insertAuditSql = """
+            INSERT INTO job_cancellation_audit (
+                uuid, job_uuid, cancellation_reason, cancelled_by, cancelled_at,
+                original_invoice_uuid, original_job_amount, original_gst_amount,
+                reallocated_amount, refund_pending_amount, sync_status, sync_version,
+                is_deleted, is_active, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, datetime('now'), ?, ?, ?, ?, ?, 'PENDING', 1, 0, 1, datetime('now'), datetime('now'))
+        """;
+
+        try (java.sql.PreparedStatement psAudit = con.prepareStatement(insertAuditSql)) {
+            for (String jobUuid : cancelledJobUuids) {
+                JobTaxDetails details = jobTaxMap.getOrDefault(jobUuid, new JobTaxDetails());
+                double freedAlloc = allocations.getOrDefault(jobUuid, 0.0);
+                double reallocatedAmount = freedAlloc * reallocationRatio;
+                double refundPendingAmount = freedAlloc - reallocatedAmount;
+
+                psAudit.setString(1, ClientIdentifiers.newUuidV7String());
+                psAudit.setString(2, jobUuid);
+                psAudit.setString(3, reason);
+                psAudit.setString(4, cancelledBy);
+                psAudit.setString(5, invoiceUuid);
+                psAudit.setDouble(6, details.taxable);
+                psAudit.setDouble(7, details.gst);
+                psAudit.setDouble(8, reallocatedAmount);
+                psAudit.setDouble(9, refundPendingAmount);
+                psAudit.addBatch();
+            }
+            psAudit.executeBatch();
+        }
+
+        // Calculate new paid amount based on allocations of remaining jobs
+        double newPaidAmount = 0.0;
+        for (String jobUuid : remainingJobUuids) {
+            newPaidAmount += allocations.getOrDefault(jobUuid, 0.0);
+        }
+
+        // Capped by new invoice total
+        double newInvoiceAmount = 0.0;
+        for (String jobUuid : remainingJobUuids) {
+            newInvoiceAmount += jobTotals.getOrDefault(jobUuid, 0.0);
+        }
+
+        if (newPaidAmount > newInvoiceAmount) {
+            newPaidAmount = newInvoiceAmount;
+        }
+
+        // Update paid amount of invoice_master (the due amount and status will be updated next in recalculateInvoiceTotals)
+        if (refundPending) {
+            String updatePaidSql = "UPDATE invoice_master SET paid_amount = ?, payment_status = 'REFUND_PENDING', sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(updatePaidSql)) {
+                ps.setDouble(1, newPaidAmount);
+                ps.setString(2, invoiceUuid);
+                ps.executeUpdate();
+            }
+        } else {
+            String updatePaidSql = "UPDATE invoice_master SET paid_amount = ?, sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(updatePaidSql)) {
+                ps.setDouble(1, newPaidAmount);
+                ps.setString(2, invoiceUuid);
+                ps.executeUpdate();
+            }
+        }
+    }
+
+    private static class JobTaxDetails {
+        double taxable = 0.0;
+        double gst = 0.0;
+    }
+
+    private JobTaxDetails getJobTaxDetails(java.sql.Connection con, String jobUuid, boolean isGst, boolean intra, repository.HsnSacRepository hsnRepo) throws Exception {
+        JobTaxDetails details = new JobTaxDetails();
+        String itemsSql = "SELECT type, description, amount FROM job_items WHERE job_uuid = ? AND COALESCE(is_deleted, 0) = 0";
+        try (java.sql.PreparedStatement ps = con.prepareStatement(itemsSql)) {
+            ps.setString(1, jobUuid);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String type = rs.getString("type");
+                    String desc = rs.getString("description");
+                    double amt = rs.getDouble("amount");
+                    details.taxable += amt;
+
+                    if (isGst) {
+                        double rate = 0.18;
+                        model.HsnSacInfo hsnInfo = hsnRepo.findBestMatch(con, type, desc);
+                        if (hsnInfo != null && hsnInfo.getGstRate() > 0) {
+                            rate = hsnInfo.getGstRate();
+                        }
+
+                        if (intra) {
+                            double halfRate = rate / 2.0;
+                            double cgst = Math.round(amt * halfRate * 100.0) / 100.0;
+                            double sgst = Math.round(amt * halfRate * 100.0) / 100.0;
+                            details.gst += (cgst + sgst);
+                        } else {
+                            double igst = Math.round(amt * rate * 100.0) / 100.0;
+                            details.gst += igst;
+                        }
+                    }
+                }
+            }
+        }
+        details.taxable = Math.round(details.taxable * 100.0) / 100.0;
+        details.gst = Math.round(details.gst * 100.0) / 100.0;
+        return details;
+    }
+
+    private double calculateJobTotalWithTax(java.sql.Connection con, String jobUuid, boolean isGst, boolean intra, repository.HsnSacRepository hsnRepo) throws Exception {
+        double taxable = 0.0;
+        double totalTax = 0.0;
+        String itemsSql = "SELECT type, description, amount FROM job_items WHERE job_uuid = ? AND COALESCE(is_deleted, 0) = 0";
+        try (java.sql.PreparedStatement ps = con.prepareStatement(itemsSql)) {
+            ps.setString(1, jobUuid);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String type = rs.getString("type");
+                    String desc = rs.getString("description");
+                    double amt = rs.getDouble("amount");
+                    taxable += amt;
+
+                    if (isGst) {
+                        double rate = 0.18;
+                        model.HsnSacInfo hsnInfo = hsnRepo.findBestMatch(con, type, desc);
+                        if (hsnInfo != null && hsnInfo.getGstRate() > 0) {
+                            rate = hsnInfo.getGstRate();
+                        }
+
+                        if (intra) {
+                            double halfRate = rate / 2.0;
+                            double cgst = Math.round(amt * halfRate * 100.0) / 100.0;
+                            double sgst = Math.round(amt * halfRate * 100.0) / 100.0;
+                            totalTax += (cgst + sgst);
+                        } else {
+                            double igst = Math.round(amt * rate * 100.0) / 100.0;
+                            totalTax += igst;
+                        }
+                    }
+                }
+            }
+        }
+        taxable = Math.round(taxable * 100.0) / 100.0;
+        totalTax = Math.round(totalTax * 100.0) / 100.0;
+        return isGst ? Math.round(taxable + totalTax) : taxable;
+    }
+
+
+    public void updateInvoiceStatus(String invoiceUuid, String newStatus) {
+        AtomicDB.runVoid(con -> {
+            InvoiceMaster inv = repo.findByUuid(con, invoiceUuid);
             if (inv != null) {
-                // 🔥 Requirement: if temporary (DRAFT/TEMP) cancelled, remove it from DB
                 if ("CANCELLED".equalsIgnoreCase(newStatus)) {
                     String invNo = inv.getInvoiceNo();
-                    if ("DRAFT".equals(inv.getStatus()) || (invNo != null && invNo.startsWith("TEMP-"))) {
-                        unlinkJobsFromInvoice(con, invoiceId);
-                        repo.deleteInvoice(con, invoiceId);
-                        return; // Done
+                    boolean isProforma = (inv.getDocumentSeries() != null && ("PROFORMA_INVOICE".equalsIgnoreCase(inv.getDocumentSeries()) || "PROFORMA".equalsIgnoreCase(inv.getDocumentSeries())))
+                                       || (inv.getType() != null && (inv.getType().toUpperCase().contains("PROFORMA") || inv.getType().toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(inv.getType()) || "DATE_RANGE".equalsIgnoreCase(inv.getType()) || inv.getType().toUpperCase().contains("MONTHLY")))
+                                       || (inv.getInvoiceNo() != null && inv.getInvoiceNo().toUpperCase().contains("/PI/"));
+                    if (!isProforma) {
+                        if ("DRAFT".equals(inv.getStatus()) || (invNo != null && invNo.startsWith("TEMP-"))) {
+                            unlinkJobsFromInvoice(con, inv.getUuid());
+                            repo.deleteInvoice(con, inv.getUuid());
+                            return; // Done
+                        }
                     }
                 }
 
                 inv.setStatus(newStatus);
-                // If cancelled/void, also update payment status and mark as void for period reuse
                 if ("CANCELLED".equalsIgnoreCase(newStatus)) {
                     inv.setPaymentStatus("Void");
                     inv.setVoid(false); // Stay visible in table
-                    // 🔥 Requirement: Keep history but release jobs
-                    releaseJobsKeepHistory(con, invoiceId);
+                    releaseJobsKeepHistory(con, inv.getUuid());
+                    inv.setAmount(0);
+                    inv.setDueAmount(0);
                 } else if ("VOID".equalsIgnoreCase(newStatus)) {
                     inv.setPaymentStatus("VOID");
                     inv.setVoid(true);
                     inv.setVoidReason("User updated status to VOID");
                     inv.setVoidDate(LocalDate.now());
-                    
-                    repo.updatePayment(con, invoiceId, inv.getPaidAmount(), inv.getDueAmount(), "VOID", LocalDate.now());
-                    unlinkJobsFromInvoice(con, invoiceId);
+                    repo.updatePayment(con, inv.getUuid(), inv.getPaidAmount(), inv.getDueAmount(), "VOID", LocalDate.now());
+                    unlinkJobsFromInvoice(con, inv.getUuid());
                 }
                 repo.update(con, inv);
             }
         });
     }
 
-    public String finalizeInvoice(int invoiceId) {
-        return AtomicDB.run(con -> {
-            InvoiceMaster inv = repo.findById(con, invoiceId);
-            if (inv == null) throw new RuntimeException("Invoice not found: " + invoiceId);
-            if (!"DRAFT".equals(inv.getStatus())) throw new RuntimeException("Only DRAFT invoices can be finalized");
+    public String finalizeInvoice(String invoiceUuid) {
+        String finalNo = AtomicDB.runExclusive(con -> {
+            InvoiceMaster inv = repo.findByUuid(con, invoiceUuid);
+            if (inv == null) {
+                throw new RuntimeException("Invoice not found: " + invoiceUuid);
+            }
+            if (!"DRAFT".equals(inv.getStatus())) {
+                throw new RuntimeException("Only DRAFT invoices can be finalized");
+            }
 
             String currentNo = inv.getInvoiceNo();
-            String finalNo;
+            String resolvedNo;
 
-            // 🔥 Requirement: Revised invoices (-R1, -R2...) keep their number
             if (currentNo != null && currentNo.contains("-R")) {
-                finalNo = currentNo;
+                resolvedNo = currentNo;
             } else {
-                // 1. Generate permanent number for TEMP or original DRAFTs
-                finalNo = settingsService.generateNextInvoiceNumber(con, inv.getInvoiceDate(),
-                        inv.resolveDocumentSeries());
+                MasterDocumentSeries series = inv.resolveDocumentSeries();
+                if (series == MasterDocumentSeries.PROFORMA_INVOICE) {
+                    if (api.supabase.SupabaseReachability.isReachable()) {
+                        if (!numberAllocator.isRemoteReachable("proforma_invoice")) {
+                            throw new RuntimeException("Cannot finalize: Supabase number sequence endpoint for Proforma Invoice is not accessible.");
+                        }
+                        var permanent = numberAllocator.tryAllocatePermanentInvoice(con, series, inv.getInvoiceDate());
+                        if (permanent.isPresent()) {
+                            resolvedNo = permanent.get().value();
+                        } else {
+                            throw new RuntimeException("Cannot finalize: Failed to allocate a permanent Proforma Invoice number from Supabase.");
+                        }
+                    } else {
+                        if (currentNo != null && DocumentNumbering.isTemporaryNumber(currentNo)) {
+                            resolvedNo = currentNo;
+                        } else {
+                            AllocatedNumber fallback = service.sync.UniversalTemporaryNumberEngine.getInstance().allocateTemporary(con, "proforma_invoice");
+                            resolvedNo = fallback.value();
+                        }
+                    }
+                } else {
+                    var permanent = numberAllocator.tryAllocatePermanentInvoice(con, series, inv.getInvoiceDate());
+                    if (permanent.isPresent()) {
+                        resolvedNo = permanent.get().value();
+                    } else {
+                        if (currentNo != null && DocumentNumbering.isTemporaryNumber(currentNo)) {
+                            resolvedNo = currentNo;
+                        } else {
+                            AllocatedNumber fallback = numberAllocator.allocateInvoiceNumber(con, series, inv.getInvoiceDate());
+                            resolvedNo = fallback.value();
+                        }
+                    }
+                }
             }
-            
-            // 2. Update Invoice Master
-            inv.setInvoiceNo(finalNo);
+
+            inv.setInvoiceNo(resolvedNo);
             inv.setStatus("FINAL");
+            inv.setSyncStatus("PENDING");
             repo.update(con, inv);
 
-            // 3. Update Jobs Status
-            updateJobsStatusByInvoice(con, invoiceId, "Invoiced");
-            
-            return finalNo;
+            updateJobsStatusByInvoice(con, invoiceUuid, "Invoiced");
+
+            try {
+                recalculateInvoiceTotals(con, invoiceUuid);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to recalculate totals during finalization: " + e.getMessage(), e);
+            }
+
+            return resolvedNo;
         });
+        UniversalSyncEngine.scheduleSyncAsync();
+        return finalNo;
     }
 
-    private void updateJobsStatusByInvoice(java.sql.Connection con, int invoiceId, String status) {
-        String sql = "UPDATE jobs SET status = ? WHERE invoice_id = ?";
+    private void updateJobsStatusByInvoice(java.sql.Connection con, String invoiceUuid, String status) {
+        if (invoiceUuid == null || invoiceUuid.isBlank()) {
+            return;
+        }
+        String sql = "UPDATE jobs SET status = ?, sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now') WHERE invoice_uuid = ?";
         try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, status);
-            ps.setInt(2, invoiceId);
+            ps.setString(2, invoiceUuid);
             ps.executeUpdate();
         } catch (Exception e) {
-            System.err.println("Failed to update jobs status for invoice " + invoiceId + ": " + e.getMessage());
+            System.err.println("Failed to update jobs status for invoice " + invoiceUuid + ": " + e.getMessage());
         }
     }
 
-    public void updateInvoicePaymentStatus(int invoiceId, String newPaymentStatus) {
+    public void updateInvoicePaymentStatus(String invoiceUuid, String newPaymentStatus) {
         AtomicDB.runVoid(con -> {
             // Updating just payment_status without affecting other amounts
-            String sql = "UPDATE invoice_master SET payment_status = ? WHERE id = ?";
+            String sql = "UPDATE invoice_master SET payment_status = ? WHERE uuid = ?";
             try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
                 ps.setString(1, newPaymentStatus);
-                ps.setInt(2, invoiceId);
+                ps.setString(2, invoiceUuid);
                 ps.executeUpdate();
             }
         });
@@ -455,17 +1392,17 @@ public class InvoiceMasterService {
      * GET INVOICES BY CLIENT
      * =========================================================
      */
-    public List<InvoiceMaster> getInvoicesByClientId(int clientId) {
+    public List<InvoiceMaster> getInvoicesByClientId(String clientId) {
         return AtomicDB.run(con -> repo.findByClientId(con, clientId));
     }
 
     public InvoiceMaster reviseInvoice(InvoiceMaster old) {
         return AtomicDB.run(con -> {
             // 1. Calculate new invoice number
-            // If old is INV-100 and has parentId=50, we should count revisions of 50.
-            // If old is the original (parentId=null), we count revisions of old.id.
-            int rootId = (old.getParentInvoiceId() != null) ? old.getParentInvoiceId() : old.getId();
-            int revCount = repo.countRevisions(con, rootId);
+            // If old is INV-100 and has parentInvoiceUuid=50, we should count revisions of 50.
+            // If old is the original (parentInvoiceUuid=null), we count revisions of old.uuid.
+            String rootUuid = (old.getParentInvoiceUuid() != null) ? old.getParentInvoiceUuid() : old.getUuid();
+            int revCount = repo.countRevisions(con, rootUuid);
 
             String originalNo = old.getInvoiceNo();
             if (originalNo.contains("-R")) {
@@ -486,16 +1423,17 @@ public class InvoiceMasterService {
 
             newInv.setStatus("DRAFT");
             newInv.setPaymentStatus("UNPAID");
-            newInv.setPaidAmount(0);
             newInv.setDueAmount(old.getAmount());
-            newInv.setParentInvoiceId(rootId);
+            newInv.setParentInvoiceUuid(rootUuid);
             newInv.setDocumentSeries(old.getDocumentSeries());
+            newInv.setTotalAfterTax(old.getTotalAfterTax());
+            newInv.setRoundOff(old.getRoundOff());
 
             // 2. Mark OLD as REVISED in DB first to clear unique constraint for the new DRAFT
             // 🔥 Requirement: Revised status turning payment status to CLOSED and Dues/Amount to 0
-            String clearQuery = "UPDATE invoice_master SET status = 'REVISED', payment_status = 'CLOSED', due_amount = 0, amount = 0 WHERE id = ?";
+            String clearQuery = "UPDATE invoice_master SET status = 'REVISED', payment_status = 'CLOSED', due_amount = 0, amount = 0 WHERE uuid = ?";
             try (java.sql.PreparedStatement ps = con.prepareStatement(clearQuery)) {
-                ps.setInt(1, old.getId());
+                ps.setString(1, old.getUuid());
                 ps.executeUpdate();
                 
                 // Sync Memory
@@ -509,23 +1447,28 @@ public class InvoiceMasterService {
             repo.insert(con, newInv);
 
             // 4. Update OLD with proper link
-            old.setReplacedByInvoiceId(newInv.getId());
+            old.setReplacedByInvoiceUuid(newInv.getUuid());
             repo.update(con, old);
 
             // 5. Clone Mappings from OLD to NEW in invoice_job_mapping for history
-            String cloneMappingSql = "INSERT OR IGNORE INTO invoice_job_mapping (invoice_id, job_id) SELECT ?, job_id FROM invoice_job_mapping WHERE invoice_id = ?";
-            try (java.sql.PreparedStatement ps = con.prepareStatement(cloneMappingSql)) {
-                ps.setInt(1, newInv.getId());
-                ps.setInt(2, old.getId());
-                ps.executeUpdate();
-            }
-
-            // 6. Move JOBS pointer from OLD to NEW (active assignment)
-            String moveJobsSql = "UPDATE jobs SET invoice_id = ? WHERE invoice_id = ?";
-            try (java.sql.PreparedStatement ps = con.prepareStatement(moveJobsSql)) {
-                ps.setInt(1, newInv.getId());
-                ps.setInt(2, old.getId());
-                ps.executeUpdate();
+            String oldUuid = old.getUuid();
+            String newUuid = newInv.getUuid();
+            if (oldUuid != null && newUuid != null) {
+                try (java.sql.PreparedStatement ps = con.prepareStatement(
+                        "SELECT job_uuid FROM invoice_job_mapping WHERE invoice_uuid = ?")) {
+                    ps.setString(1, oldUuid);
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                            insertInvoiceJobMapping(con, newUuid, rs.getString("job_uuid"));
+                        }
+                    }
+                }
+                String moveJobsSql = "UPDATE jobs SET invoice_uuid = ? WHERE invoice_uuid = ?";
+                try (java.sql.PreparedStatement ps = con.prepareStatement(moveJobsSql)) {
+                    ps.setString(1, newUuid);
+                    ps.setString(2, oldUuid);
+                    ps.executeUpdate();
+                }
             }
 
             return newInv;
@@ -537,7 +1480,7 @@ public class InvoiceMasterService {
      * UPDATE FILTERED INVOICES (FOR VIEW INVOICES SCREEN)
      * =========================================================
      */
-    public List<InvoiceMaster> getFilteredInvoices(Integer clientId, String status, LocalDate start, LocalDate end, String invoiceNo) {
-        return AtomicDB.run(con -> repo.findFiltered(con, clientId, status, start, end, invoiceNo));
+    public List<InvoiceMaster> getFilteredInvoices(String clientId, String paymentStatus, String invoiceStatus, LocalDate start, LocalDate end, String invoiceNo, String documentSeries) {
+        return AtomicDB.run(con -> repo.findFiltered(con, clientId, paymentStatus, invoiceStatus, start, end, invoiceNo, documentSeries));
     }
 }

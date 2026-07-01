@@ -266,6 +266,7 @@ public class GeneralSettingsController implements Initializable {
             s.setAuthPassword(supabasePasswordField.getText());
         }
         supabaseRepo.save(s);
+        service.sync.UniversalSyncEngine.schedulePullAsync();
     }
 
     private void wireSupabaseActions() {
@@ -316,11 +317,23 @@ public class GeneralSettingsController implements Initializable {
     }
 
     private void showNotice(Alert.AlertType type, String header, String content) {
-        Alert alert = new Alert(type, content);
+        Alert alert = new Alert(type);
         alert.setHeaderText(header);
+        
+        TextArea textArea = new TextArea(content);
+        textArea.setEditable(false);
+        textArea.setWrapText(true);
+        textArea.setMaxWidth(Double.MAX_VALUE);
+        textArea.setMaxHeight(Double.MAX_VALUE);
+        
+        javafx.scene.layout.GridPane.setVgrow(textArea, javafx.scene.layout.Priority.ALWAYS);
+        javafx.scene.layout.GridPane.setHgrow(textArea, javafx.scene.layout.Priority.ALWAYS);
+        alert.getDialogPane().setContent(textArea);
+        
         alert.getDialogPane().getStyleClass().add("settings-warm-dialog");
         alert.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
         alert.getDialogPane().getStylesheets().add(getClass().getResource("/css/settings_screens.css").toExternalForm());
+        alert.setResizable(true);
         alert.show();
     }
 
@@ -337,14 +350,14 @@ public class GeneralSettingsController implements Initializable {
             // Set selected company as default (details are managed in Companies screen)
             CompanyDetails chosen = companyCombo != null ? companyCombo.getValue() : null;
             if (chosen != null) {
-                companyService.setDefaultCompany(chosen.getId());
+                companyService.setDefaultCompany(chosen.getUuid());
                 setupCompanyCombo();
             }
 
             // Set selected bank as default (details are managed in Bank Details screen)
             BankDetails chosenBank = bankCombo != null ? bankCombo.getValue() : null;
             if (chosenBank != null) {
-                bankService.setDefaultBank(chosenBank.getId());
+                bankService.setDefaultBank(chosenBank.getUuid());
                 setupBankCombo();
             }
 

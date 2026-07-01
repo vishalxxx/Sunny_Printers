@@ -120,7 +120,7 @@ public class BankSettingsController implements Initializable {
 		}
 		BankDetails sel = bankTable.getSelectionModel().getSelectedItem();
 		boolean hasSelection = sel != null;
-		boolean canDelete = hasSelection && sel.getId() > 0;
+		boolean canDelete = hasSelection && sel.getUuid() != null && !sel.getUuid().isBlank();
 		if (editRowBtn != null) {
 			editRowBtn.setDisable(!hasSelection);
 		}
@@ -167,7 +167,7 @@ public class BankSettingsController implements Initializable {
 		// reselect saved row
 		if (bankTable != null) {
 			for (int i = 0; i < rows.size(); i++) {
-				if (rows.get(i).getId() == saved.getId()) {
+				if (rows.get(i).getUuid() != null && rows.get(i).getUuid().equals(saved.getUuid())) {
 					bankTable.getSelectionModel().select(i);
 					break;
 				}
@@ -180,7 +180,7 @@ public class BankSettingsController implements Initializable {
 	private void deleteSelected() {
 		if (bankTable == null) return;
 		BankDetails selected = bankTable.getSelectionModel().getSelectedItem();
-		if (selected == null || selected.getId() <= 0) return;
+		if (selected == null || selected.getUuid() == null || selected.getUuid().isBlank()) return;
 
 		Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
 				"Delete bank '" + nz(selected.getBankName()) + "'?",
@@ -190,7 +190,7 @@ public class BankSettingsController implements Initializable {
 		ButtonType res = confirm.showAndWait().orElse(ButtonType.CANCEL);
 		if (res != ButtonType.OK) return;
 
-		bankService.delete(selected.getId());
+		bankService.delete(selected.getUuid());
 		loadData();
 		selectFirstRow();
 		showInfo("Deleted.");
@@ -205,7 +205,7 @@ public class BankSettingsController implements Initializable {
 
 	private static BankDetails copyOf(BankDetails src) {
 		BankDetails b = new BankDetails();
-		b.setId(src.getId());
+		b.setUuid(src.getUuid());
 		b.setBankName(src.getBankName());
 		b.setAccountHolderName(src.getAccountHolderName());
 		b.setAccountNo(src.getAccountNo());

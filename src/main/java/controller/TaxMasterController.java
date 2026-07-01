@@ -96,9 +96,17 @@ public class TaxMasterController implements Initializable {
 		if (btnToggleInactive != null) {
 			btnToggleInactive.setText("View Inactive Items");
 		}
+		try {
+			taxService.importDefaults();
+		} catch (Exception ignored) {}
 		reloadCategories();
 		reloadTable();
 
+	}
+
+	public void refresh() {
+		reloadCategories();
+		reloadTable();
 	}
 
 	private void setupFilterCombos() {
@@ -132,10 +140,12 @@ public class TaxMasterController implements Initializable {
 			ex.printStackTrace();
 		}
 		List<String> standard = List.of("PRINTING", "PAPER", "BINDING", "LAMINATION", "CTP");
-		java.util.LinkedHashSet<String> merged = new java.util.LinkedHashSet<>(fromDb);
+		java.util.LinkedHashSet<String> mergedSet = new java.util.LinkedHashSet<>(fromDb);
 		for (String s : standard) {
-			merged.add(s);
+			mergedSet.add(s);
 		}
+		List<String> merged = new ArrayList<>(mergedSet);
+		utils.ComboBoxSorter.sortStrings(merged);
 
 		String catSel = comboCategory != null && comboCategory.getValue() != null ? comboCategory.getValue() : ALL_CATEGORIES;
 		if (comboCategory != null) {
@@ -243,7 +253,7 @@ public class TaxMasterController implements Initializable {
 		}
 
 		if (colCode != null) {
-			colCode.setCellValueFactory(new PropertyValueFactory<>("hsnSac"));
+			colCode.setCellValueFactory(c -> new ReadOnlyStringWrapper(nz(c.getValue().getHsnSac())));
 			colCode.setCellFactory(col -> new TableCell<>() {
 				private final Text textNode = new Text();
 
@@ -566,7 +576,7 @@ public class TaxMasterController implements Initializable {
 		if (row == null) {
 			return;
 		}
-		TaxMasterItem fresh = taxService.findById(row.getId());
+		TaxMasterItem fresh = taxService.findByUuid(row.getUuid());
 		if (fresh == null) {
 			toast("Could not load this row.");
 			reloadTable();
@@ -628,10 +638,10 @@ public class TaxMasterController implements Initializable {
 			return;
 		}
 		try {
-			taxService.setActive(row.getId(), false);
+			taxService.setActive(row.getUuid(), false);
 			toast("Item deactivated.");
 			reloadTable();
-			if (editingSnapshot != null && editingSnapshot.getId() == row.getId()) {
+			if (editingSnapshot != null && editingSnapshot.getUuid().equals(row.getUuid())) {
 				editingSnapshot.setActive(false);
 			}
 		} catch (Exception ex) {
@@ -664,14 +674,14 @@ public class TaxMasterController implements Initializable {
 
 		TaxMasterItem row = new TaxMasterItem();
 		if (editingSnapshot != null) {
-			row.setId(editingSnapshot.getId());
+			row.setUuid(editingSnapshot.getUuid());
 			row.setActive(editingSnapshot.isActive());
 		} else {
 			row.setActive(true);
 		}
 		row.setItemType(cat.toUpperCase(Locale.ROOT));
 		row.setItemName(name);
-		row.setKeyword("");
+		row.setKeyword(name);
 		row.setCodeType(type);
 		row.setHsnSac(code);
 		row.setGstRate(gst);
@@ -682,7 +692,7 @@ public class TaxMasterController implements Initializable {
 		try {
 			taxService.save(row);
 			toast(editingSnapshot != null ? "Tax item updated." : "Tax item saved.");
-			editingSnapshot = row.getId() > 0 ? taxService.findById(row.getId()) : null;
+			editingSnapshot = (row.getUuid() != null && !row.getUuid().isBlank()) ? taxService.findByUuid(row.getUuid()) : null;
 			if (lblFormTitle != null && editingSnapshot != null) {
 				lblFormTitle.setText("Edit Tax Item");
 			}

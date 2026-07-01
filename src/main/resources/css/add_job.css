@@ -464,3 +464,87 @@
     -fx-background-color: transparent;
     -fx-text-fill: #4A3F36;
 }
+
+/* --- PREMIUM RADIO BUTTONS --- */
+.premium-radio {
+    -fx-text-fill: #3E312D;
+    -fx-font-family: 'Inter';
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-cursor: hand;
+    -fx-spacing: 6; /* Space between radio circle and text */
+}
+
+.premium-radio .radio {
+    -fx-background-color: white;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 100;
+    -fx-background-radius: 100;
+    -fx-min-width: 18;
+    -fx-max-width: 18;
+    -fx-min-height: 18;
+    -fx-max-height: 18;
+    -fx-alignment: CENTER;
+}
+
+.premium-radio:hover .radio {
+    -fx-border-color: #CD7B4E;
+    -fx-background-color: #FAF6F0;
+}
+
+.premium-radio:selected .radio {
+    -fx-border-color: #CD7B4E;
+    -fx-background-color: white;
+}
+
+.premium-radio .dot {
+    -fx-background-color: transparent;
+    -fx-background-radius: 100;
+    -fx-min-width: 8;
+    -fx-max-width: 8;
+    -fx-min-height: 8;
+    -fx-max-height: 8;
+}
+
+.premium-radio:selected .dot {
+    -fx-background-color: #CD7B4E;
+}
+
+.premium-radio:disabled {
+    -fx-opacity: 0.5;
+}
+
+/* --- NOTES TOGGLE CHECKBOX --- */
+.notes-toggle-checkbox {
+    -fx-text-fill: #8E7A6B;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-cursor: hand;
+}
+
+.notes-toggle-checkbox:hover {
+    -fx-text-fill: #5C524D;
+}
+
+.notes-toggle-checkbox > .box {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1.2;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 2;
+}
+
+.notes-toggle-checkbox:hover > .box {
+    -fx-border-color: #CD7B4E;
+}
+
+.notes-toggle-checkbox:selected > .box {
+    -fx-background-color: #CD7B4E;
+    -fx-border-color: #CD7B4E;
+}
+
+.notes-toggle-checkbox:selected > .box > .mark {
+    -fx-background-color: white;
+}

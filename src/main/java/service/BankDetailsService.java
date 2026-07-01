@@ -45,9 +45,9 @@ public class BankDetailsService {
 				if (b.isDefault()) {
 					repo.clearDefault(con);
 				}
-				if (b.getId() <= 0) {
-					int id = repo.insert(con, b);
-					b.setId(id);
+				if (b.getUuid() == null || b.getUuid().isBlank()) {
+					String uuid = repo.insert(con, b);
+					b.setUuid(uuid);
 				} else {
 					repo.update(con, b);
 				}
@@ -70,25 +70,25 @@ public class BankDetailsService {
 		}
 	}
 
-	public void delete(int id) {
-		if (id <= 0) {
+	public void delete(String uuid) {
+		if (uuid == null || uuid.isBlank()) {
 			return;
 		}
 		try (Connection con = DBConnection.getConnection()) {
-			repo.delete(con, id);
+			repo.delete(con, uuid);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to delete bank details", e);
 		}
 	}
 
-	public void setDefaultBank(int bankId) {
-		if (bankId <= 0) {
+	public void setDefaultBank(String uuid) {
+		if (uuid == null || uuid.isBlank()) {
 			return;
 		}
 		try (Connection con = DBConnection.getConnection()) {
 			con.setAutoCommit(false);
 			try {
-				repo.setDefault(con, bankId);
+				repo.setDefault(con, uuid);
 				con.commit();
 			} catch (Exception e) {
 				try { con.rollback(); } catch (Exception ignored) {}
@@ -101,4 +101,3 @@ public class BankDetailsService {
 		}
 	}
 }
-

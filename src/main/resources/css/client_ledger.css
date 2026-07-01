@@ -368,13 +368,13 @@
 
 /* Status pills (StatusCell) */
 .client-ledger-root .status-pill {
-    -fx-padding: 4 10;
+    -fx-padding: 3 8;
     -fx-background-radius: 12;
     -fx-font-size: 10px;
     -fx-font-weight: 800;
     -fx-alignment: CENTER;
-    -fx-min-width: 70px;
-    -fx-max-width: 90px;
+    -fx-min-width: 72px;
+    -fx-max-width: 115px;
 }
 
 .client-ledger-root .status-pill-success {

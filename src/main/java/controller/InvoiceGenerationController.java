@@ -146,11 +146,11 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 		this.rootStackPane = rootPane;
 	}
 
-	public void preSelectJob(int clientId, int jobId) {
+	public void preSelectJob(String clientUuid, String jobUuid) {
 		// 1. Find client
 		Client match = null;
 		for (Client c : jobClientComboBox.getItems()) {
-			if (c.getId() == clientId) {
+			if (clientUuid != null && clientUuid.equals(c.getClientUuid())) {
 				match = c;
 				break;
 			}
@@ -159,11 +159,11 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 		if (match != null) {
 			jobClientComboBox.setValue(match);
 			// Force reload jobs if listener hasn't run or to ensure they are there
-			loadJobsForClient(clientId);
+			loadJobsForClient(clientUuid);
 
 			// 2. Find and select the job
 			for (JobSummary js : jobComboBox.getItems()) {
-				if (js.getId() == jobId) {
+				if (jobUuid != null && jobUuid.equals(js.getUuid())) {
 					jobComboBox.setValue(js);
 					break;
 				}
@@ -227,7 +227,7 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 			}
 
 			jobComboBox.setDisable(false);
-			loadJobsForClient(newClient.getId());
+			loadJobsForClient(newClient.getClientUuid());
 		});
 
 		// ✅ Job selection => store + add chip
@@ -300,9 +300,9 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 
 	}
 
-	private void loadJobsForClient(int clientId) {
+	private void loadJobsForClient(String clientUuid) {
 
-		List<JobSummary> jobs = js.getJobsByClientId(clientId); // pending jobs only
+		List<JobSummary> jobs = js.getJobsByClientId(clientUuid); // pending jobs only
 
 		jobComboBox.getItems().setAll(jobs);
 		jobComboBox.setDisable(jobs.isEmpty());
@@ -362,7 +362,7 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 				if (empty || item == null) {
 					setText(null);
 				} else {
-					setText(item.getBusinessName() + " (" + item.getClientName() + ")  [ID:" + item.getId() + "]");
+					setText(item.getBusinessName() + " (" + item.getClientName() + ")");
 				}
 			}
 		});
@@ -465,7 +465,7 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 			rootStackPane.getChildren().add(progressRoot);
 			progress.show("Creating Draft Invoice");
 
-			final List<Integer> newlyCreatedIds = new ArrayList<>();
+			final List<String> newlyCreatedIds = new ArrayList<>();
 
 			Task<Void> task = new Task<>() {
 				@Override
@@ -474,7 +474,7 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 					updateMessage("Building invoice...");
 					
 					LocalDate customDate = dateRangeInvoiceDate.getValue();
-					Invoice invoice = invoicebuilder.buildInvoiceForClient(client.getId(), client.getClientName(),
+					Invoice invoice = invoicebuilder.buildInvoiceForClient(client.getClientUuid(), client.getClientName(),
 							client.getBusinessName(), startDatePicker.getValue(), endDatePicker.getValue(), customDate);
 					invoice.setMasterDocumentSeries(selectedDocumentSeriesForGeneration());
 
@@ -488,7 +488,7 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 					if (reserved != null) {
 						invoice.setInvoiceNo(reserved.master().getInvoiceNo());
 						if (reserved.wasNewlyCreated()) {
-							newlyCreatedIds.add(reserved.master().getId());
+							newlyCreatedIds.add(reserved.master().getUuid());
 						}
 					}
 
@@ -521,6 +521,7 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 			});
 
 			task.setOnFailed(ev -> {
+				new Thread(() -> invoiceMasterService.deleteInvoicesIfCancelled(newlyCreatedIds)).start();
 				progress.hide();
 				rootStackPane.getChildren().remove(progressRoot);
 				Throwable ex = task.getException();
@@ -557,7 +558,7 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 			rootStackPane.getChildren().add(progressRoot);
 			progress.show("Running batch process");
 
-			final List<Integer> newlyCreatedIds = new ArrayList<>();
+			final List<String> newlyCreatedIds = new ArrayList<>();
 
 			Task<Void> task = new Task<>() {
 				@Override
@@ -585,7 +586,7 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 						if (isCancelled()) throw new CancellationException();
 						InvoiceMasterService.CreateOrGetResult reserved = invoiceMasterService.createNewDraftInvoice(inv, "MONTHLY_BULK", null);
 						if (reserved != null && reserved.wasNewlyCreated()) {
-							newlyCreatedIds.add(reserved.master().getId());
+							newlyCreatedIds.add(reserved.master().getUuid());
 						}
 					}
 
@@ -616,10 +617,11 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 			});
 
 			task.setOnFailed(ev -> {
+				new Thread(() -> invoiceMasterService.deleteInvoicesIfCancelled(newlyCreatedIds)).start();
 				progress.hide();
 				rootStackPane.getChildren().remove(progressRoot);
 				Throwable ex = task.getException();
-				toast("❌ Failed: " + (ex != null ? ex.getMessage() : "Unknown"));
+				toast("❌ Error: " + (ex != null ? ex.getMessage() : "Unknown"));
 			});
 
 			monthlyTask = null; // reset monthly task ref if needed
@@ -645,7 +647,7 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 		}
 
 		try {
-			List<Integer> jobIds = selectedJobsMap.values().stream().map(JobSummary::getId).distinct().toList();
+			List<String> jobUuids = selectedJobsMap.values().stream().map(JobSummary::getUuid).distinct().toList();
 
 			FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/progress_dialog.fxml"));
 			StackPane progressRoot = loader.load();
@@ -661,8 +663,8 @@ public class InvoiceGenerationController implements utils.DirtySupport {
 					updateMessage("Building invoice...");
 					
 					LocalDate customDate = jobInvoiceDate.getValue();
-					Invoice invoice = invoicebuilder.buildInvoiceForClientByJobs(client.getId(), client.getClientName(),
-							client.getBusinessName(), jobIds, customDate);
+					Invoice invoice = invoicebuilder.buildInvoiceForClientByJobs(client.getClientUuid(), client.getClientName(),
+							client.getBusinessName(), jobUuids, customDate);
 					invoice.setMasterDocumentSeries(selectedDocumentSeriesForGeneration());
 
 					if (isCancelled()) throw new CancellationException();

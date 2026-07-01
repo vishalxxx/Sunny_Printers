@@ -23,8 +23,11 @@
         <HBox fx:id="breadcrumbContainer" styleClass="breadcrumb-container" alignment="CENTER_LEFT" spacing="8" />
 
         <!-- ===== Top Actions ===== -->
-        <HBox spacing="12" alignment="CENTER_RIGHT" style="-fx-padding: 10 0 10 0;">
-            <Button fx:id="btnSaveDraft" onAction="#handleSaveDraft" text="Save Draft" styleClass="action-btn-custom, btn-light-orange" prefWidth="120"/>
+        <HBox spacing="12" alignment="CENTER_RIGHT" style="-fx-padding: 0 0 6 0;">
+            <VBox.margin>
+                <Insets top="-10"/>
+            </VBox.margin>
+            <Button fx:id="btnPreviewInvoice" onAction="#handlePreviewInvoice" text="Preview Invoice" styleClass="action-btn-custom, btn-light-orange" prefWidth="150"/>
             <Button fx:id="btnGenerateInvoice" onAction="#handleGenerateInvoice" text="Generate Invoice" styleClass="action-btn-custom, btn-terracotta" prefWidth="150"/>
         </HBox>
 
@@ -37,27 +40,29 @@
 
             <GridPane hgap="12" vgap="10">
                 <columnConstraints>
-                    <ColumnConstraints percentWidth="12.5"/>
-                    <ColumnConstraints percentWidth="12.5"/>
-                    <ColumnConstraints percentWidth="12.5"/>
-                    <ColumnConstraints percentWidth="12.5"/>
-                    <ColumnConstraints percentWidth="12.5"/>
-                    <ColumnConstraints percentWidth="12.5"/>
-                    <ColumnConstraints percentWidth="12.5"/>
-                    <ColumnConstraints percentWidth="12.5"/>
+                    <ColumnConstraints percentWidth="10.0" fillWidth="true" hgrow="ALWAYS"/>
+                    <ColumnConstraints percentWidth="10.0" fillWidth="true" hgrow="ALWAYS"/>
+                    <ColumnConstraints percentWidth="10.0" fillWidth="true" hgrow="ALWAYS"/>
+                    <ColumnConstraints percentWidth="10.0" fillWidth="true" hgrow="ALWAYS"/>
+                    <ColumnConstraints percentWidth="10.0" fillWidth="true" hgrow="ALWAYS"/>
+                    <ColumnConstraints percentWidth="10.0" fillWidth="true" hgrow="ALWAYS"/>
+                    <ColumnConstraints percentWidth="10.0" fillWidth="true" hgrow="ALWAYS"/>
+                    <ColumnConstraints percentWidth="10.0" fillWidth="true" hgrow="ALWAYS"/>
+                    <ColumnConstraints percentWidth="10.0" fillWidth="true" hgrow="ALWAYS"/>
+                    <ColumnConstraints percentWidth="10.0" fillWidth="true" hgrow="ALWAYS"/>
                 </columnConstraints>
 
-                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
+                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2" GridPane.hgrow="ALWAYS">
                     <Label text="Invoice No." styleClass="gst-label-xs"/>
-                    <TextField fx:id="txtInvoiceNo" text="355" editable="false" styleClass="compact-field, gst-input" />
+                    <TextField fx:id="txtInvoiceNo" text="355" editable="false" styleClass="compact-field, gst-input" maxWidth="Infinity"/>
                 </VBox>
 
-                <VBox spacing="6" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                <VBox spacing="6" GridPane.columnIndex="2" GridPane.rowIndex="0" GridPane.columnSpan="2" GridPane.hgrow="ALWAYS">
                     <Label text="Invoice Date" styleClass="gst-label-xs"/>
-                    <DatePicker fx:id="dpInvoiceDate" styleClass="compact-datepicker, gst-input" editable="false"/>
+                    <DatePicker fx:id="dpInvoiceDate" styleClass="compact-datepicker, gst-input" editable="false" maxWidth="Infinity"/>
                 </VBox>
 
-                <VBox spacing="6" GridPane.columnIndex="3" GridPane.rowIndex="0" GridPane.columnSpan="2">
+                <VBox spacing="6" GridPane.columnIndex="4" GridPane.rowIndex="0" GridPane.columnSpan="2" GridPane.hgrow="ALWAYS">
                     <Label text="Place of Supply" styleClass="gst-label-xs"/>
                     <ComboBox fx:id="comboPlaceOfSupply" promptText="Select state" styleClass="card-combo, gst-input" maxWidth="Infinity">
                         <items>
@@ -105,32 +110,63 @@
                     </ComboBox>
                 </VBox>
 
-                <VBox spacing="6" GridPane.columnIndex="5" GridPane.rowIndex="0">
+                <VBox spacing="6" GridPane.columnIndex="6" GridPane.rowIndex="0" GridPane.columnSpan="2" GridPane.hgrow="ALWAYS">
                     <Label text="Payment Terms" styleClass="gst-label-xs"/>
                     <ComboBox fx:id="comboPaymentTerms" promptText="30 Days" styleClass="card-combo, gst-input" maxWidth="Infinity"/>
                 </VBox>
 
-                <VBox spacing="6" GridPane.columnIndex="6" GridPane.rowIndex="0">
+                <VBox spacing="6" GridPane.columnIndex="8" GridPane.rowIndex="0" GridPane.columnSpan="2" GridPane.hgrow="ALWAYS">
                     <Label text="Due Date" styleClass="gst-label-xs"/>
-                    <DatePicker fx:id="dpDueDate" styleClass="compact-datepicker, gst-input" editable="false"/>
+                    <DatePicker fx:id="dpDueDate" styleClass="compact-datepicker, gst-input" editable="false" maxWidth="Infinity"/>
                 </VBox>
 
-                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="4">
+                  <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="3" GridPane.hgrow="ALWAYS">
                     <Label text="Vehicle / Dispatch" styleClass="gst-label-xs"/>
-                    <TextField fx:id="txtVehicleDispatch" promptText="Transport" styleClass="compact-field, gst-input"/>
+                    <TextField fx:id="txtVehicleDispatch" promptText="Transport" styleClass="compact-field, gst-input" maxWidth="Infinity"/>
                 </VBox>
 
-                <VBox spacing="6" GridPane.columnIndex="4" GridPane.rowIndex="1" GridPane.columnSpan="4">
+                <VBox spacing="6" GridPane.columnIndex="3" GridPane.rowIndex="1" GridPane.columnSpan="3" GridPane.hgrow="ALWAYS">
                     <Label text="Reference / PO No." styleClass="gst-label-xs"/>
-                    <TextField fx:id="txtPoNo" promptText="PO/..." styleClass="compact-field, gst-input"/>
+                    <TextField fx:id="txtPoNo" promptText="PO/..." styleClass="compact-field, gst-input" maxWidth="Infinity"/>
+                </VBox>
+
+                <VBox spacing="6" GridPane.columnIndex="6" GridPane.rowIndex="1" GridPane.columnSpan="4" GridPane.hgrow="ALWAYS">
+                    <Label text="E-Way Bill No. (Optional)" styleClass="gst-label-xs"/>
+                    <TextField fx:id="txtEwayBillNo" promptText="12-digit E-Way Bill No." styleClass="compact-field, gst-input" maxWidth="Infinity"/>
+                </VBox>
+
+                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="2" GridPane.hgrow="ALWAYS">
+                    <Label text="PO Date" styleClass="gst-label-xs"/>
+                    <DatePicker fx:id="dpPoDate" styleClass="compact-datepicker, gst-input" editable="false" maxWidth="Infinity"/>
+                </VBox>
+
+                <VBox spacing="6" GridPane.columnIndex="2" GridPane.rowIndex="2" GridPane.columnSpan="4" GridPane.hgrow="ALWAYS">
+                    <Label text="Dispatch Through / Courier" styleClass="gst-label-xs"/>
+                    <TextField fx:id="txtDispatchThrough" promptText="Courier / Transport Name" styleClass="compact-field, gst-input" maxWidth="Infinity"/>
+                </VBox>
+
+                <VBox spacing="6" GridPane.columnIndex="6" GridPane.rowIndex="2" GridPane.columnSpan="4" GridPane.hgrow="ALWAYS">
+                    <Label text="LR / Tracking No." styleClass="gst-label-xs"/>
+                    <TextField fx:id="txtLrTrackingNo" promptText="LR No. / Docket No." styleClass="compact-field, gst-input" maxWidth="Infinity"/>
+                </VBox>
+
+                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="3" GridPane.columnSpan="10" GridPane.hgrow="ALWAYS">
+                    <Label text="Remarks / Terms of Delivery" styleClass="gst-label-xs"/>
+                    <TextField fx:id="txtRemarks" promptText="Terms of delivery, packaging details, etc." styleClass="compact-field, gst-input" maxWidth="Infinity"/>
                 </VBox>
             </GridPane>
         </VBox>
 
         <!-- ===== Companies Row ===== -->
-        <HBox spacing="12">
+        <GridPane hgap="12">
+            <columnConstraints>
+                <ColumnConstraints percentWidth="33.33" hgrow="ALWAYS" fillWidth="true"/>
+                <ColumnConstraints percentWidth="33.33" hgrow="ALWAYS" fillWidth="true"/>
+                <ColumnConstraints percentWidth="33.34" hgrow="ALWAYS" fillWidth="true"/>
+            </columnConstraints>
+
             <!-- Company (From) -->
-            <VBox spacing="10" HBox.hgrow="ALWAYS" styleClass="gst-card">
+            <VBox spacing="10" styleClass="gst-card" GridPane.columnIndex="0" maxWidth="Infinity">
                 <HBox alignment="CENTER_LEFT" spacing="10">
                     <Region styleClass="gst-card-icon, icon-company"/>
                     <Label text="Company (From)" styleClass="gst-card-title"/>
@@ -139,90 +175,72 @@
                 </HBox>
                 <ComboBox fx:id="comboCompanyFrom" promptText="SUNNY PRINTER (2026-27)" styleClass="card-combo" maxWidth="Infinity"/>
                 <VBox spacing="10" styleClass="gst-address-block">
-                    <Label text="B-234, Naraina Industrial Area, Phase-1, New Delhi-110028" wrapText="true" styleClass="gst-address-text"/>
-                    <HBox spacing="20">
-                        <VBox spacing="4" minWidth="140">
+                    <Label fx:id="lblCompanyAddress" wrapText="true" styleClass="gst-address-text"/>
+                    <HBox spacing="12">
+                        <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
                             <Label text="GSTIN/UIN" styleClass="gst-address-label"/>
-                            <Label text="07BPPS3532EZO" styleClass="gst-address-value"/>
+                            <Label fx:id="lblCompanyGstin" wrapText="true" styleClass="gst-address-value"/>
                         </VBox>
-                        <VBox spacing="4" minWidth="120">
+                        <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
                             <Label text="State" styleClass="gst-address-label"/>
-                            <Label text="Delhi (07)" styleClass="gst-address-value"/>
+                            <Label fx:id="lblCompanyState" wrapText="true" styleClass="gst-address-value"/>
                         </VBox>
-                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
                             <Label text="Email" styleClass="gst-address-label"/>
-                            <Label text="sunny.printers@gmail.com" styleClass="gst-address-value"/>
+                            <Label fx:id="lblCompanyEmail" wrapText="true" styleClass="gst-address-value"/>
                         </VBox>
                     </HBox>
                 </VBox>
             </VBox>
 
             <!-- Ship To (Consignee) -->
-            <VBox spacing="10" HBox.hgrow="ALWAYS" styleClass="gst-card">
+            <VBox spacing="10" styleClass="gst-card" GridPane.columnIndex="1" maxWidth="Infinity">
                 <HBox alignment="CENTER_LEFT" spacing="10">
                     <Region styleClass="gst-card-icon, icon-user"/>
                     <Label text="Ship To (Consignee)" styleClass="gst-card-title"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <Button text="+ New" styleClass="gst-mini-btn"/>
                 </HBox>
-                <ComboBox fx:id="comboShipTo" promptText="PRIME GOLD SAIL JVC LIMITED" styleClass="card-combo" maxWidth="Infinity">
-                    <items>
-                        <FXCollections fx:factory="observableArrayList">
-                            <String fx:value="PRIME GOLD SAIL JVC LIMITED"/>
-                            <String fx:value="SUNNY PRINTERS (INTERNAL)"/>
-                            <String fx:value="GLOBAL SOLUTIONS INC."/>
-                            <String fx:value="R.K. ENTERPRISES"/>
-                        </FXCollections>
-                    </items>
-                </ComboBox>
+                <ComboBox fx:id="comboShipTo" promptText="Select consignee" styleClass="card-combo" maxWidth="Infinity"/>
                 <VBox spacing="8" styleClass="gst-address-block">
-                    <Label text="A-32 SACHIN TENDULKAR MARG HURAWALI LINK ROAD VIVEKANANDA UDYAN D B CITY GWALIOR M.P-474011" wrapText="true" styleClass="gst-address-text"/>
+                    <Label fx:id="lblShipToAddress" wrapText="true" styleClass="gst-address-text"/>
                     <HBox spacing="20">
                         <VBox spacing="2">
                             <Label text="GSTIN/UIN" styleClass="gst-address-label"/>
-                            <Label text="23AAGCP9141E1ZL" styleClass="gst-address-value"/>
+                            <Label fx:id="lblShipToGstin" styleClass="gst-address-value"/>
                         </VBox>
                         <VBox spacing="2">
                             <Label text="State" styleClass="gst-address-label"/>
-                            <Label text="Madhya Pradesh (23)" styleClass="gst-address-value"/>
+                            <Label fx:id="lblShipToState" styleClass="gst-address-value"/>
                         </VBox>
                     </HBox>
                 </VBox>
             </VBox>
 
             <!-- Bill To (Buyer) -->
-            <VBox spacing="10" HBox.hgrow="ALWAYS" styleClass="gst-card">
+            <VBox spacing="10" styleClass="gst-card" GridPane.columnIndex="2" maxWidth="Infinity">
                 <HBox alignment="CENTER_LEFT" spacing="10">
                     <Region styleClass="gst-card-icon, icon-user"/>
                     <Label text="Bill To (Buyer)" styleClass="gst-card-title"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <Button text="+ New" styleClass="gst-mini-btn"/>
                 </HBox>
-                <ComboBox fx:id="comboBillTo" promptText="PRIME GOLD SAIL JVC LIMITED" styleClass="card-combo" maxWidth="Infinity">
-                    <items>
-                        <FXCollections fx:factory="observableArrayList">
-                            <String fx:value="PRIME GOLD SAIL JVC LIMITED"/>
-                            <String fx:value="SUNNY PRINTERS (INTERNAL)"/>
-                            <String fx:value="GLOBAL SOLUTIONS INC."/>
-                            <String fx:value="R.K. ENTERPRISES"/>
-                        </FXCollections>
-                    </items>
-                </ComboBox>
+                <ComboBox fx:id="comboBillTo" promptText="Select buyer" styleClass="card-combo" maxWidth="Infinity"/>
                 <VBox spacing="8" styleClass="gst-address-block">
-                    <Label text="A-32 SACHIN TENDULKAR MARG HURAWALI LINK ROAD VIVEKANANDA UDYAN D B CITY GWALIOR M.P-474011" wrapText="true" styleClass="gst-address-text"/>
+                    <Label fx:id="lblBillToAddress" wrapText="true" styleClass="gst-address-text"/>
                     <HBox spacing="20">
                         <VBox spacing="2">
                             <Label text="GSTIN/UIN" styleClass="gst-address-label"/>
-                            <Label text="23AAGCP9141E1ZL" styleClass="gst-address-value"/>
+                            <Label fx:id="lblBillToGstin" styleClass="gst-address-value"/>
                         </VBox>
                         <VBox spacing="2">
                             <Label text="State" styleClass="gst-address-label"/>
-                            <Label text="Madhya Pradesh (23)" styleClass="gst-address-value"/>
+                            <Label fx:id="lblBillToState" styleClass="gst-address-value"/>
                         </VBox>
                     </HBox>
                 </VBox>
             </VBox>
-        </HBox>
+        </GridPane>
 
         <!-- ===== Jobs strip + Summary ===== -->
         <HBox spacing="12" alignment="TOP_LEFT">
@@ -238,42 +256,7 @@
                 </HBox>
 
                 <FlowPane fx:id="flowJobsContainer" hgap="10" vgap="10" styleClass="gst-job-chip-row">
-                    <HBox styleClass="gst-job-chip, gst-job-chip-selected" spacing="10">
-                        <RadioButton selected="true" styleClass="gst-job-radio"/>
-                        <VBox spacing="4">
-                            <Label text="JOB/25-26/042" styleClass="gst-chip-title"/>
-                            <Label text="Prime Gold 550 D Folder Printing" styleClass="gst-chip-sub"/>
-                            <Label text="Completion: 06-02-2026" styleClass="gst-chip-meta"/>
-                            <Label text="Completed" styleClass="gst-chip-status"/>
-                        </VBox>
-                    </HBox>
-                    <HBox styleClass="gst-job-chip" spacing="10">
-                        <RadioButton styleClass="gst-job-radio"/>
-                        <VBox spacing="4">
-                            <Label text="JOB/25-26/033" styleClass="gst-chip-title"/>
-                            <Label text="Prime Gold 500 G Sticker" styleClass="gst-chip-sub"/>
-                            <Label text="Completion: 03-02-2026" styleClass="gst-chip-meta"/>
-                            <Label text="Completed" styleClass="gst-chip-status"/>
-                        </VBox>
-                    </HBox>
-                    <HBox styleClass="gst-job-chip" spacing="10">
-                        <RadioButton styleClass="gst-job-radio"/>
-                        <VBox spacing="4">
-                            <Label text="JOB/25-26/019" styleClass="gst-chip-title"/>
-                            <Label text="Prime Gold Brochure" styleClass="gst-chip-sub"/>
-                            <Label text="Completion: 28-01-2026" styleClass="gst-chip-meta"/>
-                            <Label text="Completed" styleClass="gst-chip-status"/>
-                        </VBox>
-                    </HBox>
-                    <HBox styleClass="gst-job-chip" spacing="10">
-                        <RadioButton styleClass="gst-job-radio"/>
-                        <VBox spacing="4">
-                            <Label text="JOB/25-26/007" styleClass="gst-chip-title"/>
-                            <Label text="Catalog Printing" styleClass="gst-chip-sub"/>
-                            <Label text="Completion: 18-01-2026" styleClass="gst-chip-meta"/>
-                            <Label text="Completed" styleClass="gst-chip-status"/>
-                        </VBox>
-                    </HBox>
+                    <!-- Dynamic jobs will be loaded here by controller -->
                 </FlowPane>
             </VBox>
 
@@ -289,7 +272,7 @@
                     <HBox alignment="CENTER_LEFT">
                         <Label text="Total Quantity" styleClass="gst-muted"/>
                         <Region HBox.hgrow="ALWAYS"/>
-                        <Label text="10,038.000 PCS" styleClass="gst-strong"/>
+                        <Label fx:id="lblTotalQty" text="0 PCS" styleClass="gst-strong"/>
                     </HBox>
                 </VBox>
 
@@ -301,35 +284,35 @@
                         <HBox alignment="CENTER_LEFT">
                             <Label text="Taxable Value" styleClass="gst-muted"/>
                             <Region HBox.hgrow="ALWAYS"/>
-                            <Label text="₹ 27,102.60" styleClass="gst-strong"/>
+                            <Label fx:id="lblTaxable" text="₹ 0.00" styleClass="gst-strong"/>
                         </HBox>
                         <HBox alignment="CENTER_LEFT">
                             <Label text="CGST (₹)" styleClass="gst-muted"/>
                             <Region HBox.hgrow="ALWAYS"/>
-                            <Label text="—" styleClass="gst-strong"/>
+                            <Label fx:id="lblCgst" text="—" styleClass="gst-strong"/>
                         </HBox>
                         <HBox alignment="CENTER_LEFT">
                             <Label text="SGST (₹)" styleClass="gst-muted"/>
                             <Region HBox.hgrow="ALWAYS"/>
-                            <Label text="—" styleClass="gst-strong"/>
+                            <Label fx:id="lblSgst" text="—" styleClass="gst-strong"/>
                         </HBox>
                         <HBox alignment="CENTER_LEFT">
                             <Label text="IGST (₹)" styleClass="gst-muted"/>
                             <Region HBox.hgrow="ALWAYS"/>
-                            <Label text="₹ 4,878.47" styleClass="gst-strong"/>
+                            <Label fx:id="lblIgst" text="—" styleClass="gst-strong"/>
                         </HBox>
                         <HBox alignment="CENTER_LEFT">
                             <Label text="Round Off" styleClass="gst-muted"/>
                             <Region HBox.hgrow="ALWAYS"/>
-                            <Label text="₹ -0.07" styleClass="gst-strong"/>
+                            <Label fx:id="lblRoundOff" text="₹ 0.00" styleClass="gst-strong"/>
                         </HBox>
                     </VBox>
                 </VBox>
 
                 <VBox spacing="6" styleClass="gst-grand-total">
                     <Label text="Grand Total" styleClass="gst-muted"/>
-                    <Label text="₹ 31,981.00" styleClass="gst-grand-amount"/>
-                    <Label text="(INR Thirty One Thousand Nine Hundred Eighty One Only)" wrapText="true" styleClass="gst-grand-words"/>
+                    <Label fx:id="lblGrandTotal" text="₹ 0.00" styleClass="gst-grand-amount"/>
+                    <Label fx:id="lblGrandTotalWords" text="" wrapText="true" styleClass="gst-grand-words"/>
                 </VBox>
             </VBox>
         </HBox>
@@ -338,18 +321,26 @@
         <VBox spacing="12" styleClass="gst-card">
             <HBox alignment="CENTER_LEFT" spacing="14">
                 <Region HBox.hgrow="ALWAYS"/>
-                <Button fx:id="btnAddItem" onAction="#handleAddItem" text="+ Add Item" styleClass="gst-btn-chip"/>
+                <MenuButton fx:id="btnAddItem" text="+ Add Item" styleClass="gst-btn-chip">
+                    <items>
+                        <MenuItem text="FREIGHT OUTWARD CHARGES" onAction="#handleFreightOutward"/>
+                        <MenuItem text="PACKING CHARGES" onAction="#handlePackingCharges"/>
+                        <MenuItem text="DESIGN CHARGES" onAction="#handleDesignCharges"/>
+                        <MenuItem text="MISCELLANEOUS CHARGES" onAction="#handleMiscCharges"/>
+                        <MenuItem text="CUSTOM ITEM" onAction="#handleCustomItem"/>
+                    </items>
+                </MenuButton>
                 <Button fx:id="btnImportJob" onAction="#handleImportJob" text="Import from Job" styleClass="gst-btn-chip"/>
                 <Button fx:id="btnClearAll" onAction="#handleClearAll" text="Clear All" styleClass="gst-btn-chip"/>
             </HBox>
 
-            <TableView fx:id="tableItems" styleClass="invoice-jobs-table-premium, gst-table" prefHeight="240">
+            <TableView fx:id="tableItems" styleClass="invoice-jobs-table-premium, gst-table" prefHeight="450">
                 <columnResizePolicy>
                     <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />
                 </columnResizePolicy>
                 <columns>
                     <TableColumn text="#" prefWidth="45"/>
-                    <TableColumn text="Description of Goods / Services" prefWidth="320"/>
+                    <TableColumn text="Description of Goods / Services" prefWidth="320" styleClass="gst-description-col"/>
                     <TableColumn text="HSN / SAC" prefWidth="100"/>
                     <TableColumn text="Qty" prefWidth="90"/>
                     <TableColumn text="Unit" prefWidth="80"/>
@@ -387,13 +378,13 @@
 
                 <VBox spacing="10" HBox.hgrow="ALWAYS" styleClass="gst-subcard">
                     <Label text="Tax Amount (in words)" styleClass="gst-subtitle"/>
-                    <Label text="INR Four Thousand Eight Hundred Seventy Eight and Forty Seven paise Only" wrapText="true" styleClass="gst-muted"/>
+                    <Label fx:id="lblTaxAmountWords" text="—" wrapText="true" styleClass="gst-tax-words"/>
                 </VBox>
             </HBox>
         </VBox>
 
         <HBox spacing="12">
-            <VBox spacing="10" HBox.hgrow="ALWAYS" styleClass="gst-card">
+            <VBox spacing="10" HBox.hgrow="ALWAYS" styleClass="gst-card" prefWidth="300">
                 <HBox alignment="CENTER_LEFT" spacing="10">
                     <Region styleClass="gst-card-icon, icon-terms"/>
                     <Label text="Terms &amp; Conditions" styleClass="gst-card-title"/>
@@ -401,7 +392,7 @@
                 <Label fx:id="lblTermsFooter" wrapText="true" styleClass="gst-muted"/>
             </VBox>
 
-            <VBox spacing="10" HBox.hgrow="ALWAYS" styleClass="gst-card">
+            <VBox spacing="10" HBox.hgrow="ALWAYS" styleClass="gst-card" prefWidth="300">
                 <HBox alignment="CENTER_LEFT" spacing="10">
                     <Region styleClass="gst-card-icon, icon-bank"/>
                     <Label text="Bank Details" styleClass="gst-card-title"/>
@@ -415,25 +406,16 @@
                     </columnConstraints>
 
                     <Label text="Select Bank" styleClass="gst-muted" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                    <ComboBox fx:id="comboBankDetails" promptText="INDIAN OVERSEAS BANK" styleClass="card-combo" maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1">
-                        <items>
-                            <FXCollections fx:factory="observableArrayList">
-                                <String fx:value="INDIAN OVERSEAS BANK"/>
-                                <String fx:value="STATE BANK OF INDIA"/>
-                                <String fx:value="HDFC BANK"/>
-                                <String fx:value="ICICI BANK"/>
-                            </FXCollections>
-                        </items>
-                    </ComboBox>
+                    <ComboBox fx:id="comboBankDetails" promptText="Select Bank" styleClass="card-combo" maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
                     <Label text="A/c Holder’s Name" styleClass="gst-muted" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                    <Label text="SUNNY PRINTER" styleClass="gst-strong" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                    <Label fx:id="lblBankHolder" text="—" styleClass="gst-strong" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
                     <Label text="A/c No." styleClass="gst-muted" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                    <Label text="15980200000000780" styleClass="gst-strong" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                    <Label fx:id="lblBankAccountNo" text="—" styleClass="gst-strong" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
 
                     <Label text="Branch &amp; IFSC" styleClass="gst-muted" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-                    <Label text="PITAMPURA &amp; IOBA0001598" styleClass="gst-strong" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                    <Label fx:id="lblBankBranchIfsc" text="—" styleClass="gst-strong" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
                 </GridPane>
             </VBox>
         </HBox>

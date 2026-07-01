@@ -3,7 +3,9 @@ package utils;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
+
+import api.supabase.SupabaseRestClient;
+import api.supabase.SupabaseTablesHealthCheck;
 
 /**
  * Lightweight checks against a Supabase project (PostgREST + Auth health).
@@ -31,8 +33,9 @@ public final class SupabaseRestProbe {
 		return u;
 	}
 
-	private static String restV1Url(String projectRoot) {
-		return projectRoot + "/rest/v1/";
+	/** PostgREST often returns 401 on bare {@code /rest/v1/}; use a real table URL for health checks. */
+	private static String restV1ClientsProbeUrl(String projectRoot) {
+		return projectRoot + "/rest/v1/clients?select=uuid&limit=1";
 	}
 
 	private static String authHealthUrl(String projectRoot) {
@@ -53,12 +56,12 @@ public final class SupabaseRestProbe {
 		String key = anonKey.trim();
 
 		try {
-			int code = httpGetCode(restV1Url(root), key);
+			int code = httpGetCode(restV1ClientsProbeUrl(root), key);
 			if (code >= 200 && code < 300) {
-				return "OK: PostgREST reachable (HTTP " + code + ").";
+				return "OK: PostgREST reachable (HTTP " + code + ", clients probe).";
 			}
 			if (code == 401 || code == 403) {
-				return "FAILED: HTTP " + code + " — check anon key.";
+				return "FAILED: HTTP " + code + " — check anon key and RLS on public.clients.";
 			}
 			return "FAILED: PostgREST HTTP " + code + " — check project URL.";
 		} catch (Exception e) {
@@ -80,18 +83,26 @@ public final class SupabaseRestProbe {
 		String key = anonKey.trim();
 		StringBuilder sb = new StringBuilder();
 		try {
-			int rest = httpGetCode(restV1Url(root), key);
-			sb.append(rest >= 200 && rest < 300 ? "REST OK (" + rest + "). " : "REST HTTP " + rest + ". ");
+			int rest = httpGetCode(restV1ClientsProbeUrl(root), key);
+			sb.append(rest >= 200 && rest < 300 ? "REST OK (" + rest + ", clients). " : "REST HTTP " + rest + ". ");
 		} catch (Exception e) {
 			return "FAILED: REST — " + e.getMessage();
 		}
 		try {
-			int auth = httpGetCodeNoApiKey(authHealthUrl(root));
+			int auth = httpGetCode(authHealthUrl(root), key);
 			sb.append(auth >= 200 && auth < 300 ? "Auth health OK (" + auth + "). " : "Auth health HTTP " + auth + ". ");
 		} catch (Exception e) {
 			sb.append("Auth health: ").append(e.getMessage()).append(". ");
 		}
-		sb.append("Full data sync is not wired in this build.");
+		try {
+			SupabaseRestClient client = new SupabaseRestClient(projectUrl, key);
+			var rows = SupabaseTablesHealthCheck.probeAll(client);
+			sb.append(System.lineSeparator()).append(SupabaseTablesHealthCheck.formatReport(rows));
+		} catch (IllegalArgumentException e) {
+			sb.append(System.lineSeparator()).append("Table probe skipped: ").append(e.getMessage());
+		} catch (Exception e) {
+			sb.append(System.lineSeparator()).append("Table probe error: ").append(e.getMessage());
+		}
 		return sb.toString().trim();
 	}
 
@@ -103,17 +114,6 @@ public final class SupabaseRestProbe {
 		c.setRequestProperty("apikey", anonKey);
 		c.setRequestProperty("Authorization", "Bearer " + anonKey);
 		c.setRequestProperty("Accept", "application/json");
-		int code = c.getResponseCode();
-		drain(c);
-		c.disconnect();
-		return code;
-	}
-
-	private static int httpGetCodeNoApiKey(String url) throws Exception {
-		HttpURLConnection c = (HttpURLConnection) URI.create(url).toURL().openConnection();
-		c.setRequestMethod("GET");
-		c.setConnectTimeout(10_000);
-		c.setReadTimeout(10_000);
 		int code = c.getResponseCode();
 		drain(c);
 		c.disconnect();

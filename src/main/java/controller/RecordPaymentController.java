@@ -23,6 +23,7 @@ import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 import model.Client;
@@ -32,6 +33,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import repository.InvoiceMasterRepository;
 import service.ClientService;
 import utils.AtomicDB;
+import utils.ClientIdentifiers;
 import utils.DBConnection;
 
 /**
@@ -179,7 +181,7 @@ public class RecordPaymentController implements Initializable {
         // Find and select the client in the combo box
         System.out.println("Prefill: Searching for client ID " + invoice.getClientId() + " in " + clientCombo.getItems().size() + " items");
         for (Client c : clientCombo.getItems()) {
-            if (c.getId() == invoice.getClientId()) {
+            if (invoice.getClientId() != null && invoice.getClientId().equals(c.getClientUuid())) {
                 clientCombo.getSelectionModel().select(c);
                 onClientSelected(); // Explicitly trigger loading to ensure it's not pending
                 System.out.println("Prefill: Selected client " + c.getClientName());
@@ -189,7 +191,7 @@ public class RecordPaymentController implements Initializable {
         
         // The selection of client triggered loading of invoices. So we use Platform.runLater to let it finish.
         javafx.application.Platform.runLater(() -> {
-            System.out.println("Prefill: Checking " + invoiceItems.size() + " items for invoice ID " + invoice.getId());
+            System.out.println("Prefill: Checking " + invoiceItems.size() + " items for invoice UUID " + invoice.getUuid());
             
             // First, deselect EVERYTHING to avoid accidental mass allocation
             for (InvoiceRow row : invoiceItems) {
@@ -197,7 +199,7 @@ public class RecordPaymentController implements Initializable {
             }
 
             for (InvoiceRow row : invoiceItems) {
-                if (row.getInvoiceId() == invoice.getId()) {
+                if (row.getInvoiceUuid() != null && row.getInvoiceUuid().equals(invoice.getUuid())) {
                     row.setSelected(true); // Select ONLY this one
                     amountField.setText(row.getDueAmount().toString());
                     System.out.println("Prefill: Successfully matched and selected invoice " + invoice.getInvoiceNo());
@@ -257,7 +259,9 @@ public class RecordPaymentController implements Initializable {
 
     private void loadClients() {
         try {
-            clientCombo.getItems().setAll(clientService.getAllClients());
+            List<Client> clients = clientService.getAllClients();
+            utils.ComboBoxSorter.sortClients(clients);
+            clientCombo.getItems().setAll(clients);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -265,7 +269,9 @@ public class RecordPaymentController implements Initializable {
 
     private void setupPaymentTypeCombo() {
         if (paymentTypeCombo != null) {
-            paymentTypeCombo.setItems(FXCollections.observableArrayList("Payment", "Refund"));
+            java.util.List<String> types = new java.util.ArrayList<>(java.util.List.of("Payment", "Refund"));
+            utils.ComboBoxSorter.sortStrings(types);
+            paymentTypeCombo.setItems(FXCollections.observableArrayList(types));
             paymentTypeCombo.setValue("Payment");
             paymentTypeCombo.setOnAction(e -> {
                 onClientSelected(); // Refresh invoices list based on type
@@ -276,7 +282,9 @@ public class RecordPaymentController implements Initializable {
 
 
     private void setupPaymentModeCombo() {
-        paymentModeCombo.setItems(FXCollections.observableArrayList("Cash", "Cheque", "UPI", "Bank Transfer"));
+        java.util.List<String> modes = new java.util.ArrayList<>(java.util.List.of("Cash", "Cheque", "UPI", "Bank Transfer"));
+        utils.ComboBoxSorter.sortStrings(modes);
+        paymentModeCombo.setItems(FXCollections.observableArrayList(modes));
         paymentModeCombo.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             updateModeSpecificSections(newVal);
             updateAmountEnabledState();
@@ -336,21 +344,27 @@ public class RecordPaymentController implements Initializable {
             chequeReceiverBankCombo.getItems().setAll(getIndianBankNames());
         }
         if (chequeStatusCombo != null) {
-            chequeStatusCombo.setItems(FXCollections.observableArrayList("Pending", "Cleared", "Failed"));
+            java.util.List<String> list = new java.util.ArrayList<>(java.util.List.of("Pending", "Cleared", "Failed"));
+            utils.ComboBoxSorter.sortStrings(list);
+            chequeStatusCombo.setItems(FXCollections.observableArrayList(list));
         }
         if (receiverBankCombo != null) {
             receiverBankCombo.setEditable(false);
             receiverBankCombo.getItems().setAll(getIndianBankNames());
         }
         if (bankTransferStatusCombo != null) {
-            bankTransferStatusCombo.setItems(FXCollections.observableArrayList("Pending", "Success", "Failed"));
+            java.util.List<String> list = new java.util.ArrayList<>(java.util.List.of("Pending", "Success", "Failed"));
+            utils.ComboBoxSorter.sortStrings(list);
+            bankTransferStatusCombo.setItems(FXCollections.observableArrayList(list));
         }
         if (upiReceiverBankCombo != null) {
             upiReceiverBankCombo.setEditable(false);
             upiReceiverBankCombo.getItems().setAll(getIndianBankNames());
         }
         if (upiStatusCombo != null) {
-            upiStatusCombo.setItems(FXCollections.observableArrayList("Pending", "Success", "Failed"));
+            java.util.List<String> list = new java.util.ArrayList<>(java.util.List.of("Pending", "Success", "Failed"));
+            utils.ComboBoxSorter.sortStrings(list);
+            upiStatusCombo.setItems(FXCollections.observableArrayList(list));
         }
 
         // Disable all inputs until a client is selected
@@ -642,16 +656,28 @@ public class RecordPaymentController implements Initializable {
             return;
         }
 
+        String type = paymentTypeCombo.getValue();
+        if (type == null) type = "Payment";
+        if ("Refund".equalsIgnoreCase(type)) {
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to record this refund?", ButtonType.YES, ButtonType.NO);
+            confirm.setTitle("Confirm Refund");
+            confirm.setHeaderText("Refund Confirmation");
+            Optional<ButtonType> res = confirm.showAndWait();
+            if (res.isEmpty() || res.get() != ButtonType.YES) {
+                return;
+            }
+        }
+
         try {
             AtomicDB.runVoid(con -> {
-                int clientId = getSelectedClientId(con);
+                String clientId = getSelectedClientUuid(con);
                 InvoiceMasterRepository repo = new InvoiceMasterRepository();
 
                 BigDecimal totalAmount = parseAmountField().abs();
-                String type = paymentTypeCombo.getValue();
-                if (type == null) type = "Payment";
+                String paymentType = paymentTypeCombo.getValue();
+                if (paymentType == null) paymentType = "Payment";
 
-                boolean isRefund = "Refund".equalsIgnoreCase(type);
+                boolean isRefund = "Refund".equalsIgnoreCase(paymentType);
                 if (isRefund) {
                     long selectedCount = invoiceItems.stream().filter(InvoiceRow::isSelected).count();
                     
@@ -687,27 +713,23 @@ public class RecordPaymentController implements Initializable {
                     mode = "Cash";
 
                 // 1) Insert into payments
-                int paymentId = -1;
+                String paymentUuid = utils.ClientIdentifiers.newUuidString();
                 try (PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO payments (client_id, amount, payment_date, method, type) VALUES (?,?,?,?,?)")) {
-                    ps.setInt(1, clientId);
-                    ps.setDouble(2, totalAmount.doubleValue());
-                    ps.setString(3,
+                        "INSERT INTO payments (uuid, client_uuid, amount, payment_date, method, type, sync_status, created_at, updated_at) VALUES (?,?,?,?,?,?,'PENDING',datetime('now'),datetime('now'))")) {
+                    ps.setString(1, paymentUuid);
+                    ps.setString(2, clientId);
+                    ps.setDouble(3, totalAmount.doubleValue());
+                    ps.setString(4,
                             paymentDatePicker.getValue() == null ? null : paymentDatePicker.getValue().toString());
-                    ps.setString(4, mode);
-                    ps.setString(5, type);
+                    ps.setString(5, mode);
+                    ps.setString(6, paymentType);
                     ps.executeUpdate();
                 }
 
-                try (PreparedStatement ps = con.prepareStatement("SELECT last_insert_rowid()")) {
-                    try (ResultSet rs = ps.executeQuery()) {
-                        if (rs.next()) {
-                            paymentId = rs.getInt(1);
-                        } else {
-                            throw new IllegalStateException("Failed to retrieve generated payment id");
-                        }
-                    }
-                }
+                LocalDate payDate = paymentDatePicker.getValue() != null ? paymentDatePicker.getValue() : LocalDate.now();
+                service.NumberSequenceAllocationService seqAlloc = new service.NumberSequenceAllocationService();
+                String receiptNo = seqAlloc.allocatePaymentReceiptNo(con, payDate);
+                seqAlloc.persistReceiptNo(con, paymentUuid, receiptNo);
 
                 // 2) Allocate amounts
                 
@@ -742,19 +764,21 @@ public class RecordPaymentController implements Initializable {
                         continue;
 
                     remainingAmountToAllocate = remainingAmountToAllocate.subtract(alloc);
-                    int invoiceId = row.getInvoiceId();
+                    String invoiceUuid = row.getInvoiceUuid();
 
                     // 2a) Insert allocation
+                    String allocationUuid = utils.ClientIdentifiers.newUuidString();
                     try (PreparedStatement ps = con.prepareStatement(
-                            "INSERT INTO payment_allocations (payment_id, invoice_id, allocated_amount) VALUES (?,?,?)")) {
-                        ps.setInt(1, paymentId);
-                        ps.setInt(2, invoiceId);
-                        ps.setDouble(3, alloc.doubleValue());
+                            "INSERT INTO payment_allocations (uuid, payment_uuid, invoice_uuid, allocated_amount, sync_status, created_at, updated_at) VALUES (?,?,?,?,'PENDING',datetime('now'),datetime('now'))")) {
+                        ps.setString(1, allocationUuid);
+                        ps.setString(2, paymentUuid);
+                        ps.setString(3, invoiceUuid);
+                        ps.setDouble(4, alloc.doubleValue());
                         ps.executeUpdate();
                     }
 
                     // 2b) Update invoice
-                    InvoiceMaster inv = repo.findById(con, invoiceId);
+                    InvoiceMaster inv = repo.findByUuid(con, invoiceUuid);
                     if (inv != null) {
                         double newPaid = inv.getPaidAmount() + alloc.doubleValue();
                         
@@ -770,12 +794,12 @@ public class RecordPaymentController implements Initializable {
                         } else {
                             status = "UNPAID";
                         }
-                        repo.updatePayment(con, invoiceId, newPaid, newDue, status, paymentDatePicker.getValue());
+                        repo.updatePayment(con, invoiceUuid, newPaid, newDue, status, paymentDatePicker.getValue());
                     }
                 }
 
                 // 3) Payment details
-                savePaymentDetails(con, paymentId, mode);
+                savePaymentDetails(con, paymentUuid, mode);
             });
 
             // Show success message
@@ -859,8 +883,8 @@ public class RecordPaymentController implements Initializable {
 
     private void loadOutstandingInvoicesForSelectedClient() {
         try (Connection con = DBConnection.getConnection()) {
-            int clientId = getSelectedClientId(con);
-            if (clientId <= 0)
+            String clientId = getSelectedClientUuid(con);
+            if (clientId == null || clientId.isBlank())
                 return;
 
             InvoiceMasterRepository repo = new InvoiceMasterRepository();
@@ -873,30 +897,30 @@ public class RecordPaymentController implements Initializable {
                 // For refund, show all non-void invoices (even those with 0 due) so we can refund from paid amount
                 sql = """
                         SELECT * FROM invoice_master
-                        WHERE client_id = ? AND is_void = 0
+                        WHERE client_uuid = ? AND is_void = 0
                           AND (status = 'SENT TO CLIENT' OR status = 'SENT' OR status = 'PAID' OR status = 'PARTIAL PAID')
                         ORDER BY invoice_no ASC
                     """;
             } else {
                 sql = """
                         SELECT * FROM invoice_master
-                        WHERE client_id = ? AND is_void = 0 AND due_amount > 0
+                        WHERE client_uuid = ? AND is_void = 0 AND due_amount > 0
                           AND (status = 'SENT TO CLIENT' OR status = 'SENT' OR status = 'PARTIAL PAID')
                         ORDER BY invoice_no ASC
                     """;
             }
 
             // Save current selection to restore after reload
-            java.util.Set<Integer> previouslySelectedIds = invoiceItems.stream()
+            java.util.Set<String> previouslySelectedUuids = invoiceItems.stream()
                 .filter(InvoiceRow::isSelected)
-                .map(InvoiceRow::getInvoiceId)
+                .map(InvoiceRow::getInvoiceUuid)
                 .collect(java.util.stream.Collectors.toSet());
 
             invoiceItems.clear();
             double totalOutstanding = 0;
 
             try (PreparedStatement ps = con.prepareStatement(sql)) {
-                ps.setInt(1, clientId);
+                ps.setString(1, clientId);
                 java.util.List<InvoiceMaster> loaded = new java.util.ArrayList<>();
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
@@ -915,8 +939,8 @@ public class RecordPaymentController implements Initializable {
                     BigDecimal netTotal = BigDecimal.valueOf(inv.getAmount() + dn - cn);
 
                     boolean shouldBeSelected;
-                    if (!previouslySelectedIds.isEmpty()) {
-                        shouldBeSelected = previouslySelectedIds.contains(inv.getId());
+                    if (!previouslySelectedUuids.isEmpty()) {
+                        shouldBeSelected = previouslySelectedUuids.contains(inv.getUuid());
                     } else {
                         shouldBeSelected = !isRefund;
                     }
@@ -953,6 +977,10 @@ public class RecordPaymentController implements Initializable {
                 });
             });
 
+            if (invoiceTable != null) {
+                invoiceTable.refresh();
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -963,17 +991,17 @@ public class RecordPaymentController implements Initializable {
      * For now this assumes clientCombo stores items as "ID - Name".
      * You can replace with a proper Client model if already available.
      */
-    private int getSelectedClientId(Connection con) throws Exception {
+    private String getSelectedClientUuid(Connection con) throws Exception {
         Client c = clientCombo.getSelectionModel().getSelectedItem();
-        if (c == null)
-            return -1;
+        if (c == null || !c.hasClientUuid())
+            return null;
 
         if (footerClientLabel != null) {
             // show business name in footer (as requested)
             String bn = c.getBusinessName() == null ? "" : c.getBusinessName().trim();
             footerClientLabel.setText(bn.isBlank() ? c.toString() : bn);
         }
-        return c.getId();
+        return c.getClientUuid();
     }
 
     // ==========================================================
@@ -1014,7 +1042,7 @@ public class RecordPaymentController implements Initializable {
     }
 
     private ObservableList<String> getIndianBankNames() {
-        return FXCollections.observableArrayList(
+        ObservableList<String> list = FXCollections.observableArrayList(
                 "State Bank of India (SBI)",
                 "HDFC Bank",
                 "ICICI Bank",
@@ -1057,59 +1085,66 @@ public class RecordPaymentController implements Initializable {
                 "Paytm Payments Bank",
                 "Airtel Payments Bank",
                 "India Post Payments Bank");
+        utils.ComboBoxSorter.sortStrings(list);
+        return list;
     }
 
-    private void savePaymentDetails(Connection con, int paymentId, String mode) throws Exception {
+    private void savePaymentDetails(Connection con, String paymentUuid, String mode) throws Exception {
 
-        insertPaymentDetail(con, paymentId, "mode", mode);
+        insertPaymentDetail(con, paymentUuid, "mode", mode);
 
         if ("Cheque".equalsIgnoreCase(mode)) {
-            insertPaymentDetail(con, paymentId, "cheque_number", chequeNumberField.getText());
-            insertPaymentDetail(con, paymentId, "bank_name", bankNameCombo == null ? null : bankNameCombo.getValue());
-            insertPaymentDetail(con, paymentId, "cheque_date",
+            insertPaymentDetail(con, paymentUuid, "cheque_number", chequeNumberField.getText());
+            insertPaymentDetail(con, paymentUuid, "bank_name", bankNameCombo == null ? null : bankNameCombo.getValue());
+            insertPaymentDetail(con, paymentUuid, "cheque_date",
                     chequeDatePicker.getValue() == null ? null : chequeDatePicker.getValue().toString());
-            insertPaymentDetail(con, paymentId, "clearance_date",
+            insertPaymentDetail(con, paymentUuid, "clearance_date",
                     clearanceDatePicker.getValue() == null ? null : clearanceDatePicker.getValue().toString());
                     
             if (chequeReceiverBankCombo != null && chequeReceiverBankCombo.getValue() != null) {
-                insertPaymentDetail(con, paymentId, "receiver_bank", chequeReceiverBankCombo.getValue());
+                insertPaymentDetail(con, paymentUuid, "receiver_bank", chequeReceiverBankCombo.getValue());
             }
             if (chequeStatusCombo != null && chequeStatusCombo.getValue() != null) {
-                insertPaymentDetail(con, paymentId, "status", chequeStatusCombo.getValue());
+                insertPaymentDetail(con, paymentUuid, "status", chequeStatusCombo.getValue());
             } else {
                 String chqStatus = clearanceDatePicker.getValue() == null ? "Pending" : "Cleared";
-                insertPaymentDetail(con, paymentId, "status", chqStatus);
+                insertPaymentDetail(con, paymentUuid, "status", chqStatus);
             }
             
         } else if ("UPI".equalsIgnoreCase(mode)) {
-            insertPaymentDetail(con, paymentId, "upi_id", upiIdField.getText());
-            insertPaymentDetail(con, paymentId, "utr", upiUtrField.getText());
-            if (receiverUpiIdField != null) insertPaymentDetail(con, paymentId, "receiver_upi_id", receiverUpiIdField.getText());
-            if (upiReceiverBankCombo != null) insertPaymentDetail(con, paymentId, "receiver_bank", upiReceiverBankCombo.getValue());
-            if (upiStatusCombo != null) insertPaymentDetail(con, paymentId, "status", upiStatusCombo.getValue());
+            insertPaymentDetail(con, paymentUuid, "upi_id", upiIdField.getText());
+            insertPaymentDetail(con, paymentUuid, "utr", upiUtrField.getText());
+            if (receiverUpiIdField != null) insertPaymentDetail(con, paymentUuid, "receiver_upi_id", receiverUpiIdField.getText());
+            if (upiReceiverBankCombo != null) insertPaymentDetail(con, paymentUuid, "receiver_bank", upiReceiverBankCombo.getValue());
+            if (upiStatusCombo != null) insertPaymentDetail(con, paymentUuid, "status", upiStatusCombo.getValue());
         } else if ("Bank Transfer".equalsIgnoreCase(mode)) {
-            insertPaymentDetail(con, paymentId, "sender_name", senderNameField.getText());
-            insertPaymentDetail(con, paymentId, "sender_account", senderAccountField.getText());
-            insertPaymentDetail(con, paymentId, "utr", bankTransferUtrField.getText());
-            insertPaymentDetail(con, paymentId, "receiver_bank", receiverBankCombo == null ? null : receiverBankCombo.getValue());
-            insertPaymentDetail(con, paymentId, "status", bankTransferStatusCombo == null ? null : bankTransferStatusCombo.getValue());
+            insertPaymentDetail(con, paymentUuid, "sender_name", senderNameField.getText());
+            insertPaymentDetail(con, paymentUuid, "sender_account", senderAccountField.getText());
+            insertPaymentDetail(con, paymentUuid, "utr", bankTransferUtrField.getText());
+            insertPaymentDetail(con, paymentUuid, "receiver_bank", receiverBankCombo == null ? null : receiverBankCombo.getValue());
+            insertPaymentDetail(con, paymentUuid, "status", bankTransferStatusCombo == null ? null : bankTransferStatusCombo.getValue());
         }
 
         if (notesField.getText() != null && !notesField.getText().isBlank()) {
-            insertPaymentDetail(con, paymentId, "notes", notesField.getText());
+            insertPaymentDetail(con, paymentUuid, "notes", notesField.getText());
         }
     }
 
-    private void insertPaymentDetail(Connection con, int paymentId, String key, String value) throws Exception {
+    private void insertPaymentDetail(Connection con, String paymentUuid, String key, String value) throws Exception {
         if (key == null || value == null || value.isBlank())
             return;
         try (PreparedStatement ps = con.prepareStatement("""
-                    INSERT OR REPLACE INTO payment_details (payment_id, field_key, field_value)
-                    VALUES (?,?,?)
+                    INSERT INTO payment_details (uuid, payment_uuid, field_key, field_value, sync_status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, 'PENDING', datetime('now'), datetime('now'))
+                    ON CONFLICT(payment_uuid, field_key) DO UPDATE SET
+                        field_value = excluded.field_value,
+                        updated_at = datetime('now'),
+                        sync_status = 'PENDING'
                 """)) {
-            ps.setInt(1, paymentId);
-            ps.setString(2, key);
-            ps.setString(3, value);
+            ps.setString(1, ClientIdentifiers.newUuidV7String());
+            ps.setString(2, paymentUuid);
+            ps.setString(3, key);
+            ps.setString(4, value);
             ps.executeUpdate();
         }
     }
@@ -1192,8 +1227,8 @@ public class RecordPaymentController implements Initializable {
             return selected;
         }
 
-        public int getInvoiceId() {
-            return originalInvoice.getId();
+        public String getInvoiceUuid() {
+            return originalInvoice.getUuid();
         }
 
         public InvoiceMaster getOriginalInvoice() {
@@ -1390,8 +1425,8 @@ public class RecordPaymentController implements Initializable {
         table.getColumns().addAll(cType, cNo, cAmt, cReason);
         List<InvoiceAdjustment> adjs = new ArrayList<>();
         try (java.sql.Connection con = utils.DBConnection.getConnection();
-             java.sql.PreparedStatement ps = con.prepareStatement("SELECT type, note_no, amount, reason, date FROM invoice_adjustments WHERE invoice_id = ?")) {
-            ps.setInt(1, inv.getId());
+             java.sql.PreparedStatement ps = con.prepareStatement("SELECT type, note_no, amount, reason, date FROM invoice_adjustments WHERE invoice_uuid = ?")) {
+            ps.setString(1, inv.getUuid());
             try (java.sql.ResultSet rs = ps.executeQuery()) {
                 while(rs.next()) {
                     InvoiceAdjustment a = new InvoiceAdjustment();
@@ -1483,9 +1518,10 @@ public class RecordPaymentController implements Initializable {
              java.sql.PreparedStatement ps = con.prepareStatement(
                 "SELECT p.type, p.payment_date, pa.allocated_amount " +
                 " FROM payment_allocations pa " +
-                " JOIN payments p ON pa.payment_id = p.id " +
-                " WHERE pa.invoice_id = ? ORDER BY p.payment_date DESC")) {
-            ps.setInt(1, inv.getId());
+                " JOIN payments p ON pa.payment_uuid = p.uuid " +
+                " WHERE pa.invoice_uuid = ? AND COALESCE(pa.is_deleted, 0) = 0 " +
+                " ORDER BY p.payment_date DESC")) {
+            ps.setString(1, inv.getUuid());
             try (java.sql.ResultSet rs = ps.executeQuery()) {
                 while(rs.next()) {
                     PaymentRecord r = new PaymentRecord();
@@ -1512,5 +1548,11 @@ public class RecordPaymentController implements Initializable {
         public void setDate(String date) { this.date = date; }
         public double getAmount() { return amount; }
         public void setAmount(double amount) { this.amount = amount; }
+    }
+
+    public void refresh() {
+        javafx.application.Platform.runLater(() -> {
+            loadOutstandingInvoicesForSelectedClient();
+        });
     }
 }

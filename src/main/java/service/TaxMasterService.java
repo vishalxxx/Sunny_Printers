@@ -21,12 +21,12 @@ public class TaxMasterService {
 		}
 	}
 
-	public TaxMasterItem findById(int id) {
-		if (id <= 0) {
+	public TaxMasterItem findByUuid(String uuid) {
+		if (uuid == null || uuid.isBlank()) {
 			return null;
 		}
 		try (Connection con = DBConnection.getConnection()) {
-			return repo.findById(con, id);
+			return repo.findByUuid(con, uuid);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to load tax item", e);
 		}
@@ -57,9 +57,9 @@ public class TaxMasterService {
 		try (Connection con = DBConnection.getConnection()) {
 			con.setAutoCommit(false);
 			try {
-				if (row.getId() <= 0) {
-					int id = repo.insert(con, row);
-					row.setId(id);
+				if (row.getUuid() == null || row.getUuid().isBlank()) {
+					String uuid = repo.insert(con, row);
+					row.setUuid(uuid);
 				} else {
 					repo.update(con, row);
 				}
@@ -82,12 +82,12 @@ public class TaxMasterService {
 		}
 	}
 
-	public void setActive(int id, boolean active) {
-		if (id <= 0) {
+	public void setActive(String uuid, boolean active) {
+		if (uuid == null || uuid.isBlank()) {
 			return;
 		}
 		try (Connection con = DBConnection.getConnection()) {
-			repo.setActive(con, id, active);
+			repo.setActive(con, uuid, active);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to update tax item status", e);
 		}

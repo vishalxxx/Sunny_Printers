@@ -15,145 +15,161 @@ public class JobService {
 	private final JobRepository repo = new JobRepository();
 
 	public synchronized Job createDraftJob() {
-
 		try (Connection con = DBConnection.getConnection()) {
-			// Double-check inside synchronized block to prevent race conditions
 			Job latest = repo.findLatestDraftJob();
 			if (latest != null) {
 				return latest;
 			}
-
 			con.setAutoCommit(false);
-
 			Job job = repo.insertDraftJob(con);
-
 			con.commit();
 			return job;
-
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to create draft job", e);
 		}
 	}
 
-	public void assignClient(Job job, int clientId) {
-
-		if (job == null || job.getId() == 0) {
+	public void assignClient(Job job, String clientUuid) {
+		if (job == null || !job.hasUuid()) {
 			throw new IllegalStateException("Job not initialized");
 		}
-
 		try (Connection con = DBConnection.getConnection()) {
 			con.setAutoCommit(false);
-
+			String userUuid = null;
+			if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+				userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+			}
 			String sql = """
-					    UPDATE jobs
-					    SET client_id = ?
-					    WHERE id = ?
+					UPDATE jobs SET client_uuid = ?, sync_status = 'PENDING',
+					updated_at = datetime('now'), sync_version = sync_version + 1,
+					updated_by_user_uuid = ?
+					WHERE uuid = ?
 					""";
-
 			try (PreparedStatement ps = con.prepareStatement(sql)) {
-				ps.setInt(1, clientId);
-				ps.setInt(2, job.getId());
+				ps.setString(1, clientUuid);
+				ps.setString(2, userUuid);
+				ps.setString(3, job.getUuid());
 				ps.executeUpdate();
 			}
-
 			con.commit();
-
-			// 🔥 update in-memory job
-			job.setClientId(clientId);
-
+			job.setClientUuid(clientUuid);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to assign client to job", e);
 		}
 	}
 
-	public void updateJobDetails(int jobId, String jobName, java.time.LocalDate jobDate) {
-
-		if (jobId <= 0) {
-			throw new IllegalArgumentException("Invalid job id");
+	public void updateJobDetails(String jobUuid, String jobName, LocalDate jobDate) {
+		if (jobUuid == null || jobUuid.isBlank()) {
+			throw new IllegalArgumentException("Invalid job uuid");
 		}
-
 		if (jobName == null || jobName.trim().isEmpty()) {
 			throw new IllegalArgumentException("Job name cannot be empty");
 		}
-
 		try (Connection con = DBConnection.getConnection()) {
 			con.setAutoCommit(false);
-
+			String userUuid = null;
+			if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+				userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+			}
 			String sql = """
-					UPDATE jobs
-					SET job_title = ?, job_date = ?
-					WHERE id = ?
+					UPDATE jobs SET job_title = ?, job_date = ?, sync_status = 'PENDING',
+					updated_at = datetime('now'), sync_version = sync_version + 1,
+					updated_by_user_uuid = ?
+					WHERE uuid = ?
 					""";
-
 			try (PreparedStatement ps = con.prepareStatement(sql)) {
 				ps.setString(1, jobName.trim());
 				if (jobDate != null) {
-				    ps.setString(2, jobDate.toString());
+					ps.setString(2, jobDate.toString());
 				} else {
-				    ps.setNull(2, java.sql.Types.DATE);
+					ps.setNull(2, java.sql.Types.VARCHAR);
 				}
-				ps.setInt(3, jobId);
+				ps.setString(3, userUuid);
+				ps.setString(4, jobUuid.trim());
 				ps.executeUpdate();
 			}
-
 			con.commit();
-
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to update job details", e);
 		}
 	}
 
-    public void updateJobImagePath(int jobId, String imagePath) {
-        if (jobId <= 0) throw new IllegalArgumentException("Invalid job id");
-        try (Connection con = DBConnection.getConnection()) {
-            con.setAutoCommit(false);
-            String sql = "UPDATE jobs SET image_path = ? WHERE id = ?";
-            try (PreparedStatement ps = con.prepareStatement(sql)) {
-                ps.setString(1, imagePath);
-                ps.setInt(2, jobId);
-                ps.executeUpdate();
-            }
-            con.commit();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to update job image", e);
-        }
-    }
+	public void updateJobImagePath(String jobUuid, String imagePath) {
+		if (jobUuid == null || jobUuid.isBlank()) {
+			throw new IllegalArgumentException("Invalid job uuid");
+		}
+		try (Connection con = DBConnection.getConnection()) {
+			con.setAutoCommit(false);
+			String userUuid = null;
+			if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+				userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+			}
+			String sql = """
+					UPDATE jobs SET image_path = ?, sync_status = 'PENDING',
+					updated_at = datetime('now'), sync_version = sync_version + 1,
+					updated_by_user_uuid = ?
+					WHERE uuid = ?
+					""";
+			try (PreparedStatement ps = con.prepareStatement(sql)) {
+				ps.setString(1, imagePath);
+				ps.setString(2, userUuid);
+				ps.setString(3, jobUuid.trim());
+				ps.executeUpdate();
+			}
+			con.commit();
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to update job image", e);
+		}
+	}
 
-	
-	public List<Job> getFullJobsByClientId(int clientId) {
-	    return repo.findFullJobsByClientId(clientId);
+	public List<Job> getFullJobsByClientId(String clientUuid) {
+		return repo.findFullJobsByClientId(clientUuid);
 	}
 
 	public List<Job> searchJobs(String keyword) {
-	    return repo.searchJobs(keyword);
+		return repo.searchJobs(keyword);
 	}
 
-	
-	public List<JobSummary> getJobsByClientId(int clientId) {
+	public List<JobSummary> getJobsByClientId(String clientId) {
 		return repo.findJobsByClientId(clientId);
 	}
 
 	public List<Job> getAllJobs() {
 		return repo.findAllJobs();
 	}
-	public Job getJobById(int jobId) {
-	    return repo.findJobById(jobId);
+
+	public Job getJobByUuid(String jobUuid) {
+		return repo.findJobByUuid(jobUuid);
 	}
+
 	public Job getLatestDraftJob() {
-	    return repo.findLatestDraftJob();
+		return repo.findLatestDraftJob();
 	}
 
 	public List<Job> getJobsByInvoice(model.InvoiceMaster inv) {
-	    return repo.findJobsByInvoice(inv);
+		return repo.findJobsByInvoice(inv);
 	}
 
-	public void updateJobStatus(int jobId, String status) {
+	public void updateJobStatus(String jobUuid, String status) {
+		if (jobUuid == null || jobUuid.isBlank()) {
+			throw new IllegalArgumentException("Invalid job uuid");
+		}
 		try (Connection con = DBConnection.getConnection()) {
 			con.setAutoCommit(false);
-			String sql = "UPDATE jobs SET status = ? WHERE id = ?";
+			String userUuid = null;
+			if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+				userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+			}
+			String sql = """
+					UPDATE jobs SET status = ?, sync_status = 'PENDING',
+					updated_at = datetime('now'), sync_version = sync_version + 1,
+					updated_by_user_uuid = ?
+					WHERE uuid = ?
+					""";
 			try (PreparedStatement ps = con.prepareStatement(sql)) {
 				ps.setString(1, status);
-				ps.setInt(2, jobId);
+				ps.setString(2, userUuid);
+				ps.setString(3, jobUuid.trim());
 				ps.executeUpdate();
 			}
 			con.commit();
@@ -162,24 +178,24 @@ public class JobService {
 		}
 	}
 
-	public void updateJobChildStatus(int jobId, String childStatus) {
-		if (jobId <= 0) {
-			throw new IllegalArgumentException("Invalid job id");
+	public void updateJobChildStatus(String jobUuid, String childStatus) {
+		if (jobUuid == null || jobUuid.isBlank()) {
+			throw new IllegalArgumentException("Invalid job uuid");
 		}
 		try (Connection con = DBConnection.getConnection()) {
 			con.setAutoCommit(false);
-			repo.updateChildStatus(con, jobId, childStatus);
+			repo.updateChildStatus(con, jobUuid.trim(), childStatus);
 			con.commit();
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to update job child status", e);
 		}
 	}
-	
-	public List<Job> getCompletedJobsByClient(int clientId) {
-	    return repo.findCompletedJobsByClientId(clientId);
+
+	public List<Job> getCompletedJobsByClient(String clientUuid) {
+		return repo.findCompletedJobsByClientId(clientUuid);
 	}
 
-	public List<Job> getCompletedJobsByClientInDateRange(int clientId, LocalDate from, LocalDate to) {
+	public List<Job> getCompletedJobsByClientInDateRange(String clientId, LocalDate from, LocalDate to) {
 		if (from == null || to == null) {
 			return List.of();
 		}
@@ -193,20 +209,18 @@ public class JobService {
 		return repo.findCompletedJobsAllClientsInDateRange(from, to);
 	}
 
-	/** Job IDs only; safe for live UI totals (no per-row date parsing). */
-	public List<Integer> getCompletedJobIdsByClientInDateRange(int clientId, LocalDate from, LocalDate to) {
+	public List<String> getCompletedJobUuidsByClientInDateRange(String clientId, LocalDate from, LocalDate to) {
 		if (from == null || to == null) {
 			return List.of();
 		}
-		return repo.findCompletedJobIdsByClientIdInDateRange(clientId, from, to);
+		return repo.findCompletedJobUuidsByClientIdInDateRange(clientId, from, to);
 	}
 
-	public double getSumJobItemsAmountForJobIds(List<Integer> jobIds) {
-		return repo.sumJobItemsAmountForJobIds(jobIds);
+	public double getSumJobItemsAmountForJobUuids(List<String> jobUuids) {
+		return repo.sumJobItemsAmountForJobUuids(jobUuids);
 	}
 
-	public long getTotalPrintingQtyForJobIds(List<Integer> jobIds) {
-		return repo.sumPrintingQtyForJobIds(jobIds);
+	public long getTotalPrintingQtyForJobUuids(List<String> jobUuids) {
+		return repo.sumPrintingQtyForJobUuids(jobUuids);
 	}
-
 }

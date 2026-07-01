@@ -29,6 +29,7 @@
                                 <TableColumn fx:id="gsmCol" text="GSM" prefWidth="90"/>
                                 <TableColumn fx:id="typeCol" text="Type" prefWidth="140"/>
                                 <TableColumn fx:id="sourceCol" text="Source" prefWidth="100"/>
+                                <TableColumn fx:id="supplierCol" text="Supplier" prefWidth="140"/>
                                 <TableColumn fx:id="notesCol" text="Notes" prefWidth="120"/>
                                 <TableColumn fx:id="amountCol" text="Amount" prefWidth="120"/>
 
@@ -58,46 +59,51 @@
                             VBox.vgrow="ALWAYS">
                     <content>
                         <VBox spacing="18" styleClass="editor-panel-content" fillWidth="true">
-                            <Label text="Paper Editor"
-                                   styleClass="card-title"/>
+                             <Label text="Paper Editor"
+                                    styleClass="card-title"/>
 
-                            <!-- MAIN GRID -->
-                            <FlowPane hgap="14"
-                                      vgap="14"
-                                      prefWrapLength="350">
+                             <!-- MAIN GRID -->
+                             <FlowPane hgap="14"
+                                       vgap="14"
+                                       prefWrapLength="350">
 
-                                <VBox spacing="6">
-                                    <Label text="Quantity"/>
-                                    <TextField fx:id="qtyField"/>
-                                </VBox>
+                                 <VBox spacing="6">
+                                     <Label text="Quantity"/>
+                                     <TextField fx:id="qtyField"/>
+                                 </VBox>
 
-                                <VBox spacing="6">
-                                    <Label text="Units"/>
-                                    <ComboBox fx:id="unitsField"/>
-                                </VBox>
+                                 <VBox spacing="6">
+                                     <Label text="Units"/>
+                                     <ComboBox fx:id="unitsField"/>
+                                 </VBox>
 
-                                <VBox spacing="6">
-                                    <Label text="Size"/>
-                                    <ComboBox fx:id="sizeField"/>
-                                </VBox>
+                                 <VBox spacing="6">
+                                     <Label text="Size"/>
+                                     <ComboBox fx:id="sizeField"/>
+                                 </VBox>
 
-                                <VBox spacing="6">
-                                    <Label text="GSM"/>
-                                    <ComboBox fx:id="gsmField"/>
-                                </VBox>
+                                 <VBox spacing="6">
+                                     <Label text="GSM"/>
+                                     <ComboBox fx:id="gsmField"/>
+                                 </VBox>
 
-                                <VBox spacing="6">
-                                    <Label text="Type"/>
-                                    <ComboBox fx:id="typeField"/>
-                                </VBox>
+                                 <VBox spacing="6">
+                                     <Label text="Type"/>
+                                     <ComboBox fx:id="typeField"/>
+                                 </VBox>
 
-                                <VBox spacing="8">
-                                    <Label text="Paper Source"/>
-                                    <HBox spacing="14">
-                                        <RadioButton fx:id="ourRadio" text="Our"/>
-                                        <RadioButton fx:id="clientRadio" text="Client"/>
-                                    </HBox>
-                                </VBox>
+                                 <VBox spacing="6">
+                                     <Label text="Supplier"/>
+                                     <ComboBox fx:id="supplierField" promptText="Select supplier" prefWidth="150"/>
+                                 </VBox>
+
+                                 <VBox spacing="8">
+                                     <Label text="Paper Source"/>
+                                     <HBox spacing="14">
+                                         <RadioButton fx:id="ourRadio" text="Our"/>
+                                         <RadioButton fx:id="clientRadio" text="Client"/>
+                                     </HBox>
+                                 </VBox>
 
                             </FlowPane>
 

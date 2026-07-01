@@ -30,9 +30,9 @@
 
                 <GridPane hgap="8" maxWidth="Infinity" styleClass="tax-master-toolbar">
                     <columnConstraints>
-                        <ColumnConstraints percentWidth="52" hgrow="ALWAYS" minWidth="120"/>
-                        <ColumnConstraints percentWidth="24" hgrow="ALWAYS" minWidth="92"/>
-                        <ColumnConstraints percentWidth="24" hgrow="ALWAYS" minWidth="80"/>
+                        <ColumnConstraints percentWidth="40" hgrow="ALWAYS" minWidth="120"/>
+                        <ColumnConstraints percentWidth="34" hgrow="ALWAYS" minWidth="140"/>
+                        <ColumnConstraints percentWidth="26" hgrow="ALWAYS" minWidth="100"/>
                     </columnConstraints>
                     <TextField fx:id="txtSearch" GridPane.columnIndex="0" GridPane.rowIndex="0"
                                promptText="Search by item name or HSN/SAC..."

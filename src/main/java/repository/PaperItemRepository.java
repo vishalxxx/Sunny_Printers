@@ -12,28 +12,31 @@ public class PaperItemRepository {
     /* =====================================================
        INSERT (uses existing transaction)
        ===================================================== */
-    public void save(Connection con, int jobItemId, Paper p) {
+    public void save(Connection con, String jobItemUuid, Paper p) {
+        String uuid = (p.getUuid() == null || p.getUuid().isBlank()) 
+                      ? utils.ClientIdentifiers.newUuidString() 
+                      : p.getUuid();
+        p.setUuid(uuid);
 
         String sql = """
             INSERT INTO paper_items
-            (job_item_id, qty, units, size, gsm, type, source, notes, amount)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (uuid, job_item_uuid, qty, units, size, gsm, type, source, supplier_uuid, notes, amount, sync_status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', datetime('now'), datetime('now'))
         """;
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setInt(1, jobItemId);
-            ps.setInt(2, p.getQty());
-            ps.setString(3, p.getUnits());
-            ps.setString(4, p.getSize());
-            ps.setString(5, p.getGsm());
-            ps.setString(6, p.getType());
-            ps.setString(7, p.getSource());
-            ps.setString(8, p.getNotes());
-            ps.setDouble(9, p.getAmount());
-
+            ps.setString(1, uuid);
+            ps.setString(2, jobItemUuid);
+            ps.setInt(3, p.getQty());
+            ps.setString(4, p.getUnits());
+            ps.setString(5, p.getSize());
+            ps.setString(6, p.getGsm());
+            ps.setString(7, p.getType());
+            ps.setString(8, p.getSource());
+            ps.setString(9, p.getSupplierUuid());
+            ps.setString(10, p.getNotes());
+            ps.setDouble(11, p.getAmount());
             ps.executeUpdate();
-
         } catch (Exception e) {
             throw new RuntimeException("Failed to save paper item", e);
         }
@@ -42,42 +45,40 @@ public class PaperItemRepository {
     /* =====================================================
        READ (safe, standalone)
        ===================================================== */
-    public Paper findByJobItemId(int jobItemId) {
-
+    public Paper findByJobItemUuid(String jobItemUuid) {
         String sql = """
-            SELECT job_item_id, qty, units, size, gsm, type, source, notes, amount
+            SELECT uuid, job_item_uuid, qty, units, size, gsm, type, source, supplier_uuid, notes, amount, sync_status, sync_version, created_at, updated_at
             FROM paper_items
-            WHERE job_item_id = ?
+            WHERE job_item_uuid = ? AND COALESCE(is_deleted, 0) = 0
         """;
 
-        try (
-            Connection con = DBConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(sql)
-        ) {
-
-            ps.setInt(1, jobItemId);
-            ResultSet rs = ps.executeQuery();
-
-            if (rs.next()) {
-                Paper p = new Paper();
-                p.setJobItemId(rs.getInt("job_item_id"));
-                p.setQty(rs.getInt("qty"));
-                p.setUnits(rs.getString("units"));
-                p.setSize(rs.getString("size"));
-                p.setGsm(rs.getString("gsm"));
-                p.setType(rs.getString("type"));
-                p.setSource(rs.getString("source"));
-                p.setNotes(rs.getString("notes"));
-                p.setAmount(rs.getDouble("amount"));
-                return p;
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, jobItemUuid);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Paper p = new Paper();
+                    p.setUuid(rs.getString("uuid"));
+                    p.setJobItemUuid(rs.getString("job_item_uuid"));
+                    p.setQty(rs.getInt("qty"));
+                    p.setUnits(rs.getString("units"));
+                    p.setSize(rs.getString("size"));
+                    p.setGsm(rs.getString("gsm"));
+                    p.setType(rs.getString("type"));
+                    p.setSource(rs.getString("source"));
+                    p.setSupplierUuid(rs.getString("supplier_uuid"));
+                    p.setNotes(rs.getString("notes"));
+                    p.setAmount(rs.getDouble("amount"));
+                    p.setSyncStatus(rs.getString("sync_status"));
+                    p.setSyncVersion(rs.getInt("sync_version"));
+                    p.setCreatedAt(rs.getString("created_at"));
+                    p.setUpdatedAt(rs.getString("updated_at"));
+                    return p;
+                }
             }
-
         } catch (Exception e) {
-            throw new RuntimeException(
-                "Failed to load paper item for jobItemId=" + jobItemId, e
-            );
+            throw new RuntimeException("Failed to load paper item for jobItemUuid=" + jobItemUuid, e);
         }
-
         return null;
     }
 
@@ -85,29 +86,25 @@ public class PaperItemRepository {
        UPDATE (uses existing transaction)
        ===================================================== */
     public void update(Connection con, Paper p) {
-
         String sql = """
             UPDATE paper_items
             SET qty = ?, units = ?, size = ?, gsm = ?, type = ?,
-                source = ?, notes = ?, amount = ?
-            WHERE job_item_id = ?
+                source = ?, supplier_uuid = ?, notes = ?, amount = ?, updated_at = datetime('now'), sync_status = 'PENDING'
+            WHERE job_item_uuid = ?
         """;
 
-        try (
-        		PreparedStatement ps = con.prepareStatement(sql)) {
-
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, p.getQty());
             ps.setString(2, p.getUnits());
             ps.setString(3, p.getSize());
             ps.setString(4, p.getGsm());
             ps.setString(5, p.getType());
             ps.setString(6, p.getSource());
-            ps.setString(7, p.getNotes());
-            ps.setDouble(8, p.getAmount());
-            ps.setInt(9, p.getJobItemId());
-
+            ps.setString(7, p.getSupplierUuid());
+            ps.setString(8, p.getNotes());
+            ps.setDouble(9, p.getAmount());
+            ps.setString(10, p.getJobItemUuid());
             ps.executeUpdate();
-
         } catch (Exception e) {
             throw new RuntimeException("Failed to update paper item", e);
         }
@@ -115,20 +112,13 @@ public class PaperItemRepository {
 
     /* =====================================================
        DELETE (standalone)
-       Uses CASCADE to delete paper_items automatically
        ===================================================== */
-    public void deleteByJobItemId(Connection con, int jobItemId) {
+    public void deleteByJobItemUuid(Connection con, String jobItemUuid) {
+        String sql = "UPDATE paper_items SET is_deleted = 1, updated_at = datetime('now'), sync_status = 'PENDING' WHERE job_item_uuid = ?";
 
-        String sql = "DELETE FROM job_items WHERE id = ?";
-
-        try (
-          
-            PreparedStatement ps = con.prepareStatement(sql)
-        ) {
-
-            ps.setInt(1, jobItemId);
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, jobItemUuid);
             ps.executeUpdate();
-
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete paper item", e);
         }

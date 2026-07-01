@@ -23,6 +23,24 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javafx.application.Platform;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Properties;
+import jakarta.mail.Authenticator;
+import jakarta.mail.Message;
+import jakarta.mail.PasswordAuthentication;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
+import model.EmailSettings;
+import repository.EmailSettingsRepository;
+import model.Supplier;
+import utils.DBConnection;
+import repository.ClientRepository;
 import service.InvoiceMasterService;
 import model.InvoiceMaster;
 
@@ -55,6 +73,8 @@ import javafx.scene.shape.SVGPath;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
 import javafx.scene.control.cell.CheckBoxTableCell;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.text.TextAlignment;
 
 public class ViewJobsController {
@@ -67,7 +87,7 @@ public class ViewJobsController {
     private static final double JOB_DETAILS_ICON_GAP = 8;
 
     /** When set before opening View Jobs, client filter selects this client id once clients load. */
-    public static volatile Integer pendingFilterClientId;
+    public static volatile String pendingFilterClientUuid;
 
     private final ClientService clientService = new ClientService();
     private final JobService jobService = new JobService();
@@ -76,7 +96,7 @@ public class ViewJobsController {
     private final ObservableList<Job> masterJobs = FXCollections.observableArrayList();
 
     // ✅ clientId -> clientName map (for fast lookup)
-    private final Map<Integer, String> clientNameMap = new HashMap<>();
+    private final Map<String, String> clientNameMap = new HashMap<>();
 
     private final ExecutorService dataLoadExecutor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "view-jobs-data-loader");
@@ -123,6 +143,7 @@ public class ViewJobsController {
     private int currentPage = 1;
     private final int pageSize = 20;
     private final ObservableList<Job> pagedItems = FXCollections.observableArrayList();
+    private boolean wasInvalidSelection = false;
 
 
     private final ObservableList<Job> selectedJobs = FXCollections.observableArrayList();
@@ -186,6 +207,7 @@ public class ViewJobsController {
         }
 
         jobsTable.getSelectionModel().getSelectedItems().addListener((javafx.collections.ListChangeListener<Job>) c -> {
+            syncSelectedPropertyFromModel();
             updateBulkActionBar();
         });
 
@@ -196,8 +218,6 @@ public class ViewJobsController {
 
         // Bind table to paged items instead of sortedData directly
         jobsTable.setItems(pagedItems);
-        // Variable row height (setFixedCellSize(0)) breaks TableView: rows can inflate to viewport height.
-        // Row height is set on the table in view_job.fxml (-fx-fixed-cell-size).
 
         // Listen to changes in sorted data to refresh pagination
         sortedData.addListener((javafx.collections.ListChangeListener<Job>) c -> {
@@ -207,19 +227,54 @@ public class ViewJobsController {
 
         ensureGoToPageField();
 
-        // ✅ Double click to view
+        // ✅ Row factory — same pattern as ViewInvoicesController:
+        //   MOUSE_PRESSED event filter handles single-click toggle.
+        //   Shift / Ctrl / Shortcut modifiers are forwarded to JavaFX's built-in
+        //   multi-selection (range select and individual toggle work natively).
+        //   Double-click opens job details.
         jobsTable.setRowFactory(tv -> {
             TableRow<Job> row = new TableRow<>();
+            row.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
+                if (e.getButton() != MouseButton.PRIMARY || row.isEmpty() || jobsTable == null) {
+                    return;
+                }
+                // Let JavaFX handle shift / ctrl range and toggle natively
+                if (e.isShiftDown() || e.isControlDown() || e.isShortcutDown()) {
+                    return;
+                }
+                // If clicking in an interactive control or checkbox selection cell, let the event pass
+                javafx.event.EventTarget target = e.getTarget();
+                if (target instanceof javafx.scene.Node) {
+                    javafx.scene.Node node = (javafx.scene.Node) target;
+                    while (node != null && node != row) {
+                        if (node instanceof javafx.scene.control.ButtonBase ||
+                            node instanceof javafx.scene.control.ComboBoxBase ||
+                            node instanceof javafx.scene.control.TextInputControl ||
+                            node instanceof javafx.scene.control.MenuButton ||
+                            node instanceof javafx.scene.control.ChoiceBox ||
+                            node.getStyleClass().contains("table-cell-job-select")) {
+                            return;
+                        }
+                        node = node.getParent();
+                    }
+                }
+                // Consume single-click to disable single-click row selection
+                if (e.getClickCount() == 1) {
+                    e.consume();
+                }
+            });
             row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && (!row.isEmpty())) {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
                     showJobDetails(row.getItem());
                 }
             });
             return row;
         });
-        
+
         utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, null, () -> handleBack(null));
+
     }
+
 
     private void ensureGoToPageField() {
         if (goToPageField != null) {
@@ -236,37 +291,87 @@ public class ViewJobsController {
     // =========================================================
     // ✅ ACTION BAR LOGIC
     // =========================================================
-    private void updateBulkActionBar() {
-        List<Job> selected = jobsTable.getItems().stream()
-                .filter(Job::isSelected)
-                .collect(Collectors.toList());
-        if (selected.isEmpty()) {
-            bulkActionBarContainer.setVisible(false);
-            bulkActionBarContainer.setManaged(false);
-        } else {
-            bulkActionBarContainer.setVisible(true);
-            bulkActionBarContainer.setManaged(true);
-            selectionCountLabel.setText(selected.size() + " jobs selected");
-            
-            // Calculate eligible counts
-            long draftCount = selected.stream().filter(j -> "Draft".equalsIgnoreCase(j.getStatus())).count();
-            long processingCount = selected.stream().filter(j -> "In Progress".equalsIgnoreCase(j.getStatus())).count();
-            long completedCount = selected.stream().filter(j -> "Completed".equalsIgnoreCase(j.getStatus())).count();
-            long anyButCancelled = selected.stream().filter(j -> !"Cancelled".equalsIgnoreCase(j.getStatus())).count();
-            
-            bulkStartBtn.setText("Start Processing ("+draftCount+")");
-            bulkStartBtn.setDisable(draftCount == 0);
-            
-            bulkCompleteBtn.setText("Mark Completed ("+processingCount+")");
-            bulkCompleteBtn.setDisable(processingCount == 0);
-            
-            bulkInvoiceBtn.setText("Generate Invoice ("+completedCount+")");
-            bulkInvoiceBtn.setDisable(completedCount == 0);
-            
-            bulkCancelBtn.setText("Cancel Job ("+anyButCancelled+")");
-            bulkCancelBtn.setDisable(anyButCancelled == 0);
+
+    /**
+     * Syncs job.selectedProperty() with what the TableView selection model actually has selected.
+     * Uses object identity (not index) so it is correct even when the table has a sort applied.
+     */
+    private void syncSelectedPropertyFromModel() {
+        java.util.Set<Job> selectedSet = new java.util.HashSet<>(jobsTable.getSelectionModel().getSelectedItems());
+        for (Job j : jobsTable.getItems()) {
+            if (j != null) j.selectedProperty().set(selectedSet.contains(j));
         }
     }
+
+
+    private void updateBulkActionBar() {
+        List<Job> selected = new ArrayList<>(jobsTable.getSelectionModel().getSelectedItems());
+
+        if (selected.isEmpty()) {
+            wasInvalidSelection = false;
+            selectionCountLabel.setText("0 jobs selected");
+            // Keep bar visible but disable all action buttons
+            bulkStartBtn.setVisible(true);   bulkStartBtn.setManaged(true);
+            bulkCompleteBtn.setVisible(true); bulkCompleteBtn.setManaged(true);
+            bulkInvoiceBtn.setVisible(true);  bulkInvoiceBtn.setManaged(true);
+            bulkCancelBtn.setVisible(true);   bulkCancelBtn.setManaged(true);
+            bulkStartBtn.setDisable(true);
+            bulkCompleteBtn.setDisable(true);
+            bulkInvoiceBtn.setDisable(true);
+            bulkCancelBtn.setDisable(true);
+            bulkStartBtn.setText("Start Processing");
+            bulkCompleteBtn.setText("Mark Completed");
+            bulkInvoiceBtn.setText("Generate Invoice");
+            bulkCancelBtn.setText("Cancel Job");
+        } else {
+            selectionCountLabel.setText(selected.size() + " job" + (selected.size() == 1 ? "" : "s") + " selected");
+
+            java.util.Set<utils.JobWorkflow.Major> uniqueStatuses = selected.stream()
+                    .map(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()))
+                    .collect(Collectors.toSet());
+
+            if (uniqueStatuses.size() > 1) {
+                // Mixed statuses — hide action buttons
+                bulkStartBtn.setVisible(false);   bulkStartBtn.setManaged(false);
+                bulkCompleteBtn.setVisible(false); bulkCompleteBtn.setManaged(false);
+                bulkInvoiceBtn.setVisible(false);  bulkInvoiceBtn.setManaged(false);
+                bulkCancelBtn.setVisible(false);   bulkCancelBtn.setManaged(false);
+
+                if (!wasInvalidSelection) {
+                    toast("Different status jobs can't be moved ❌");
+                    wasInvalidSelection = true;
+                }
+            } else {
+                wasInvalidSelection = false;
+
+                bulkStartBtn.setVisible(true);   bulkStartBtn.setManaged(true);
+                bulkCompleteBtn.setVisible(true); bulkCompleteBtn.setManaged(true);
+                bulkInvoiceBtn.setVisible(true);  bulkInvoiceBtn.setManaged(true);
+                bulkCancelBtn.setVisible(true);   bulkCancelBtn.setManaged(true);
+
+                long draftCount      = selected.stream().filter(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()) == utils.JobWorkflow.Major.DRAFT).count();
+                long processingCount = selected.stream().filter(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()) == utils.JobWorkflow.Major.PROCESSING).count();
+                long completedCount  = selected.stream().filter(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()) == utils.JobWorkflow.Major.COMPLETED).count();
+                long anyButCancelled = selected.stream().filter(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()) != utils.JobWorkflow.Major.CANCELLED).count();
+
+                bulkStartBtn.setText("Start Processing (" + draftCount + ")");
+                bulkStartBtn.setDisable(draftCount == 0);
+
+                bulkCompleteBtn.setText("Mark Completed (" + processingCount + ")");
+                bulkCompleteBtn.setDisable(processingCount == 0);
+
+                bulkInvoiceBtn.setText("Generate Invoice (" + completedCount + ")");
+                bulkInvoiceBtn.setDisable(completedCount == 0);
+
+                bulkCancelBtn.setText("Cancel Job (" + anyButCancelled + ")");
+                boolean canBulkCancel = uniqueStatuses.contains(utils.JobWorkflow.Major.DRAFT) 
+                                     || uniqueStatuses.contains(utils.JobWorkflow.Major.PROCESSING) 
+                                     || uniqueStatuses.contains(utils.JobWorkflow.Major.COMPLETED);
+                bulkCancelBtn.setDisable(!canBulkCancel);
+            }
+        }
+    }
+
 
     @FXML private void clearFilters() {
         searchField.clear();
@@ -305,9 +410,24 @@ public class ViewJobsController {
         processBulkStatusUpdate("Completed", "Job marked as completed!");
     }
 
+    private void processBulkStatusUpdate(String status, String successMsg) {
+        List<Job> selected = new ArrayList<>(jobsTable.getSelectionModel().getSelectedItems());
+        if (selected.isEmpty()) return;
+
+        for (Job job : selected) {
+            jobService.updateJobStatus(job.getUuid(), status);
+            job.setStatus(status);
+            applyDefaultChildForNewMajor(job, status);
+        }
+        jobsTable.refresh();
+        toast(successMsg);
+        jobsTable.getSelectionModel().clearSelection();
+        updateBulkActionBar();
+    }
+
     @FXML
     private void handleInvoiceAction() {
-        List<Job> selected = jobsTable.getSelectionModel().getSelectedItems();
+        List<Job> selected = new ArrayList<>(jobsTable.getSelectionModel().getSelectedItems());
         if (selected.isEmpty()) return;
         
         Job first = selected.get(0);
@@ -323,35 +443,168 @@ public class ViewJobsController {
             return;
         }
         
+        jobsTable.getSelectionModel().clearSelection();
+        updateBulkActionBar();
+        
         handleInvoicedRequest(first);
     }
 
     @FXML
     private void handleCancelAction() {
-        processBulkStatusUpdate("Cancelled", "Job cancelled.");
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Job once cancelled cant be get back", ButtonType.YES, ButtonType.NO);
+        alert.setHeaderText("Cancel Job");
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.YES) {
+            List<Job> selected = new ArrayList<>(jobsTable.getSelectionModel().getSelectedItems());
+            processJobCancellations(selected);
+        }
+    }
+
+    private void processJobCancellations(List<Job> jobsToCancel) {
+        if (jobsToCancel == null || jobsToCancel.isEmpty()) return;
+
+        List<Job> toProcess = jobsToCancel.stream()
+                .filter(j -> !"Cancelled".equalsIgnoreCase(j.getStatus()))
+                .collect(Collectors.toList());
+
+        if (toProcess.isEmpty()) return;
+
+        Map<String, List<Job>> byInvoice = toProcess.stream()
+                .collect(Collectors.groupingBy(j -> j.getInvoiceUuid() == null ? "" : j.getInvoiceUuid()));
+
+        for (Map.Entry<String, List<Job>> entry : byInvoice.entrySet()) {
+            String invUuid = entry.getKey();
+            List<Job> jobsForInv = entry.getValue();
+
+            if (invUuid.isEmpty()) {
+                for (Job job : jobsForInv) {
+                    jobService.updateJobStatus(job.getUuid(), "Cancelled");
+                    job.setStatus("Cancelled");
+                    applyDefaultChildForNewMajor(job, "Cancelled");
+                }
+            } else {
+                InvoiceMaster invoice = invoiceService.getInvoiceByUuid(invUuid);
+                boolean isProforma = false;
+                if (invoice != null) {
+                    String ds = invoice.getDocumentSeries();
+                    String tp = invoice.getType();
+                    isProforma = (ds != null && "PROFORMA_INVOICE".equalsIgnoreCase(ds))
+                              || (tp != null && (tp.toUpperCase().contains("PROFORMA") || tp.toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(tp) || "DATE_RANGE".equalsIgnoreCase(tp) || tp.toUpperCase().contains("MONTHLY")));
+                }
+                if (invoice == null || !isProforma) {
+                    if (invoice != null) {
+                        String stat = invoice.getStatus() != null ? invoice.getStatus().toUpperCase() : "";
+                        if (!stat.isEmpty() && !stat.startsWith("DRAFT")) {
+                            Alert blockAlert = new Alert(Alert.AlertType.ERROR);
+                            blockAlert.setTitle("Action Blocked");
+                            blockAlert.setHeaderText("Cannot Cancel Job");
+                            blockAlert.setContentText("Job " + jobsForInv.get(0).getJobNo() + " is linked to a GST Invoice (" + invoice.getInvoiceNo() + ") that is " + stat + ". Cancellation is blocked.");
+                            blockAlert.showAndWait();
+                            continue;
+                        }
+                    }
+                    for (Job job : jobsForInv) {
+                        jobService.updateJobStatus(job.getUuid(), "Cancelled");
+                        job.setStatus("Cancelled");
+                        applyDefaultChildForNewMajor(job, "Cancelled");
+                    }
+                    try {
+                        List<String> jobUuidsToUnlink = jobsForInv.stream().map(Job::getUuid).collect(Collectors.toList());
+                        invoiceService.unlinkJobsAndRecalculateProforma(invUuid, jobUuidsToUnlink);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                } else {
+                    String stat = invoice.getStatus() != null ? invoice.getStatus().toUpperCase() : "";
+                    if ("REVISED".equals(stat) || "CANCELLED".equals(stat) || "VOID".equals(stat)) {
+                        Alert blockAlert = new Alert(Alert.AlertType.ERROR);
+                        blockAlert.setTitle("Action Blocked");
+                        blockAlert.setHeaderText("Cannot Cancel Job");
+                        blockAlert.setContentText("Job " + jobsForInv.get(0).getJobNo() + " is linked to a Proforma Invoice (" + invoice.getInvoiceNo() + ") that is " + stat + ". Cancellation is blocked.");
+                        blockAlert.showAndWait();
+                        continue;
+                    }
+                    List<Job> allLinkedJobs = jobService.getJobsByInvoice(invoice);
+                    long activeCount = allLinkedJobs.stream()
+                            .filter(j -> !"Cancelled".equalsIgnoreCase(j.getStatus()))
+                            .count();
+                    long cancellingCount = allLinkedJobs.stream()
+                            .filter(j -> jobsForInv.stream().anyMatch(jc -> jc.getUuid().equals(j.getUuid())))
+                            .count();
+
+                    if (activeCount == cancellingCount) {
+                        if (invoice.getPaidAmount() <= 0) {
+                            for (Job job : jobsForInv) {
+                                jobService.updateJobStatus(job.getUuid(), "Cancelled");
+                                job.setStatus("Cancelled");
+                                applyDefaultChildForNewMajor(job, "Cancelled");
+                            }
+                            invoiceService.updateInvoiceStatus(invUuid, "CANCELLED");
+                        } else {
+                            ButtonType btnRefund = new ButtonType("Refund Advance");
+                            ButtonType btnKeep = new ButtonType("Keep as Customer Advance");
+                            ButtonType btnCancel = new ButtonType("Cancel/Abort", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+                            Alert dialog = new Alert(Alert.AlertType.CONFIRMATION);
+                            dialog.setTitle("Handle Advance Payment");
+                            dialog.setHeaderText("Advance Received: " + invoice.getPaidAmount() + " for Proforma " + invoice.getInvoiceNo());
+                            dialog.setContentText("This proforma invoice will be cancelled. How would you like to handle the advance payment?");
+                            dialog.getButtonTypes().setAll(btnRefund, btnKeep, btnCancel);
+
+                            Optional<ButtonType> opt = dialog.showAndWait();
+                            if (opt.isPresent()) {
+                                if (opt.get() == btnRefund) {
+                                    Alert confirmRefund = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to refund the advance amount of ₹" + invoice.getPaidAmount() + "?", ButtonType.YES, ButtonType.NO);
+                                    confirmRefund.setTitle("Confirm Refund");
+                                    Optional<ButtonType> confOpt = confirmRefund.showAndWait();
+                                    if (confOpt.isPresent() && confOpt.get() == ButtonType.YES) {
+                                        invoiceService.refundAdvanceForInvoice(invUuid, invoice.getClientUuid(), invoice.getPaidAmount());
+                                        Toast.show((javafx.stage.Stage) jobsTable.getScene().getWindow(), "Refund created for advance.");
+                                    } else {
+                                        toast("Refund cancelled.");
+                                        return;
+                                    }
+                                } else if (opt.get() == btnKeep) {
+                                    invoiceService.deallocatePaymentsForInvoice(invUuid);
+                                    Toast.show((javafx.stage.Stage) jobsTable.getScene().getWindow(), "Advance deallocated (kept as Customer Advance).");
+                                } else {
+                                    toast("Cancellation aborted.");
+                                    return;
+                                }
+                                for (Job job : jobsForInv) {
+                                    jobService.updateJobStatus(job.getUuid(), "Cancelled");
+                                    job.setStatus("Cancelled");
+                                    applyDefaultChildForNewMajor(job, "Cancelled");
+                                }
+                                invoiceService.updateInvoiceStatus(invUuid, "CANCELLED");
+                            } else {
+                                toast("Cancellation aborted.");
+                                return;
+                            }
+                        }
+                    } else {
+                        List<String> jobUuidsToUnlink = jobsForInv.stream().map(Job::getUuid).collect(Collectors.toList());
+                        for (Job job : jobsForInv) {
+                            jobService.updateJobStatus(job.getUuid(), "Cancelled");
+                            job.setStatus("Cancelled");
+                            applyDefaultChildForNewMajor(job, "Cancelled");
+                        }
+                        invoiceService.unlinkJobsAndRecalculateProforma(invUuid, jobUuidsToUnlink);
+                        toast("Job cancelled & Proforma recalculated.");
+                    }
+                }
+            }
+        }
+
+        jobsTable.refresh();
+        jobsTable.getSelectionModel().clearSelection();
+        updateBulkActionBar();
     }
 
     @FXML
     private void clearSelection() {
-        for (Job job : masterJobs) {
-            job.setSelected(false);
-        }
         jobsTable.getSelectionModel().clearSelection();
         toast("Selection cleared.");
-    }
-
-    private void processBulkStatusUpdate(String status, String successMsg) {
-        List<Job> selected = new java.util.ArrayList<>(jobsTable.getSelectionModel().getSelectedItems());
-        if (selected.isEmpty()) return;
-
-        for (Job job : selected) {
-            jobService.updateJobStatus(job.getId(), status);
-            job.setStatus(status);
-            applyDefaultChildForNewMajor(job, status);
-        }
-        jobsTable.refresh();
-        toast(successMsg);
-        jobsTable.getSelectionModel().clearSelection();
     }
     
     private void handleInvoicedRequest(Job job) {
@@ -359,7 +612,7 @@ public class ViewJobsController {
             toast("❌ Job has no client associated.");
             return;
         }
-        MainController.getInstance().loadInvoiceWithJob(job.getClientId(), job.getId());
+        MainController.getInstance().loadInvoiceWithJob(job.getClientId(), job.getUuid());
     }
 
     // =========================================================
@@ -419,7 +672,7 @@ public class ViewJobsController {
 
         clientNameMap.clear();
         for (Client c : clients) {
-            if (c != null) clientNameMap.put(c.getId(), c.getBusinessName());
+            if (c != null) clientNameMap.put(c.getClientUuid(), c.getBusinessName());
         }
         // Refresh visible rows that display client names.
         if (jobsTable != null) jobsTable.refresh();
@@ -427,12 +680,12 @@ public class ViewJobsController {
     }
 
     private void applyPendingClientFilter() {
-        Integer id = pendingFilterClientId;
-        if (id == null || clientComboBox == null || clientComboBox.getItems().isEmpty()) {
+        String uuid = pendingFilterClientUuid;
+        if (uuid == null || uuid.isBlank() || clientComboBox == null || clientComboBox.getItems().isEmpty()) {
             return;
         }
-        pendingFilterClientId = null;
-        autoSelectClient(id);
+        pendingFilterClientUuid = null;
+        autoSelectClient(uuid);
     }
 
     private static void useGraphicOnlyCell(TableCell<?, ?> cell) {
@@ -445,23 +698,54 @@ public class ViewJobsController {
     // ✅ TABLE SETUP
     // =========================================================
     private void setupTableColumns() {
-        // 1. SELECT COLUMN
-        selectCol.setCellValueFactory(cellData -> {
-            javafx.beans.property.BooleanProperty prop = cellData.getValue().selectedProperty();
-            // Listen for changes to the checkbox
-            prop.addListener((obs, old, val) -> updateBulkActionBar());
-            return prop;
-        });
+        // 1. SELECT COLUMN — same pattern as ViewInvoicesController but matching Boolean type
+        selectCol.setCellValueFactory(c -> new javafx.beans.property.SimpleBooleanProperty(false));
         selectCol.setCellFactory(col -> new TableCell<Job, Boolean>() {
-            private final javafx.scene.control.CheckBox checkBox = new javafx.scene.control.CheckBox();
+            private final CheckBox checkBox = new CheckBox();
             private final HBox box = new HBox(checkBox);
+            private final javafx.beans.value.ChangeListener<Boolean> rowSelectionListener =
+                    (obs, oldVal, newVal) -> checkBox.setSelected(newVal != null && newVal);
+
             {
                 getStyleClass().add("table-cell-job-select");
                 box.setAlignment(Pos.CENTER);
-                box.setFillHeight(false);
                 box.setPadding(TABLE_LEAD_COL_PADDING);
                 setAlignment(Pos.CENTER);
+                checkBox.setFocusTraversable(false);
+                checkBox.setMnemonicParsing(false);
+
+                // Checkbox click: toggle selection; consume all mouse events so they
+                // do NOT bubble up to the row's MOUSE_PRESSED event filter.
+                checkBox.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
+                    if (e.getButton() == MouseButton.PRIMARY) {
+                        e.consume();
+                        TableRow<?> tableRow = getTableRow();
+                        if (tableRow != null && !tableRow.isEmpty()) {
+                            int index = tableRow.getIndex();
+                            jobsTable.requestFocus();
+                            if (jobsTable.getSelectionModel().isSelected(index)) {
+                                jobsTable.getSelectionModel().clearSelection(index);
+                            } else {
+                                jobsTable.getSelectionModel().select(index);
+                            }
+                        }
+                    }
+                });
+                checkBox.addEventFilter(MouseEvent.MOUSE_RELEASED, MouseEvent::consume);
+                checkBox.addEventFilter(MouseEvent.MOUSE_CLICKED,  MouseEvent::consume);
+
+                // Keep checkbox in sync with the row's built-in selection state
+                tableRowProperty().addListener((obs, oldRow, newRow) -> {
+                    if (oldRow != null) oldRow.selectedProperty().removeListener(rowSelectionListener);
+                    if (newRow != null) {
+                        newRow.selectedProperty().addListener(rowSelectionListener);
+                        checkBox.setSelected(newRow.isSelected());
+                    } else {
+                        checkBox.setSelected(false);
+                    }
+                });
             }
+
             @Override
             protected void updateItem(Boolean item, boolean empty) {
                 super.updateItem(item, empty);
@@ -469,15 +753,14 @@ public class ViewJobsController {
                     setGraphic(null);
                     setText(null);
                 } else {
-                    Job job = (Job) getTableRow().getItem();
-                    checkBox.selectedProperty().unbindBidirectional(job.selectedProperty());
-                    checkBox.selectedProperty().bindBidirectional(job.selectedProperty());
+                    TableRow<?> row = getTableRow();
+                    checkBox.setSelected(row != null && row.isSelected());
                     useGraphicOnlyCell(this);
                     setGraphic(box);
                 }
             }
         });
-        jobsTable.setEditable(true);
+        // Table does not need to be editable for checkbox-driven selection
 
         // 2. JOB DETAILS COLUMN (Target Vision Alignment)
         jobDetailsCol.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<Job>(cellData.getValue()));
@@ -619,7 +902,7 @@ public class ViewJobsController {
             private final VBox box = new VBox(0);
             private final StackPane amountShell = new StackPane();
             private final Label amount = new Label();
-            private final HBox metaBox = new HBox(4);
+            private final javafx.scene.layout.FlowPane metaBox = new javafx.scene.layout.FlowPane();
             private final Label invPrefix = new Label("Invoice:");
             private final Hyperlink invLink = new Hyperlink();
             private final Label separator = new Label("|");
@@ -651,10 +934,12 @@ public class ViewJobsController {
                 imgPrefix.setMinWidth(Region.USE_PREF_SIZE);
                 imgLink.setMinWidth(Region.USE_PREF_SIZE);
                 
+                metaBox.setHgap(4);
+                metaBox.setVgap(2);
+                metaBox.setPrefWrapLength(140);
                 metaBox.getChildren().addAll(invPrefix, invLink, separator, imgPrefix, imgLink);
                 metaBox.setAlignment(Pos.CENTER_LEFT);
-                metaBox.setFillHeight(false);
-                metaBox.setMaxWidth(Region.USE_PREF_SIZE);
+                metaBox.setMaxWidth(Double.MAX_VALUE);
                 box.getChildren().addAll(amount, metaBox);
                 /* CENTER_LEFT: left-align ₹ + invoice row; vertically center that stack in the cell when row is tall */
                 box.setAlignment(Pos.CENTER_LEFT);
@@ -683,7 +968,7 @@ public class ViewJobsController {
                 if (invNo != null && !invNo.isEmpty() && !invNo.equals("-")) {
                     invLink.setText(invNo);
                     invLink.setDisable(false);
-                    invLink.setOnAction(e -> openInvoiceDetails(job.getInvoiceId()));
+                    invLink.setOnAction(e -> openInvoiceDetailsByUuid(job.getInvoiceUuid()));
                     invLink.getStyleClass().add("active-link");
                 } else {
                     invLink.setText("-");
@@ -763,11 +1048,11 @@ public class ViewJobsController {
             private final HBox root = new HBox(4);
             { 
                 getStyleClass().add("table-cell-job-actions");
-                root.setAlignment(Pos.CENTER);
+                root.setAlignment(Pos.CENTER_RIGHT);
                 root.setFillHeight(false);
                 root.setMaxWidth(Region.USE_PREF_SIZE);
-                root.setPadding(TABLE_LEAD_COL_PADDING);
-                setAlignment(Pos.CENTER);
+                root.setPadding(new Insets(0, 12, 0, 12));
+                setAlignment(Pos.CENTER_RIGHT);
             }
 
             @Override
@@ -781,58 +1066,385 @@ public class ViewJobsController {
                 root.getChildren().clear();
                 
                 String statusMsg = job.getStatus() != null ? job.getStatus().toLowerCase() : "";
+                boolean isCancelled = statusMsg.contains("cancel");
+                boolean isInvoiced = statusMsg.contains("invoice") || statusMsg.contains("invoic") || (job.getInvoiceUuid() != null && !job.getInvoiceUuid().isBlank());
+                
                 Button primaryBtn = new Button();
                 primaryBtn.setMinHeight(24);
                 primaryBtn.setMaxHeight(24);
                 primaryBtn.setPrefHeight(24);
                 primaryBtn.setPadding(new Insets(2, 8, 2, 8));
                 
-                if (statusMsg.contains("draft") || statusMsg.contains("created")) {
-                    primaryBtn.setText("Start Processing");
-                    primaryBtn.getStyleClass().setAll("row-action-btn-primary");
-                    primaryBtn.setGraphic(createIcon("M8 5v14l11-7z", "white"));
-                    primaryBtn.setOnAction(e -> handleStartActionForJob(job));
-                } else if (statusMsg.contains("progress")) {
-                    primaryBtn.setText("Mark Completed");
-                    primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-green");
-                    primaryBtn.setGraphic(createIcon("M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z", "white"));
-                    primaryBtn.setOnAction(e -> handleCompleteActionForJob(job));
-                } else if (statusMsg.contains("completed")) {
-                    primaryBtn.setText("Generate Invoice");
-                    primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-purple");
-                    primaryBtn.setGraphic(createIcon("M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z", "white"));
-                    primaryBtn.setOnAction(e -> handleInvoicedRequest(job));
-                } else {
-                    primaryBtn.setText("No Actions");
-                    primaryBtn.setDisable(true);
-                    primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-muted");
+                if (!isInvoiced) {
+                    if (statusMsg.contains("draft") || statusMsg.contains("created")) {
+                        primaryBtn.setText("Start Processing");
+                        primaryBtn.getStyleClass().setAll("row-action-btn-primary");
+                        primaryBtn.setGraphic(createIcon("M8 5v14l11-7z", "white"));
+                        primaryBtn.setOnAction(e -> handleStartActionForJob(job));
+                    } else if (statusMsg.contains("progress")) {
+                        primaryBtn.setText("Mark Completed");
+                        primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-green");
+                        primaryBtn.setGraphic(createIcon("M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z", "white"));
+                        primaryBtn.setOnAction(e -> handleCompleteActionForJob(job));
+                    } else if (statusMsg.contains("completed")) {
+                        primaryBtn.setText("Generate Invoice");
+                        primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-purple");
+                        primaryBtn.setGraphic(createIcon("M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z", "white"));
+                        primaryBtn.setOnAction(e -> handleInvoicedRequest(job));
+                    } else {
+                        primaryBtn.setText("No Actions");
+                        primaryBtn.setDisable(true);
+                        primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-muted");
+                    }
                 }
-                
-                Button vBtn = new Button(); vBtn.getStyleClass().addAll("row-action-btn", "row-btn-blue");
-                vBtn.setGraphic(createIcon("M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z", "#1890FF"));
-                vBtn.setOnAction(e -> showJobDetails(job));
                 
                 Button eBtn = new Button(); eBtn.getStyleClass().addAll("row-action-btn", "row-btn-orange");
                 eBtn.setGraphic(createIcon("M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z", "#FA8C16"));
                 eBtn.setOnAction(e -> openEditJobScreen(job));
+                eBtn.setTooltip(new Tooltip("Edit Job"));
 
-                Button mBtn = new Button(); mBtn.getStyleClass().addAll("row-action-btn", "row-btn-gray");
-                mBtn.setGraphic(createIcon("M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z", "#5B4F47"));
+                Button mailBtn = new Button(); mailBtn.getStyleClass().addAll("row-action-btn", "row-btn-purple");
+                mailBtn.setGraphic(createIcon("M2 21l21-9L2 3v7l15 2-15 2z", "#722ED1"));
+                mailBtn.setOnAction(e -> handleSendMailPopup(job));
+                mailBtn.setTooltip(new Tooltip("Send Email"));
+
+                Button cancelBtn = new Button(); cancelBtn.getStyleClass().addAll("row-action-btn", "row-btn-red");
+                cancelBtn.setGraphic(createIcon("M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z", "#F5222D"));
+                cancelBtn.setOnAction(e -> handleCancelActionForJob(job));
+                cancelBtn.setTooltip(new Tooltip("Cancel Job"));
                 
-                root.getChildren().add(primaryBtn);
-                root.getChildren().add(vBtn);
-                if (!statusMsg.contains("cancel")) {
+                if (!isInvoiced) {
+                    root.getChildren().add(primaryBtn);
+                }
+                boolean isLockedInvoice = false;
+                if (job.getInvoiceUuid() != null && !job.getInvoiceUuid().isBlank()) {
+                    String invStatus = job.getInvoiceStatus() != null ? job.getInvoiceStatus().trim().toUpperCase() : "";
+                    String invType = job.getInvoiceType() != null ? job.getInvoiceType().toUpperCase() : "";
+                    boolean isProforma = invType.contains("PROFORMA") || invType.contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(invType) || "DATE_RANGE".equalsIgnoreCase(invType) || invType.contains("MONTHLY");
+                    if (isProforma) {
+                        if ("REVISED".equals(invStatus) || "CANCELLED".equals(invStatus) || "VOID".equals(invStatus)) {
+                            isLockedInvoice = true;
+                        }
+                    } else {
+                        if (!invStatus.isEmpty() && !invStatus.startsWith("DRAFT")) {
+                            isLockedInvoice = true;
+                        }
+                    }
+                }
+                boolean canEdit = !isCancelled && !isLockedInvoice;
+                if (canEdit) {
                     root.getChildren().add(eBtn);
                 }
-                root.getChildren().add(mBtn);
+                root.getChildren().add(mailBtn);
+                boolean canCancel = !isCancelled && !isLockedInvoice;
+                if (canCancel) {
+                    root.getChildren().add(cancelBtn);
+                }
                 useGraphicOnlyCell(this);
                 setGraphic(root);
             }
         });
+        jobsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+    }
+
+    public static class MailRecipient {
+        private final String type;
+        private final String businessName;
+        private final String name;
+        private final String email;
+        private final String phone;
+
+        public MailRecipient(String type, String businessName, String name, String email, String phone) {
+            this.type = type;
+            this.businessName = businessName;
+            this.name = name;
+            this.email = email;
+            this.phone = phone;
+        }
+
+        public String getType() { return type; }
+        public String getBusinessName() { return businessName; }
+        public String getName() { return name; }
+        public String getEmail() { return email; }
+        public String getPhone() { return phone; }
+    }
+
+    private void handleSendMailPopup(Job job) {
+        if (job == null) return;
+        
+        Client client = null;
+        try {
+            ClientRepository clientRepo = new ClientRepository();
+            client = clientRepo.findByUuid(job.getClientUuid());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        
+        List<model.Supplier> suppliers = new ArrayList<>();
+        String sql = "SELECT * FROM suppliers WHERE IFNULL(is_deleted,0) = 0 AND uuid IN (" +
+                     "  SELECT DISTINCT supplier_uuid FROM paper_items pi JOIN job_items ji ON pi.job_item_uuid = ji.uuid WHERE ji.job_uuid = ? AND IFNULL(pi.is_deleted, 0) = 0 AND pi.supplier_uuid IS NOT NULL AND pi.supplier_uuid != '' " +
+                     "  UNION " +
+                     "  SELECT DISTINCT supplier_uuid FROM ctp_items ci JOIN job_items ji ON ci.job_item_uuid = ji.uuid WHERE ji.job_uuid = ? AND IFNULL(ci.is_deleted, 0) = 0 AND ci.supplier_uuid IS NOT NULL AND ci.supplier_uuid != ''" +
+                     ") ORDER BY business_name ASC";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, job.getUuid());
+            ps.setString(2, job.getUuid());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    model.Supplier s = new model.Supplier();
+                    s.setUuid(rs.getString("uuid"));
+                    s.setName(rs.getString("name"));
+                    s.setbusinessName(rs.getString("business_name"));
+                    s.setType(rs.getString("type"));
+                    s.setPhone(rs.getString("phone"));
+                    s.setAddress(rs.getString("address"));
+                    s.setGstNumber(rs.getString("gst_number"));
+                    suppliers.add(s);
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        
+        ObservableList<MailRecipient> recipients = FXCollections.observableArrayList();
+        if (client != null) {
+            recipients.add(new MailRecipient("Client (Owner)", 
+                client.getBusinessName() != null ? client.getBusinessName() : "", 
+                client.getClientName() != null ? client.getClientName() : "", 
+                client.getEmail() != null ? client.getEmail() : "", 
+                client.getPhone() != null ? client.getPhone() : ""));
+        }
+        for (model.Supplier s : suppliers) {
+            recipients.add(new MailRecipient("Supplier (" + (s.getType() != null ? s.getType() : "") + ")", 
+                s.getbusinessName() != null ? s.getbusinessName() : "", 
+                s.getName() != null ? s.getName() : "", 
+                "", 
+                s.getPhone() != null ? s.getPhone() : ""));
+        }
+        
+        Stage stage = new Stage(StageStyle.TRANSPARENT);
+        stage.initModality(Modality.APPLICATION_MODAL);
+        
+        VBox root = new VBox(15);
+        root.getStyleClass().add("mail-popup-root");
+        root.setMinWidth(600);
+        root.setMaxWidth(700);
+        
+        // Header
+        HBox header = new HBox();
+        header.setAlignment(Pos.CENTER_LEFT);
+        VBox titleBox = new VBox(2);
+        Label idLbl = new Label("EMAIL NOTIFICATION");
+        idLbl.setStyle("-fx-text-fill: #CD7B4E; -fx-font-weight: 800; -fx-font-size: 11px; -fx-letter-spacing: 0.1em;");
+        Label titleLbl = new Label("Send Email for " + job.getJobTitle());
+        titleLbl.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 800; -fx-font-size: 18px; -fx-font-family: 'Inter';");
+        titleBox.getChildren().addAll(idLbl, titleLbl);
+        
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        
+        Button closeBtn = new Button("✕");
+        closeBtn.getStyleClass().add("view-clear-btn");
+        closeBtn.setStyle("-fx-min-width: 28; -fx-min-height: 28; -fx-font-size: 12px; -fx-padding: 0;");
+        closeBtn.setOnAction(e -> stage.close());
+        header.getChildren().addAll(titleBox, spacer, closeBtn);
+        
+        // Table label
+        Label tableLabel = new Label("Select Recipient (Client or Supplier):");
+        tableLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700; -fx-font-size: 12px;");
+        
+        // TableView for recipients
+        TableView<MailRecipient> table = new TableView<>();
+        table.getStyleClass().add("mail-popup-table");
+        table.setPrefHeight(100);
+        
+        TableColumn<MailRecipient, String> typeCol = new TableColumn<>("Role / Type");
+        typeCol.setCellValueFactory(new PropertyValueFactory<>("type"));
+        typeCol.setPrefWidth(120);
+        
+        TableColumn<MailRecipient, String> bNameCol = new TableColumn<>("Business Name");
+        bNameCol.setCellValueFactory(new PropertyValueFactory<>("businessName"));
+        bNameCol.setPrefWidth(150);
+        
+        TableColumn<MailRecipient, String> nameCol = new TableColumn<>("Contact Name");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+        nameCol.setPrefWidth(120);
+        
+        TableColumn<MailRecipient, String> emailCol = new TableColumn<>("Email Address");
+        emailCol.setCellValueFactory(new PropertyValueFactory<>("email"));
+        emailCol.setPrefWidth(130);
+        
+        table.getColumns().addAll(typeCol, bNameCol, nameCol, emailCol);
+        table.setItems(recipients);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        
+        // Form Fields
+        Label toLabel = new Label("To Email:");
+        toLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700;");
+        TextField toEmailField = new TextField();
+        toEmailField.setPromptText("Enter recipient email address...");
+        toEmailField.getStyleClass().add("mail-field");
+        
+        Label subjectLabel = new Label("Subject:");
+        subjectLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700;");
+        TextField subjectField = new TextField("Sunny Printers: Update for Job - " + job.getJobTitle());
+        subjectField.getStyleClass().add("mail-field");
+        
+        Label messageLabel = new Label("Message:");
+        messageLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700;");
+        TextArea messageArea = new TextArea();
+        messageArea.setPrefRowCount(10);
+        messageArea.setPrefHeight(200);
+        messageArea.setWrapText(true);
+        messageArea.getStyleClass().add("mail-area");
+        
+        // Add listener to table
+        table.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+            if (newSel != null) {
+                toEmailField.setText(newSel.getEmail() != null ? newSel.getEmail() : "");
+                
+                String salutation = newSel.getBusinessName() != null && !newSel.getBusinessName().isEmpty() 
+                    ? newSel.getBusinessName() 
+                    : (newSel.getName() != null ? newSel.getName() : "Team");
+                    
+                String customBody = "Dear " + salutation + ",\n\n"
+                                  + "Here is an update regarding the job \"" + job.getJobTitle() + "\" (" + job.getJobNo() + "):\n\n"
+                                  + "• Status: " + job.getStatus() + "\n"
+                                  + "• Description: " + (job.getDescription() != null ? job.getDescription() : "N/A") + "\n"
+                                  + "• Total Cost: Rs. " + String.format("%.2f", job.getJobTotal() != null ? job.getJobTotal() : 0.0) + "\n\n"
+                                  + "Please feel free to contact us if you have any questions or require any adjustments.\n\n"
+                                  + "Best Regards,\n"
+                                  + "Sunny Printers Team";
+                messageArea.setText(customBody);
+            }
+        });
+        
+        // Default select first item
+        if (!recipients.isEmpty()) {
+            table.getSelectionModel().selectFirst();
+        }
+        
+        // Check email configuration
+        boolean configOk = false;
+        String warningMsg = "";
+        try {
+            EmailSettingsRepository emailRepo = new EmailSettingsRepository();
+            EmailSettings settings = emailRepo.load();
+            if (settings.getSenderEmail() != null && !settings.getSenderEmail().isBlank()) {
+                configOk = true;
+            } else {
+                warningMsg = "⚠ SMTP Sender settings not configured in Settings screen!";
+            }
+        } catch (Exception ex) {
+            warningMsg = "⚠ Error loading SMTP settings: " + ex.getMessage();
+        }
+        
+        Label statusInfoLabel = new Label(configOk ? "SMTP Configured" : warningMsg);
+        statusInfoLabel.setStyle(configOk 
+            ? "-fx-text-fill: #228B22; -fx-font-weight: 600; -fx-font-size: 11px;" 
+            : "-fx-text-fill: #F5222D; -fx-font-weight: 700; -fx-font-size: 11px;");
+        
+        Button sendBtn = new Button("Send Email");
+        sendBtn.getStyleClass().add("finish-btn-premium");
+        sendBtn.setGraphic(createIcon("M2 21l21-9L2 3v7l15 2-15 2z", "white"));
+        sendBtn.setDisable(!configOk);
+        
+        sendBtn.setOnAction(e -> {
+            String toEmail = toEmailField.getText().trim();
+            String subject = subjectField.getText().trim();
+            String messageBody = messageArea.getText();
+            
+            if (toEmail.isEmpty()) {
+                toast("❌ Please enter a recipient email address!");
+                return;
+            }
+            if (!toEmail.contains("@")) {
+                toast("❌ Please enter a valid email address!");
+                return;
+            }
+            
+            sendBtn.setDisable(true);
+            sendBtn.setText("Sending...");
+            
+            new Thread(() -> {
+                try {
+                    EmailSettingsRepository repo = new EmailSettingsRepository();
+                    EmailSettings settings = repo.load();
+                    
+                    String smtpHost = settings.getSmtpHost();
+                    String smtpPort = settings.getSmtpPort();
+                    String senderEmail = settings.getSenderEmail();
+                    String senderPassword = settings.getSenderPassword();
+                    
+                    Properties props = new Properties();
+                    props.put("mail.smtp.auth", "true");
+                    props.put("mail.smtp.starttls.enable", "true");
+                    props.put("mail.smtp.host", smtpHost);
+                    props.put("mail.smtp.port", smtpPort);
+                    
+                    Session session = Session.getInstance(props, new Authenticator() {
+                        @Override
+                        protected PasswordAuthentication getPasswordAuthentication() {
+                            return new PasswordAuthentication(senderEmail, senderPassword);
+                        }
+                    });
+                    
+                    Message message = new MimeMessage(session);
+                    message.setFrom(new InternetAddress(senderEmail, "Sunny Printers"));
+                    message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
+                    message.setSubject(subject);
+                    message.setContent(messageBody.replace("\n", "<br>"), "text/html; charset=utf-8");
+                    
+                    Transport.send(message);
+                    
+                    Platform.runLater(() -> {
+                        toast("✅ Email sent successfully!");
+                        stage.close();
+                    });
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    Platform.runLater(() -> {
+                        toast("❌ Failed to send email: " + ex.getMessage());
+                        sendBtn.setDisable(false);
+                        sendBtn.setText("Send Email");
+                    });
+                }
+            }).start();
+        });
+        
+        Button cancelBtn = new Button("Cancel");
+        cancelBtn.getStyleClass().add("cancel-btn");
+        cancelBtn.setOnAction(e -> stage.close());
+        
+        HBox actionRow = new HBox(10);
+        actionRow.setAlignment(Pos.CENTER_RIGHT);
+        actionRow.getChildren().addAll(statusInfoLabel, cancelBtn, sendBtn);
+        
+        VBox formBox = new VBox(8);
+        formBox.getChildren().addAll(
+            toLabel, toEmailField,
+            subjectLabel, subjectField,
+            messageLabel, messageArea
+        );
+        
+        root.getChildren().addAll(header, tableLabel, table, formBox, actionRow);
+        
+        Scene scene = new Scene(root);
+        scene.setFill(Color.TRANSPARENT);
+        
+        // Apply styling stylesheets
+        String themeUrl = getClass().getResource("/css/theme.css").toExternalForm();
+        scene.getStylesheets().add(themeUrl);
+        String viewJobCss = getClass().getResource("/css/view_job.css").toExternalForm();
+        scene.getStylesheets().add(viewJobCss);
+        
+        stage.setScene(scene);
+        stage.showAndWait();
     }
 
     private void handleStartActionForJob(Job job) {
-        jobService.updateJobStatus(job.getId(), "In Progress");
+        jobService.updateJobStatus(job.getUuid(), "In Progress");
         job.setStatus("In Progress");
         applyDefaultChildForNewMajor(job, "In Progress");
         jobsTable.refresh();
@@ -840,7 +1452,7 @@ public class ViewJobsController {
     }
 
     private void handleCompleteActionForJob(Job job) {
-        jobService.updateJobStatus(job.getId(), "Completed");
+        jobService.updateJobStatus(job.getUuid(), "Completed");
         job.setStatus("Completed");
         applyDefaultChildForNewMajor(job, "Completed");
         jobsTable.refresh();
@@ -848,11 +1460,12 @@ public class ViewJobsController {
     }
 
     private void handleCancelActionForJob(Job job) {
-        jobService.updateJobStatus(job.getId(), "Cancelled");
-        job.setStatus("Cancelled");
-        applyDefaultChildForNewMajor(job, "Cancelled");
-        jobsTable.refresh();
-        toast("Job cancelled.");
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Job once cancelled cant be get back", ButtonType.YES, ButtonType.NO);
+        alert.setHeaderText("Cancel Job");
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.YES) {
+            processJobCancellations(List.of(job));
+        }
     }
 
     /** Theme primary, tinted child panel background, and 24dp-style icon path (stroke-drawn in UI). */
@@ -946,10 +1559,12 @@ public class ViewJobsController {
         headVal.setStyle("-fx-font-weight: 700; -fx-text-fill: " + colorHex + "; -fx-font-size: 12px;");
         headRow.getChildren().addAll(headPrefix, headVal);
 
-        /* HBox keeps the full child trail on one row; FlowPane wrapped long draft trails. */
-        HBox breadcrumbPane = new HBox(4);
+        /* FlowPane wraps long child trails gracefully so they are fully visible */
+        javafx.scene.layout.FlowPane breadcrumbPane = new javafx.scene.layout.FlowPane();
+        breadcrumbPane.setHgap(4);
+        breadcrumbPane.setVgap(4);
+        breadcrumbPane.setPrefWrapLength(320);
         breadcrumbPane.setAlignment(Pos.CENTER_LEFT);
-        breadcrumbPane.setFillHeight(false);
         breadcrumbPane.setMaxWidth(Double.MAX_VALUE);
         int curIdx = JobWorkflow.indexOfChild(major, effective);
         if (curIdx < 0) curIdx = 0;
@@ -1001,7 +1616,7 @@ public class ViewJobsController {
             return;
         }
         String canon = JobWorkflow.canonicalChildLabel(major, childLabel);
-        jobService.updateJobChildStatus(job.getId(), canon);
+        jobService.updateJobChildStatus(job.getUuid(), canon);
         job.setChildStatus(canon);
         jobsTable.refresh();
     }
@@ -1012,13 +1627,13 @@ public class ViewJobsController {
         }
         JobWorkflow.Major m = JobWorkflow.majorFromJobStatus(newStatus);
         if (m == JobWorkflow.Major.CANCELLED) {
-            jobService.updateJobChildStatus(job.getId(), null);
+            jobService.updateJobChildStatus(job.getUuid(), null);
             job.setChildStatus(null);
             return;
         }
         String def = JobWorkflow.defaultChildForMajor(m);
         if (def != null && !def.isEmpty()) {
-            jobService.updateJobChildStatus(job.getId(), def);
+            jobService.updateJobChildStatus(job.getUuid(), def);
             job.setChildStatus(def);
         }
     }
@@ -1189,9 +1804,18 @@ public class ViewJobsController {
 
     private void showJobDetails(Job job) {
         if (job == null) return;
-        
+        if (job.hasUuid()) {
+            Job fresh = jobService.getJobByUuid(job.getUuid());
+            if (fresh != null) {
+                job = fresh;
+            }
+        }
+
         service.JobItemService jis = new service.JobItemService();
-        List<model.JobItem> items = jis.getJobItems(job.getId());
+        String jobUuid = job.getUuid();
+        List<model.JobItem> items = (jobUuid != null && !jobUuid.isBlank())
+                ? jis.getJobItems(jobUuid)
+                : List.of();
         String clientName = clientNameMap.getOrDefault(job.getClientId(), "Unknown Client");
         String formattedDate = job.getJobDate() != null ? java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy").format(job.getJobDate()) : "-";
 
@@ -1231,34 +1855,70 @@ public class ViewJobsController {
         
         header.getChildren().addAll(titleBox, spacer, closeBtn);
 
-        // Items Table
+        // Items table (do not use jobs-table-premium: its CSS hides text via graphic-only cells)
         TableView<model.JobItem> table = new TableView<>();
-        table.getStyleClass().add("jobs-table-premium");
+        table.getStyleClass().add("job-details-popup-table");
         table.setPrefHeight(250);
-        
+        table.setMinHeight(120);
+
+        TableColumn<model.JobItem, String> typeCol = new TableColumn<>("Type");
+        typeCol.setPrefWidth(100);
+        typeCol.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(
+                cd.getValue() != null && cd.getValue().getType() != null ? cd.getValue().getType() : ""));
+        typeCol.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String type, boolean empty) {
+                super.updateItem(type, empty);
+                setText(empty || type == null || type.isBlank() ? null : type);
+                setGraphic(null);
+            }
+        });
+
         TableColumn<model.JobItem, String> descCol = new TableColumn<>("Description");
-        descCol.setCellValueFactory(new PropertyValueFactory<>("description"));
-        descCol.setPrefWidth(350);
-        
-        TableColumn<model.JobItem, Double> amtCol = new TableColumn<>("Amount");
-        amtCol.setCellValueFactory(new PropertyValueFactory<>("amount"));
-        amtCol.setPrefWidth(120);
-        amtCol.setCellFactory(c -> new TableCell<>() {
-            @Override protected void updateItem(Double amt, boolean empty) {
-                super.updateItem(amt, empty);
-                if (empty || amt == null) {
+        descCol.setPrefWidth(280);
+        descCol.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(
+                cd.getValue() != null && cd.getValue().getDescription() != null ? cd.getValue().getDescription() : ""));
+        descCol.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String desc, boolean empty) {
+                super.updateItem(desc, empty);
+                setText(empty || desc == null || desc.isBlank() ? null : desc);
+                setGraphic(null);
+            }
+        });
+
+        TableColumn<model.JobItem, String> amtCol = new TableColumn<>("Amount");
+        amtCol.setPrefWidth(100);
+        amtCol.getStyleClass().add("job-details-amt-cell");
+        amtCol.setCellValueFactory(cd -> {
+            if (cd.getValue() == null) {
+                return new javafx.beans.property.SimpleStringProperty("");
+            }
+            return new javafx.beans.property.SimpleStringProperty(
+                    String.format("%.2f", cd.getValue().getAmount()));
+        });
+        amtCol.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String amtText, boolean empty) {
+                super.updateItem(amtText, empty);
+                if (empty || amtText == null || amtText.isBlank()) {
                     setText(null);
-                    setGraphic(null);
                 } else {
-                    setText("₹ " + String.format("%.2f", amt));
-                    setStyle("-fx-font-weight: 700; -fx-text-fill: #3E312D;");
+                    setText("\u20B9 " + amtText);
+                }
+                setGraphic(null);
+                if (!getStyleClass().contains("job-details-amt-cell")) {
+                    getStyleClass().add("job-details-amt-cell");
                 }
             }
         });
-        
-        table.getColumns().addAll(descCol, amtCol);
+
+        table.getColumns().addAll(typeCol, descCol, amtCol);
         table.setItems(FXCollections.observableArrayList(items));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        if (items.isEmpty()) {
+            table.setPlaceholder(new Label("No line items for this job."));
+        }
 
         // Grand Total Section
         HBox totalBox = new HBox(12);
@@ -1297,6 +1957,14 @@ public class ViewJobsController {
     // =========================================================
     // ✅ LOAD DATA
     // =========================================================
+    public void refresh() {
+        if (clientComboBox != null && clientComboBox.getValue() != null) {
+            loadJobsBySelectedClient();
+        } else {
+            loadAllJobs();
+        }
+    }
+
     public void loadAllJobs() {
         CompletableFuture
                 .supplyAsync(jobService::getAllJobs, dataLoadExecutor)
@@ -1319,7 +1987,7 @@ public class ViewJobsController {
         }
 
         // ✅ full jobs of that client
-        List<Job> jobs = jobService.getFullJobsByClientId(selectedClient.getId());
+        List<Job> jobs = jobService.getFullJobsByClientId(selectedClient.getClientUuid());
         masterJobs.setAll(jobs);
 
         applyFilters();
@@ -1362,7 +2030,7 @@ public class ViewJobsController {
             boolean matchesClient = true;
             Client selectedClient = clientComboBox.getValue();
             if (selectedClient != null) {
-                if (job.getClientId() == null || !job.getClientId().equals(selectedClient.getId())) {
+                if (job.getClientId() == null || !job.getClientId().equals(selectedClient.getClientUuid())) {
                     matchesClient = false;
                 }
             }
@@ -1480,13 +2148,13 @@ public class ViewJobsController {
         applyFilters();
     }
 
-    private void autoSelectClient(Integer clientId) {
+    private void autoSelectClient(String clientUuid) {
 
-        if (clientId == null) return;
+        if (clientUuid == null || clientUuid.isBlank()) return;
 
         Optional<Client> match = clientComboBox.getItems()
                 .stream()
-                .filter(c -> c.getId() == clientId)
+                .filter(c -> clientUuid.equals(c.getClientUuid()))
                 .findFirst();
 
         match.ifPresent(c -> clientComboBox.getSelectionModel().select(c));
@@ -1511,6 +2179,30 @@ public class ViewJobsController {
     private void openEditJobScreen(Job job) {
         if (job == null) {
             toast("Cannot edit: job is null ❌");
+            return;
+        }
+        String status = job.getStatus() != null ? job.getStatus().toLowerCase() : "";
+        boolean isLockedInvoice = false;
+        if (job.getInvoiceUuid() != null && !job.getInvoiceUuid().isBlank()) {
+            String invStatus = job.getInvoiceStatus() != null ? job.getInvoiceStatus().trim().toUpperCase() : "";
+            String invType = job.getInvoiceType() != null ? job.getInvoiceType().toUpperCase() : "";
+            boolean isProforma = invType.contains("PROFORMA") || invType.contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(invType) || "DATE_RANGE".equalsIgnoreCase(invType) || invType.contains("MONTHLY");
+            if (isProforma) {
+                if ("REVISED".equals(invStatus) || "CANCELLED".equals(invStatus) || "VOID".equals(invStatus)) {
+                    isLockedInvoice = true;
+                }
+            } else {
+                if (!invStatus.isEmpty() && !invStatus.startsWith("DRAFT")) {
+                    isLockedInvoice = true;
+                }
+            }
+        }
+        if (isLockedInvoice) {
+            toast("❌ Invoiced jobs with finalized invoices cannot be edited.");
+            return;
+        }
+        if (status.contains("cancel")) {
+            toast("❌ Cancelled jobs cannot be edited.");
             return;
         }
         try {
@@ -1540,15 +2232,45 @@ public class ViewJobsController {
 
 
 
-    private void openInvoiceDetails(Integer invoiceId) {
-        if (invoiceId == null || invoiceId == 0) return;
+    private void openInvoiceDetailsByUuid(String invoiceUuid) {
+        if (invoiceUuid == null || invoiceUuid.isBlank()) {
+            return;
+        }
+        try (java.sql.Connection con = utils.DBConnection.getConnection();
+                java.sql.PreparedStatement ps = con.prepareStatement(
+                        "SELECT uuid FROM invoice_master WHERE uuid = ?")) {
+            ps.setString(1, invoiceUuid.trim());
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    openInvoiceDetails(rs.getString("uuid"));
+                }
+            }
+        } catch (Exception e) {
+            toast("Could not open invoice: " + e.getMessage());
+        }
+    }
+
+    private void openInvoiceDetails(String invoiceUuid) {
+        if (invoiceUuid == null || invoiceUuid.isBlank()) return;
         
         new Thread(() -> {
-            InvoiceMaster inv = invoiceService.getInvoiceById(invoiceId);
+            InvoiceMaster inv = invoiceService.getInvoiceById(invoiceUuid);
             if (inv != null) {
                 Platform.runLater(() -> {
                     ViewInvoiceJobsController.pendingPrefillInvoice = inv;
-                    ViewInvoiceJobsController.viewOnlyMode = true;
+                    String stat = inv.getStatus() != null ? inv.getStatus().toUpperCase() : "";
+                    String ds = inv.getDocumentSeries();
+                    String tp = inv.getType();
+                    boolean isProforma = (ds != null && ("PROFORMA_INVOICE".equalsIgnoreCase(ds) || "PROFORMA".equalsIgnoreCase(ds)))
+                                       || (tp != null && (tp.toUpperCase().contains("PROFORMA") || tp.toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(tp) || "DATE_RANGE".equalsIgnoreCase(tp) || tp.toUpperCase().contains("MONTHLY")))
+                                       || (inv.getInvoiceNo() != null && inv.getInvoiceNo().toUpperCase().contains("/PI/"));
+                    boolean isLocked = false;
+                    if (isProforma) {
+                        isLocked = "REVISED".equals(stat) || "CANCELLED".equals(stat) || "VOID".equals(stat);
+                    } else {
+                        isLocked = !stat.isEmpty() && !"DRAFT".equals(stat) && !stat.contains("DRAFT");
+                    }
+                    ViewInvoiceJobsController.viewOnlyMode = isLocked;
                     MainController.getInstance().loadViewInvoiceJobs();
                 });
             }
@@ -1565,42 +2287,15 @@ public class ViewJobsController {
                 return;
             }
             
-            Stage previewStage = new Stage(StageStyle.TRANSPARENT);
-            previewStage.initModality(Modality.APPLICATION_MODAL);
-            
-            Image image = new Image(file.toURI().toString());
-            ImageView imageView = new ImageView(image);
-            imageView.setPreserveRatio(true);
-            
-            // Limit preview size
-            imageView.setFitWidth(800);
-            imageView.setFitHeight(600);
-            
-            StackPane root = new StackPane(imageView);
-            root.setStyle("-fx-background-color: rgba(0,0,0,0.85); -fx-background-radius: 12; -fx-padding: 20;");
-            
-            // Close button
-            Button closeBtn = new Button("✕");
-            closeBtn.setStyle("-fx-background-color: #F5222D; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 50; -fx-min-width: 30; -fx-min-height: 30;");
-            StackPane.setAlignment(closeBtn, Pos.TOP_RIGHT);
-            closeBtn.setOnAction(e -> previewStage.close());
-            
-            root.getChildren().add(closeBtn);
-            
-            Scene scene = new Scene(root);
-            scene.setFill(null);
-            previewStage.setScene(scene);
-            
-            // Close on clicking outside
-            root.setOnMouseClicked(e -> {
-                if (e.getTarget() == root) previewStage.close();
-            });
-            
-            previewStage.show();
+            if (java.awt.Desktop.isDesktopSupported()) {
+                java.awt.Desktop.getDesktop().open(file);
+            } else {
+                toast("Desktop not supported. Cannot open image ❌");
+            }
             
         } catch (Exception e) {
             e.printStackTrace();
-            toast("Failed to load image preview ❌");
+            toast("Failed to open image ❌");
         }
     }
 

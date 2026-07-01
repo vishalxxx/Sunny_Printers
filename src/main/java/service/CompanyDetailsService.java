@@ -44,9 +44,9 @@ public class CompanyDetailsService {
 				if (c.isDefault()) {
 					repo.clearDefault(con);
 				}
-				if (c.getId() <= 0) {
-					int id = repo.insert(con, c);
-					c.setId(id);
+				if (c.getUuid() == null || c.getUuid().isBlank()) {
+					String uuid = repo.insert(con, c);
+					c.setUuid(uuid);
 				} else {
 					repo.update(con, c);
 				}
@@ -72,14 +72,14 @@ public class CompanyDetailsService {
 		}
 	}
 
-	public void setDefaultCompany(int companyId) {
-		if (companyId <= 0) {
+	public void setDefaultCompany(String uuid) {
+		if (uuid == null || uuid.isBlank()) {
 			return;
 		}
 		try (Connection con = DBConnection.getConnection()) {
 			con.setAutoCommit(false);
 			try {
-				repo.setDefault(con, companyId);
+				repo.setDefault(con, uuid);
 				con.commit();
 			} catch (Exception e) {
 				try { con.rollback(); } catch (Exception ignored) {}
@@ -105,13 +105,12 @@ public class CompanyDetailsService {
 		}
 	}
 
-	public void delete(int id) {
-		if (id <= 0) return;
+	public void delete(String uuid) {
+		if (uuid == null || uuid.isBlank()) return;
 		try (Connection con = DBConnection.getConnection()) {
-			repo.delete(con, id);
+			repo.delete(con, uuid);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to delete company", e);
 		}
 	}
 }
-

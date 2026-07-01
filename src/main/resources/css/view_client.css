@@ -193,9 +193,16 @@
 
 /* ===================== LIST VIEW & CARDS ===================== */
 
+.client-list-view,
+.client-list-view .virtual-flow,
+.client-list-view .scroll-pane,
+.client-list-view .scroll-pane > .viewport {
+    -fx-background-color: transparent !important;
+    -fx-background: transparent !important;
+    -fx-border-color: transparent !important;
+}
+
 .client-list-view {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
     -fx-padding: 10 0;
 }
 
@@ -325,6 +332,29 @@
 
 .action-btn-ghost:hover {
     -fx-background-color: #E2D9D2;
+}
+
+/* Destructive row action — warm red, matches terracotta / brown theme */
+.view-clients-root .view-clients-delete-btn {
+    -fx-background-color: #C94C45;
+    -fx-text-fill: #FFFBF7;
+    -fx-font-weight: 800;
+    -fx-font-size: 11px;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-color: #A63D38;
+    -fx-border-width: 1;
+    -fx-padding: 6 12;
+    -fx-cursor: hand;
+}
+
+.view-clients-root .view-clients-delete-btn:hover {
+    -fx-background-color: #D85A52;
+    -fx-border-color: #C94C45;
+}
+
+.view-clients-root .view-clients-delete-btn:pressed {
+    -fx-background-color: #A63D38;
 }
 
 /* ===================== FOOTER ===================== */

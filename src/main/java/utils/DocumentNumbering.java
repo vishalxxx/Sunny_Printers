@@ -46,13 +46,13 @@ public final class DocumentNumbering {
 		return ("" + a.charAt(0) + b.charAt(0)).toUpperCase(Locale.ROOT);
 	}
 
-	public static String formatMasterLine(String companyPrefix, String typeCode, LocalDate refDate, int sequence,
+	public static String formatMasterLine(String companyPrefix, String typeCode, LocalDate refDate, long sequence,
 			int padding) {
 		String fy = financialYearLabel(refDate != null ? refDate : LocalDate.now());
 		return formatMasterLine(companyPrefix, typeCode, fy, sequence, padding);
 	}
 
-	public static String formatMasterLine(String companyPrefix, String typeCode, String fyLabel, int sequence,
+	public static String formatMasterLine(String companyPrefix, String typeCode, String fyLabel, long sequence,
 			int padding) {
 		String cp = companyPrefix != null && !companyPrefix.isBlank() ? companyPrefix : "XX";
 		String fy = fyLabel != null && !fyLabel.isBlank() ? fyLabel.trim()
@@ -63,6 +63,24 @@ public final class DocumentNumbering {
 	public static String formatPaymentReceiptNo(LocalDate paymentDate, int paymentId, int padding) {
 		String cp = companyPrefixFromTradeName(CompanyProfile.getName());
 		return formatMasterLine(cp, PAYMENT_RECEIPT_CODE, paymentDate, paymentId, padding);
+	}
+
+	/** Offline fallback e.g. {@code TEMP-INV-0001} or legacy {@code TEMP-003} when prefix is TEMP. */
+	public static String formatTemporary(String prefix, long sequence, int padding) {
+		String p = prefix != null && !prefix.isBlank() ? prefix.trim().toUpperCase(Locale.ROOT) : "DOC";
+		int pad = Math.max(1, padding);
+		if ("TEMP".equals(p)) {
+			return String.format("TEMP-%0" + pad + "d", Math.max(1, sequence));
+		}
+		return String.format("TEMP-%s-%0" + pad + "d", p, Math.max(1, sequence));
+	}
+
+	public static boolean isTemporaryNumber(String value) {
+		if (value == null || value.isBlank()) {
+			return false;
+		}
+		String u = value.trim().toUpperCase(Locale.ROOT);
+		return u.startsWith("TEMP-") || u.startsWith("TEMP/");
 	}
 
 	/**
