@@ -1,0 +1,86 @@
+name: Sunny Printers CI
+
+on:
+  push:
+    branches:
+      - main
+      - vishal
+      - dell
+      - mac
+
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Display Java Version
+        run: java -version
+
+      - name: Display Maven Version
+        run: mvn -version
+
+      - name: Verify Required Files
+        shell: pwsh
+        run: |
+          if (!(Test-Path "pom.xml")) {
+            throw "pom.xml not found."
+          }
+
+          if (!(Test-Path "src/main/resources/version.properties")) {
+            throw "version.properties not found."
+          }
+
+          if (!(Test-Path "src/main/resources/images/app_icon.ico")) {
+            Write-Warning "Application icon not found."
+          }
+
+      - name: Maven Validate
+        run: mvn validate
+
+      - name: Build & Verify
+        run: mvn clean verify
+
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports
+          if-no-files-found: ignore
+
+      - name: Upload Packaged JAR
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: application-jar
+          path: target/*.jar
+          if-no-files-found: ignore
+
+      - name: Upload Build Output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: target/
+          if-no-files-found: ignore
