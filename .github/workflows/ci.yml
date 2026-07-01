@@ -1,0 +1,57 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ '**' ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ 'main' ]
+
+jobs:
+  build-and-test:
+    name: Build & Execute Automated Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v3
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: 'maven'
+
+    # Every push to any branch runs Unit & Sanity tests
+    - name: Run Unit Tests
+      run: mvn test -Punit
+
+    - name: Run Sanity Tests
+      run: mvn test -Psanity
+
+    # Pull Request to main runs Integration tests
+    - name: Run Integration Tests (PRs and Release Tags)
+      if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
+      run: mvn verify -Pintegration
+
+    # Push to version tag (Release pipeline) runs Performance, Chaos, Release, and Live suites
+    - name: Run Performance Tests (Release Tag)
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: mvn verify -Pperformance
+
+    - name: Run Chaos Tests (Release Tag)
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: mvn verify -Pchaos
+
+    - name: Run Release Certification Tests (Release Tag)
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: mvn verify -Prelease
+
+    - name: Run Live Tests (Release Tag)
+      if: startsWith(github.ref, 'refs/tags/v')
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        SUPABASE_BUCKET: ${{ secrets.SUPABASE_BUCKET }}
+      run: mvn verify -Plive
