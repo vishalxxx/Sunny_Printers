@@ -94,3 +94,4 @@ jobs:
           name: application-jar
           path: target/*.jar
           if-no-files-found: ignore
+
