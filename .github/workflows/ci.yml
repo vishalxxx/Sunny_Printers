@@ -83,15 +83,4 @@ jobs:
             target/failsafe-reports
           if-no-files-found: ignore
 
-      #######################################
-      # Upload JAR
-      #######################################
-
-      - name: Upload JAR
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: application-jar
-          path: target/*.jar
-          if-no-files-found: ignore
 
