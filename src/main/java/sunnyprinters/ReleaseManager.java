@@ -317,7 +317,7 @@ public class ReleaseManager extends Application {
                 logText("Generating release notes, calculating hashes & uploading to Supabase...");
                 
                 // Invoke release.ps1 specifically with Upload/Verify stages
-                String releaseCmd = "-Increment " + incMode + " -SkipTests";
+                String releaseCmd = "-Increment " + incMode + " -SkipTests -Publish";
                 if (!manVer.isEmpty()) {
                     releaseCmd += " -ManualVersion " + manVer;
                 }

@@ -93,12 +93,16 @@ jobs:
         run: mvn verify -Plive
 
       #######################################
-      # PACKAGE
+      # PACKAGE & PUBLISH
       #######################################
 
-      - name: Package Application
+      - name: Package & Publish Application
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SUPABASE_BUCKET: ${{ secrets.SUPABASE_BUCKET }}
         run: |
-          powershell ./release.bat -Increment patch
+          powershell ./release.bat -Increment none --publish
 
       #######################################
       # Upload Build Artifacts

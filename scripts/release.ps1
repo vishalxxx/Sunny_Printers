@@ -5,8 +5,14 @@ param(
     [string]$ReleaseChannel = "stable",
     [bool]$Mandatory = $false,
     [switch]$DryRun,
-    [switch]$SkipTests # Allows skipping tests for faster local development
+    [switch]$SkipTests, # Allows skipping tests for faster local development
+    [switch]$Publish
 )
+
+# Support --publish alias or passing via $args
+if ($args -contains "--publish" -or $args -contains "-publish") {
+    $Publish = $true
+}
 
 $ErrorActionPreference = "Stop"
 
@@ -53,7 +59,7 @@ Log-Global "======================================================"
 Log-Global " Sunny Printers ERP Enterprise Release Manager"
 Log-Global "======================================================"
 
-# Load Secrets for Validation
+# Load Secrets for Validation (Defer credentials check to Publish phase)
 $supabaseUrl = ""
 $supabaseKey = ""
 $supabaseBucket = "updates"
@@ -120,22 +126,6 @@ try {
     $iconPath = Join-Path $PSScriptRoot "..\src\main\resources\images\app_icon.ico"
     if (-not (Test-Path $iconPath)) { throw "App Icon is missing at $iconPath" }
     Log-Global " - App Icon file check: OK"
-
-    # 7. Check Supabase credentials
-    if (-not $supabaseUrl -or -not $supabaseKey) {
-        throw "Supabase URL/Key is missing in environment or release_secrets.env."
-    }
-    Log-Global " - Supabase Credentials check: OK"
-
-    # 8. Check if Supabase app_updates table is reachable
-    $headers = @{ "Authorization" = "Bearer $supabaseKey"; "apikey" = $supabaseKey }
-    $dbCheckUrl = "$($supabaseUrl.TrimEnd('/'))/rest/v1/app_updates?limit=1"
-    try {
-        $res = Invoke-RestMethod -Uri $dbCheckUrl -Method Get -Headers $headers -TimeoutSec 10
-        Log-Global " - Supabase Endpoint check: OK (app_updates table reachable)"
-    } catch {
-        throw "Supabase table 'app_updates' is unreachable: $_"
-    }
     
     Log-Global "Validation successful!"
 } catch {
@@ -148,7 +138,7 @@ Log-Global "Phase 2: Version Management..."
 $versionScript = Join-Path $PSScriptRoot "version.ps1"
 $newVersion = ""
 try {
-    $newVersion = & $versionScript -Increment $Increment -ManualVersion $ManualVersion
+    $newVersion = (& $versionScript -Increment $Increment -ManualVersion $ManualVersion).ToString().Trim()
     Log-Global "Release Version set to: $newVersion"
 } catch {
     Log-Global "Version management failed: $_" "ERROR"
@@ -248,37 +238,72 @@ if (Test-Path $releaseMdPath) {
 }
 
 # Phase 9 & 10: Supabase Upload
-Log-Global "Phase 9 & 10: Uploading artifacts to Supabase Storage & DB Registry..."
-$uploadScript = Join-Path $PSScriptRoot "upload.ps1"
-try {
-    Log-Upload "Uploading release $newVersion..."
-    & $uploadScript -Version $newVersion -MsiPath $msiPath -ZipPath $zipPath -ReleaseNotes $notesText -ReleaseChannel $ReleaseChannel -Mandatory $Mandatory
-    Log-Global "Artifacts successfully published to Supabase!"
-} catch {
-    Log-Global "Upload failed: $_. Initiating Rollback..." "ERROR"
-    Log-Upload "Upload failed: $_. Rolling back..."
+if ($Publish) {
+    Log-Global "Phase 9 & 10: Uploading artifacts to Supabase Storage & DB Registry..."
     
-    # Trigger Phase 13 Rollback
-    $rollbackScript = Join-Path $PSScriptRoot "rollback.ps1"
-    & $rollbackScript -Version $newVersion -ReleaseChannel $ReleaseChannel
-    exit 1
-}
-
-# Phase 11: Verification
-Log-Global "Phase 11: Verification..."
-$verifyScript = Join-Path $PSScriptRoot "verify.ps1"
-try {
-    Log-Verify "Verifying published release $newVersion..."
-    & $verifyScript -Version $newVersion -MsiPath $msiPath -ZipPath $zipPath -ReleaseChannel $ReleaseChannel
-    Log-Global "Verification complete. Release check PASSED!"
-} catch {
-    Log-Global "Verification failed: $_. Initiating Rollback..." "ERROR"
-    Log-Verify "Verification failed: $_. Rolling back..."
+    # Debug output WITHOUT exposing secret values
+    Log-Global "Supabase Environment Debug:"
+    Log-Global " - SUPABASE_URL present: $(if ($supabaseUrl) { "YES" } else { "NO" })"
+    Log-Global " - SUPABASE_KEY present: $(if ($supabaseKey) { "YES" } else { "NO" })"
+    Log-Global " - SUPABASE_BUCKET present: $(if ($supabaseBucket) { "YES" } else { "NO" })"
     
-    # Trigger Phase 13 Rollback
-    $rollbackScript = Join-Path $PSScriptRoot "rollback.ps1"
-    & $rollbackScript -Version $newVersion -ReleaseChannel $ReleaseChannel
-    exit 1
+    $hasSecrets = $true
+    if (-not $supabaseUrl -or -not $supabaseKey) {
+        $hasSecrets = $false
+        Log-Global "Publishing failed because Supabase credentials are missing." "WARN"
+    } else {
+        # Check if Supabase app_updates table is reachable
+        $headers = @{ "Authorization" = "Bearer $supabaseKey"; "apikey" = $supabaseKey }
+        $dbCheckUrl = "$($supabaseUrl.TrimEnd('/'))/rest/v1/app_updates?limit=1"
+        try {
+            $res = Invoke-RestMethod -Uri $dbCheckUrl -Method Get -Headers $headers -TimeoutSec 10
+            Log-Global " - Supabase Endpoint check: OK (app_updates table reachable)"
+        } catch {
+            $hasSecrets = $false
+            Log-Global "Publishing failed because Supabase 'app_updates' table is unreachable: $_" "WARN"
+        }
+    }
+    
+    if ($hasSecrets) {
+        $uploadScript = Join-Path $PSScriptRoot "upload.ps1"
+        try {
+            Log-Upload "Uploading release $newVersion..."
+            & $uploadScript -Version $newVersion -MsiPath $msiPath -ZipPath $zipPath -ReleaseNotes $notesText -ReleaseChannel $ReleaseChannel -Mandatory $Mandatory -SupabaseUrl $supabaseUrl -SupabaseKey $supabaseKey -SupabaseBucket $supabaseBucket
+            Log-Global "Artifacts successfully published to Supabase!"
+            
+            # Phase 11: Verification
+            Log-Global "Phase 11: Verification..."
+            $verifyScript = Join-Path $PSScriptRoot "verify.ps1"
+            try {
+                Log-Verify "Verifying published release $newVersion..."
+                & $verifyScript -Version $newVersion -MsiPath $msiPath -ZipPath $zipPath -ReleaseChannel $ReleaseChannel -SupabaseUrl $supabaseUrl -SupabaseKey $supabaseKey -SupabaseBucket $supabaseBucket
+                Log-Global "Verification complete. Release check PASSED!"
+            } catch {
+                Log-Global "Verification failed: $_. Initiating Rollback..." "ERROR"
+                Log-Verify "Verification failed: $_. Rolling back..."
+                
+                # Trigger Phase 13 Rollback
+                $rollbackScript = Join-Path $PSScriptRoot "rollback.ps1"
+                & $rollbackScript -Version $newVersion -ReleaseChannel $ReleaseChannel
+                exit 1
+            }
+        } catch {
+            Log-Global "Upload failed: $_. Initiating Rollback..." "ERROR"
+            Log-Upload "Upload failed: $_. Rolling back..."
+            
+            # Trigger Phase 13 Rollback
+            $rollbackScript = Join-Path $PSScriptRoot "rollback.ps1"
+            & $rollbackScript -Version $newVersion -ReleaseChannel $ReleaseChannel
+            exit 1
+        }
+    } else {
+        Log-Global "======================================================"
+        Log-Global " Packaging completed successfully." "INFO"
+        Log-Global " Publishing failed because Supabase credentials are missing." "WARN"
+        Log-Global "======================================================"
+    }
+} else {
+    Log-Global "Publishing skipped (no --publish flag specified)."
 }
 
 # Phase 12: Release Folder Setup

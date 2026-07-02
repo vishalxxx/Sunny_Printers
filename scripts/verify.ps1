@@ -40,6 +40,11 @@ if (-not $SupabaseUrl) { $SupabaseUrl = $env:SUPABASE_URL }
 if (-not $SupabaseKey) { $SupabaseKey = $env:SUPABASE_KEY }
 if (-not $SupabaseBucket) { $SupabaseBucket = $env:SUPABASE_BUCKET }
 
+Log-Message "Supabase Credentials Debug in Verify script:"
+Log-Message " - SupabaseUrl present: $(if ($SupabaseUrl) { "YES" } else { "NO" })"
+Log-Message " - SupabaseKey present: $(if ($SupabaseKey) { "YES" } else { "NO" })"
+Log-Message " - SupabaseBucket present: $(if ($SupabaseBucket) { "YES" } else { "NO" })"
+
 if (-not $SupabaseUrl -or -not $SupabaseKey) {
     throw "Supabase credentials are not configured. Cannot perform verification."
 }
