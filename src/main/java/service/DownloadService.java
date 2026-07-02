@@ -12,7 +12,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import model.AppUpdate;
-import repository.SupabaseSettingsRepository;
 
 public class DownloadService {
 
@@ -48,36 +47,14 @@ public class DownloadService {
      * Resolves the remote download URL.
      */
     public String getDownloadUrl(AppUpdate update) throws Exception {
-        String downloadUrl = update.getDownloadUrl();
-        if (downloadUrl != null && !downloadUrl.isBlank()) {
-            return downloadUrl;
-        }
-
         String storagePath = update.getStoragePath();
         if (storagePath == null || storagePath.isBlank()) {
-            throw new IllegalArgumentException("Neither download_url nor storage_path in update record is populated");
+            throw new IllegalArgumentException("storage_path in update record is empty");
         }
         if (storagePath.startsWith("http://") || storagePath.startsWith("https://")) {
             return storagePath;
         }
-
-        SupabaseSettingsRepository repo = new SupabaseSettingsRepository();
-        model.SupabaseSettings settings = repo.load();
-        String supabaseUrl = settings.getSupabaseUrl();
-        if (supabaseUrl == null || supabaseUrl.isBlank()) {
-            throw new IllegalStateException("Supabase URL is not configured locally");
-        }
-
-        // Standard public storage URL build
-        String baseUrl = supabaseUrl.trim();
-        if (baseUrl.endsWith("/")) {
-            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
-        }
-        String cleanPath = storagePath.trim();
-        if (cleanPath.startsWith("/")) {
-            cleanPath = cleanPath.substring(1);
-        }
-        return baseUrl + "/storage/v1/object/public/" + cleanPath;
+        throw new IllegalArgumentException("storage_path is not a valid URL: " + storagePath);
     }
 
     /**
@@ -110,6 +87,14 @@ public class DownloadService {
     public boolean verifyFile(Path file, AppUpdate update) {
         if (!Files.exists(file)) {
             LOGGER.warning("[DownloadService] Verification failed: File does not exist at " + file);
+            return false;
+        }
+
+        // Validate GitHub Release asset URL instead of bucket paths
+        String storagePath = update.getStoragePath();
+        if (storagePath == null || !storagePath.startsWith("https://github.com/")) {
+            LOGGER.warning("[DownloadService] Verification failed: Storage path is not a valid GitHub Release asset URL: " + storagePath);
+            cleanupCorruptFile(file);
             return false;
         }
 
