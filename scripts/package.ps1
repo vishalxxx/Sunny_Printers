@@ -149,7 +149,13 @@ if (-not (Test-Path $msiFile)) {
     }
 }
 
-Log-Message "Packaging complete. MSI: $msiFile, ZIP: $zipOutPath"
+# Copy standalone JAR to dist directory
+$jarFileName = "SunnyPrinters-$Version.jar"
+$jarDestPath = Join-Path $distDir $jarFileName
+Log-Message "Copying standalone JAR to dist folder: $jarDestPath"
+Copy-Item -Path $builtJarPath -Destination $jarDestPath -Force
+
+Log-Message "Packaging complete. MSI: $msiFile, ZIP: $zipOutPath, JAR: $jarDestPath"
 
 # Return the paths of the packaged artifacts
-return @($msiFile, $zipOutPath)
+return @($msiFile, $zipOutPath, $jarDestPath)

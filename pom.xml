@@ -157,6 +157,9 @@
           </execution>
         </executions>
         <configuration>
+          <includes>
+            <include>**/*Test.java</include>
+          </includes>
           <groups>${it.groups}</groups>
           <systemPropertyVariables>
             <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>

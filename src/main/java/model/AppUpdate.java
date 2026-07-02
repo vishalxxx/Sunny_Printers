@@ -32,6 +32,30 @@ public class AppUpdate {
     @SerializedName("created_at")
     private String createdAt;
 
+    @SerializedName("download_url")
+    private String downloadUrl;
+
+    @SerializedName("github_release_tag")
+    private String githubReleaseTag;
+
+    @SerializedName("github_release_url")
+    private String githubReleaseUrl;
+
+    @SerializedName("installer_type")
+    private String installerType;
+
+    @SerializedName("checksum_algorithm")
+    private String checksumAlgorithm;
+
+    @SerializedName("download_count")
+    private long downloadCount;
+
+    @SerializedName("published_at")
+    private String publishedAt;
+
+    @SerializedName("updated_at")
+    private String updatedAt;
+
     // Computed / helper fields (Phase 2 Prep)
     private boolean newerThanInstalled;
     private boolean mandatoryUpdate;
@@ -46,7 +70,7 @@ public class AppUpdate {
      */
     public boolean isValidMetadata() {
         return published 
-            && storagePath != null && !storagePath.isBlank()
+            && ((downloadUrl != null && !downloadUrl.isBlank()) || (storagePath != null && !storagePath.isBlank()))
             && fileName != null && !fileName.isBlank()
             && sha256 != null && !sha256.isBlank()
             && fileSize > 0;
@@ -170,5 +194,69 @@ public class AppUpdate {
 
     public void setCreatedAt(String createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getDownloadUrl() {
+        return downloadUrl;
+    }
+
+    public void setDownloadUrl(String downloadUrl) {
+        this.downloadUrl = downloadUrl;
+    }
+
+    public String getGithubReleaseTag() {
+        return githubReleaseTag;
+    }
+
+    public void setGithubReleaseTag(String githubReleaseTag) {
+        this.githubReleaseTag = githubReleaseTag;
+    }
+
+    public String getGithubReleaseUrl() {
+        return githubReleaseUrl;
+    }
+
+    public void setGithubReleaseUrl(String githubReleaseUrl) {
+        this.githubReleaseUrl = githubReleaseUrl;
+    }
+
+    public String getInstallerType() {
+        return installerType;
+    }
+
+    public void setInstallerType(String installerType) {
+        this.installerType = installerType;
+    }
+
+    public String getChecksumAlgorithm() {
+        return checksumAlgorithm;
+    }
+
+    public void setChecksumAlgorithm(String checksumAlgorithm) {
+        this.checksumAlgorithm = checksumAlgorithm;
+    }
+
+    public long getDownloadCount() {
+        return downloadCount;
+    }
+
+    public void setDownloadCount(long downloadCount) {
+        this.downloadCount = downloadCount;
+    }
+
+    public String getPublishedAt() {
+        return publishedAt;
+    }
+
+    public void setPublishedAt(String publishedAt) {
+        this.publishedAt = publishedAt;
+    }
+
+    public String getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(String updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

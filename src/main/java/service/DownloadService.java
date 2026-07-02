@@ -48,9 +48,14 @@ public class DownloadService {
      * Resolves the remote download URL.
      */
     public String getDownloadUrl(AppUpdate update) throws Exception {
+        String downloadUrl = update.getDownloadUrl();
+        if (downloadUrl != null && !downloadUrl.isBlank()) {
+            return downloadUrl;
+        }
+
         String storagePath = update.getStoragePath();
         if (storagePath == null || storagePath.isBlank()) {
-            throw new IllegalArgumentException("storage_path in update record is empty");
+            throw new IllegalArgumentException("Neither download_url nor storage_path in update record is populated");
         }
         if (storagePath.startsWith("http://") || storagePath.startsWith("https://")) {
             return storagePath;

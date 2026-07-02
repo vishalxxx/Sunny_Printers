@@ -1,4 +1,4 @@
-# verify.ps1 - Phase 11: Release Verification
+# verify.ps1 - Phase 13: Release Verification (Verify Production Metadata and GitHub Release Download)
 param(
     [string]$Version,
     [string]$MsiPath,
@@ -16,7 +16,7 @@ function Log-Message($msg) {
     Write-Output "[$timestamp] [VERIFY] $msg"
 }
 
-# 1. Load Secrets if not provided
+# 1. Load Production Secrets if not provided
 $secretsPath = Join-Path $PSScriptRoot "..\release_secrets.env"
 if (Test-Path $secretsPath) {
     Get-Content $secretsPath | ForEach-Object {
@@ -43,10 +43,9 @@ if (-not $SupabaseBucket) { $SupabaseBucket = $env:SUPABASE_BUCKET }
 Log-Message "Supabase Credentials Debug in Verify script:"
 Log-Message " - SupabaseUrl present: $(if ($SupabaseUrl) { "YES" } else { "NO" })"
 Log-Message " - SupabaseKey present: $(if ($SupabaseKey) { "YES" } else { "NO" })"
-Log-Message " - SupabaseBucket present: $(if ($SupabaseBucket) { "YES" } else { "NO" })"
 
 if (-not $SupabaseUrl -or -not $SupabaseKey) {
-    throw "Supabase credentials are not configured. Cannot perform verification."
+    throw "Production Supabase credentials are not configured. Cannot perform verification."
 }
 
 # Normalize URL
@@ -58,7 +57,7 @@ if ($SupabaseUrl.EndsWith("/")) {
 Log-Message "Starting verification for version $Version..."
 
 # 2. Query DB Table app_updates for this version
-Log-Message "Verifying database row in app_updates..."
+Log-Message "Verifying database row in app_updates table on Production Supabase..."
 $dbUrl = "$SupabaseUrl/rest/v1/app_updates?version=eq.$Version&release_channel=eq.$ReleaseChannel"
 $headers = @{
     "Authorization" = "Bearer $SupabaseKey"
@@ -75,9 +74,16 @@ Log-Message "Database row exists. Verified Fields:"
 Log-Message " - Version: $($record.version)"
 Log-Message " - Release Channel: $($record.release_channel)"
 Log-Message " - Published: $($record.published)"
-Log-Message " - Storage Path: $($record.storage_path)"
+Log-Message " - Download URL (GitHub): $($record.download_url)"
+Log-Message " - GitHub Release Tag: $($record.github_release_tag)"
+Log-Message " - GitHub Release URL: $($record.github_release_url)"
 
-# Check database fields match expected values
+$downloadUrl = $record.download_url
+if (-not $downloadUrl) {
+    throw "Verification FAILED: download_url in database row is empty."
+}
+
+# Check database fields match expected local values
 $localMsiSize = (Get-Item $MsiPath).Length
 $localMsiSha256 = (Get-FileHash -Path $MsiPath -Algorithm "SHA256").Hash.ToLower()
 
@@ -89,21 +95,36 @@ if ($record.sha256.ToLower() -ne $localMsiSha256) {
 }
 Log-Message "Database file size and SHA-256 match local values perfectly."
 
-# 3. Verify Storage File availability & download url
-Log-Message "Verifying storage file download URL..."
-$downloadUrl = "$SupabaseUrl/storage/v1/object/public/$SupabaseBucket/updates/SunnyPrintersERP-$Version.msi"
-Log-Message "Download URL: $downloadUrl"
-
+# 3. Verify Download from GitHub Release URL with Retry
+Log-Message "Verifying GitHub Release download availability..."
 $tempDownloadFile = Join-Path $env:TEMP "sunny_printers_verify.msi"
 if (Test-Path $tempDownloadFile) {
     Remove-Item $tempDownloadFile -Force
 }
 
+$maxRetries = 5
+$retryDelay = 5
+$downloadSuccess = $false
+
+# User-Agent header is required for downloading from GitHub sometimes
+for ($i = 1; $i -le $maxRetries; $i++) {
+    try {
+        Log-Message "Downloading from GitHub Releases: $downloadUrl (Attempt $i/$maxRetries)..."
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+        Invoke-WebRequest -Uri $downloadUrl -OutFile $tempDownloadFile -UserAgent "SunnyPrinters-Verifier" -TimeoutSec 45
+        $downloadSuccess = $true
+        break
+    } catch {
+        Log-Message "Download attempt $i failed: $_. Retrying in $retryDelay seconds..."
+        Start-Sleep -Seconds $retryDelay
+    }
+}
+
+if (-not $downloadSuccess) {
+    throw "Verification FAILED: Could not download the asset from $downloadUrl after $maxRetries attempts."
+}
+
 try {
-    # Perform HTTP download
-    Invoke-WebRequest -Uri $downloadUrl -OutFile $tempDownloadFile
-    Log-Message "Artifact download completed successfully (HTTP 200)."
-    
     # Calculate downloaded file hashes and sizes
     $downloadedSize = (Get-Item $tempDownloadFile).Length
     $downloadedSha256 = (Get-FileHash -Path $tempDownloadFile -Algorithm "SHA256").Hash.ToLower()
@@ -115,13 +136,11 @@ try {
         throw "Verification FAILED: Downloaded MSI SHA-256 ($downloadedSha256) does not match local MSI SHA-256 ($localMsiSha256)."
     }
     Log-Message "Downloaded MSI matches local MSI file size and SHA-256 perfectly."
-} catch {
-    throw "Storage file verification failed: $_"
 } finally {
     if (Test-Path $tempDownloadFile) {
-        Remove-Item $tempDownloadFile -Force
+        Remove-Item $tempDownloadFile -Force | Out-Null
     }
 }
 
-Log-Message "Verification completed successfully. Release is valid and public."
+Log-Message "Verification completed successfully. Release update is active and public."
 return $true
