@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterAll;
@@ -99,12 +100,27 @@ public class DownloadManagerTest {
             assertFalse(ds.verifyFile(tempFile, update), "Verification must fail on invalid GitHub Release URL");
             assertFalse(Files.exists(tempFile), "Corrupt file must be cleaned up on verification failure");
 
-            // Recreate file for size mismatch test
+            // 3. Size Mismatch Validation
+            // Recreate file for size mismatch test since it was deleted in previous step
             Files.writeString(tempFile, content);
             update.setStoragePath("https://github.com/vishalxxx/Sunny_Printers/releases/download/v1.0.3/update.jar");
             update.setFileSize(size + 10);
             assertFalse(ds.verifyFile(tempFile, update), "Verification must fail on size mismatch");
             assertFalse(Files.exists(tempFile), "Corrupt file must be cleaned up on verification failure");
+
+            // 4. SHA256 Checksum Mismatch Validation
+            Files.writeString(tempFile, content);
+            update.setFileSize(size);
+            update.setSha256("incorrect-sha256-hash-value-to-fail-checksum-check");
+            assertFalse(ds.verifyFile(tempFile, update), "Verification must fail on checksum mismatch");
+            assertFalse(Files.exists(tempFile), "Corrupt file must be cleaned up on verification failure");
+
+            // 5. Null and Missing Files Validation
+            assertFalse(ds.verifyFile(null, update), "verifyFile must return false if file path is null");
+            assertFalse(ds.verifyFile(tempFile, null), "verifyFile must return false if update is null");
+            
+            Path nonExistent = Paths.get("non-existent-file-path-to-test-missing.jar");
+            assertFalse(ds.verifyFile(nonExistent, update), "verifyFile must return false if file does not exist");
 
         } finally {
             Files.deleteIfExists(tempFile);
@@ -126,6 +142,17 @@ public class DownloadManagerTest {
         update.setStoragePath("updates/releases/sunny.jar");
         assertThrows(IllegalArgumentException.class, () -> {
             ds.getDownloadUrl(update);
+        });
+
+        // Invalid GitHub URL throws exception
+        update.setStoragePath("https://malicious-site.com/releases/update.jar");
+        assertThrows(IllegalArgumentException.class, () -> {
+            ds.getDownloadUrl(update);
+        });
+
+        // Null update throws exception
+        assertThrows(IllegalArgumentException.class, () -> {
+            ds.getDownloadUrl(null);
         });
     }
 

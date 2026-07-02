@@ -47,14 +47,17 @@ public class DownloadService {
      * Resolves the remote download URL.
      */
     public String getDownloadUrl(AppUpdate update) throws Exception {
+        if (update == null) {
+            throw new IllegalArgumentException("update record is null");
+        }
         String storagePath = update.getStoragePath();
         if (storagePath == null || storagePath.isBlank()) {
             throw new IllegalArgumentException("storage_path in update record is empty");
         }
-        if (storagePath.startsWith("http://") || storagePath.startsWith("https://")) {
+        if (storagePath.startsWith("https://github.com/")) {
             return storagePath;
         }
-        throw new IllegalArgumentException("storage_path is not a valid URL: " + storagePath);
+        throw new IllegalArgumentException("storage_path is not a valid GitHub Release URL: " + storagePath);
     }
 
     /**
@@ -85,12 +88,22 @@ public class DownloadService {
      * Verifies that the file matches the update's expected size and SHA-256 checksum.
      */
     public boolean verifyFile(Path file, AppUpdate update) {
+        if (file == null) {
+            LOGGER.warning("[DownloadService] Verification failed: file path parameter is null");
+            return false;
+        }
+
         if (!Files.exists(file)) {
             LOGGER.warning("[DownloadService] Verification failed: File does not exist at " + file);
             return false;
         }
 
-        // Validate GitHub Release asset URL instead of bucket paths
+        if (update == null) {
+            LOGGER.warning("[DownloadService] Verification failed: update metadata parameter is null");
+            cleanupCorruptFile(file);
+            return false;
+        }
+
         String storagePath = update.getStoragePath();
         if (storagePath == null || !storagePath.startsWith("https://github.com/")) {
             LOGGER.warning("[DownloadService] Verification failed: Storage path is not a valid GitHub Release asset URL: " + storagePath);
