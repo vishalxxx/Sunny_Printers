@@ -34,12 +34,7 @@ jobs:
 
       - name: Package & Publish Application
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          SUPABASE_BUCKET: ${{ secrets.SUPABASE_BUCKET }}
-          TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
-          TEST_SUPABASE_KEY: ${{ secrets.TEST_SUPABASE_KEY }}
-          TEST_SUPABASE_BUCKET: ${{ secrets.TEST_SUPABASE_BUCKET }}
+
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           powershell ./release.bat -Increment none --publish
