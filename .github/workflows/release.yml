@@ -85,15 +85,23 @@ jobs:
      
 
       #######################################
-      # PACKAGE
+      # PACKAGE & PUBLISH
       #######################################
 
-      - name: Package Application
+      - name: Package & Publish Application
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+         
+          TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          TEST_SUPABASE_KEY: ${{ secrets.TEST_SUPABASE_KEY }}
+         
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          powershell ./release.bat -Increment patch
+          powershell ./release.bat -Increment none --publish
 
       #######################################
-      # Upload Build Artifacts
+      # Upload Build Artifacts (Debug)
       #######################################
 
       - name: Upload Release Files
