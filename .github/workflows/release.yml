@@ -54,3 +54,14 @@ jobs:
             target/**/*.zip
             target/**/*.sha256
           if-no-files-found: ignore
+
+      - name: Upload Diagnostic Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DiagnosticsAndReports
+          path: |
+            Release/Build/Logs/**
+            target/surefire-reports/**
+            target/failsafe-reports/**
+          if-no-files-found: ignore
