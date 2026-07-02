@@ -113,6 +113,47 @@ Log-Global " - SUPABASE_URL present: $(if ($supabaseUrl) { "YES" } else { "NO" }
 Log-Global " - SUPABASE_KEY present: $(if ($supabaseKey) { "YES" } else { "NO" })"
 Log-Global " - GITHUB_TOKEN present: $(if ($githubToken) { "YES" } else { "NO" })"
 
+# Helper to print full environment diagnostics comparing CI vs Release context
+function Print-MavenDiagnostics($cmdName, $mvnArgs) {
+    Log-Global "========================================================================"
+    Log-Global "=== [DIAGNOSTICS] Pre-execution check for $cmdName (mvn $mvnArgs) ==="
+    Log-Global " - Working Directory: $((Get-Location).Path)"
+    
+    # Save original ErrorActionPreference to prevent terminating on stderr write
+    $oldEAP = $ErrorActionPreference
+    $ErrorActionPreference = "SilentlyContinue"
+    
+    # Java & Maven Versions
+    $mvnVer = mvn -version 2>&1 | Out-String
+    $javaVer = java -version 2>&1 | Out-String
+    
+    # Restore ErrorActionPreference
+    $ErrorActionPreference = $oldEAP
+    
+    Log-Global " - Maven Version:`n$($mvnVer.Trim())"
+    Log-Global " - Java Version:`n$($javaVer.Trim())"
+    
+    # Key Environment Variables (Checks presence only)
+    Log-Global " - Env variables present:"
+    Log-Global "   - SUPABASE_URL: $(if ($env:SUPABASE_URL) { "YES" } else { "NO" })"
+    Log-Global "   - SUPABASE_KEY: $(if ($env:SUPABASE_KEY) { "YES" } else { "NO" })"
+    Log-Global "   - TEST_SUPABASE_URL: $(if ($env:TEST_SUPABASE_URL) { "YES" } else { "NO" })"
+    Log-Global "   - TEST_SUPABASE_KEY: $(if ($env:TEST_SUPABASE_KEY) { "YES" } else { "NO" })"
+    Log-Global "   - GITHUB_TOKEN: $(if ($env:GITHUB_TOKEN) { "YES" } else { "NO" })"
+    
+    # Active Maven profiles/args
+    Log-Global " - Active Args: $mvnArgs"
+    
+    # Generated files before running tests
+    if (Test-Path "target") {
+        $files = Get-ChildItem "target" -Recurse | Select-Object -First 30 | ForEach-Object { $_.FullName.Substring(((Get-Location).Path).Length + 1) }
+        Log-Global " - Target directory contents (max 30 items):`n$($files -join "`n")"
+    } else {
+        Log-Global " - Target directory does not exist yet."
+    }
+    Log-Global "========================================================================"
+}
+
 # Helper to execute Maven Commands
 function Execute-Maven($cmdName, $mvnArgs) {
     Log-Global "Executing Maven: mvn $mvnArgs..."
@@ -135,28 +176,26 @@ function Execute-Maven($cmdName, $mvnArgs) {
         $env:SUPABASE_BUCKET = $null
     }
 
+    # Print comparative diagnostics
+    Print-MavenDiagnostics -cmdName $cmdName -mvnArgs $mvnArgs
+
+    $exitCode = 0
     try {
-        $mvnOutput = Invoke-Expression "mvn $mvnArgs 2>&1"
-        $mvnOutput | ForEach-Object { Log-Build $_ }
-        
-        $hasFailure = $false
-        foreach ($line in $mvnOutput) {
-            if ($line -match "BUILD FAILURE" -or $line -match "Failures: [1-9]" -or $line -match "Errors: [1-9]") {
-                $hasFailure = $true
-                break
-            }
-        }
-        
-        if ($hasFailure) {
-            throw "Maven ${cmdName} failed. See build.log for details."
-        }
-        Log-Global " - ${cmdName}: OK"
+        $argList = $mvnArgs -split '\s+'
+        & mvn $argList 2>&1 | Tee-Object -FilePath $buildLogPath -Append
+        $exitCode = $LASTEXITCODE
     } finally {
         # Restore environment variables
         $env:SUPABASE_URL = $origUrl
         $env:SUPABASE_KEY = $origKey
         $env:SUPABASE_BUCKET = $origBucket
     }
+
+    if ($exitCode -ne 0) {
+        Log-Global "Maven ${cmdName} failed with exit code ${exitCode}." "ERROR"
+        exit $exitCode
+    }
+    Log-Global " - ${cmdName}: OK"
 }
 
 # --- Phase 1: Project Validation ---
@@ -246,7 +285,7 @@ if ($runStandardTests) {
 
     # --- Phase 4: Run Sanity Tests ---
     Log-Global "Phase 4: Run Sanity Tests..."
-    try { Execute-Maven "Sanity Tests" "test -Psanity" } catch { Log-Global "Sanity testing failed: $_" "ERROR"; exit 1 }
+    try { Execute-Maven "Sanity Tests" "test -Psanity -e" } catch { Log-Global "Sanity testing failed: $_" "ERROR"; exit 1 }
 
     # --- Phase 5: Run Integration Tests ---
     Log-Global "Phase 5: Run Integration Tests (SQLite only)..."
@@ -375,7 +414,7 @@ if ($Publish) {
     if ($hasSecrets) {
         try {
             Log-Global "Executing upload script..."
-            & $uploadScript -Version $newVersion -MsiPath $msiPath -ZipPath $zipPath -JarPath $jarPath -ReleaseNotes $notesText -ReleaseChannel $ReleaseChannel -Mandatory $Mandatory -SupabaseUrl $supabaseUrl -SupabaseKey $supabaseKey -SupabaseBucket $supabaseBucket -GithubToken $githubToken -GithubRepository $githubRepository
+            & $uploadScript -Version $newVersion -MsiPath $msiPath -ZipPath $zipPath -JarPath $jarPath -ReleaseNotes $notesText -ReleaseChannel $ReleaseChannel -Mandatory $Mandatory -SupabaseUrl $supabaseUrl -SupabaseKey $supabaseKey -SupabaseBucket $supabaseBucket -GithubToken $githubToken -GithubRepository $githubRepository 2>&1 | Tee-Object -FilePath $uploadLogPath -Append
             Log-Global " - GitHub Release Created"
             Log-Global " - Production Metadata Updated"
             
@@ -383,7 +422,7 @@ if ($Publish) {
             Log-Global "Phase 13 (Verify): Verification of published release..."
             $verifyScript = Join-Path $PSScriptRoot "verify.ps1"
             try {
-                & $verifyScript -Version $newVersion -MsiPath $msiPath -ZipPath $zipPath -ReleaseChannel $ReleaseChannel -SupabaseUrl $supabaseUrl -SupabaseKey $supabaseKey -SupabaseBucket $supabaseBucket
+                & $verifyScript -Version $newVersion -MsiPath $msiPath -ZipPath $zipPath -ReleaseChannel $ReleaseChannel -SupabaseUrl $supabaseUrl -SupabaseKey $supabaseKey -SupabaseBucket $supabaseBucket 2>&1 | Tee-Object -FilePath $verifyLogPath -Append
                 Log-Global "Verification complete. Release check PASSED!"
             } catch {
                 Log-Global "Verification failed: $_. Initiating Rollback..." "ERROR"
