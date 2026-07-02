@@ -75,6 +75,16 @@ jobs:
         run: mvn verify -Pchaos
 
       #######################################
+      # LIVE SUPABASE TESTS
+      #######################################
+
+      - name: Live Supabase Tests
+        env:
+          SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.TEST_SUPABASE_KEY }}
+        run: mvn verify -Plive
+        
+      #######################################
       # RELEASE CERTIFICATION
       #######################################
 
