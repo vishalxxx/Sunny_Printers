@@ -64,10 +64,30 @@ jobs:
       #######################################
 
       - name: Integration Tests
-        if: github.event_name == 'pull_request'
         env:
           TEST_DB_DIR: database_test
         run: mvn verify -Pintegration
+
+      #######################################
+      # PERFORMANCE
+      #######################################
+
+      - name: Performance Tests
+        run: mvn verify -Pperformance
+
+      #######################################
+      # CHAOS
+      #######################################
+
+      - name: Chaos Tests
+        run: mvn verify -Pchaos
+
+      #######################################
+      # RELEASE VERIFICATION
+      #######################################
+
+      - name: Release Verification Tests
+        run: mvn verify -Prelease
 
       #######################################
       # Upload Reports

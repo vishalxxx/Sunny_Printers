@@ -7,12 +7,14 @@ $ErrorActionPreference = "Stop"
 
 function Log-Message($msg) {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    Write-Output "[$timestamp] [PACKAGE] $msg"
+    Write-Host "[$timestamp] [PACKAGE] $msg"
 }
 
 if (-not $Version) {
     throw "Version parameter is required."
 }
+
+Log-Message "Executing decoupled local compilation and packaging for version $Version..."
 
 # 1. WiX Toolset Bootstrapper
 $wixDir = Join-Path $env:USERPROFILE ".wix"
@@ -58,7 +60,7 @@ if (-not (Get-Command candle -ErrorAction SilentlyContinue)) {
 # 2. Build the project using Maven
 Log-Message "Building and compiling jar using Maven..."
 $mavenCmd = "mvn clean package -DskipTests"
-Invoke-Expression $mavenCmd
+Invoke-Expression $mavenCmd | Out-Host
 
 # 3. Create a clean packaging input directory to exclude source code, test classes, database, logs, etc.
 $packageInput = Join-Path $PSScriptRoot "..\target\package-input"
@@ -103,7 +105,7 @@ jpackage --type app-image `
          --main-class sunnyprinters.Launcher `
          --app-version $Version `
          --vendor "Sunny Printers" `
-         --icon $iconPath
+         --icon $iconPath | Out-Host
 
 # Build MSI Installer
 # Upgrade UUID fixed to prevent duplicate installations on Windows
@@ -122,7 +124,7 @@ jpackage --type msi `
          --win-shortcut `
          --win-menu `
          --win-menu-group "Sunny Printers" `
-         --win-dir-chooser
+         --win-dir-chooser | Out-Host
 
 # 5. Compress App Image into Portable ZIP
 $appImageFolder = Join-Path $distDir "Sunny Printers ERP"
@@ -130,7 +132,7 @@ $zipOutPath = Join-Path $distDir "SunnyPrintersERP-$Version.zip"
 
 if (Test-Path $appImageFolder) {
     Log-Message "Creating portable ZIP archive..."
-    Compress-Archive -Path $appImageFolder -DestinationPath $zipOutPath -Force
+    Compress-Archive -Path $appImageFolder -DestinationPath $zipOutPath -Force | Out-Host
     Log-Message "Created portable ZIP: $zipOutPath"
 } else {
     throw "App Image folder not found at $appImageFolder"
@@ -147,7 +149,13 @@ if (-not (Test-Path $msiFile)) {
     }
 }
 
-Log-Message "Packaging complete. MSI: $msiFile, ZIP: $zipOutPath"
+# Copy standalone JAR to dist directory
+$jarFileName = "SunnyPrinters-$Version.jar"
+$jarDestPath = Join-Path $distDir $jarFileName
+Log-Message "Copying standalone JAR to dist folder: $jarDestPath"
+Copy-Item -Path $builtJarPath -Destination $jarDestPath -Force
+
+Log-Message "Packaging complete. MSI: $msiFile, ZIP: $zipOutPath, JAR: $jarDestPath"
 
 # Return the paths of the packaged artifacts
-return @($msiFile, $zipOutPath)
+return @($msiFile, $zipOutPath, $jarDestPath)

@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterAll;
@@ -89,15 +90,37 @@ public class DownloadManagerTest {
             update.setFileSize(size);
             update.setSha256(hash);
             update.setPublished(true);
-            update.setStoragePath("/bucket/update.jar");
+            update.setStoragePath("https://github.com/vishalxxx/Sunny_Printers/releases/download/v1.0.3/update.jar");
 
             // 1. Full Match Validation
-            assertTrue(ds.verifyFile(tempFile, update), "Verification must succeed when size and hash match");
+            assertTrue(ds.verifyFile(tempFile, update), "Verification must succeed when size, hash and GitHub URL match");
 
-            // 2. Size Mismatch Validation
+            // 2. Invalid GitHub URL Validation
+            update.setStoragePath("https://malicious-site.com/releases/update.jar");
+            assertFalse(ds.verifyFile(tempFile, update), "Verification must fail on invalid GitHub Release URL");
+            assertFalse(Files.exists(tempFile), "Corrupt file must be cleaned up on verification failure");
+
+            // 3. Size Mismatch Validation
+            // Recreate file for size mismatch test since it was deleted in previous step
+            Files.writeString(tempFile, content);
+            update.setStoragePath("https://github.com/vishalxxx/Sunny_Printers/releases/download/v1.0.3/update.jar");
             update.setFileSize(size + 10);
             assertFalse(ds.verifyFile(tempFile, update), "Verification must fail on size mismatch");
             assertFalse(Files.exists(tempFile), "Corrupt file must be cleaned up on verification failure");
+
+            // 4. SHA256 Checksum Mismatch Validation
+            Files.writeString(tempFile, content);
+            update.setFileSize(size);
+            update.setSha256("incorrect-sha256-hash-value-to-fail-checksum-check");
+            assertFalse(ds.verifyFile(tempFile, update), "Verification must fail on checksum mismatch");
+            assertFalse(Files.exists(tempFile), "Corrupt file must be cleaned up on verification failure");
+
+            // 5. Null and Missing Files Validation
+            assertFalse(ds.verifyFile(null, update), "verifyFile must return false if file path is null");
+            assertFalse(ds.verifyFile(tempFile, null), "verifyFile must return false if update is null");
+            
+            Path nonExistent = Paths.get("non-existent-file-path-to-test-missing.jar");
+            assertFalse(ds.verifyFile(nonExistent, update), "verifyFile must return false if file does not exist");
 
         } finally {
             Files.deleteIfExists(tempFile);
@@ -109,22 +132,28 @@ public class DownloadManagerTest {
         DownloadService ds = new DownloadService();
 
         AppUpdate update = new AppUpdate();
-        update.setStoragePath("https://external-cdn.com/releases/installer.exe");
+        update.setStoragePath("https://github.com/vishalxxx/Sunny_Printers/releases/download/v1.0.3/SunnyPrintersERP-1.0.3.msi");
 
         // Direct URL check
         String resolvedUrl = ds.getDownloadUrl(update);
-        assertEquals("https://external-cdn.com/releases/installer.exe", resolvedUrl);
+        assertEquals("https://github.com/vishalxxx/Sunny_Printers/releases/download/v1.0.3/SunnyPrintersERP-1.0.3.msi", resolvedUrl);
 
-        // Relative path resolution check (uses Supabase Settings from DB)
+        // Invalid path throws exception
         update.setStoragePath("updates/releases/sunny.jar");
-        try {
-            String resolved = ds.getDownloadUrl(update);
-            assertNotNull(resolved);
-            assertTrue(resolved.contains("/storage/v1/object/public/updates/releases/sunny.jar"));
-        } catch (IllegalStateException e) {
-            // Safe to ignore if Supabase URL is not configured in test DB
-            LOGGER_log("Ignored unconfigured Supabase URL test: " + e.getMessage());
-        }
+        assertThrows(IllegalArgumentException.class, () -> {
+            ds.getDownloadUrl(update);
+        });
+
+        // Invalid GitHub URL throws exception
+        update.setStoragePath("https://malicious-site.com/releases/update.jar");
+        assertThrows(IllegalArgumentException.class, () -> {
+            ds.getDownloadUrl(update);
+        });
+
+        // Null update throws exception
+        assertThrows(IllegalArgumentException.class, () -> {
+            ds.getDownloadUrl(null);
+        });
     }
 
     private void LOGGER_log(String msg) {

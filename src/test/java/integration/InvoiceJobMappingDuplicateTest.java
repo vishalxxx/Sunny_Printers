@@ -13,13 +13,14 @@ import utils.ClearRemoteDatabase;
 import utils.MetricsExtractor;
 import utils.SchemaAndSyncChecker;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
@@ -42,8 +43,8 @@ public class InvoiceJobMappingDuplicateTest {
     private static String jobUuid;
     private static String dbUrl;
     
-    @BeforeAll
-    public static void setup() throws Exception {
+    @BeforeEach
+    public void setup() throws Exception {
         dbUrl = TestDatabaseHelper.createIsolatedDb("InvoiceJobMappingDuplicateTest");
         DBConnection.setUrl(dbUrl);
         

@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 
 function Log-Message($msg) {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    Write-Output "[$timestamp] [VERSION] $msg"
+    Write-Host "[$timestamp] [VERSION] $msg"
 }
 
 $propPath = Join-Path $PSScriptRoot "..\src\main\resources\version.properties"

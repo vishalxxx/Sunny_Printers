@@ -13,7 +13,7 @@ import utils.ClearRemoteDatabase;
 import utils.MetricsExtractor;
 import utils.SchemaAndSyncChecker;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -39,8 +39,8 @@ public class InvoiceMappingE2ESyncTest {
     private static String invoiceUuid;
     private static String dbUrl;
     
-    @BeforeAll
-    public static void setup() throws Exception {
+    @BeforeEach
+    public void setup() throws Exception {
         dbUrl = TestDatabaseHelper.createIsolatedDb("InvoiceMappingE2ESyncTest");
         DBConnection.setUrl(dbUrl);
         SupabaseGate.setOverrideClient(null);

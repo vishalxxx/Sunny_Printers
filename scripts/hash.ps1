@@ -3,6 +3,7 @@ param(
     [string]$Version,
     [string]$MsiPath,
     [string]$ZipPath,
+    [string]$JarPath,
     [string]$ReleaseNotesPath = "release_notes.md",
     [string]$OutputDir
 )
@@ -99,6 +100,18 @@ if ($ZipPath -and (Test-Path $ZipPath)) {
     Log-Message "Warning: ZIP path not found: $ZipPath"
 }
 
+$jarSize = 0
+$jarSha256 = ""
+$jarMd5 = ""
+if ($JarPath -and (Test-Path $JarPath)) {
+    $jarSize = (Get-Item $JarPath).Length
+    $jarSha256 = Get-FileHashString $JarPath "SHA256"
+    $jarMd5 = Get-FileHashString $JarPath "MD5"
+    Log-Message "JAR Size: $jarSize bytes, SHA-256: $jarSha256"
+} else {
+    Log-Message "Warning: JAR path not found: $JarPath"
+}
+
 # Parse release notes
 $notesText = Get-ReleaseNotesForVersion $ReleaseNotesPath $Version
 Log-Message "Extracted release notes successfully."
@@ -122,6 +135,12 @@ $jsonObj = @{
             fileSize = $zipSize
             sha256 = $zipSha256
             md5 = $zipMd5
+        }
+        jar = @{
+            fileName = if ($JarPath) { Split-Path $JarPath -Leaf } else { "" }
+            fileSize = $jarSize
+            sha256 = $jarSha256
+            md5 = $jarMd5
         }
     }
 }
@@ -152,6 +171,12 @@ $xmlContent = @"
             <sha256>$zipSha256</sha256>
             <md5>$zipMd5</md5>
         </zip>
+        <jar>
+            <fileName>$(if ($JarPath) { Split-Path $JarPath -Leaf } else { "" })</fileName>
+            <fileSize>$jarSize</fileSize>
+            <sha256>$jarSha256</sha256>
+            <md5>$jarMd5</md5>
+        </jar>
     </artifacts>
 </release>
 "@
@@ -181,6 +206,12 @@ $mdContent = @"
 - **SHA-256:** `$zipSha256`
 - **MD5:** `$zipMd5`
 
+### Standalone JAR
+- **File Name:** $(if ($JarPath) { Split-Path $JarPath -Leaf } else { "N/A" })
+- **File Size:** $jarSize bytes
+- **SHA-256:** `$jarSha256`
+- **MD5:** `$jarMd5`
+
 ## Release Notes
 $notesText
 "@
@@ -195,5 +226,16 @@ if ($msiSha256) {
 if ($zipSha256) {
     Set-Content -Path (Join-Path $OutputDir "SHA256_zip.txt") -Value $zipSha256
 }
+if ($jarSha256) {
+    Set-Content -Path (Join-Path $OutputDir "SHA256_jar.txt") -Value $jarSha256
+}
+
+# Create a combined SHA256.txt file
+$combinedContent = ""
+if ($msiSha256) { $combinedContent += "$msiSha256  $(Split-Path $MsiPath -Leaf)`r`n" }
+if ($zipSha256) { $combinedContent += "$zipSha256  $(Split-Path $ZipPath -Leaf)`r`n" }
+if ($jarSha256) { $combinedContent += "$jarSha256  $(Split-Path $JarPath -Leaf)`r`n" }
+Set-Content -Path (Join-Path $OutputDir "SHA256.txt") -Value $combinedContent -NoNewline
+Log-Message "Created SHA256.txt combined checksum file."
 
 Log-Message "Hash generation complete."

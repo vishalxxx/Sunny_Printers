@@ -97,9 +97,10 @@ public class UpdateCheckIntegrationTest {
     public void testMetadataValidationRejectsInvalidUpdates() {
         UpdateService updateService = new UpdateService();
 
-        // 1. Missing storage_path
+        // 1. Missing storage_path & download_url
         com.google.gson.JsonObject invalidA = createValidUpdateJson("1.2.0", false);
         invalidA.addProperty("storage_path", "");
+        invalidA.addProperty("download_url", "");
         fakeSupabase.getTableData(SupabaseEndpoints.APP_UPDATES).add(invalidA);
 
         // 2. Missing sha256
@@ -205,6 +206,7 @@ public class UpdateCheckIntegrationTest {
         obj.addProperty("version", version);
         obj.addProperty("minimum_supported_version", "1.0.0");
         obj.addProperty("storage_path", "/updates/releases/" + version);
+        obj.addProperty("download_url", "https://github.com/owner/repo/releases/download/v" + version + "/sunny-printers-" + version + ".jar");
         obj.addProperty("file_name", "sunny-printers-" + version + ".jar");
         obj.addProperty("file_size", 1048576L);
         obj.addProperty("sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
