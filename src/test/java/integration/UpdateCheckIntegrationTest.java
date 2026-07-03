@@ -66,7 +66,17 @@ public class UpdateCheckIntegrationTest {
         UpdateService updateService = new UpdateService();
         String localVersion = updateService.getLocalVersion();
         assertNotNull(localVersion);
-        assertEquals("1.0.0", localVersion);
+        
+        java.util.Properties props = new java.util.Properties();
+        try (java.io.InputStream in = UpdateService.class.getResourceAsStream("/version.properties")) {
+            if (in != null) {
+                props.load(in);
+            }
+        } catch (Exception e) {
+            fail("Failed to load version.properties for test verification: " + e.getMessage());
+        }
+        String expectedVersion = props.getProperty("version", "1.0.0").trim();
+        assertEquals(expectedVersion, localVersion);
     }
 
     @Test
