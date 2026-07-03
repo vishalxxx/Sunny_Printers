@@ -53,16 +53,30 @@ if ($SupabaseUrl -and $SupabaseKey) {
 
     Log-Message "Deleting database row for version $Version in app_updates table on Production Supabase..."
     $dbUrl = "$SupabaseUrl/rest/v1/app_updates?version=eq.$Version&release_channel=eq.$ReleaseChannel"
+    Log-Message " - Rollback DELETE URL: $dbUrl"
     $headers = @{
         "Authorization" = "Bearer $SupabaseKey"
         "apikey"        = $SupabaseKey
+        "Content-Type"  = "application/json"
+        "Prefer"        = "return=representation"
     }
     
     try {
-        $res = Invoke-RestMethod -Uri $dbUrl -Method Delete -Headers $headers
+        $rollbackResponse = Invoke-WebRequest -Uri $dbUrl -Method Delete -Headers $headers -UseBasicParsing
+        Log-Message "Rollback HTTP Status: $($rollbackResponse.StatusCode)"
+        Log-Message "Rollback Response Body: $($rollbackResponse.Content)"
         Log-Message "Database row deletion completed."
     } catch {
-        Log-Message "Warning: Database row deletion failed or row did not exist: $_"
+        $rbStatusCode = 0
+        $rbErrorBody = ""
+        try {
+            $rbStatusCode = $_.Exception.Response.StatusCode.Value__
+            $rbStream = $_.Exception.Response.GetResponseStream()
+            $rbReader = New-Object System.IO.StreamReader($rbStream)
+            $rbErrorBody = $rbReader.ReadToEnd()
+            $rbReader.Close()
+        } catch { }
+        Log-Message "Warning: Database row deletion failed (HTTP $rbStatusCode): $rbErrorBody"
     }
 } else {
     Log-Message "Warning: Supabase credentials not found. Skipping remote database rollback step."

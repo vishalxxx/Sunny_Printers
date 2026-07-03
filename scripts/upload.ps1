@@ -123,7 +123,16 @@ $filesToUpload = @{
 }
 
 $githubUrls = @{}
-$uploadTemplate = $release.upload_url.Replace("{?name,label}", "")
+
+# Strip RFC 6570 URI template suffix robustly using regex (handles any {?...} variation)
+$rawUploadUrl = $release.upload_url
+Log-Message "Raw GitHub upload_url from API: $rawUploadUrl"
+$uploadTemplate = $rawUploadUrl -replace '\{[^}]*\}.*$', ''
+Log-Message "Resolved upload base URL: $uploadTemplate"
+
+if (-not $uploadTemplate -or -not $uploadTemplate.StartsWith("http")) {
+    throw "GitHub Release upload_url is invalid or missing. Raw value: '$rawUploadUrl'"
+}
 
 foreach ($entry in $filesToUpload.GetEnumerator()) {
     $fileName = $entry.Key
@@ -143,9 +152,12 @@ foreach ($entry in $filesToUpload.GetEnumerator()) {
         }
     }
     
-    # Upload the asset
+    # Build and log the final upload URL before sending
+    $uploadUrl = "${uploadTemplate}?name=${fileName}"
     Log-Message "Uploading '$fileName' to GitHub Release..."
-    $uploadUrl = "$uploadTemplate?name=$fileName"
+    Log-Message " - Upload URL: $uploadUrl"
+    Log-Message " - File Path:  $filePath"
+    Log-Message " - File Size:  $((Get-Item $filePath).Length) bytes"
     
     $uploadHeaders = @{
         "Authorization" = "Bearer $GithubToken"
@@ -158,7 +170,19 @@ foreach ($entry in $filesToUpload.GetEnumerator()) {
         $githubUrls[$fileName] = $uploadResponse.browser_download_url
         Log-Message "Uploaded '$fileName' successfully. URL: $($uploadResponse.browser_download_url)"
     } catch {
-        throw "Failed to upload asset '$fileName' to GitHub Release: $_"
+        $uploadStatusCode = 0
+        $uploadErrorBody = ""
+        try {
+            $uploadStatusCode = $_.Exception.Response.StatusCode.Value__
+            $uploadStream = $_.Exception.Response.GetResponseStream()
+            $uploadReader = New-Object System.IO.StreamReader($uploadStream)
+            $uploadErrorBody = $uploadReader.ReadToEnd()
+            $uploadReader.Close()
+        } catch { }
+        Log-Message "Asset upload failed for '$fileName'."
+        Log-Message " - HTTP Status: $uploadStatusCode"
+        Log-Message " - Error Body:  $uploadErrorBody"
+        throw "Failed to upload asset '$fileName' to GitHub Release (HTTP $uploadStatusCode): $uploadErrorBody"
     }
 }
 
