@@ -374,28 +374,22 @@ $msiSha256 = (Get-FileHash -Path $MsiPath -Algorithm "SHA256").Hash.ToLower()
 $nowUtc = (Get-Date -Date (Get-Date).ToUniversalTime() -Format "yyyy-MM-ddTHH:mm:ss.fffZ")
 
 # Mappings for app_updates table
-# We keep storage_path populated with a compatibility path, but set download_url to GitHub Releases download URL
-$dbStoragePath = "$SupabaseBucket/updates/SunnyPrintersERP-$Version.msi"
-
+# The storage_path now stores the GitHub Release download URL as per new architecture
 $updatePayload = @{
     version = $Version
-    minimum_supported_version = $Version # Default to the current version as minimum
-    storage_path = $dbStoragePath        # Compatibility column
-    download_url = $msiDownloadUrl
-    github_release_tag = "v$Version"
-    github_release_url = $githubReleaseUrl
+    minimum_supported_version = $Version # Default to current version as minimum
+    storage_path = $msiDownloadUrl
     release_notes = $ReleaseNotes
     sha256 = $msiSha256
-    checksum_algorithm = "SHA-256"
-    installer_type = "MSI"
     file_name = "SunnyPrintersERP-$Version.msi"
     file_size = $msiSize
     published = $true
     mandatory = $Mandatory
     release_channel = $ReleaseChannel
+    release_date = $nowUtc
+    download_count = 0
     created_at = $nowUtc
     updated_at = $nowUtc
-    published_at = $nowUtc
 }
 
 $payloadJson = ConvertTo-Json -InputObject $updatePayload -Depth 4
@@ -414,8 +408,8 @@ Log-Message "========================================================"
 Log-Message "Posting release metadata to Supabase:"
 Log-Message " - URL:              $dbUrl"
 Log-Message " - Version:          $($updatePayload.version)"
-Log-Message " - GitHub Release:   $($updatePayload.github_release_url)"
-Log-Message " - Download URL:     $($updatePayload.download_url)"
+Log-Message " - GitHub Release:   $githubReleaseUrl"
+Log-Message " - Download URL:     $msiDownloadUrl"
 Log-Message " - SHA256:           $($updatePayload.sha256)"
 Log-Message " - File Size:        $($updatePayload.file_size) bytes"
 Log-Message " - Release Channel:  $($updatePayload.release_channel)"
