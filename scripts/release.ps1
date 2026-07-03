@@ -126,12 +126,18 @@ function Print-MavenDiagnostics($cmdName, $mvnArgs) {
     # Java & Maven Versions
     $mvnVer = mvn -version 2>&1 | Out-String
     $javaVer = java -version 2>&1 | Out-String
+
+    # Git details
+    $branch = git rev-parse --abbrev-ref HEAD 2>&1 | Out-String
+    $commitSha = git rev-parse HEAD 2>&1 | Out-String
     
     # Restore ErrorActionPreference
     $ErrorActionPreference = $oldEAP
     
     Log-Global " - Maven Version:`n$($mvnVer.Trim())"
     Log-Global " - Java Version:`n$($javaVer.Trim())"
+    Log-Global " - Current Branch: $($branch.Trim())"
+    Log-Global " - Current Commit SHA: $($commitSha.Trim())"
     
     # Key Environment Variables (Checks presence only)
     Log-Global " - Env variables present:"
@@ -140,6 +146,8 @@ function Print-MavenDiagnostics($cmdName, $mvnArgs) {
     Log-Global "   - TEST_SUPABASE_URL: $(if ($env:TEST_SUPABASE_URL) { "YES" } else { "NO" })"
     Log-Global "   - TEST_SUPABASE_KEY: $(if ($env:TEST_SUPABASE_KEY) { "YES" } else { "NO" })"
     Log-Global "   - GITHUB_TOKEN: $(if ($env:GITHUB_TOKEN) { "YES" } else { "NO" })"
+    Log-Global "   - CLASSPATH: $env:CLASSPATH"
+    Log-Global "   - TEMP/TMP directory: $env:TEMP"
     
     # Active Maven profiles/args
     Log-Global " - Active Args: $mvnArgs"
@@ -180,11 +188,15 @@ function Execute-Maven($cmdName, $mvnArgs) {
     Print-MavenDiagnostics -cmdName $cmdName -mvnArgs $mvnArgs
 
     $exitCode = 0
+    # Save original ErrorActionPreference to prevent terminating on stderr writes from Maven/Java
+    $oldMvnEAP = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     try {
         $argList = $mvnArgs -split '\s+'
         & mvn $argList 2>&1 | Tee-Object -FilePath $buildLogPath -Append
         $exitCode = $LASTEXITCODE
     } finally {
+        $ErrorActionPreference = $oldMvnEAP
         # Restore environment variables
         $env:SUPABASE_URL = $origUrl
         $env:SUPABASE_KEY = $origKey

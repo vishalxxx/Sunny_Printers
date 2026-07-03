@@ -64,4 +64,5 @@ jobs:
             Release/Build/Logs/**
             target/surefire-reports/**
             target/failsafe-reports/**
+            target/site/**
           if-no-files-found: ignore
