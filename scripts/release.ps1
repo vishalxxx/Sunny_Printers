@@ -418,14 +418,22 @@ if ($Publish) {
     $uploadScript = Join-Path $PSScriptRoot "upload.ps1"
     
     $hasSecrets = $true
-    if (-not $githubToken -or -not $supabaseUrl -or -not $supabaseKey) {
-        $hasSecrets = $false
-        Log-Global "Publishing skipped because required credentials (GITHUB_TOKEN or Production SUPABASE_URL/KEY) are missing." "WARN"
+    if (-not $githubToken) {
+        Log-Global "Publishing FAILED: GITHUB_TOKEN is missing. Ensure the secret is configured in GitHub Actions." "ERROR"
+        exit 1
+    }
+    if (-not $supabaseUrl) {
+        Log-Global "Publishing FAILED: SUPABASE_URL is missing. Ensure the secret is configured in GitHub Actions." "ERROR"
+        exit 1
+    }
+    if (-not $supabaseKey) {
+        Log-Global "Publishing FAILED: SUPABASE_KEY is missing. Ensure the secret is configured in GitHub Actions." "ERROR"
+        exit 1
     }
     
     if ($hasSecrets) {
         try {
-            Log-Global "Executing upload script..."
+            Log-Global "Calling upload.ps1 for version $newVersion (channel: $ReleaseChannel)..."
             & $uploadScript -Version $newVersion -MsiPath $msiPath -ZipPath $zipPath -JarPath $jarPath -ReleaseNotes $notesText -ReleaseChannel $ReleaseChannel -Mandatory $Mandatory -SupabaseUrl $supabaseUrl -SupabaseKey $supabaseKey -SupabaseBucket $supabaseBucket -GithubToken $githubToken -GithubRepository $githubRepository 2>&1 | Tee-Object -FilePath $uploadLogPath -Append
             Log-Global " - GitHub Release Created"
             Log-Global " - Production Metadata Updated"
@@ -448,11 +456,6 @@ if ($Publish) {
             & $rollbackScript -Version $newVersion -ReleaseChannel $ReleaseChannel -SupabaseUrl $supabaseUrl -SupabaseKey $supabaseKey -SupabaseBucket $supabaseBucket
             exit 1
         }
-    } else {
-        Log-Global "======================================================"
-        Log-Global " Packaging completed successfully." "INFO"
-        Log-Global " Publishing skipped because Production upload credentials are missing." "WARN"
-        Log-Global "======================================================"
     }
 } else {
     Log-Global "Publishing skipped (no --publish flag specified)."
