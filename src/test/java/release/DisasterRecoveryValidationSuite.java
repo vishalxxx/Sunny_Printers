@@ -56,7 +56,7 @@ public class DisasterRecoveryValidationSuite {
     @Test
     public void testFullDisasterRecoveryCycle() throws Exception {
         // --- PHASE 1 & 3: Local Creation & Sync to Supabase ---
-        DBConnection.setUrl(primaryDbUrl);
+        DBConnection.setTestDatabaseUrl(primaryDbUrl);
         fakeSupabase.clear();
         SupabaseReachability.invalidateCache();
 
@@ -111,7 +111,7 @@ public class DisasterRecoveryValidationSuite {
 
         // --- PHASE 4 & 5: Total SQLite Disaster Recovery Rebuild ---
         // Switch connection to completely fresh/clean SQLite recovery DB
-        DBConnection.setUrl(recoveryDbUrl);
+        DBConnection.setTestDatabaseUrl(recoveryDbUrl);
         
         // Execute full pull recovery from Supabase
         RemoteToLocalSync.pullAll(fakeSupabase);

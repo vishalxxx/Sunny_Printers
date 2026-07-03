@@ -1,4 +1,4 @@
-package release;
+﻿package release;
 import service.sync.UniversalNumberAllocator;
 import service.sync.RemoteToLocalSync;
 import service.sync.UniversalSyncEngine;
@@ -35,7 +35,7 @@ public class ProductionRegressionTestSuite {
     @BeforeAll
     public static void setup() {
         System.out.println("Starting Production Regression Test Suite on Live Environment");
-        DBConnection.setUrl("jdbc:sqlite:database/sunnyprinters.db?busy_timeout=15000&journal_mode=WAL");
+        // Production audit suite: uses DBConnection.PRODUCTION_URL automatically.
         
         // Save environment credentials to database if they exist
         String envUrl = System.getenv("SUPABASE_URL");

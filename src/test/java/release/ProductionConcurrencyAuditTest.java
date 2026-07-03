@@ -51,7 +51,6 @@ import utils.DBConnection;
 @Tag("release")
 public class ProductionConcurrencyAuditTest {
 
-    private static String originalDbUrl;
     private static String testDbUrl;
     private static final String REPORT_PATH = "C:/Users/VishalGoswami/.gemini/antigravity-ide/brain/0d167df4-6f31-47e6-8eb9-505a37fc5c0f/production_concurrency_audit_results.md";
 
@@ -68,10 +67,9 @@ public class ProductionConcurrencyAuditTest {
 
     @BeforeAll
     public static void setup() throws Exception {
-        originalDbUrl = DBConnection.getUrl();
         testDbUrl = TestDatabaseHelper.createIsolatedDb("ConcurrencyAuditTest");
-        DBConnection.setUrl(testDbUrl);
-        
+        DBConnection.setTestDatabaseUrl(testDbUrl);
+
         CompanyProfile.setName("Sunny Printers");
         CompanyProfile.setAddress("Delhi, India");
         CompanyProfile.setGst("07BPPPS3532E2ZO");
@@ -80,8 +78,8 @@ public class ProductionConcurrencyAuditTest {
 
     @AfterAll
     public static void tearDown() {
-        DBConnection.setUrl(originalDbUrl);
-        // TestDatabaseHelper.cleanupTestDir(); // Keep it for inspection if needed
+        DBConnection.clearTestDatabaseUrl();
+        // TestDatabaseHelper.cleanupTestDir(); // Keep for inspection if needed
     }
 
     @BeforeEach

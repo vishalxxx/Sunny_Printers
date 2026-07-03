@@ -1,4 +1,4 @@
-package release;
+﻿package release;
 import service.sync.RemoteToLocalSync;
 import service.sync.UniversalSyncEngine;
 import utils.ClientIdentifiers;
@@ -31,7 +31,7 @@ public class ProductionAuditSuite1 {
     @BeforeAll
     public static void setup() {
         System.out.println("--- Starting Audit Suite 1 ---");
-        DBConnection.setUrl("jdbc:sqlite:database/sunnyprinters.db?busy_timeout=15000&journal_mode=WAL");
+        // Production audit suite: uses DBConnection.PRODUCTION_URL automatically.
         SupabaseReachability.invalidateCache();
         scheduler.scheduleWithFixedDelay(() -> {
             try { UniversalSyncEngine.syncAllPending(); } catch (Exception e) {}

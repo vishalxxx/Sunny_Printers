@@ -47,7 +47,6 @@ import utils.DBConnection;
 @Tag("performance")
 public class TargetedConcurrencyAuditTest {
 
-    private static String originalDbUrl;
     private static String testDbUrl;
     private static final String REPORT_PATH = "C:/Users/VishalGoswami/.gemini/antigravity-ide/brain/0d167df4-6f31-47e6-8eb9-505a37fc5c0f/targeted_audit_results.md";
 
@@ -62,17 +61,16 @@ public class TargetedConcurrencyAuditTest {
 
     @BeforeAll
     public static void setup() throws Exception {
-        originalDbUrl = DBConnection.getUrl();
         testDbUrl = TestDatabaseHelper.createIsolatedDb("TargetedConcurrencyTest");
-        DBConnection.setUrl(testDbUrl);
-        
+        DBConnection.setTestDatabaseUrl(testDbUrl);
+
         CompanyProfile.setName("Sunny Printers Targeted");
         CompanyProfile.setGst("07BPPPS3532E2Z1");
     }
 
     @AfterAll
     public static void tearDown() {
-        DBConnection.setUrl(originalDbUrl);
+        DBConnection.clearTestDatabaseUrl();
     }
 
     @BeforeEach

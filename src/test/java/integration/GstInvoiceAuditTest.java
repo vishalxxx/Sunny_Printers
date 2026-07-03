@@ -50,7 +50,7 @@ public class GstInvoiceAuditTest {
     @BeforeAll
     public static void setup() throws Exception {
         dbPath = TestDatabaseHelper.createIsolatedDb("GstInvoiceAuditTest");
-        DBConnection.setUrl(dbPath);
+        DBConnection.setTestDatabaseUrl(dbPath);
     }
 
     @AfterAll

@@ -5,83 +5,70 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
+/**
+ * JUnit 5 extension that provides each test method with a completely isolated
+ * SQLite database by injecting a thread-local URL override into {@link DBConnection}.
+ *
+ * <p>Using {@link DBConnection#setTestDatabaseUrl(String)} / {@link DBConnection#clearTestDatabaseUrl()}
+ * means this override is <em>per-thread only</em>: concurrent test threads, background
+ * sync threads, and the JavaFX application thread are all unaffected.
+ *
+ * <p>Unit tests (package {@code unit}) are skipped — they do not touch the database.
+ */
 public class TemporaryDatabaseProvider implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback {
 
-    private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(TemporaryDatabaseProvider.class);
-    private static final String ORIGINAL_URL_KEY = "ORIGINAL_DB_URL";
+    private static final ExtensionContext.Namespace NAMESPACE =
+            ExtensionContext.Namespace.create(TemporaryDatabaseProvider.class);
     private static final String ACTIVE_TEST_URL_KEY = "ACTIVE_TEST_DB_URL";
-
-    private static String safetyFallbackUrl = null;
 
     private boolean isUnitTestClass(Class<?> testClass) {
         if (testClass == null) return false;
         String packageName = testClass.getPackageName();
-        if ("unit".equals(packageName) || packageName.startsWith("unit.")) {
-            return true;
-        }
-        
-        // Also check tag annotation
+        if ("unit".equals(packageName) || packageName.startsWith("unit.")) return true;
         if (testClass.isAnnotationPresent(org.junit.jupiter.api.Tag.class)) {
             org.junit.jupiter.api.Tag tag = testClass.getAnnotation(org.junit.jupiter.api.Tag.class);
-            if ("unit".equals(tag.value())) {
-                return true;
-            }
+            if ("unit".equals(tag.value())) return true;
         }
         return false;
     }
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
-        if (isUnitTestClass(context.getRequiredTestClass())) {
-            return;
-        }
-
-        // Guarantee that if any database-dependent test class runs, the default DB Connection url is set to a safe location,
-        // preventing any writes to the developer's default development/production database.
-        synchronized (TemporaryDatabaseProvider.class) {
-            if (safetyFallbackUrl == null) {
-                safetyFallbackUrl = TestDatabaseFactory.createFreshTestDatabase();
-                DBConnection.setUrl(safetyFallbackUrl);
-                // Hook to clean it up at JVM shutdown
-                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                    TestDatabaseManager.cleanupDatabase(safetyFallbackUrl);
-                }));
-            }
-        }
+        // No-op: per-class setup no longer needed because the thread-local model
+        // does not require a shared "safety fallback" URL.
     }
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
-        if (isUnitTestClass(context.getRequiredTestClass())) {
-            return;
-        }
+        if (isUnitTestClass(context.getRequiredTestClass())) return;
 
-        // Save original URL
-        String originalUrl = DBConnection.getUrl();
-        context.getStore(NAMESPACE).put(ORIGINAL_URL_KEY, originalUrl);
-
-        // Generate and set isolated test database URL
+        // Create a fresh isolated database for this test and inject it into the
+        // calling thread only.
         String testUrl = TestDatabaseFactory.createFreshTestDatabase();
         context.getStore(NAMESPACE).put(ACTIVE_TEST_URL_KEY, testUrl);
-        DBConnection.setUrl(testUrl);
+        DBConnection.setTestDatabaseUrl(testUrl);
+
+        // Eagerly initialise the schema so the test doesn't hit a cold start.
+        try {
+            DBConnection.ensureDatabaseParentDirectory();
+            utils.DatabaseInitializer.initialize();
+            DBConnection.registerInitializedUrl(testUrl);
+        } catch (Exception e) {
+            DBConnection.clearTestDatabaseUrl();
+            TestDatabaseManager.cleanupDatabase(testUrl);
+            throw new RuntimeException("Failed to initialise test database: " + e.getMessage(), e);
+        }
     }
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
-        if (isUnitTestClass(context.getRequiredTestClass())) {
-            return;
-        }
+        if (isUnitTestClass(context.getRequiredTestClass())) return;
 
-        // Retrieve active test database URL and cleanup
+        // Always clear the thread-local first so that no further DB access from
+        // cleanup code hits the now-deleted test file.
+        DBConnection.clearTestDatabaseUrl();
+
         String testUrl = context.getStore(NAMESPACE).get(ACTIVE_TEST_URL_KEY, String.class);
-        String originalUrl = context.getStore(NAMESPACE).get(ORIGINAL_URL_KEY, String.class);
-
-        if (originalUrl != null) {
-            DBConnection.setUrl(originalUrl);
-        } else if (safetyFallbackUrl != null) {
-            DBConnection.setUrl(safetyFallbackUrl);
-        }
-
         if (testUrl != null) {
             TestDatabaseManager.cleanupDatabase(testUrl);
         }

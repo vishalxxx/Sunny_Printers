@@ -30,19 +30,17 @@ import utils.DBConnection;
 @Tag("performance")
 public class ConcurrencyAndRevisionAuditTest {
 
-    private String originalDbUrl;
     private String testDbUrl;
 
     @BeforeEach
     public void setUp() throws Exception {
-        originalDbUrl = DBConnection.getUrl();
         testDbUrl = TestDatabaseHelper.createIsolatedDb("concurrency_revision_test");
-        DBConnection.setUrl(testDbUrl);
+        DBConnection.setTestDatabaseUrl(testDbUrl);
     }
 
     @AfterEach
     public void tearDown() {
-        DBConnection.setUrl(originalDbUrl);
+        DBConnection.clearTestDatabaseUrl();
         TestDatabaseHelper.cleanupTestDir();
     }
 

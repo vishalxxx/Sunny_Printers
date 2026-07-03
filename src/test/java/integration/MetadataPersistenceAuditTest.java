@@ -68,7 +68,7 @@ public class MetadataPersistenceAuditTest {
         dbPath = TestDatabaseHelper.createIsolatedDb("MetadataPersistenceAuditTest");
         fakeSupabase = new FakeSupabaseRestClient();
         SupabaseGate.setOverrideClient(fakeSupabase);
-        DBConnection.setUrl(dbPath);
+        DBConnection.setTestDatabaseUrl(dbPath);
     }
 
     @AfterAll

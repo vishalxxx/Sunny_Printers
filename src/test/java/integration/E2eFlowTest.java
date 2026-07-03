@@ -53,7 +53,7 @@ public class E2eFlowTest {
         dbPath = TestDatabaseHelper.createIsolatedDb("E2eFlowTest");
         fakeSupabase = new FakeSupabaseRestClient();
         SupabaseGate.setOverrideClient(fakeSupabase);
-        DBConnection.setUrl(dbPath);
+        DBConnection.setTestDatabaseUrl(dbPath);
     }
 
     @AfterAll

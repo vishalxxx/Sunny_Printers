@@ -37,7 +37,11 @@ public class DatabaseInitializer {
      */
     public static void initialize() throws Exception {
 
-        Files.createDirectories(Path.of("database"));
+        // Parent directory creation is handled by DBConnection.ensureDatabaseParentDirectory()
+        // before this method is called. Do NOT create a relative "database/" directory here —
+        // that path resolves to the Eclipse project root in dev but to C:\Program Files\ in
+        // the installed MSI (where normal users have no write access).
+
 
         // Open a direct JDBC connection here to avoid calling
         // DBConnection.getConnection()

@@ -1,4 +1,4 @@
-package release;
+﻿package release;
 import utils.DBConnection;
 
 import org.junit.jupiter.api.Tag;
@@ -18,7 +18,7 @@ public class ProductionAuditSuite4 {
     @BeforeAll
     public static void setup() {
         System.out.println("--- Starting Audit Suite 4 ---");
-        DBConnection.setUrl("jdbc:sqlite:database/sunnyprinters.db?busy_timeout=15000&journal_mode=WAL");
+        // Production audit suite: uses DBConnection.PRODUCTION_URL automatically.
     }
 
     @Test
@@ -41,7 +41,7 @@ public class ProductionAuditSuite4 {
     public void phase18_RecoveryTest() throws Exception {
         System.out.println("Phase 18: Recovery Test");
         // Simulate application restart by re-initializing connection pool
-        DBConnection.setUrl("jdbc:sqlite:database/sunnyprinters.db?busy_timeout=15000&journal_mode=WAL");
+        // Production audit suite: uses DBConnection.PRODUCTION_URL automatically.
         boolean reachable = SupabaseReachability.isReachable();
         if (!reachable) {
             System.out.println("[Test Setup] Supabase is not reachable. Skipping recovery test.");

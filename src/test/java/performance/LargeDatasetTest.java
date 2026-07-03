@@ -35,7 +35,7 @@ public class LargeDatasetTest {
     @BeforeAll
     public static void setup() throws Exception {
         dbPath = TestDatabaseHelper.createIsolatedDb("LargeDatasetTest");
-        DBConnection.setUrl(dbPath);
+        DBConnection.setTestDatabaseUrl(dbPath);
     }
 
     @AfterAll

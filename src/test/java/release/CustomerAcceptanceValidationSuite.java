@@ -56,7 +56,7 @@ public class CustomerAcceptanceValidationSuite {
 
     @Test
     public void testBackupRestoreAndSupabaseRecoveryParity() throws Exception {
-        DBConnection.setUrl(dbPrimary);
+        DBConnection.setTestDatabaseUrl(dbPrimary);
         ClientRepository repo = new ClientRepository();
         String uuid = UUID.randomUUID().toString();
         Client c = new Client("Acceptance Corp", "John Smith", "9999988888", "", "john@accept.com", "07AAAAA0000A1Z5", "", "Delhi", "", "");
@@ -68,7 +68,7 @@ public class CustomerAcceptanceValidationSuite {
         UniversalSyncEngine.syncAllPending();
 
         // Simulate Supabase Disaster Recovery Pull onto new DB
-        DBConnection.setUrl(dbBackup);
+        DBConnection.setTestDatabaseUrl(dbBackup);
         RemoteToLocalSync.pullAll(fakeSupabase);
 
         try (Connection con = DBConnection.getConnection();
@@ -83,7 +83,7 @@ public class CustomerAcceptanceValidationSuite {
 
     @Test
     public void testUserMistakeIdempotencyDoubleSave() throws Exception {
-        DBConnection.setUrl(dbPrimary);
+        DBConnection.setTestDatabaseUrl(dbPrimary);
         ClientRepository repo = new ClientRepository();
         String uuid = UUID.randomUUID().toString();
         Client c = new Client("Idempotent Corp", "Alice", "9999977777", "", "alice@idemp.com", "07AAAAA0000A1Z5", "", "Delhi", "", "");
