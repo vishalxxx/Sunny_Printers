@@ -92,7 +92,7 @@ public final class SyncConflictResolver {
             Instant localInst = parseTimestamp(localUpdatedAt);
             Instant remoteInst = parseTimestamp(remoteUpdatedAt);
 
-            if (remoteInst.toEpochMilli() - localInst.toEpochMilli() > 1000) {
+            if (remoteInst != Instant.MIN && localInst != Instant.MIN && remoteInst.isAfter(localInst.plusMillis(1000))) {
                 logConflict(table, uuid, localUpdatedAt, remoteUpdatedAt, "Local push rejected; remote is newer", remoteObj.toString(), "LAST_WRITE_WINS_REMOTE_WINS");
 
                 var fullRes = http.get(endpoint, "uuid=eq." + uuid + "&select=*");
