@@ -19,7 +19,7 @@ $ErrorActionPreference = "Stop"
 
 function Log-Message($msg) {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    Write-Output "[$timestamp] [UPLOAD] $msg"
+    Write-Host "[$timestamp] [UPLOAD] $msg"
 }
 
 # Resolve target metadata SHA256.txt if not specified
@@ -312,13 +312,21 @@ foreach ($entry in $filesToUpload.GetEnumerator()) {
     Log-Message " - File Path:  $filePath"
     Log-Message " - File Size:  $((Get-Item $filePath).Length) bytes"
 
-    $downloadUrl = Invoke-StreamingAssetUpload `
+    $downloadUrlResult = Invoke-StreamingAssetUpload `
         -UploadUrl   $uploadUrl `
         -FileName    $fileName `
         -FilePath    $filePath `
         -Token       $GithubToken `
         -MaxRetries  3 `
         -TimeoutSec  900
+
+    # Ensure $downloadUrl is a single string, filtering out any polluted pipeline logs
+    if ($downloadUrlResult -is [Array]) {
+        $downloadUrl = $downloadUrlResult[-1]
+    } else {
+        $downloadUrl = $downloadUrlResult
+    }
+    $downloadUrl = [string]$downloadUrl
 
     $githubUrls[$fileName] = $downloadUrl
     Log-Message "Uploaded '$fileName' successfully. URL: $downloadUrl"
