@@ -128,7 +128,7 @@ function Invoke-StreamingAssetUpload {
         [string]$FilePath,
         [string]$Token,
         [int]$MaxRetries    = 3,
-        [int]$TimeoutSec    = 900,   # 15 minutes — large MSI on GitHub Actions runner
+        [int]$TimeoutSec    = 900,   # 15 minutes -- large MSI on GitHub Actions runner
         [int]$BufferSizeKB  = 1024   # 1 MB streaming buffer
     )
 
@@ -143,7 +143,7 @@ function Invoke-StreamingAssetUpload {
     while ($attempt -lt $MaxRetries -and -not $uploaded) {
         $attempt++
         if ($attempt -gt 1) {
-            # Exponential backoff: 10s, 20s, 40s …
+            # Exponential backoff: 10s, 20s, 40s ...
             $delaySec = [Math]::Pow(2, $attempt - 1) * 10
             Log-Message "  Retry attempt $attempt/$MaxRetries after ${delaySec}s backoff..."
             Start-Sleep -Seconds $delaySec
@@ -205,14 +205,14 @@ function Invoke-StreamingAssetUpload {
 
             # --- Classify error type ---
             $errorClass = switch ($webEx.Status) {
-                ([System.Net.WebExceptionStatus]::Timeout)              { "TIMEOUT (>${TimeoutSec}s)" }
+                ([System.Net.WebExceptionStatus]::Timeout)              { "TIMEOUT (exceeded ${TimeoutSec}s)" }
                 ([System.Net.WebExceptionStatus]::ConnectionClosed)     { "CONNECTION RESET by remote" }
                 ([System.Net.WebExceptionStatus]::SecureChannelFailure) { "TLS/SSL handshake failure" }
                 ([System.Net.WebExceptionStatus]::ProtocolError)        { "HTTP protocol error" }
                 ([System.Net.WebExceptionStatus]::ConnectFailure)       { "Connection refused / DNS failure" }
                 ([System.Net.WebExceptionStatus]::ReceiveFailure)       { "Receive failure (server dropped connection)" }
                 ([System.Net.WebExceptionStatus]::SendFailure)          { "Send failure (upload interrupted)" }
-                default                                                 { "WebException: $($webEx.Status)" }
+                default                                                  { "WebException status: $($webEx.Status)" }
             }
 
             Log-Message "  Upload attempt $attempt FAILED: $errorClass"
@@ -242,7 +242,7 @@ function Invoke-StreamingAssetUpload {
                     throw "GitHub asset upload failed (HTTP $httpStatus, non-retryable): $httpBody"
                 }
             } else {
-                Log-Message "  (No HTTP response — network-level failure before server replied)"
+                Log-Message "  (No HTTP response -- network-level failure, server did not reply)"
             }
 
             if ($attempt -ge $MaxRetries) {
