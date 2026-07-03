@@ -164,7 +164,7 @@ function Invoke-StreamingAssetUpload {
             $request.Timeout                   = $TimeoutSec * 1000
             $request.ReadWriteTimeout          = $TimeoutSec * 1000
             $request.Headers.Add("Authorization", "Bearer $Token")
-            $request.Headers.Add("User-Agent",    "SunnyPrinters-Release-Manager")
+            $request.UserAgent = "SunnyPrinters-Release-Manager"
             # GitHub upload endpoint does not accept Accept header on uploads
             $request.Accept = "application/vnd.github+json"
 
