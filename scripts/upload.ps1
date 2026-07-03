@@ -379,6 +379,9 @@ $updatePayload = @{
     version = $Version
     minimum_supported_version = $Version # Default to current version as minimum
     storage_path = $msiDownloadUrl
+    download_url = $msiDownloadUrl
+    github_release_tag = "v$Version"
+    github_release_url = $githubReleaseUrl
     release_notes = $ReleaseNotes
     sha256 = $msiSha256
     file_name = "SunnyPrintersERP-$Version.msi"
@@ -429,6 +432,22 @@ try {
 
     if ($statusCode -eq 200 -or $statusCode -eq 201) {
         Log-Message "Insert Successful. app_updates row registered in Production Supabase."
+        if ($responseBody) {
+            try {
+                $insertedRows = $responseBody | ConvertFrom-Json
+                if ($insertedRows -and $insertedRows.Count -gt 0) {
+                    $row = $insertedRows[0]
+                    Log-Message "Confirming database values from upsert representation:"
+                    Log-Message " - Version:            $($row.version)"
+                    Log-Message " - storage_path:       $($row.storage_path)"
+                    Log-Message " - download_url:       $($row.download_url)"
+                    Log-Message " - github_release_tag: $($row.github_release_tag)"
+                    Log-Message " - github_release_url: $($row.github_release_url)"
+                }
+            } catch {
+                Log-Message "Warning: Could not parse representation response body: $_"
+            }
+        }
     } else {
         throw "Unexpected HTTP status $statusCode from Supabase. Body: $responseBody"
     }

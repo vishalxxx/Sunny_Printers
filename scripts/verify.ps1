@@ -75,11 +75,18 @@ Log-Message "Database row exists. Verified Fields:"
 Log-Message " - Version: $($record.version)"
 Log-Message " - Release Channel: $($record.release_channel)"
 Log-Message " - Published: $($record.published)"
-Log-Message " - Download URL (GitHub via storage_path): $($record.storage_path)"
+Log-Message " - storage_path:       $($record.storage_path)"
+Log-Message " - download_url:       $($record.download_url)"
+Log-Message " - github_release_tag: $($record.github_release_tag)"
+Log-Message " - github_release_url: $($record.github_release_url)"
 
-$downloadUrl = $record.storage_path
+$downloadUrl = $record.download_url
 if (-not $downloadUrl) {
-    throw "Verification FAILED: storage_path in database row is empty."
+    Log-Message "Warning: download_url in database row is empty. Falling back to storage_path..."
+    $downloadUrl = $record.storage_path
+}
+if (-not $downloadUrl) {
+    throw "Verification FAILED: both download_url and storage_path in database row are empty."
 }
 
 # Check database fields match expected local values
