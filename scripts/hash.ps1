@@ -197,20 +197,20 @@ $mdContent = @"
 ### MSI Installer
 - **File Name:** $(if ($MsiPath) { Split-Path $MsiPath -Leaf } else { "N/A" })
 - **File Size:** $msiSize bytes
-- **SHA-256:** `$msiSha256`
-- **MD5:** `$msiMd5`
+- **SHA-256:** $($msiSha256)
+- **MD5:** $($msiMd5)
 
 ### Portable ZIP
 - **File Name:** $(if ($ZipPath) { Split-Path $ZipPath -Leaf } else { "N/A" })
 - **File Size:** $zipSize bytes
-- **SHA-256:** `$zipSha256`
-- **MD5:** `$zipMd5`
+- **SHA-256:** $($zipSha256)
+- **MD5:** $($zipMd5)
 
 ### Standalone JAR
 - **File Name:** $(if ($JarPath) { Split-Path $JarPath -Leaf } else { "N/A" })
 - **File Size:** $jarSize bytes
-- **SHA-256:** `$jarSha256`
-- **MD5:** `$jarMd5`
+- **SHA-256:** $($jarSha256)
+- **MD5:** $($jarMd5)
 
 ## Release Notes
 $notesText

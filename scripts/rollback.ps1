@@ -59,6 +59,7 @@ if ($SupabaseUrl -and $SupabaseKey) {
         "apikey"        = $SupabaseKey
         "Content-Type"  = "application/json"
         "Prefer"        = "return=representation"
+        "User-Agent"    = "SunnyPrinters-Release-Manager"
     }
     
     try {
