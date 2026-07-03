@@ -17,6 +17,10 @@ public final class SupabaseGate {
 		overrideClient = client;
 	}
 
+	public static boolean isOverrideActive() {
+		return overrideClient != null;
+	}
+
 	private SupabaseGate() {
 	}
 

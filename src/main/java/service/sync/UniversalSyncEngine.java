@@ -97,7 +97,7 @@ public final class UniversalSyncEngine {
 		if (SupabaseGate.restClientIfConfigured().isEmpty()) {
 			return;
 		}
-		CompletableFuture.runAsync(() -> {
+		Runnable task = () -> {
 			if (!SupabaseReachability.isReachable()) {
 				return;
 			}
@@ -115,12 +115,17 @@ public final class UniversalSyncEngine {
 					System.err.println("[UniversalSyncEngine] Failed to trigger UI refresh: " + e.getMessage());
 				}
 			}
-		});
+		};
+		if (SupabaseGate.isOverrideActive()) {
+			task.run();
+		} else {
+			CompletableFuture.runAsync(task);
+		}
 	}
 
 	public static void schedulePullAsync() {
 		SupabaseGate.restClientIfConfigured().ifPresent(http -> {
-			CompletableFuture.runAsync(() -> {
+			Runnable task = () -> {
 				if (!SupabaseReachability.isReachable()) {
 					return;
 				}
@@ -135,7 +140,12 @@ public final class UniversalSyncEngine {
 						System.err.println("[UniversalSyncEngine] Failed to trigger UI refresh after pull: " + e.getMessage());
 					}
 				}
-			});
+			};
+			if (SupabaseGate.isOverrideActive()) {
+				task.run();
+			} else {
+				CompletableFuture.runAsync(task);
+			}
 		});
 	}
 

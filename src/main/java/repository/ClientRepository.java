@@ -471,80 +471,94 @@ public class ClientRepository {
 			return;
 		}
 		System.out.println("[PUSH] pushClientToSupabaseAsync called for client UUID " + client.getClientUuid());
-		SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
-			try {
-				try (Connection conn = DBConnection.getConnection()) {
-					List<String> colsList = SyncConflictResolver.getColumns(conn, "clients");
-					if (SyncConflictResolver.checkPushConflictAndResolve(conn, http, "clients", SupabaseEndpoints.CLIENTS, client.getClientUuid(), client.getUpdatedAt(), colsList)) {
-						System.out.println("[PUSH] Async push skipped because of conflict resolver");
-						return; // Skip push: remote was newer, conflict was logged and resolved
+		SupabaseGate.restClientIfConfigured().ifPresent(http -> {
+			Runnable task = () -> {
+				try {
+					try (Connection conn = DBConnection.getConnection()) {
+						List<String> colsList = SyncConflictResolver.getColumns(conn, "clients");
+						if (SyncConflictResolver.checkPushConflictAndResolve(conn, http, "clients", SupabaseEndpoints.CLIENTS, client.getClientUuid(), client.getUpdatedAt(), colsList)) {
+							System.out.println("[PUSH] Async push skipped because of conflict resolver");
+							return; // Skip push: remote was newer, conflict was logged and resolved
+						}
+					} catch (Exception e) {
+						System.err.println("[ClientRepository] Push conflict check failed: " + e.getMessage());
 					}
-				} catch (Exception e) {
-					System.err.println("[ClientRepository] Push conflict check failed: " + e.getMessage());
-				}
 
-				// RACE CONDITION GUARD: Re-read sync_status before pushing.
-				// If the UniversalSyncEngine conflict resolver ran on another thread
-				// and already marked this record SYNCED, abort this push.
-				try (Connection checkConn = DBConnection.getConnection();
-						PreparedStatement checkPs = checkConn.prepareStatement(
-								"SELECT sync_status FROM clients WHERE uuid=?")) {
-					checkPs.setString(1, client.getClientUuid());
-					try (java.sql.ResultSet checkRs = checkPs.executeQuery()) {
-						if (checkRs.next()) {
-							String currentStatus = checkRs.getString(1);
-							boolean stillPending = "PENDING".equalsIgnoreCase(currentStatus)
-									|| "WAITING_DEPENDENCY".equalsIgnoreCase(currentStatus)
-									|| (currentStatus == null || currentStatus.isBlank());
-							if (!stillPending) {
-								System.out.println("[PUSH] Async push aborted - record " + client.getClientUuid() + " is no longer PENDING (status=" + currentStatus + "). Conflict resolved on another thread.");
-								return;
+					// RACE CONDITION GUARD: Re-read sync_status before pushing.
+					// If the UniversalSyncEngine conflict resolver ran on another thread
+					// and already marked this record SYNCED, abort this push.
+					try (Connection checkConn = DBConnection.getConnection();
+							PreparedStatement checkPs = checkConn.prepareStatement(
+									"SELECT sync_status FROM clients WHERE uuid=?")) {
+						checkPs.setString(1, client.getClientUuid());
+						try (java.sql.ResultSet checkRs = checkPs.executeQuery()) {
+							if (checkRs.next()) {
+								String currentStatus = checkRs.getString(1);
+								boolean stillPending = "PENDING".equalsIgnoreCase(currentStatus)
+										|| "WAITING_DEPENDENCY".equalsIgnoreCase(currentStatus)
+										|| (currentStatus == null || currentStatus.isBlank());
+								if (!stillPending) {
+									System.out.println("[PUSH] Async push aborted - record " + client.getClientUuid() + " is no longer PENDING (status=" + currentStatus + "). Conflict resolved on another thread.");
+									return;
+								}
 							}
 						}
+					} catch (Exception staleCheckEx) {
+						System.err.println("[ClientRepository] Pre-push stale check failed: " + staleCheckEx.getMessage());
 					}
-				} catch (Exception staleCheckEx) {
-					System.err.println("[ClientRepository] Pre-push stale check failed: " + staleCheckEx.getMessage());
-				}
 
-				System.out.println("[PUSH] Async dependency check PASSED. Executing POST/PATCH /clients for " + client.getClientUuid());
-				ClientsSupabaseApi api = new ClientsSupabaseApi(http);
-				if (preferPatch) {
-					api.patchUpdate(client, before);
-				} else {
-					api.upsert(client);
+					System.out.println("[PUSH] Async dependency check PASSED. Executing POST/PATCH /clients for " + client.getClientUuid());
+					ClientsSupabaseApi api = new ClientsSupabaseApi(http);
+					if (preferPatch) {
+						api.patchUpdate(client, before);
+					} else {
+						api.upsert(client);
+					}
+					System.out.println("[PUSH] Async push HTTP Success");
+					markClientSyncedLocally(client.getClientUuid());
+				} catch (Exception ex) {
+					System.err.println("[Supabase clients] remote write failed for uuid=" + client.getClientUuid() + ": "
+							+ ex.getMessage());
+					ex.printStackTrace();
+					UniversalSyncEngine.scheduleSyncAsync();
 				}
-				System.out.println("[PUSH] Async push HTTP Success");
-				markClientSyncedLocally(client.getClientUuid());
-			} catch (Exception ex) {
-				System.err.println("[Supabase clients] remote write failed for uuid=" + client.getClientUuid() + ": "
-						+ ex.getMessage());
-				ex.printStackTrace();
-				UniversalSyncEngine.scheduleSyncAsync();
+			};
+			if (SupabaseGate.isOverrideActive()) {
+				task.run();
+			} else {
+				CompletableFuture.runAsync(task);
 			}
-		}));
+		});
 	}
 
 	private static void deleteClientOnSupabaseAsync(String clientUuid) {
 		if (clientUuid == null || clientUuid.isBlank()) {
 			return;
 		}
-		SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
-			try {
-				Client local = new ClientRepository().findByUuid(clientUuid);
-				if (local != null) {
-					local.setIsDeleted(true);
-					local.setIsActive(false);
-					if (local.getDeletedAt() == null || local.getDeletedAt().isBlank()) {
-						local.setDeletedAt(java.time.Instant.now().toString());
+		SupabaseGate.restClientIfConfigured().ifPresent(http -> {
+			Runnable task = () -> {
+				try {
+					Client local = new ClientRepository().findByUuid(clientUuid);
+					if (local != null) {
+						local.setIsDeleted(true);
+						local.setIsActive(false);
+						if (local.getDeletedAt() == null || local.getDeletedAt().isBlank()) {
+							local.setDeletedAt(java.time.Instant.now().toString());
+						}
+						new ClientsSupabaseApi(http).patchUpdate(local, null);
 					}
-					new ClientsSupabaseApi(http).patchUpdate(local, null);
+					markClientSyncedLocally(clientUuid);
+				} catch (Exception ex) {
+					System.err.println("[Supabase clients] delete failed for uuid=" + clientUuid + ": " + ex.getMessage());
+					ex.printStackTrace();
 				}
-				markClientSyncedLocally(clientUuid);
-			} catch (Exception ex) {
-				System.err.println("[Supabase clients] delete failed for uuid=" + clientUuid + ": " + ex.getMessage());
-				ex.printStackTrace();
+			};
+			if (SupabaseGate.isOverrideActive()) {
+				task.run();
+			} else {
+				CompletableFuture.runAsync(task);
 			}
-		}));
+		});
 	}
 
 	private static void markClientSyncedLocally(String clientUuid) {
