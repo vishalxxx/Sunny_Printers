@@ -266,6 +266,7 @@ $upsertHeaders = @{
     "apikey"        = $SupabaseKey
     "Content-Type"  = "application/json"
     "Prefer"        = "resolution=merge-duplicates,return=representation"
+    "User-Agent"    = "SunnyPrinters-Release-Manager"
 }
 
 $dbUrl = "$SupabaseUrl/rest/v1/app_updates"
