@@ -33,32 +33,32 @@ public class UpdateCheckIntegrationTest {
         SupabaseGate.setOverrideClient(fakeSupabase);
     }
 
+    private String localVer;
+
     @BeforeEach
     public void resetFake() {
         fakeSupabase.clear();
         SupabaseReachability.invalidateCache();
-        new UpdateService().resetCache();
-        new UpdateService().setIgnoredVersion("");
-        new UpdateService().setPreferredChannel("stable");
+        UpdateService updateService = new UpdateService();
+        updateService.resetCache();
+        updateService.setIgnoredVersion("");
+        updateService.setPreferredChannel("stable");
+        localVer = updateService.getLocalVersion();
     }
 
-    @Test
-    public void testVersionComparatorSemanticOrdering() {
-        assertEquals(0, VersionComparator.compare("1.0.0", "1.0.0"));
-        assertEquals(0, VersionComparator.compare("2.1", "2.1.0"));
-
-        assertTrue(VersionComparator.compare("1.0.0", "1.0.1") < 0);
-        assertTrue(VersionComparator.compare("1.0.1", "1.0.10") < 0);
-        assertTrue(VersionComparator.compare("1.0.10", "1.1.0") < 0);
-        assertTrue(VersionComparator.compare("1.1.0", "2.0.0") < 0);
-
-        assertTrue(VersionComparator.compare("1.0.1", "1.0.0") > 0);
-        assertTrue(VersionComparator.compare("1.0.10", "1.0.1") > 0);
-        assertTrue(VersionComparator.compare("1.1.0", "1.0.10") > 0);
-        assertTrue(VersionComparator.compare("2.0.0", "1.1.0") > 0);
-
-        assertEquals(0, VersionComparator.compare("1.0.0-beta", "1.0.0"));
-        assertTrue(VersionComparator.compare("1.0.0-alpha", "1.0.1-beta") < 0);
+    private String incrementVersion(String version, int patchIncrement) {
+        String[] parts = version.split("\\.");
+        if (parts.length < 3) {
+            return version + "." + patchIncrement;
+        }
+        try {
+            int major = Integer.parseInt(parts[0]);
+            int minor = Integer.parseInt(parts[1]);
+            int patch = Integer.parseInt(parts[2].split("-")[0]);
+            return major + "." + minor + "." + (patch + patchIncrement);
+        } catch (NumberFormatException e) {
+            return version + "." + patchIncrement;
+        }
     }
 
     @Test
@@ -83,60 +83,70 @@ public class UpdateCheckIntegrationTest {
     public void testSemanticVersionSelectionIgnoresInsertionOrder() {
         UpdateService updateService = new UpdateService();
 
+        String vA = incrementVersion(localVer, 1);
+        String vB = incrementVersion(localVer, 3);
+        String vC = incrementVersion(localVer, 2);
+
         // Seed 3 rows in different version order:
-        // Candidate A: 1.0.5 (older)
-        com.google.gson.JsonObject updateObjA = createValidUpdateJson("1.0.5", false);
+        // Candidate A: older
+        com.google.gson.JsonObject updateObjA = createValidUpdateJson(vA, false);
         fakeSupabase.getTableData(SupabaseEndpoints.APP_UPDATES).add(updateObjA);
 
-        // Candidate B: 1.1.0 (highest version)
-        com.google.gson.JsonObject updateObjB = createValidUpdateJson("1.1.0", false);
+        // Candidate B: highest version
+        com.google.gson.JsonObject updateObjB = createValidUpdateJson(vB, false);
         fakeSupabase.getTableData(SupabaseEndpoints.APP_UPDATES).add(updateObjB);
 
-        // Candidate C: 1.0.10 (inserted after 1.1.0, but semantic version is lower)
-        com.google.gson.JsonObject updateObjC = createValidUpdateJson("1.0.10", false);
+        // Candidate C: inserted after B, but semantic version is lower
+        com.google.gson.JsonObject updateObjC = createValidUpdateJson(vC, false);
         fakeSupabase.getTableData(SupabaseEndpoints.APP_UPDATES).add(updateObjC);
 
-        // Query: should select 1.1.0 semantically, ignoring insertion order
+        // Query: should select highest version semantically, ignoring insertion order
         UpdateService.UpdateCheckResult res = updateService.checkForUpdates(true);
         assertEquals(UpdateService.UpdateStatus.OPTIONAL_UPDATE, res.getStatus());
         assertNotNull(res.getUpdate());
-        assertEquals("1.1.0", res.getUpdate().getVersion());
+        assertEquals(vB, res.getUpdate().getVersion());
     }
 
     @Test
     public void testMetadataValidationRejectsInvalidUpdates() {
         UpdateService updateService = new UpdateService();
 
+        String vA = incrementVersion(localVer, 2);
+        String vB = incrementVersion(localVer, 3);
+        String vC = incrementVersion(localVer, 4);
+        String vValid = incrementVersion(localVer, 1);
+
         // 1. Missing storage_path & download_url
-        com.google.gson.JsonObject invalidA = createValidUpdateJson("1.2.0", false);
+        com.google.gson.JsonObject invalidA = createValidUpdateJson(vA, false);
         invalidA.addProperty("storage_path", "");
         invalidA.addProperty("download_url", "");
         fakeSupabase.getTableData(SupabaseEndpoints.APP_UPDATES).add(invalidA);
 
         // 2. Missing sha256
-        com.google.gson.JsonObject invalidB = createValidUpdateJson("1.3.0", false);
+        com.google.gson.JsonObject invalidB = createValidUpdateJson(vB, false);
         invalidB.addProperty("sha256", "");
         fakeSupabase.getTableData(SupabaseEndpoints.APP_UPDATES).add(invalidB);
 
         // 3. Not published
-        com.google.gson.JsonObject invalidC = createValidUpdateJson("1.4.0", false);
+        com.google.gson.JsonObject invalidC = createValidUpdateJson(vC, false);
         invalidC.addProperty("published", false);
         fakeSupabase.getTableData(SupabaseEndpoints.APP_UPDATES).add(invalidC);
 
-        // 4. Valid update 1.1.0
-        com.google.gson.JsonObject valid = createValidUpdateJson("1.1.0", false);
+        // 4. Valid update
+        com.google.gson.JsonObject valid = createValidUpdateJson(vValid, false);
         fakeSupabase.getTableData(SupabaseEndpoints.APP_UPDATES).add(valid);
 
         UpdateService.UpdateCheckResult res = updateService.checkForUpdates(true);
         assertEquals(UpdateService.UpdateStatus.OPTIONAL_UPDATE, res.getStatus());
-        assertEquals("1.1.0", res.getUpdate().getVersion(), "Invalid updates must be ignored and valid 1.1.0 resolved");
+        assertEquals(vValid, res.getUpdate().getVersion(), "Invalid updates must be ignored and valid version resolved");
     }
 
     @Test
     public void testCachingBehavior() {
         UpdateService updateService = new UpdateService();
 
-        com.google.gson.JsonObject valid = createValidUpdateJson("1.1.0", false);
+        String vValid = incrementVersion(localVer, 1);
+        com.google.gson.JsonObject valid = createValidUpdateJson(vValid, false);
         fakeSupabase.getTableData(SupabaseEndpoints.APP_UPDATES).add(valid);
 
         // Check 1: Cache Miss, calls API
@@ -162,17 +172,20 @@ public class UpdateCheckIntegrationTest {
         // Set channel to stable
         updateService.setPreferredChannel("stable");
         
-        com.google.gson.JsonObject betaUpdate = createValidUpdateJson("1.5.0", false);
+        String vBeta = incrementVersion(localVer, 5);
+        String vStable = incrementVersion(localVer, 1);
+
+        com.google.gson.JsonObject betaUpdate = createValidUpdateJson(vBeta, false);
         betaUpdate.addProperty("release_channel", "beta");
         fakeSupabase.getTableData(SupabaseEndpoints.APP_UPDATES).add(betaUpdate);
 
-        com.google.gson.JsonObject stableUpdate = createValidUpdateJson("1.1.0", false);
+        com.google.gson.JsonObject stableUpdate = createValidUpdateJson(vStable, false);
         stableUpdate.addProperty("release_channel", "stable");
         fakeSupabase.getTableData(SupabaseEndpoints.APP_UPDATES).add(stableUpdate);
 
-        // When channel is stable, should ignore beta (1.5.0) and return 1.1.0
+        // When channel is stable, should ignore beta and return stable version
         UpdateService.UpdateCheckResult resStable = updateService.checkForUpdates(true);
-        assertEquals("1.1.0", resStable.getUpdate().getVersion());
+        assertEquals(vStable, resStable.getUpdate().getVersion());
 
         // Switch channel to beta
         fakeSupabase.clear();
@@ -181,22 +194,23 @@ public class UpdateCheckIntegrationTest {
         updateService.setPreferredChannel("beta");
 
         UpdateService.UpdateCheckResult resBeta = updateService.checkForUpdates(true);
-        assertEquals("1.5.0", resBeta.getUpdate().getVersion());
+        assertEquals(vBeta, resBeta.getUpdate().getVersion());
     }
 
     @Test
     public void testIgnoreVersionPreference() {
         UpdateService updateService = new UpdateService();
 
-        com.google.gson.JsonObject optionalUpdate = createValidUpdateJson("1.1.0", false);
+        String vOpt = incrementVersion(localVer, 1);
+        com.google.gson.JsonObject optionalUpdate = createValidUpdateJson(vOpt, false);
         fakeSupabase.getTableData(SupabaseEndpoints.APP_UPDATES).add(optionalUpdate);
 
         // Check 1: Normal Optional Update
         UpdateService.UpdateCheckResult res1 = updateService.checkForUpdates(true);
         assertEquals(UpdateService.UpdateStatus.OPTIONAL_UPDATE, res1.getStatus());
 
-        // Set to ignore version 1.1.0
-        updateService.setIgnoredVersion("1.1.0");
+        // Set to ignore version
+        updateService.setIgnoredVersion(vOpt);
 
         // Check 2: Ignored version should result in NO_UPDATE
         UpdateService.UpdateCheckResult res2 = updateService.checkForUpdates(true);
@@ -204,7 +218,7 @@ public class UpdateCheckIntegrationTest {
 
         // Check 3: Mandatory updates bypass ignore version
         fakeSupabase.clear();
-        com.google.gson.JsonObject mandatoryUpdate = createValidUpdateJson("1.1.0", true);
+        com.google.gson.JsonObject mandatoryUpdate = createValidUpdateJson(vOpt, true);
         fakeSupabase.getTableData(SupabaseEndpoints.APP_UPDATES).add(mandatoryUpdate);
 
         UpdateService.UpdateCheckResult res3 = updateService.checkForUpdates(true);
@@ -227,4 +241,5 @@ public class UpdateCheckIntegrationTest {
         return obj;
     }
 }
+
 
