@@ -62,7 +62,7 @@ public class Main extends Application {
 		java.util.concurrent.CompletableFuture.runAsync(() -> {
 			try {
 				service.UpdateService updateService = new service.UpdateService();
-				service.UpdateService.UpdateCheckResult result = updateService.checkForUpdates(false);
+				service.UpdateService.UpdateCheckResult result = updateService.checkForUpdates(true);
 				if (result.getStatus() != service.UpdateService.UpdateStatus.NO_UPDATE) {
 					javafx.application.Platform.runLater(() -> {
 						controller.UpdateDialog dialog = new controller.UpdateDialog(result);
