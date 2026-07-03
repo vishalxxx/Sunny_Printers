@@ -62,6 +62,7 @@ $dbUrl = "$SupabaseUrl/rest/v1/app_updates?version=eq.$Version&release_channel=e
 $headers = @{
     "Authorization" = "Bearer $SupabaseKey"
     "apikey"        = $SupabaseKey
+    "User-Agent"    = "SunnyPrinters-Release-Manager"
 }
 
 $records = Invoke-RestMethod -Uri $dbUrl -Method Get -Headers $headers
