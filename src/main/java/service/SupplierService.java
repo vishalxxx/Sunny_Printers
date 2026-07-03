@@ -246,21 +246,28 @@ public class SupplierService {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
-			try {
-				JsonObject body = new JsonObject();
-				body.addProperty("uuid", uuid.trim());
-				body.addProperty("is_deleted", 1);
-				body.addProperty("is_active", 0);
-				body.addProperty("sync_status", "SYNCED");
-				body.addProperty("synced_at", Instant.now().toString());
-				body.addProperty("deleted_at", Instant.now().toString());
-				String v = URLEncoder.encode(uuid.trim(), StandardCharsets.UTF_8).replace("+", "%20");
-				http.patchJson(SupabaseEndpoints.SUPPLIERS, "uuid=eq." + v, body.toString(), "return=minimal");
-			} catch (Exception ex) {
-				System.err.println("[Supabase suppliers] remote soft-delete failed for uuid=" + uuid + ": " + ex.getMessage());
+		SupabaseGate.restClientIfConfigured().ifPresent(http -> {
+			Runnable task = () -> {
+				try {
+					JsonObject body = new JsonObject();
+					body.addProperty("uuid", uuid.trim());
+					body.addProperty("is_deleted", 1);
+					body.addProperty("is_active", 0);
+					body.addProperty("sync_status", "SYNCED");
+					body.addProperty("synced_at", Instant.now().toString());
+					body.addProperty("deleted_at", Instant.now().toString());
+					String v = URLEncoder.encode(uuid.trim(), StandardCharsets.UTF_8).replace("+", "%20");
+					http.patchJson(SupabaseEndpoints.SUPPLIERS, "uuid=eq." + v, body.toString(), "return=minimal");
+				} catch (Exception ex) {
+					System.err.println("[Supabase suppliers] remote soft-delete failed for uuid=" + uuid + ": " + ex.getMessage());
+				}
+			};
+			if (SupabaseGate.isOverrideActive()) {
+				task.run();
+			} else {
+				CompletableFuture.runAsync(task);
 			}
-		}));
+		});
 	}
 
 	public void reviveSupplier(String uuid) {
@@ -278,21 +285,28 @@ public class SupplierService {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
-				try {
-					JsonObject body = new JsonObject();
-					body.addProperty("uuid", uuid.trim());
-					body.addProperty("is_deleted", 0);
-					body.addProperty("is_active", 1);
-					body.addProperty("sync_status", "SYNCED");
-					body.addProperty("synced_at", Instant.now().toString());
-					body.add("deleted_at", JsonNull.INSTANCE);
-					String v = URLEncoder.encode(uuid.trim(), StandardCharsets.UTF_8).replace("+", "%20");
-					http.patchJson(SupabaseEndpoints.SUPPLIERS, "uuid=eq." + v, body.toString(), "return=minimal");
-				} catch (Exception ex) {
-					System.err.println("[Supabase suppliers] remote revive failed for uuid=" + uuid + ": " + ex.getMessage());
+			SupabaseGate.restClientIfConfigured().ifPresent(http -> {
+				Runnable task = () -> {
+					try {
+						JsonObject body = new JsonObject();
+						body.addProperty("uuid", uuid.trim());
+						body.addProperty("is_deleted", 0);
+						body.addProperty("is_active", 1);
+						body.addProperty("sync_status", "SYNCED");
+						body.addProperty("synced_at", Instant.now().toString());
+						body.add("deleted_at", JsonNull.INSTANCE);
+						String v = URLEncoder.encode(uuid.trim(), StandardCharsets.UTF_8).replace("+", "%20");
+						http.patchJson(SupabaseEndpoints.SUPPLIERS, "uuid=eq." + v, body.toString(), "return=minimal");
+					} catch (Exception ex) {
+						System.err.println("[Supabase suppliers] remote revive failed for uuid=" + uuid + ": " + ex.getMessage());
+					}
+				};
+				if (SupabaseGate.isOverrideActive()) {
+					task.run();
+				} else {
+					CompletableFuture.runAsync(task);
 				}
-			}));
+			});
 		}
 	}
 

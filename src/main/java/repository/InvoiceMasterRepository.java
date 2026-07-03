@@ -208,21 +208,28 @@ public class InvoiceMasterRepository {
         if (invoiceUuid == null || invoiceUuid.isBlank()) {
             return;
         }
-        api.supabase.SupabaseGate.restClientIfConfigured().ifPresent(http -> java.util.concurrent.CompletableFuture.runAsync(() -> {
-            try {
-                String v = java.net.URLEncoder.encode(invoiceUuid.trim(), java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
-                com.google.gson.JsonObject body = new com.google.gson.JsonObject();
-                body.addProperty("uuid", invoiceUuid.trim());
-                body.addProperty("is_deleted", 1);
-                body.addProperty("is_active", 0);
-                body.addProperty("sync_status", "SYNCED");
-                body.addProperty("synced_at", java.time.Instant.now().toString());
-                body.addProperty("deleted_at", java.time.Instant.now().toString());
-                http.patchJson(api.supabase.SupabaseEndpoints.INVOICE_MASTER, "uuid=eq." + v, body.toString(), "return=minimal");
-            } catch (Exception ex) {
-                System.err.println("[Supabase invoices] remote delete/patch failed for uuid=" + invoiceUuid + ": " + ex.getMessage());
+        api.supabase.SupabaseGate.restClientIfConfigured().ifPresent(http -> {
+            Runnable task = () -> {
+                try {
+                    String v = java.net.URLEncoder.encode(invoiceUuid.trim(), java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
+                    com.google.gson.JsonObject body = new com.google.gson.JsonObject();
+                    body.addProperty("uuid", invoiceUuid.trim());
+                    body.addProperty("is_deleted", 1);
+                    body.addProperty("is_active", 0);
+                    body.addProperty("sync_status", "SYNCED");
+                    body.addProperty("synced_at", java.time.Instant.now().toString());
+                    body.addProperty("deleted_at", java.time.Instant.now().toString());
+                    http.patchJson(api.supabase.SupabaseEndpoints.INVOICE_MASTER, "uuid=eq." + v, body.toString(), "return=minimal");
+                } catch (Exception ex) {
+                    System.err.println("[Supabase invoices] remote delete/patch failed for uuid=" + invoiceUuid + ": " + ex.getMessage());
+                }
+            };
+            if (api.supabase.SupabaseGate.isOverrideActive()) {
+                task.run();
+            } else {
+                java.util.concurrent.CompletableFuture.runAsync(task);
             }
-        }));
+        });
     }
 
     /*

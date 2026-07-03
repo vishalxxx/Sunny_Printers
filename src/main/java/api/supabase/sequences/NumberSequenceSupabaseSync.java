@@ -19,13 +19,20 @@ public final class NumberSequenceSupabaseSync {
 	}
 
 	public static void syncRemoteToLocalAsync() {
-		SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
-			try {
-				syncRemoteToLocal(http);
-			} catch (Exception ex) {
-				System.err.println("[Supabase number_sequences] syncRemoteToLocal failed: " + ex.getMessage());
+		SupabaseGate.restClientIfConfigured().ifPresent(http -> {
+			Runnable task = () -> {
+				try {
+					syncRemoteToLocal(http);
+				} catch (Exception ex) {
+					System.err.println("[Supabase number_sequences] syncRemoteToLocal failed: " + ex.getMessage());
+				}
+			};
+			if (SupabaseGate.isOverrideActive()) {
+				task.run();
+			} else {
+				CompletableFuture.runAsync(task);
 			}
-		}));
+		});
 	}
 
 	public static int syncRemoteToLocal(SupabaseRestClient http) throws Exception {
@@ -61,13 +68,20 @@ public final class NumberSequenceSupabaseSync {
 		if (!isAdmin) {
 			return; // Non-admins are not allowed to push number sequences
 		}
-		SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
-			try {
-				syncLocalToRemote(http);
-			} catch (Exception ex) {
-				System.err.println("[Supabase number_sequences] syncLocalToRemote failed: " + ex.getMessage());
+		SupabaseGate.restClientIfConfigured().ifPresent(http -> {
+			Runnable task = () -> {
+				try {
+					syncLocalToRemote(http);
+				} catch (Exception ex) {
+					System.err.println("[Supabase number_sequences] syncLocalToRemote failed: " + ex.getMessage());
+				}
+			};
+			if (SupabaseGate.isOverrideActive()) {
+				task.run();
+			} else {
+				CompletableFuture.runAsync(task);
 			}
-		}));
+		});
 	}
 
 	public static int syncLocalToRemote(SupabaseRestClient http) throws Exception {

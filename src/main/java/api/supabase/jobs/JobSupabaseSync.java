@@ -27,15 +27,22 @@ public final class JobSupabaseSync {
 		if (job == null || !job.hasUuid()) {
 			return;
 		}
-		SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
-			String uuid = job.getUuid().trim();
-			try {
-				upsertToRemote(http, job);
-				markSyncedLocally(uuid);
-			} catch (Exception ex) {
-				System.err.println("[Supabase jobs] remote write failed for uuid=" + uuid + ": " + ex.getMessage());
+		SupabaseGate.restClientIfConfigured().ifPresent(http -> {
+			Runnable task = () -> {
+				String uuid = job.getUuid().trim();
+				try {
+					upsertToRemote(http, job);
+					markSyncedLocally(uuid);
+				} catch (Exception ex) {
+					System.err.println("[Supabase jobs] remote write failed for uuid=" + uuid + ": " + ex.getMessage());
+				}
+			};
+			if (SupabaseGate.isOverrideActive()) {
+				task.run();
+			} else {
+				CompletableFuture.runAsync(task);
 			}
-		}));
+		});
 	}
 
 	/**
