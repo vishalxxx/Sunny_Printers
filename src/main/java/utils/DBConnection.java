@@ -8,11 +8,12 @@ import java.sql.Statement;
 
 public class DBConnection {
 
-    private static final String DEFAULT_DB_PATH = java.nio.file.Path.of(System.getProperty("user.home"), ".sunny_printers", "database.db").toAbsolutePath().toString();
+    private static final String DEFAULT_DB_PATH = java.nio.file.Path.of(System.getProperty("user.home"), ".sunnyprinters", "database.db").toAbsolutePath().toString();
     private static String url = "jdbc:sqlite:" + DEFAULT_DB_PATH + "?busy_timeout=15000&journal_mode=WAL";
 
     public static void setUrl(String newUrl) {
         url = newUrl;
+        service.LoggerService.info("Database URL updated to: " + newUrl, DBConnection.class);
     }
 
     public static String getUrl() {
@@ -38,6 +39,7 @@ public class DBConnection {
                         LocalSchemaVerifier.verifySchema();
                         initializedUrls.add(currentUrl);
                     } catch (Exception e) {
+                        service.LoggerService.error("Failed to initialize database: " + e.getMessage(), DBConnection.class, e);
                         throw new RuntimeException("Failed to initialize database: " + e.getMessage(), e);
                     }
                 }
@@ -54,7 +56,7 @@ public class DBConnection {
 	 * as well as dynamically ensuring custom/test database parent directories exist.
 	 */
 	public static void ensureDatabaseParentDirectory() throws Exception {
-		java.nio.file.Path baseDir = java.nio.file.Path.of(System.getProperty("user.home"), ".sunny_printers");
+		java.nio.file.Path baseDir = java.nio.file.Path.of(System.getProperty("user.home"), ".sunnyprinters");
 		java.nio.file.Files.createDirectories(baseDir);
 		java.nio.file.Files.createDirectories(baseDir.resolve("logs"));
 		java.nio.file.Files.createDirectories(baseDir.resolve("backups"));
@@ -86,6 +88,7 @@ public class DBConnection {
         config.setBusyTimeout(10000); // 10 seconds default timeout
         config.enforceForeignKeys(true);
         
+        service.LoggerService.debug("Opening standard SQLite connection to: " + url, DBConnection.class);
         return DriverManager.getConnection(url, config.toProperties());
     }
 
@@ -99,6 +102,7 @@ public class DBConnection {
         config.setBusyTimeout(15000); // 15 seconds timeout for heavy writes
         config.enforceForeignKeys(true);
         
+        service.LoggerService.debug("Opening exclusive SQLite connection to: " + url, DBConnection.class);
         return DriverManager.getConnection(url, config.toProperties());
     }
 }

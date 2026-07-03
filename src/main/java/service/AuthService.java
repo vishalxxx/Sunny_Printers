@@ -30,16 +30,22 @@ public class AuthService {
 
 	public LoginResult signIn(String loginId, String password) {
 		if (loginId == null || loginId.isBlank()) {
+			service.LoggerService.warn("[AuthService] Login attempt with empty username.", AuthService.class);
 			return new LoginResult(AuthOutcome.INVALID_CREDENTIALS, "Enter your username.");
 		}
 		if (password == null || password.isEmpty()) {
+			service.LoggerService.warn("[AuthService] Login attempt with empty password for username: " + loginId.trim(), AuthService.class);
 			return new LoginResult(AuthOutcome.INVALID_CREDENTIALS, "Enter your password.");
 		}
 		String id = loginId.trim();
 
+		service.LoggerService.info("[AuthService] Login attempt: username='" + id + "'", AuthService.class);
+		service.LoggerService.info("[AuthService] Authenticating against database: " + utils.DBConnection.getUrl(), AuthService.class);
+
 		// 1. ALWAYS prioritize local SQLite login first for speed, robustness, and offline/initial setup support!
 		LoginResult localResult = tryLocalLogin(id, password, null);
 		if (localResult.isSuccess()) {
+			service.LoggerService.info("[AuthService] LOGIN SUCCESS (local SQLite) for username='" + id + "'", AuthService.class);
 			return localResult;
 		}
 
@@ -49,15 +55,20 @@ public class AuthService {
 			SupabaseSettings s = settingsOpt.get();
 			// Supabase signInWithPassword requires an email. Only execute if id looks like an email.
 			if (id.contains("@")) {
+				service.LoggerService.info("[AuthService] Attempting Supabase cloud login for email: " + id, AuthService.class);
 				SupabaseAuthResult auth = supabaseAuth.signInWithPassword(
 						s.getSupabaseUrl(), s.getAnonKey(), id, password);
 				if (auth.success()) {
 					completeSupabaseLogin(auth);
+					service.LoggerService.info("[AuthService] LOGIN SUCCESS (Supabase cloud) for username='" + id + "'", AuthService.class);
 					return new LoginResult(AuthOutcome.SUCCESS, null);
+				} else {
+					service.LoggerService.warn("[AuthService] Supabase cloud login FAILED for username='" + id + "': " + auth.message(), AuthService.class);
 				}
 			}
 		}
 
+		service.LoggerService.warn("[AuthService] LOGIN FAILED for username='" + id + "': Invalid username or password. Database: " + utils.DBConnection.getUrl(), AuthService.class);
 		return new LoginResult(AuthOutcome.INVALID_CREDENTIALS, "Invalid username or password.");
 	}
 
@@ -92,20 +103,36 @@ public class AuthService {
 	}
 
 	private LoginResult tryLocalLogin(String loginId, String password, String successNote) {
+		service.LoggerService.info("[AuthService] Querying local users table for username='" + loginId + "'", AuthService.class);
 		try {
 			User user = userRepository.authenticate(loginId, password);
 			if (user != null) {
+				service.LoggerService.info("[AuthService] User '" + loginId + "' found in local DB. Password verification: PASS", AuthService.class);
 				SessionManager.getInstance().loginLocal(user);
 				if (successNote != null) {
 					return new LoginResult(AuthOutcome.SUCCESS, successNote);
 				}
 				return new LoginResult(AuthOutcome.SUCCESS, null);
+			} else {
+				// Distinguish user-not-found from wrong-password for better diagnostics
+				try {
+					User foundUser = userRepository.findByUsername(loginId);
+					if (foundUser == null) {
+						service.LoggerService.warn("[AuthService] User '" + loginId + "' NOT FOUND in local DB. Database path: " + utils.DBConnection.getUrl(), AuthService.class);
+					} else {
+						service.LoggerService.warn("[AuthService] User '" + loginId + "' exists in local DB. Password verification: FAIL", AuthService.class);
+					}
+				} catch (Exception lookupEx) {
+					service.LoggerService.error("[AuthService] Exception during user existence check: " + lookupEx.getMessage(), AuthService.class, lookupEx);
+				}
 			}
 		} catch (Exception e) {
+			service.LoggerService.error("[AuthService] Exception during local authentication for '" + loginId + "': " + e.getMessage(), AuthService.class, e);
 			return new LoginResult(AuthOutcome.NETWORK_ERROR, e.getMessage());
 		}
 		return new LoginResult(AuthOutcome.INVALID_CREDENTIALS, "Invalid username or password.");
 	}
+
 
 	private void completeSupabaseLogin(SupabaseAuthResult auth) {
 		User user = new User();

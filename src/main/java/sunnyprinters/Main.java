@@ -21,17 +21,21 @@ public class Main extends Application {
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
+		// ── Startup Diagnostics ──────────────────────────────────────────────
+		logStartupInfo();
+
 		// Load bundled fonts once (works offline)
 		loadBundledFonts();
 
 		// Trigger First-Run Database and Folder Initialization
 		try {
 			utils.DBConnection.ensureDatabaseParentDirectory();
-			// Referencing DBConnection class forces static block execution to setup schema
 			String dbUrl = utils.DBConnection.getUrl();
-			System.out.println("[Main] Database initialized on startup: " + dbUrl);
+			service.LoggerService.info("[Main] Database URL on startup: " + dbUrl);
+			// Run detailed database diagnostics
+			service.DatabaseDiagnostic.runStartupDiagnostics();
 		} catch (Exception ex) {
-			System.err.println("[Main] Error during database initialization: " + ex.getMessage());
+			service.LoggerService.error("[Main] Error during database initialization: " + ex.getMessage(), ex);
 			ex.printStackTrace();
 		}
 
@@ -56,24 +60,63 @@ public class Main extends Application {
 			}
 		});
 
+		primaryStage.setOnHidden(event -> {
+			service.LoggerService.info("[Main] Application window closed. Shutting down.");
+		});
+
 		primaryStage.show();
+		service.LoggerService.info("[Main] Login window displayed. Application ready.");
 
 		// Asynchronous, non-blocking check for stable software updates at startup
 		java.util.concurrent.CompletableFuture.runAsync(() -> {
 			try {
+				service.LoggerService.info("[Main] Checking for software updates...");
 				service.UpdateService updateService = new service.UpdateService();
 				service.UpdateService.UpdateCheckResult result = updateService.checkForUpdates(true);
 				if (result.getStatus() != service.UpdateService.UpdateStatus.NO_UPDATE) {
+					service.LoggerService.info("[Main] Update available. Showing update dialog.");
 					javafx.application.Platform.runLater(() -> {
 						controller.UpdateDialog dialog = new controller.UpdateDialog(result);
 						dialog.initOwner(primaryStage);
 						dialog.showAndWait();
 					});
+				} else {
+					service.LoggerService.info("[Main] No software updates available.");
 				}
 			} catch (Exception ex) {
-				System.err.println("[Main] Asynchronous startup update check failed: " + ex.getMessage());
+				service.LoggerService.error("[Main] Startup update check failed: " + ex.getMessage(), ex);
 			}
 		});
+	}
+
+	private static void logStartupInfo() {
+		service.LoggerService.info("================================================================");
+		service.LoggerService.info("   Sunny Printers ERP - Application Starting");
+		service.LoggerService.info("================================================================");
+		service.LoggerService.info("Java Version      : " + System.getProperty("java.version"));
+		service.LoggerService.info("Java Vendor       : " + System.getProperty("java.vendor"));
+		service.LoggerService.info("OS Name           : " + System.getProperty("os.name"));
+		service.LoggerService.info("OS Version        : " + System.getProperty("os.version"));
+		service.LoggerService.info("OS Architecture   : " + System.getProperty("os.arch"));
+		service.LoggerService.info("Working Directory : " + System.getProperty("user.dir"));
+		service.LoggerService.info("User Home         : " + System.getProperty("user.home"));
+		service.LoggerService.info("User Name         : " + System.getProperty("user.name"));
+
+		// Read app version from version.properties
+		try {
+			java.util.Properties versionProps = new java.util.Properties();
+			java.io.InputStream is = Main.class.getResourceAsStream("/version.properties");
+			if (is != null) {
+				versionProps.load(is);
+				String version = versionProps.getProperty("version", "unknown");
+				service.LoggerService.info("App Version       : " + version);
+			}
+		} catch (Exception e) {
+			service.LoggerService.warn("Could not read version.properties: " + e.getMessage());
+		}
+
+		service.LoggerService.info("Expected DB Dir   : " + System.getProperty("user.home") + java.io.File.separator + ".sunnyprinters");
+		service.LoggerService.info("================================================================");
 	}
 
 	private static void loadBundledFonts() {
