@@ -241,15 +241,56 @@ $upsertHeaders = @{
     "Authorization" = "Bearer $SupabaseKey"
     "apikey"        = $SupabaseKey
     "Content-Type"  = "application/json"
-    "Prefer"        = "resolution=merge-duplicates"
+    "Prefer"        = "resolution=merge-duplicates,return=representation"
 }
 
 $dbUrl = "$SupabaseUrl/rest/v1/app_updates"
+
+# --- Pre-insert Diagnostics ---
+Log-Message "========================================================"
+Log-Message "Posting release metadata to Supabase:"
+Log-Message " - URL:              $dbUrl"
+Log-Message " - Version:          $($updatePayload.version)"
+Log-Message " - GitHub Release:   $($updatePayload.github_release_url)"
+Log-Message " - Download URL:     $($updatePayload.download_url)"
+Log-Message " - SHA256:           $($updatePayload.sha256)"
+Log-Message " - File Size:        $($updatePayload.file_size) bytes"
+Log-Message " - Release Channel:  $($updatePayload.release_channel)"
+Log-Message " - Mandatory:        $($updatePayload.mandatory)"
+Log-Message "Full JSON Payload:"
+Log-Message $payloadJson
+Log-Message "========================================================"
+
+# --- Execute Upsert with full status capture ---
 try {
-    $dbResponse = Invoke-RestMethod -Uri $dbUrl -Method Post -Headers $upsertHeaders -Body $payloadJson
-    Log-Message "Database upsert successful. Update metadata row registered in Production app_updates table."
+    $response = Invoke-WebRequest -Uri $dbUrl -Method Post -Headers $upsertHeaders -Body $payloadJson -UseBasicParsing
+    $statusCode = $response.StatusCode
+    $responseBody = $response.Content
+
+    Log-Message "HTTP Status: $statusCode"
+    Log-Message "Response Body: $responseBody"
+
+    if ($statusCode -eq 200 -or $statusCode -eq 201) {
+        Log-Message "Insert Successful. app_updates row registered in Production Supabase."
+    } else {
+        throw "Unexpected HTTP status $statusCode from Supabase. Body: $responseBody"
+    }
 } catch {
-    throw "Database upsert failed: $_"
+    # Capture status code and body from error response (PowerShell 5.1 pattern)
+    $statusCode = 0
+    $errorBody = ""
+    try {
+        $statusCode = $_.Exception.Response.StatusCode.Value__
+        $stream = $_.Exception.Response.GetResponseStream()
+        $reader = New-Object System.IO.StreamReader($stream)
+        $errorBody = $reader.ReadToEnd()
+        $reader.Close()
+    } catch { }
+
+    Log-Message "HTTP Status: $statusCode"
+    Log-Message "Error Body: $errorBody"
+    Log-Message "Insert Failed."
+    throw "Database upsert failed (HTTP $statusCode): $errorBody - Original error: $_"
 }
 
 Log-Message "GitHub Release and metadata publishing complete."

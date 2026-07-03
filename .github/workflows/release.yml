@@ -34,8 +34,9 @@ jobs:
 
       - name: Package & Publish Application
         env:
-
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
           powershell ./release.bat -Increment none --publish
 
