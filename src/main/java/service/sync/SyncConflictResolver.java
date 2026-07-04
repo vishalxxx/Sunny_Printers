@@ -161,7 +161,7 @@ public final class SyncConflictResolver {
             return;
         }
 
-        StringBuilder sb = new StringBuilder("INSERT OR REPLACE INTO ").append(table).append(" (");
+        StringBuilder sb = new StringBuilder("INSERT INTO ").append(table).append(" (");
         for (int i = 0; i < insertCols.size(); i++) {
             sb.append(insertCols.get(i));
             if (i < insertCols.size() - 1) {
@@ -175,7 +175,18 @@ public final class SyncConflictResolver {
                 sb.append(",");
             }
         }
-        sb.append(")");
+        sb.append(") ON CONFLICT(uuid) DO UPDATE SET ");
+        boolean first = true;
+        for (String col : insertCols) {
+            if ("uuid".equalsIgnoreCase(col) || "id".equalsIgnoreCase(col)) {
+                continue;
+            }
+            if (!first) {
+                sb.append(", ");
+            }
+            sb.append(col).append("=excluded.").append(col);
+            first = false;
+        }
 
         try (PreparedStatement ps = conn.prepareStatement(sb.toString())) {
             for (int i = 0; i < values.size(); i++) {
