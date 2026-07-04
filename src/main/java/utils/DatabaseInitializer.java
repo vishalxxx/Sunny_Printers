@@ -283,18 +283,20 @@ public class DatabaseInitializer {
             }
 
             // ================== INVOICE_MASTER TABLE MIGRATIONS ==================
-            try {
-                stmt.execute(
-                        "ALTER TABLE invoice_master ADD COLUMN parent_invoice_id INTEGER REFERENCES invoice_master(id);");
-                System.out.println("✔ Migration: Added parent_invoice_id to invoice_master");
-            } catch (Exception e) {
-                // Ignore if exists
-            }
+            if (columnExists(conn, "invoice_master", "id")) {
+                try {
+                    stmt.execute(
+                            "ALTER TABLE invoice_master ADD COLUMN parent_invoice_id INTEGER REFERENCES invoice_master(id);");
+                    System.out.println("✔ Migration: Added parent_invoice_id to invoice_master");
+                } catch (Exception e) {
+                    // Ignore if exists
+                }
 
-            try {
-                stmt.execute(
-                        "ALTER TABLE invoice_master ADD COLUMN replaced_by_invoice_id INTEGER REFERENCES invoice_master(id);");
-            } catch (Exception e) {
+                try {
+                    stmt.execute(
+                            "ALTER TABLE invoice_master ADD COLUMN replaced_by_invoice_id INTEGER REFERENCES invoice_master(id);");
+                } catch (Exception e) {
+                }
             }
 
             try {
