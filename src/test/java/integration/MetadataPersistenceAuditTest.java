@@ -1,7 +1,7 @@
 package integration;
+
 import service.sync.SyncReport;
 import service.sync.UniversalSyncEngine;
-
 
 import org.junit.jupiter.api.Tag;
 import utils.FakeSupabaseRestClient;
@@ -50,7 +50,7 @@ public class MetadataPersistenceAuditTest {
 
     private static String dbPath;
     private static FakeSupabaseRestClient fakeSupabase;
-    
+
     private static final List<String> passedTests = new ArrayList<>();
     private static final List<String> failedTests = new ArrayList<>();
     private static final List<String> missingFields = new ArrayList<>();
@@ -61,7 +61,8 @@ public class MetadataPersistenceAuditTest {
     @BeforeAll
     public static void setup() throws Exception {
         try {
-            javafx.application.Platform.startup(() -> {});
+            javafx.application.Platform.startup(() -> {
+            });
         } catch (IllegalStateException e) {
             // Already initialized
         }
@@ -74,20 +75,26 @@ public class MetadataPersistenceAuditTest {
     @AfterAll
     public static void tearDown() {
         TestDatabaseHelper.cleanupTestDir();
-        
+
         System.out.println("Passed Tests:");
-        for (String t : passedTests) System.out.println(" - " + t);
+        for (String t : passedTests)
+            System.out.println(" - " + t);
         System.out.println("Failed Tests:");
-        for (String t : failedTests) System.out.println(" - " + t);
+        for (String t : failedTests)
+            System.out.println(" - " + t);
         System.out.println("Missing Fields:");
-        for (String t : missingFields) System.out.println(" - " + t);
+        for (String t : missingFields)
+            System.out.println(" - " + t);
         System.out.println("Data Mismatches:");
-        for (String t : dataMismatches) System.out.println(" - " + t);
+        for (String t : dataMismatches)
+            System.out.println(" - " + t);
         System.out.println("PDF Rendering Issues:");
-        for (String t : pdfIssues) System.out.println(" - " + t);
+        for (String t : pdfIssues)
+            System.out.println(" - " + t);
         System.out.println("Sync Issues:");
-        for (String t : syncIssues) System.out.println(" - " + t);
-        
+        for (String t : syncIssues)
+            System.out.println(" - " + t);
+
         System.out.println("Final Verification Result: " + (failedTests.isEmpty() ? "SUCCESS" : "FAILURE"));
     }
 
@@ -98,14 +105,14 @@ public class MetadataPersistenceAuditTest {
         SupabaseReachability.invalidateCache();
 
         try (Connection conn = DBConnection.getConnection();
-             Statement stmt = conn.createStatement()) {
+                Statement stmt = conn.createStatement()) {
             stmt.execute("PRAGMA foreign_keys = OFF;");
             String[] tables = {
-                "printing_items", "paper_items", "binding_items", "lamination_items", "ctp_items", 
-                "job_items", "jobs", "payment_allocations", "payment_details", "payments", 
-                "invoice_job_mapping", "invoice_master", "invoice_adjustments", 
-                "invoice_additional_charges", "document_number_mappings", "billing", 
-                "suppliers", "clients"
+                    "printing_items", "paper_items", "binding_items", "lamination_items", "ctp_items",
+                    "job_items", "jobs", "payment_allocations", "payment_details", "payments",
+                    "invoice_job_mapping", "invoice_master", "invoice_adjustments",
+                    "invoice_additional_charges", "document_number_mappings",
+                    "suppliers", "clients"
             };
             for (String table : tables) {
                 stmt.execute("DELETE FROM " + table);
@@ -129,7 +136,8 @@ public class MetadataPersistenceAuditTest {
         runScenario("All Optional Fields Empty", false, false);
     }
 
-    private void runScenario(String scenarioName, boolean populateOptionalBase, boolean populateOptionalAll) throws Exception {
+    private void runScenario(String scenarioName, boolean populateOptionalBase, boolean populateOptionalAll)
+            throws Exception {
         // Setup company GST and client
         CompanyProfile.setName("Sunny Printers");
         CompanyProfile.setAddress("Delhi, India");
@@ -204,7 +212,7 @@ public class MetadataPersistenceAuditTest {
         invJob.setRatePerUnit(2.50);
         invJob.setGstRate(0.18);
         invJob.addLine(new InvoiceLine("Audit Print Job", 2500.0));
-        
+
         invoice.addJob(invJob);
         invoice.setGrandTotal(2950.0);
         invoice.setTotalAfterTax(2950.0);
@@ -213,23 +221,27 @@ public class MetadataPersistenceAuditTest {
         // Step 1: Save Invoice to Local SQLite
         InvoiceMasterService invoiceMasterService = new InvoiceMasterService();
         String invoiceUuid = invoiceMasterService.saveGeneratedInvoice(invoice, "GST_INVOICE", "SENT", null);
-        
+
         // Verify local SQLite persistence
         try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement("SELECT * FROM invoice_master WHERE uuid = ?")) {
+                PreparedStatement ps = conn.prepareStatement("SELECT * FROM invoice_master WHERE uuid = ?")) {
             ps.setString(1, invoiceUuid);
             try (ResultSet rs = ps.executeQuery()) {
                 assertTrue(rs.next(), "[" + scenarioName + "] SQLite invoice_master record missing");
-                
+
                 verifyField(scenarioName, "Invoice No.", invoice.getInvoiceNo(), rs.getString("invoice_no"));
-                verifyField(scenarioName, "Place of Supply", invoice.getPlaceOfSupply(), rs.getString("place_of_supply"));
+                verifyField(scenarioName, "Place of Supply", invoice.getPlaceOfSupply(),
+                        rs.getString("place_of_supply"));
                 verifyField(scenarioName, "Payment Terms", invoice.getPaymentTerms(), rs.getString("payment_terms"));
                 verifyField(scenarioName, "Due Date", invoice.getDueDate(), rs.getString("due_date"));
-                verifyField(scenarioName, "Vehicle / Dispatch", invoice.getVehicleDispatch(), rs.getString("vehicle_dispatch"));
+                verifyField(scenarioName, "Vehicle / Dispatch", invoice.getVehicleDispatch(),
+                        rs.getString("vehicle_dispatch"));
                 verifyField(scenarioName, "Reference / PO No.", invoice.getPoNo(), rs.getString("po_no"));
                 verifyField(scenarioName, "PO Date", invoice.getPoDate(), rs.getString("po_date"));
-                verifyField(scenarioName, "Dispatch Through / Courier", invoice.getDispatchThrough(), rs.getString("dispatch_through"));
-                verifyField(scenarioName, "LR / Tracking No.", invoice.getLrTrackingNo(), rs.getString("lr_tracking_no"));
+                verifyField(scenarioName, "Dispatch Through / Courier", invoice.getDispatchThrough(),
+                        rs.getString("dispatch_through"));
+                verifyField(scenarioName, "LR / Tracking No.", invoice.getLrTrackingNo(),
+                        rs.getString("lr_tracking_no"));
                 verifyField(scenarioName, "E-Way Bill No.", invoice.getEwayBillNo(), rs.getString("eway_bill_no"));
                 verifyField(scenarioName, "Remarks / Terms of Delivery", invoice.getRemarks(), rs.getString("remarks"));
             }
@@ -246,21 +258,21 @@ public class MetadataPersistenceAuditTest {
         // Step 3: Reopen / Regenerate Invoice
         InvoiceBuilderService invoiceBuilderService = new InvoiceBuilderService();
         Invoice regenerated = invoiceBuilderService.buildInvoiceFromMasterForPdfExport(invoiceUuid);
-        
+
         // Verify no data loss or field swapping on reload
         verifyInvoiceMatch(scenarioName, "Regeneration", invoice, regenerated);
 
         // Step 4: Re-download Invoice
         File repdfFile = pdfService.generateGstInvoice(regenerated);
         assertTrue(repdfFile.exists(), "[" + scenarioName + "] Re-downloaded PDF file was not created");
-        
+
         // Verify re-downloaded PDF is matching original metadata
         verifyPdfContent(scenarioName + " (Re-download)", repdfFile, regenerated);
 
         // Step 5: Sync Validation
         SyncReport syncReport = UniversalSyncEngine.syncAllPending();
         assertEquals(0, syncReport.failures, "[" + scenarioName + "] Sync failed");
-        
+
         // Verify remote Supabase contains exact record
         List<JsonObject> rows = fakeSupabase.getTableData(SupabaseEndpoints.INVOICE_MASTER);
         JsonObject remoteRow = null;
@@ -271,15 +283,19 @@ public class MetadataPersistenceAuditTest {
             }
         }
         assertNotNull(remoteRow, "[" + scenarioName + "] Supabase invoice_master record missing after sync");
-        
-        verifyRemoteField(scenarioName, "Place of Supply", invoice.getPlaceOfSupply(), remoteRow.get("place_of_supply"));
+
+        verifyRemoteField(scenarioName, "Place of Supply", invoice.getPlaceOfSupply(),
+                remoteRow.get("place_of_supply"));
         verifyRemoteField(scenarioName, "Payment Terms", invoice.getPaymentTerms(), remoteRow.get("payment_terms"));
         verifyRemoteField(scenarioName, "Due Date", invoice.getDueDate(), remoteRow.get("due_date"));
-        verifyRemoteField(scenarioName, "Vehicle / Dispatch", invoice.getVehicleDispatch(), remoteRow.get("vehicle_dispatch"));
+        verifyRemoteField(scenarioName, "Vehicle / Dispatch", invoice.getVehicleDispatch(),
+                remoteRow.get("vehicle_dispatch"));
         verifyRemoteField(scenarioName, "Reference / PO No.", invoice.getPoNo(), remoteRow.get("po_no"));
         verifyRemoteField(scenarioName, "PO Date", invoice.getPoDate(), remoteRow.get("po_date"));
-        verifyRemoteField(scenarioName, "Dispatch Through / Courier", invoice.getDispatchThrough(), remoteRow.get("dispatch_through"));
-        verifyRemoteField(scenarioName, "LR / Tracking No.", invoice.getLrTrackingNo(), remoteRow.get("lr_tracking_no"));
+        verifyRemoteField(scenarioName, "Dispatch Through / Courier", invoice.getDispatchThrough(),
+                remoteRow.get("dispatch_through"));
+        verifyRemoteField(scenarioName, "LR / Tracking No.", invoice.getLrTrackingNo(),
+                remoteRow.get("lr_tracking_no"));
         verifyRemoteField(scenarioName, "E-Way Bill No.", invoice.getEwayBillNo(), remoteRow.get("eway_bill_no"));
         verifyRemoteField(scenarioName, "Remarks / Terms of Delivery", invoice.getRemarks(), remoteRow.get("remarks"));
 
@@ -290,17 +306,22 @@ public class MetadataPersistenceAuditTest {
         String expectedStr = expected == null ? "" : expected.toString();
         String actualStr = actual == null ? "" : actual.toString();
         if (!expectedStr.equals(actualStr)) {
-            dataMismatches.add("[" + scenario + "] Field '" + fieldName + "' expected '" + expectedStr + "' but was '" + actualStr + "' in SQLite");
-            if (!failedTests.contains(scenario)) failedTests.add(scenario);
+            dataMismatches.add("[" + scenario + "] Field '" + fieldName + "' expected '" + expectedStr + "' but was '"
+                    + actualStr + "' in SQLite");
+            if (!failedTests.contains(scenario))
+                failedTests.add(scenario);
         }
     }
 
-    private void verifyRemoteField(String scenario, String fieldName, Object expected, com.google.gson.JsonElement actualElement) {
+    private void verifyRemoteField(String scenario, String fieldName, Object expected,
+            com.google.gson.JsonElement actualElement) {
         String expectedStr = expected == null ? "" : expected.toString();
         String actualStr = (actualElement == null || actualElement.isJsonNull()) ? "" : actualElement.getAsString();
         if (!expectedStr.equals(actualStr)) {
-            syncIssues.add("[" + scenario + "] Field '" + fieldName + "' expected '" + expectedStr + "' but was '" + actualStr + "' in Supabase");
-            if (!failedTests.contains(scenario)) failedTests.add(scenario);
+            syncIssues.add("[" + scenario + "] Field '" + fieldName + "' expected '" + expectedStr + "' but was '"
+                    + actualStr + "' in Supabase");
+            if (!failedTests.contains(scenario))
+                failedTests.add(scenario);
         }
     }
 
@@ -309,10 +330,12 @@ public class MetadataPersistenceAuditTest {
         verifyProperty(scenario, phase, "Place of Supply", original.getPlaceOfSupply(), loaded.getPlaceOfSupply());
         verifyProperty(scenario, phase, "Payment Terms", original.getPaymentTerms(), loaded.getPaymentTerms());
         verifyProperty(scenario, phase, "Due Date", original.getDueDate(), loaded.getDueDate());
-        verifyProperty(scenario, phase, "Vehicle / Dispatch", original.getVehicleDispatch(), loaded.getVehicleDispatch());
+        verifyProperty(scenario, phase, "Vehicle / Dispatch", original.getVehicleDispatch(),
+                loaded.getVehicleDispatch());
         verifyProperty(scenario, phase, "Reference / PO No.", original.getPoNo(), loaded.getPoNo());
         verifyProperty(scenario, phase, "PO Date", original.getPoDate(), loaded.getPoDate());
-        verifyProperty(scenario, phase, "Dispatch Through / Courier", original.getDispatchThrough(), loaded.getDispatchThrough());
+        verifyProperty(scenario, phase, "Dispatch Through / Courier", original.getDispatchThrough(),
+                loaded.getDispatchThrough());
         verifyProperty(scenario, phase, "LR / Tracking No.", original.getLrTrackingNo(), loaded.getLrTrackingNo());
         verifyProperty(scenario, phase, "E-Way Bill No.", original.getEwayBillNo(), loaded.getEwayBillNo());
         verifyProperty(scenario, phase, "Remarks / Terms of Delivery", original.getRemarks(), loaded.getRemarks());
@@ -322,8 +345,10 @@ public class MetadataPersistenceAuditTest {
         String expectedStr = expected == null ? "" : expected.toString().trim();
         String actualStr = actual == null ? "" : actual.toString().trim();
         if (!expectedStr.equals(actualStr)) {
-            dataMismatches.add("[" + scenario + " - " + phase + "] Mismatch on '" + fieldName + "': expected '" + expectedStr + "', got '" + actualStr + "'");
-            if (!failedTests.contains(scenario)) failedTests.add(scenario);
+            dataMismatches.add("[" + scenario + " - " + phase + "] Mismatch on '" + fieldName + "': expected '"
+                    + expectedStr + "', got '" + actualStr + "'");
+            if (!failedTests.contains(scenario))
+                failedTests.add(scenario);
         }
     }
 
@@ -335,14 +360,20 @@ public class MetadataPersistenceAuditTest {
 
         // Check Invoice No and Invoice Date (Always populated)
         assertTrue(text.contains(invoice.getInvoiceNo()), "PDF missing Invoice No.");
-        
+
         // Assert on Optional Fields if populated, or hidden if empty
         checkPdfField(scenario, text, "Place of Supply", invoice.getPlaceOfSupply());
         checkPdfField(scenario, text, "Mode/Terms of Payment", invoice.getPaymentTerms());
-        checkPdfField(scenario, text, "Due Date", invoice.getDueDate() != null ? invoice.getDueDate().format(java.time.format.DateTimeFormatter.ofPattern("dd-MMM-yyyy")) : null);
+        checkPdfField(scenario, text, "Due Date",
+                invoice.getDueDate() != null
+                        ? invoice.getDueDate().format(java.time.format.DateTimeFormatter.ofPattern("dd-MMM-yyyy"))
+                        : null);
         checkPdfField(scenario, text, "Vehicle / Dispatch", invoice.getVehicleDispatch());
         checkPdfField(scenario, text, "Buyer's Order No.", invoice.getPoNo());
-        checkPdfField(scenario, text, "Order Date", invoice.getPoDate() != null ? invoice.getPoDate().format(java.time.format.DateTimeFormatter.ofPattern("dd-MMM-yyyy")) : null);
+        checkPdfField(scenario, text, "Order Date",
+                invoice.getPoDate() != null
+                        ? invoice.getPoDate().format(java.time.format.DateTimeFormatter.ofPattern("dd-MMM-yyyy"))
+                        : null);
         checkPdfField(scenario, text, "Dispatched through", invoice.getDispatchThrough());
         checkPdfField(scenario, text, "Dispatch Doc No. (LR)", invoice.getLrTrackingNo());
         checkPdfField(scenario, text, "E-Way Bill No.", invoice.getEwayBillNo());
@@ -354,18 +385,21 @@ public class MetadataPersistenceAuditTest {
         if (!valStr.isEmpty()) {
             if (!pdfText.contains(label)) {
                 missingFields.add("[" + scenario + "] Populated field label '" + label + "' is missing in PDF");
-                if (!failedTests.contains(scenario)) failedTests.add(scenario);
+                if (!failedTests.contains(scenario))
+                    failedTests.add(scenario);
             }
             if (!pdfText.contains(valStr)) {
                 missingFields.add("[" + scenario + "] Populated field value '" + valStr + "' is missing in PDF");
-                if (!failedTests.contains(scenario)) failedTests.add(scenario);
+                if (!failedTests.contains(scenario))
+                    failedTests.add(scenario);
             }
         } else {
             if (pdfText.contains(label)) {
-                pdfIssues.add("[" + scenario + "] Empty optional field label '" + label + "' should be hidden but was found in PDF");
-                if (!failedTests.contains(scenario)) failedTests.add(scenario);
+                pdfIssues.add("[" + scenario + "] Empty optional field label '" + label
+                        + "' should be hidden but was found in PDF");
+                if (!failedTests.contains(scenario))
+                    failedTests.add(scenario);
             }
         }
     }
 }
-

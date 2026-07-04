@@ -1,6 +1,5 @@
 package integration;
 
-
 import org.junit.jupiter.api.Tag;
 import utils.FakeSupabaseRestClient;
 import utils.TestDatabaseHelper;
@@ -86,8 +85,9 @@ public class JobCancellationAuditTest {
             // 4. Create an invoice
             String invoiceUuid = UUID.randomUUID().toString();
             try (PreparedStatement ps = con.prepareStatement(
-                    "INSERT INTO invoice_master (uuid, invoice_no, client_uuid, client_name, invoice_date, amount, paid_amount, due_amount, payment_status, status, document_series, type) " +
-                    "VALUES (?, 'INV-001', ?, 'Test Business', '2026-06-16', 2360.0, 1180.0, 1180.0, 'PARTIAL PAID', 'DRAFT', 'GST_INVOICE', 'GST')")) {
+                    "INSERT INTO invoice_master (uuid, invoice_no, client_uuid, client_name, invoice_date, amount, paid_amount, due_amount, payment_status, status, document_series, type) "
+                            +
+                            "VALUES (?, 'INV-001', ?, 'Test Business', '2026-06-16', 2360.0, 1180.0, 1180.0, 'PARTIAL PAID', 'DRAFT', 'GST_INVOICE', 'GST')")) {
                 ps.setString(1, invoiceUuid);
                 ps.setString(2, clientUuid);
                 ps.executeUpdate();
@@ -136,7 +136,8 @@ public class JobCancellationAuditTest {
 
             // 5. Invoke service method to cancel job 1
             InvoiceMasterService service = new InvoiceMasterService();
-            service.reallocatePaymentsOnJobCancellation(con, invoiceUuid, List.of(job1Uuid), "Customer request", "AdminUser");
+            service.reallocatePaymentsOnJobCancellation(con, invoiceUuid, List.of(job1Uuid), "Customer request",
+                    "AdminUser");
 
             // 6. Verify audit table entry exists and is correct
             try (PreparedStatement ps = con.prepareStatement(
@@ -149,7 +150,8 @@ public class JobCancellationAuditTest {
                     assertEquals(invoiceUuid, rs.getString("original_invoice_uuid"));
                     assertEquals(1000.0, rs.getDouble("original_job_amount"), 0.001);
                     assertEquals(180.0, rs.getDouble("original_gst_amount"), 0.001);
-                    // job1 was allocated 590 (half of 1180 paid). This is reallocated to job2 (which was unpaid).
+                    // job1 was allocated 590 (half of 1180 paid). This is reallocated to job2
+                    // (which was unpaid).
                     assertEquals(590.0, rs.getDouble("reallocated_amount"), 0.001);
                     assertEquals(0.0, rs.getDouble("refund_pending_amount"), 0.001);
                 }
@@ -157,4 +159,3 @@ public class JobCancellationAuditTest {
         }
     }
 }
-
