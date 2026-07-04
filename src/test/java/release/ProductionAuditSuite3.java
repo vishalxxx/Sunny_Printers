@@ -1,4 +1,4 @@
-﻿package release;
+package release;
 import service.sync.UniversalSyncEngine;
 import utils.ClientIdentifiers;
 import utils.DBConnection;
@@ -30,7 +30,7 @@ public class ProductionAuditSuite3 {
     @BeforeAll
     public static void setup() {
         System.out.println("--- Starting Audit Suite 3 ---");
-        // Production audit suite: uses DBConnection.PRODUCTION_URL automatically.
+        DBConnection.setUrl("jdbc:sqlite:database/sunnyprinters.db?busy_timeout=15000&journal_mode=WAL");
         SupabaseReachability.invalidateCache();
     }
 
@@ -157,4 +157,3 @@ public class ProductionAuditSuite3 {
         assertTrue(totalMemoryMB > 0);
     }
 }
-

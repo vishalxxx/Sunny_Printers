@@ -1,4 +1,4 @@
-﻿package utils;
+package utils;
 
 import java.sql.Connection;
 import java.sql.Statement;
@@ -10,7 +10,7 @@ import api.supabase.SupabaseGate;
 public class CleanupUtility {
     public static void main(String[] args) throws Exception {
         System.out.println("Cleaning up all data...");
-        // Production audit suite: uses DBConnection.PRODUCTION_URL automatically.
+        DBConnection.setUrl("jdbc:sqlite:database/sunnyprinters.db?busy_timeout=15000&journal_mode=WAL");
 
         // Cleanup local SQLite
         try (Connection con = DBConnection.getExclusiveConnection();
@@ -63,4 +63,3 @@ public class CleanupUtility {
         System.out.println("Cleanup Complete!");
     }
 }
-
