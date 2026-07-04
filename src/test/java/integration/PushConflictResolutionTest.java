@@ -44,10 +44,13 @@ public class PushConflictResolutionTest {
         fakeSupabase = new FakeSupabaseRestClient();
         SupabaseGate.setOverrideClient(fakeSupabase);
         DBConnection.setTestDatabaseUrl(dbPath);
+        DBConnection.setGlobalTestDatabaseUrl(dbPath);
     }
 
     @AfterAll
     public static void tearDown() {
+        DBConnection.clearTestDatabaseUrl();
+        DBConnection.clearGlobalTestDatabaseUrl();
         TestDatabaseHelper.cleanupTestDir();
     }
 
