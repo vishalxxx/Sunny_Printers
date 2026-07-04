@@ -249,7 +249,7 @@ public class UserManagementController {
             alert.getDialogPane().getStyleClass().add("settings-warm-dialog");
             alert.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
             alert.getDialogPane().getStylesheets().add(getClass().getResource("/css/settings_screens.css").toExternalForm());
-        } catch (Exception ignored) {}
+        } catch (Exception e) { service.LoggerService.dbWarn("Failed to refresh user grid: " + e.getMessage()); }
         
         alert.showAndWait();
     }

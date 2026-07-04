@@ -1,5 +1,7 @@
 package release;
 import utils.DBConnection;
+import utils.TestDatabaseHelper;
+import utils.TestEnvironment;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.*;
@@ -15,11 +17,29 @@ import api.supabase.*;
 @Tag("release")
 public class ProductionAuditSuite4 {
 
-    @BeforeAll
-    public static void setup() {
-        System.out.println("--- Starting Audit Suite 4 ---");
-        // Production audit suite: uses DBConnection.PRODUCTION_URL (~/.sunnyprinters/database.db) automatically.
+    private static String testDbUrl;
 
+    @BeforeAll
+    public static void setup() throws Exception {
+        System.out.println("--- Starting Audit Suite 4 (TEST environment) ---");
+
+        // Create isolated SQLite database
+        testDbUrl = TestDatabaseHelper.createIsolatedDb("AuditSuite4");
+        DBConnection.setTestDatabaseUrl(testDbUrl);
+        DBConnection.setGlobalTestDatabaseUrl(testDbUrl);
+
+        // Load and inject TEST Supabase credentials
+        TestEnvironment.load();
+        if (TestEnvironment.isSupabaseConfigured()) {
+            TestEnvironment.injectCredentialsIntoDatabase();
+        }
+        TestEnvironment.logContext();
+    }
+
+    @AfterAll
+    public static void teardown() {
+        DBConnection.clearTestDatabaseUrl();
+        DBConnection.clearGlobalTestDatabaseUrl();
     }
 
     @Test
@@ -41,8 +61,8 @@ public class ProductionAuditSuite4 {
     @Order(18)
     public void phase18_RecoveryTest() throws Exception {
         System.out.println("Phase 18: Recovery Test");
-        // Simulate application restart by re-initializing connection pool
         // Production audit suite: uses DBConnection.PRODUCTION_URL automatically.
+        // NOTE: Now redirected to TEST environment via setup() above.
 
         boolean reachable = SupabaseReachability.isReachable();
         if (!reachable) {
@@ -70,7 +90,7 @@ public class ProductionAuditSuite4 {
         System.out.println("Phase 20: Automatic Cleanup");
         try (Connection con = DBConnection.getExclusiveConnection(); Statement stmt = con.createStatement()) {
             stmt.execute("PRAGMA foreign_keys = OFF;");
-            String[] tables = { "payment_allocations", "payment_details", "payments", "invoice_job_mapping", "invoice_additional_charges", "invoice_adjustments", "invoice_history", "invoice_master", "printing_items", "paper_items", "binding_items", "ctp_items", "lamination_items", "job_items", "job_cancellation_audit", "jobs", "document_number_mappings", "billing", "clients", "suppliers" };
+            String[] tables = { "payment_allocations", "payment_details", "payments", "invoice_job_mapping", "invoice_additional_charges", "invoice_adjustments", "invoice_master", "printing_items", "paper_items", "binding_items", "ctp_items", "lamination_items", "job_items", "job_cancellation_audit", "jobs", "document_number_mappings", "clients", "suppliers" };
             for(String t : tables) {
                 stmt.execute("DELETE FROM " + t);
             }
@@ -79,7 +99,7 @@ public class ProductionAuditSuite4 {
         var httpOpt = SupabaseGate.restClientIfConfigured();
         if (httpOpt.isPresent()) {
             var http = httpOpt.get();
-            SupabaseEndpoints[] endpoints = { SupabaseEndpoints.PAYMENT_ALLOCATIONS, SupabaseEndpoints.PAYMENT_DETAILS, SupabaseEndpoints.PAYMENTS, SupabaseEndpoints.INVOICE_JOB_MAPPING, SupabaseEndpoints.INVOICE_ADDITIONAL_CHARGES, SupabaseEndpoints.INVOICE_ADJUSTMENTS, SupabaseEndpoints.INVOICE_HISTORY, SupabaseEndpoints.INVOICE_MASTER, SupabaseEndpoints.PRINTING_ITEMS, SupabaseEndpoints.PAPER_ITEMS, SupabaseEndpoints.BINDING_ITEMS, SupabaseEndpoints.CTP_ITEMS, SupabaseEndpoints.LAMINATION_ITEMS, SupabaseEndpoints.JOB_ITEMS, SupabaseEndpoints.JOBS, SupabaseEndpoints.DOCUMENT_NUMBER_MAPPINGS, SupabaseEndpoints.BILLING, SupabaseEndpoints.CLIENTS, SupabaseEndpoints.SUPPLIERS };
+            SupabaseEndpoints[] endpoints = { SupabaseEndpoints.PAYMENT_ALLOCATIONS, SupabaseEndpoints.PAYMENT_DETAILS, SupabaseEndpoints.PAYMENTS, SupabaseEndpoints.INVOICE_JOB_MAPPING, SupabaseEndpoints.INVOICE_ADDITIONAL_CHARGES, SupabaseEndpoints.INVOICE_ADJUSTMENTS, SupabaseEndpoints.INVOICE_MASTER, SupabaseEndpoints.PRINTING_ITEMS, SupabaseEndpoints.PAPER_ITEMS, SupabaseEndpoints.BINDING_ITEMS, SupabaseEndpoints.CTP_ITEMS, SupabaseEndpoints.LAMINATION_ITEMS, SupabaseEndpoints.JOB_ITEMS, SupabaseEndpoints.JOBS, SupabaseEndpoints.DOCUMENT_NUMBER_MAPPINGS, SupabaseEndpoints.CLIENTS, SupabaseEndpoints.SUPPLIERS };
             for(SupabaseEndpoints e : endpoints) {
                 try { http.delete(e, "uuid=not.is.null"); } catch(Exception ignored) {}
             }

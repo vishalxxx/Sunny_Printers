@@ -62,10 +62,10 @@ public class CompanyDetailsService {
 				}
 				return c;
 			} catch (Exception e) {
-				try { con.rollback(); } catch (Exception ignored) {}
+				try { con.rollback(); } catch (Exception e2) { service.LoggerService.dbWarn("Failed to rollback CompanyDetailsService.save: " + e2.getMessage()); }
 				throw e;
 			} finally {
-				try { con.setAutoCommit(true); } catch (Exception ignored) {}
+				try { con.setAutoCommit(true); } catch (Exception e2) { service.LoggerService.dbWarn("Failed to reset auto-commit in CompanyDetailsService.save: " + e2.getMessage()); }
 			}
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to save company", e);
@@ -82,10 +82,10 @@ public class CompanyDetailsService {
 				repo.setDefault(con, uuid);
 				con.commit();
 			} catch (Exception e) {
-				try { con.rollback(); } catch (Exception ignored) {}
+				try { con.rollback(); } catch (Exception e2) { service.LoggerService.dbWarn("Failed to rollback CompanyDetailsService.setDefaultCompany: " + e2.getMessage()); }
 				throw e;
 			} finally {
-				try { con.setAutoCommit(true); } catch (Exception ignored) {}
+				try { con.setAutoCommit(true); } catch (Exception e2) { service.LoggerService.dbWarn("Failed to reset auto-commit in setDefaultCompany: " + e2.getMessage()); }
 			}
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to set default company", e);
@@ -101,7 +101,8 @@ public class CompanyDetailsService {
 				CompanyProfile.setEmail(def.getEmail());
 				CompanyProfile.setGst(def.getGstin());
 			}
-		} catch (Exception ignored) {
+		} catch (Exception e2) {
+			service.LoggerService.dbWarn("Failed to sync Preferences with default company: " + e2.getMessage());
 		}
 	}
 

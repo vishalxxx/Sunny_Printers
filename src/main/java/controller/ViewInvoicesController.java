@@ -2098,9 +2098,7 @@ public class ViewInvoicesController {
                                         .atZone(java.time.ZoneId.systemDefault())
                                         .toLocalDate());
                             }
-                        } catch (Exception ignored) {
-                            /* leave date null */
-                        }
+                        } catch (Exception e) { service.LoggerService.dbWarn("Failed to format date: " + e.getMessage()); /* leave date null */ }
                     }
                     adjs.add(a);
                 }

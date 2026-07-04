@@ -119,7 +119,7 @@ public class GeneralSettingsController implements Initializable {
         CompanyDetails def = null;
         try {
             def = companyService.getDefault();
-        } catch (Exception ignored) { }
+        } catch (Exception e) { service.LoggerService.dbWarn("Failed to load default company for settings: " + e.getMessage()); }
 
         if (def != null) {
             companyCombo.getSelectionModel().select(def);
@@ -186,7 +186,7 @@ public class GeneralSettingsController implements Initializable {
         BankDetails def = null;
         try {
             def = bankService.getDefault();
-        } catch (Exception ignored) { }
+        } catch (Exception e) { service.LoggerService.dbWarn("Failed to load default bank for settings: " + e.getMessage()); }
 
         if (def != null) {
             bankCombo.getSelectionModel().select(def);

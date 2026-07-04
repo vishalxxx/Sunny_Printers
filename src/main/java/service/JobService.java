@@ -15,16 +15,20 @@ public class JobService {
 	private final JobRepository repo = new JobRepository();
 
 	public synchronized Job createDraftJob() {
+		service.LoggerService.beginOperation("JOB-CREATE");
 		try (Connection con = DBConnection.getConnection()) {
 			Job latest = repo.findLatestDraftJob();
 			if (latest != null) {
+				service.LoggerService.endOperation("JOB-CREATE", true, "Found existing draft: " + latest.getUuid());
 				return latest;
 			}
 			con.setAutoCommit(false);
 			Job job = repo.insertDraftJob(con);
 			con.commit();
+			service.LoggerService.endOperation("JOB-CREATE", true, "Created new draft: " + job.getUuid());
 			return job;
 		} catch (Exception e) {
+			service.LoggerService.endOperation("JOB-CREATE", false, "Exception: " + e.getMessage());
 			throw new RuntimeException("Failed to create draft job", e);
 		}
 	}
@@ -65,6 +69,7 @@ public class JobService {
 		if (jobName == null || jobName.trim().isEmpty()) {
 			throw new IllegalArgumentException("Job name cannot be empty");
 		}
+		service.LoggerService.beginOperation("JOB-UPDATE");
 		try (Connection con = DBConnection.getConnection()) {
 			con.setAutoCommit(false);
 			String userUuid = null;
@@ -89,7 +94,9 @@ public class JobService {
 				ps.executeUpdate();
 			}
 			con.commit();
+			service.LoggerService.endOperation("JOB-UPDATE", true, "UUID: " + jobUuid + ", Name: " + jobName);
 		} catch (Exception e) {
+			service.LoggerService.endOperation("JOB-UPDATE", false, "Exception: " + e.getMessage());
 			throw new RuntimeException("Failed to update job details", e);
 		}
 	}

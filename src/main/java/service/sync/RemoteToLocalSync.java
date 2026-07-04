@@ -60,6 +60,7 @@ public final class RemoteToLocalSync {
 			totalChanges += pullTable(http, "payment_allocations", SupabaseEndpoints.PAYMENT_ALLOCATIONS, newLastPullMap);
 			totalChanges += pullTable(http, "document_number_mappings", SupabaseEndpoints.DOCUMENT_NUMBER_MAPPINGS, newLastPullMap);
 
+
 			System.out.println("[RemoteToLocalSync] Remote-to-local sync completed successfully. Total changes: " + totalChanges);
 		} catch (Exception e) {
 			System.err.println("[RemoteToLocalSync] Failed to execute remote-to-local sync: " + e.getMessage());
@@ -137,7 +138,7 @@ public final class RemoteToLocalSync {
 								fmt += "Z";
 							}
 							maxInstant = Instant.parse(fmt);
-						} catch (Exception ignored) {}
+						} catch (Exception e) { service.LoggerService.dbWarn("[SYNC] Could not parse max timestamp for " + table + ": " + e.getMessage()); }
 					}
 
 					for (JsonElement el : arr) {
@@ -158,7 +159,7 @@ public final class RemoteToLocalSync {
 									maxInstant = remoteInst;
 									maxTimestamp = remoteUpdatedAt;
 								}
-							} catch (Exception ignored) {}
+							} catch (Exception e) { service.LoggerService.dbWarn("[SYNC] Could not parse max timestamp for " + table + ": " + e.getMessage()); }
 						}
 
 						String uuid = o.has("uuid") && !o.get("uuid").isJsonNull() ? o.get("uuid").getAsString() : null;

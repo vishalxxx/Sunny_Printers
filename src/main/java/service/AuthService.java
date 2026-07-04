@@ -39,15 +39,18 @@ public class AuthService {
 		}
 		String id = loginId.trim();
 
-		service.LoggerService.info("[AuthService] Login attempt: username='" + id + "'", AuthService.class);
-		service.LoggerService.info("[AuthService] Authenticating against database: " + utils.DBConnection.getUrl(), AuthService.class);
+		service.LoggerService.beginOperation("LOGIN");
+		try {
+			service.LoggerService.info("[AuthService] Login attempt: username='" + id + "'", AuthService.class);
+			service.LoggerService.info("[AuthService] Authenticating against database: " + utils.DBConnection.getUrl(), AuthService.class);
 
 		// 1. ALWAYS prioritize local SQLite login first for speed, robustness, and offline/initial setup support!
 		LoginResult localResult = tryLocalLogin(id, password, null);
-		if (localResult.isSuccess()) {
-			service.LoggerService.info("[AuthService] LOGIN SUCCESS (local SQLite) for username='" + id + "'", AuthService.class);
-			return localResult;
-		}
+			if (localResult.isSuccess()) {
+				service.LoggerService.info("[AuthService] LOGIN SUCCESS (local SQLite) for username='" + id + "'", AuthService.class);
+				service.LoggerService.endOperation("LOGIN", true, "Local SQLite");
+				return localResult;
+			}
 
 		// 2. Fall back to online Supabase cloud check ONLY if local sign-in failed (e.g. for new remote-registered cloud users)
 		Optional<SupabaseSettings> settingsOpt = loadSupabaseSettings();
@@ -58,18 +61,24 @@ public class AuthService {
 				service.LoggerService.info("[AuthService] Attempting Supabase cloud login for email: " + id, AuthService.class);
 				SupabaseAuthResult auth = supabaseAuth.signInWithPassword(
 						s.getSupabaseUrl(), s.getAnonKey(), id, password);
-				if (auth.success()) {
-					completeSupabaseLogin(auth);
-					service.LoggerService.info("[AuthService] LOGIN SUCCESS (Supabase cloud) for username='" + id + "'", AuthService.class);
-					return new LoginResult(AuthOutcome.SUCCESS, null);
-				} else {
+					if (auth.success()) {
+						completeSupabaseLogin(auth);
+						service.LoggerService.info("[AuthService] LOGIN SUCCESS (Supabase cloud) for username='" + id + "'", AuthService.class);
+						service.LoggerService.endOperation("LOGIN", true, "Supabase cloud");
+						return new LoginResult(AuthOutcome.SUCCESS, null);
+					} else {
 					service.LoggerService.warn("[AuthService] Supabase cloud login FAILED for username='" + id + "': " + auth.message(), AuthService.class);
 				}
 			}
 		}
 
-		service.LoggerService.warn("[AuthService] LOGIN FAILED for username='" + id + "': Invalid username or password. Database: " + utils.DBConnection.getUrl(), AuthService.class);
-		return new LoginResult(AuthOutcome.INVALID_CREDENTIALS, "Invalid username or password.");
+			service.LoggerService.warn("[AuthService] LOGIN FAILED for username='" + id + "': Invalid username or password. Database: " + utils.DBConnection.getUrl(), AuthService.class);
+			service.LoggerService.endOperation("LOGIN", false, "Invalid username or password");
+			return new LoginResult(AuthOutcome.INVALID_CREDENTIALS, "Invalid username or password.");
+		} catch (Exception e) {
+			service.LoggerService.endOperation("LOGIN", false, "Exception: " + e.getMessage());
+			throw e;
+		}
 	}
 
 	public LoginResult signUp(String email, String password, String confirmPassword) {

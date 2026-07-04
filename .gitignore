@@ -51,3 +51,6 @@ Thumbs.db
 # Release Manager Configuration and Artifacts
 /release_secrets.env
 /Release/
+
+# Test Environment Configuration (contains TEST Supabase credentials)
+/.env.test

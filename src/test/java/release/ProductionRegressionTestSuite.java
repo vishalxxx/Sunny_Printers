@@ -4,6 +4,8 @@ import service.sync.RemoteToLocalSync;
 import service.sync.UniversalSyncEngine;
 import utils.ClientIdentifiers;
 import utils.DBConnection;
+import utils.TestDatabaseHelper;
+import utils.TestEnvironment;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.*;
@@ -32,33 +34,35 @@ public class ProductionRegressionTestSuite {
     private static ExecutorService executor = Executors.newFixedThreadPool(10);
     private static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
 
-    @BeforeAll
-    public static void setup() {
-        System.out.println("Starting Production Regression Test Suite on Live Environment");
-        // Production regression suite: uses DBConnection.PRODUCTION_URL (~/.sunnyprinters/database.db) automatically.
+    private static String testDbUrl;
 
-        
-        // Save environment credentials to database if they exist
-        String envUrl = System.getenv("SUPABASE_URL");
-        String envKey = System.getenv("SUPABASE_KEY");
-        if (envUrl != null && !envUrl.isBlank() && envKey != null && !envKey.isBlank()) {
-            try {
-                SupabaseSettings s = new SupabaseSettings();
-                s.setSupabaseUrl(envUrl);
-                s.setAnonKey(envKey);
-                new SupabaseSettingsRepository().save(s);
-                System.out.println("[Test Setup] Mapped environment SUPABASE_URL and SUPABASE_KEY to database settings.");
-            } catch (Exception e) {
-                System.err.println("[Test Setup] Failed to save environment credentials to database: " + e.getMessage());
-            }
+    @BeforeAll
+    public static void setup() throws Exception {
+        System.out.println("Starting Production Regression Test Suite on TEST Environment");
+
+        // 1. Create isolated SQLite database — NEVER use production DB
+        testDbUrl = TestDatabaseHelper.createIsolatedDb("RegressionTestSuite");
+        DBConnection.setTestDatabaseUrl(testDbUrl);
+        DBConnection.setGlobalTestDatabaseUrl(testDbUrl);
+
+        // 2. Load TEST Supabase credentials (from env vars or .env.test)
+        TestEnvironment.load();
+        if (!TestEnvironment.isSupabaseConfigured()) {
+            System.out.println("[Test Setup] TEST Supabase credentials not available. Skipping regression suite.");
+            org.junit.jupiter.api.Assumptions.assumeTrue(false, "TEST Supabase credentials required");
+            return;
         }
+
+        // 3. Inject TEST credentials into the isolated SQLite database
+        TestEnvironment.injectCredentialsIntoDatabase();
+        TestEnvironment.logContext();
 
         SupabaseReachability.invalidateCache();
         boolean reachable = api.supabase.SupabaseReachability.isReachable();
         if (!reachable) {
-            System.out.println("[Test Setup] Supabase is not reachable. Skipping regression suite.");
+            System.out.println("[Test Setup] TEST Supabase is not reachable. Skipping regression suite.");
         }
-        org.junit.jupiter.api.Assumptions.assumeTrue(reachable, "Supabase must be reachable to run regression tests");
+        org.junit.jupiter.api.Assumptions.assumeTrue(reachable, "TEST Supabase must be reachable to run regression tests");
 
         // Start background sync continuously every 5 seconds
         scheduler.scheduleWithFixedDelay(() -> {
@@ -76,7 +80,7 @@ public class ProductionRegressionTestSuite {
 
     @AfterAll
     public static void cleanup() throws Exception {
-        System.out.println("Cleaning up all data...");
+        System.out.println("Cleaning up all test data...");
         scheduler.shutdownNow();
         executor.shutdownNow();
 
@@ -89,9 +93,9 @@ public class ProductionRegressionTestSuite {
                 "sync_metadata", "sync_conflicts",
                 "payment_allocations", "payment_details", "payments",
                 "invoice_job_mapping", "invoice_additional_charges", "invoice_adjustments",
-                "invoice_history", "invoice_master",
+                "invoice_master",
                 "printing_items", "paper_items", "binding_items", "ctp_items", "lamination_items", "job_items", "job_cancellation_audit", "jobs",
-                "document_number_mappings", "document_number_sequences", "billing",
+                "document_number_mappings", "document_number_sequences",
                 "clients", "suppliers"
             };
 
@@ -108,10 +112,10 @@ public class ProductionRegressionTestSuite {
             SupabaseEndpoints[] endpoints = {
                 SupabaseEndpoints.PAYMENT_ALLOCATIONS, SupabaseEndpoints.PAYMENT_DETAILS, SupabaseEndpoints.PAYMENTS,
                 SupabaseEndpoints.INVOICE_JOB_MAPPING, SupabaseEndpoints.INVOICE_ADDITIONAL_CHARGES, SupabaseEndpoints.INVOICE_ADJUSTMENTS,
-                SupabaseEndpoints.INVOICE_HISTORY, SupabaseEndpoints.INVOICE_MASTER,
+                SupabaseEndpoints.INVOICE_MASTER,
                 SupabaseEndpoints.PRINTING_ITEMS, SupabaseEndpoints.PAPER_ITEMS, SupabaseEndpoints.BINDING_ITEMS, SupabaseEndpoints.CTP_ITEMS, SupabaseEndpoints.LAMINATION_ITEMS,
                 SupabaseEndpoints.JOB_ITEMS, SupabaseEndpoints.JOBS,
-                SupabaseEndpoints.DOCUMENT_NUMBER_MAPPINGS, SupabaseEndpoints.NUMBER_SEQUENCES, SupabaseEndpoints.BILLING,
+                SupabaseEndpoints.DOCUMENT_NUMBER_MAPPINGS, SupabaseEndpoints.NUMBER_SEQUENCES,
                 SupabaseEndpoints.CLIENTS, SupabaseEndpoints.SUPPLIERS
             };
             for(SupabaseEndpoints e : endpoints) {
@@ -120,6 +124,10 @@ public class ProductionRegressionTestSuite {
                 } catch(Exception ignored) {}
             }
         }
+
+        // Clear test database overrides
+        DBConnection.clearTestDatabaseUrl();
+        DBConnection.clearGlobalTestDatabaseUrl();
     }
 
     @Test

@@ -212,7 +212,7 @@ public class ReleaseManager extends Application {
                 if (ver != null) {
                     currentVersion = ver.trim();
                 }
-            } catch (IOException ignored) {}
+            } catch (IOException e) { service.LoggerService.debug("Failed to delete auto-updater: " + e.getMessage()); }
         }
     }
 

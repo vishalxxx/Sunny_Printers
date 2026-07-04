@@ -28,9 +28,9 @@ public final class NumberSequenceSupabaseSync {
 				}
 			};
 			if (SupabaseGate.isOverrideActive()) {
-				task.run();
+				utils.SQLiteWriteCoordinator.runAsBackground(task);
 			} else {
-				CompletableFuture.runAsync(task);
+				CompletableFuture.runAsync(() -> utils.SQLiteWriteCoordinator.runAsBackground(task));
 			}
 		});
 	}
@@ -77,9 +77,9 @@ public final class NumberSequenceSupabaseSync {
 				}
 			};
 			if (SupabaseGate.isOverrideActive()) {
-				task.run();
+				utils.SQLiteWriteCoordinator.runAsBackground(task);
 			} else {
-				CompletableFuture.runAsync(task);
+				CompletableFuture.runAsync(() -> utils.SQLiteWriteCoordinator.runAsBackground(task));
 			}
 		});
 	}

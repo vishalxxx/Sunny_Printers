@@ -53,6 +53,7 @@ public class DBConnection {
      * {@code null} means "use the production URL".
      */
     private static final ThreadLocal<String> threadLocalUrl = new ThreadLocal<>();
+    private static volatile String globalTestUrl = null;
 
     /**
      * Injects a test-specific database URL for the <em>calling thread only</em>.
@@ -87,16 +88,37 @@ public class DBConnection {
         }
     }
 
+    /**
+     * Injects a test-specific database URL globally for all threads.
+     * Use this when background threads need to share the same test database URL.
+     */
+    public static void setGlobalTestDatabaseUrl(String url) {
+        globalTestUrl = url;
+    }
+
+    /**
+     * Clears the global test-specific database URL override.
+     */
+    public static void clearGlobalTestDatabaseUrl() {
+        globalTestUrl = null;
+    }
+
     // ── URL resolution ────────────────────────────────────────────────────────
 
     /**
      * Returns the effective JDBC URL for the current thread.
      * Returns the thread-local test override if one is active; otherwise
-     * returns {@link #PRODUCTION_URL}.
+     * returns the global test override if set; otherwise returns {@link #PRODUCTION_URL}.
      */
     public static String getUrl() {
         String override = threadLocalUrl.get();
-        return (override != null) ? override : PRODUCTION_URL;
+        if (override != null) {
+            return override;
+        }
+        if (globalTestUrl != null) {
+            return globalTestUrl;
+        }
+        return PRODUCTION_URL;
     }
 
     // ── Schema initialization tracking ────────────────────────────────────────
@@ -176,8 +198,16 @@ public class DBConnection {
         config.setBusyTimeout(10000);
         config.enforceForeignKeys(true);
         String activeUrl = getUrl();
-        service.LoggerService.debug("Opening connection to: " + activeUrl, DBConnection.class);
-        return DriverManager.getConnection(activeUrl, config.toProperties());
+        service.LoggerService.db("[DB-OPEN] Opening connection to: " + activeUrl);
+        try {
+            Connection conn = DriverManager.getConnection(activeUrl, config.toProperties());
+            return WriteCoordinatedConnection.wrap(conn, false);
+        } catch (java.sql.SQLException e) {
+            if (e.getErrorCode() == 5 || (e.getMessage() != null && e.getMessage().contains("busy"))) {
+                service.LoggerService.dbWarn("[DB-BUSY] SQLite database is busy/locked. URL: " + activeUrl + ". Error: " + e.getMessage());
+            }
+            throw e;
+        }
     }
 
     public static Connection getExclusiveConnection() throws Exception {
@@ -189,8 +219,16 @@ public class DBConnection {
         config.setBusyTimeout(15000);
         config.enforceForeignKeys(true);
         String activeUrl = getUrl();
-        service.LoggerService.debug("Opening exclusive connection to: " + activeUrl, DBConnection.class);
-        return DriverManager.getConnection(activeUrl, config.toProperties());
+        service.LoggerService.db("[DB-OPEN] Opening exclusive connection to: " + activeUrl);
+        try {
+            Connection conn = DriverManager.getConnection(activeUrl, config.toProperties());
+            return WriteCoordinatedConnection.wrap(conn, true);
+        } catch (java.sql.SQLException e) {
+            if (e.getErrorCode() == 5 || (e.getMessage() != null && e.getMessage().contains("busy"))) {
+                service.LoggerService.dbWarn("[DB-BUSY] SQLite database is busy/locked (Exclusive). URL: " + activeUrl + ". Error: " + e.getMessage());
+            }
+            throw e;
+        }
     }
 
     private DBConnection() {}

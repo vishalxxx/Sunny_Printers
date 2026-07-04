@@ -13,6 +13,10 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  * means this override is <em>per-thread only</em>: concurrent test threads, background
  * sync threads, and the JavaFX application thread are all unaffected.
  *
+ * <p>Additionally injects TEST Supabase credentials from {@link TestEnvironment}
+ * into the freshly created SQLite database so that no test can accidentally
+ * load Production Supabase credentials.
+ *
  * <p>Unit tests (package {@code unit}) are skipped — they do not touch the database.
  */
 public class TemporaryDatabaseProvider implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback {
@@ -34,8 +38,8 @@ public class TemporaryDatabaseProvider implements BeforeAllCallback, BeforeEachC
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
-        // No-op: per-class setup no longer needed because the thread-local model
-        // does not require a shared "safety fallback" URL.
+        // Load TestEnvironment once per JVM so credential resolution happens early.
+        TestEnvironment.load();
     }
 
     @Override
@@ -47,6 +51,7 @@ public class TemporaryDatabaseProvider implements BeforeAllCallback, BeforeEachC
         String testUrl = TestDatabaseFactory.createFreshTestDatabase();
         context.getStore(NAMESPACE).put(ACTIVE_TEST_URL_KEY, testUrl);
         DBConnection.setTestDatabaseUrl(testUrl);
+        DBConnection.setGlobalTestDatabaseUrl(testUrl);
 
         // Eagerly initialise the schema so the test doesn't hit a cold start.
         try {
@@ -55,18 +60,28 @@ public class TemporaryDatabaseProvider implements BeforeAllCallback, BeforeEachC
             DBConnection.registerInitializedUrl(testUrl);
         } catch (Exception e) {
             DBConnection.clearTestDatabaseUrl();
+            DBConnection.clearGlobalTestDatabaseUrl();
             TestDatabaseManager.cleanupDatabase(testUrl);
             throw new RuntimeException("Failed to initialise test database: " + e.getMessage(), e);
         }
+
+        // Inject TEST Supabase credentials into the fresh SQLite database.
+        // This prevents any code path from loading Production credentials.
+        TestEnvironment.injectCredentialsIntoDatabase();
+
+        // Log the active test context for verification.
+        System.out.println("[TemporaryDatabaseProvider] Test: " + context.getDisplayName());
+        TestEnvironment.logContext();
     }
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         if (isUnitTestClass(context.getRequiredTestClass())) return;
 
-        // Always clear the thread-local first so that no further DB access from
+        // Always clear the overrides first so that no further DB access from
         // cleanup code hits the now-deleted test file.
         DBConnection.clearTestDatabaseUrl();
+        DBConnection.clearGlobalTestDatabaseUrl();
 
         String testUrl = context.getStore(NAMESPACE).get(ACTIVE_TEST_URL_KEY, String.class);
         if (testUrl != null) {

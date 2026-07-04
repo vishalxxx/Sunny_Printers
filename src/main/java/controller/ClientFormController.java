@@ -216,9 +216,9 @@ public class ClientFormController implements Initializable {
 		String curShip = (syncAddressToggle != null && syncAddressToggle.isSelected()) ? curBill
 				: nz(shippingAddressField.getText());
 		double cl = 0;
-		try { cl = Double.parseDouble(creditLimitField.getText()); } catch (Exception ignored) {}
+		try { cl = Double.parseDouble(creditLimitField.getText()); } catch (Exception e) { service.LoggerService.debug("Failed to parse credit limit: " + e.getMessage()); }
 		double ob = 0;
-		try { ob = Double.parseDouble(openingBalanceField.getText()); } catch (Exception ignored) {}
+		try { ob = Double.parseDouble(openingBalanceField.getText()); } catch (Exception e) { service.LoggerService.debug("Failed to parse opening balance: " + e.getMessage()); }
 		return nz(businessNameField.getText()).equals(editBaseline.businessName())
 				&& nz(clientNameField.getText()).equals(editBaseline.clientName())
 				&& nz(phoneField.getText()).equals(editBaseline.phone())

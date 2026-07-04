@@ -2092,7 +2092,7 @@ public class GenerateGSTInvoiceController implements Initializable {
             } else {
                 try {
                     qtyRaw.set(Double.parseDouble(v.replace(",", "").trim()));
-                } catch(Exception ignored) { qtyRaw.set(0); }
+                } catch(Exception e) { service.LoggerService.debug("Failed to parse QTY: " + e.getMessage()); qtyRaw.set(0); }
             }
             recalcTaxable();
         }
@@ -2114,7 +2114,7 @@ public class GenerateGSTInvoiceController implements Initializable {
             } else {
                 try {
                     rateRaw.set(Double.parseDouble(v.replace("₹", "").replace(",", "").trim()));
-                } catch(Exception ignored) { rateRaw.set(0); }
+                } catch(Exception e) { service.LoggerService.debug("Failed to parse Rate: " + e.getMessage()); rateRaw.set(0); }
             }
             recalcTaxable();
         }
@@ -2160,7 +2160,7 @@ public class GenerateGSTInvoiceController implements Initializable {
                     rate.set(fmtMoney(rateRaw.get()));
                 }
                 recalcTaxes(g, this.intraState);
-            } catch (Exception ignored) {}
+            } catch (Exception e) { service.LoggerService.debug("Failed to calculate total: " + e.getMessage()); }
         }
         public StringProperty totalProperty() { return total; }
     }

@@ -56,13 +56,15 @@ public class BankDetailsService {
 			} catch (Exception e) {
 				try {
 					con.rollback();
-				} catch (Exception ignored) {
+				} catch (Exception e2) {
+					service.LoggerService.dbWarn("Failed to rollback BankDetailsService.save: " + e2.getMessage());
 				}
 				throw e;
 			} finally {
 				try {
 					con.setAutoCommit(true);
-				} catch (Exception ignored) {
+				} catch (Exception e2) {
+					service.LoggerService.dbWarn("Failed to reset auto-commit in BankDetailsService.save: " + e2.getMessage());
 				}
 			}
 		} catch (Exception e) {
@@ -91,10 +93,10 @@ public class BankDetailsService {
 				repo.setDefault(con, uuid);
 				con.commit();
 			} catch (Exception e) {
-				try { con.rollback(); } catch (Exception ignored) {}
+				try { con.rollback(); } catch (Exception e2) { service.LoggerService.dbWarn("Failed to rollback BankDetailsService.setDefaultBank: " + e2.getMessage()); }
 				throw e;
 			} finally {
-				try { con.setAutoCommit(true); } catch (Exception ignored) {}
+				try { con.setAutoCommit(true); } catch (Exception e2) { service.LoggerService.dbWarn("Failed to reset auto-commit in setDefaultBank: " + e2.getMessage()); }
 			}
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to set default bank", e);

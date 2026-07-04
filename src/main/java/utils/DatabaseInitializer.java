@@ -131,8 +131,8 @@ public class DatabaseInitializer {
 
             stmt.execute(JOBS_DDL);
 
-            // ================== CREATE DUMMY BILLING TABLE FOR COMPATIBILITY ==================
-            stmt.execute("CREATE TABLE IF NOT EXISTS billing (uuid TEXT PRIMARY KEY);");
+            // Drop legacy billing table if it exists
+            stmt.execute("DROP TABLE IF EXISTS billing;");
 
             stmt.execute(PAYMENTS_DDL);
             stmt.execute(PAYMENT_ALLOCATIONS_DDL);
@@ -1049,8 +1049,7 @@ public class DatabaseInitializer {
         String[] sqls = {
                 "UPDATE jobs SET client_id = NULL WHERE client_id IS NOT NULL",
                 "UPDATE invoice_master SET client_id = NULL WHERE client_id IS NOT NULL",
-                "UPDATE payments SET client_id = NULL WHERE client_id IS NOT NULL",
-                "UPDATE billing SET client_id = NULL WHERE client_id IS NOT NULL"
+                "UPDATE payments SET client_id = NULL WHERE client_id IS NOT NULL"
         };
         for (String sql : sqls) {
             try {
@@ -1756,7 +1755,6 @@ public class DatabaseInitializer {
             remapChildClientIdToUuid(stmt, "jobs");
             remapChildClientIdToUuid(stmt, "invoice_master");
             remapChildClientIdToUuid(stmt, "payments");
-            remapChildClientIdToUuid(stmt, "billing");
             stmt.execute("""
                     CREATE TABLE clients_uuid_pk (
                         uuid TEXT PRIMARY KEY NOT NULL,
@@ -2809,20 +2807,8 @@ public class DatabaseInitializer {
         stmt.execute(PAYMENT_DETAILS_DDL);
         stmt.execute(JOB_CANCELLATION_AUDIT_DDL);
 
-        stmt.execute("""
-                    CREATE TABLE IF NOT EXISTS invoice_history (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        invoice_no TEXT,
-                        client_id TEXT,
-                        client_name TEXT,
-                        invoice_date TEXT,
-                        amount REAL,
-                        type TEXT,
-                        status TEXT,
-                        file_path TEXT,
-                        created_at TEXT DEFAULT (datetime('now'))
-                    )
-                """);
+        stmt.execute("DROP TABLE IF EXISTS invoice_history;");
+        stmt.execute("DROP TABLE IF EXISTS user_profiles;");
 
         migrateInvoiceMasterToCanonicalIfNeeded(conn, stmt);
         migratePaymentAllocationsToCanonicalIfNeeded(conn, stmt);
@@ -2839,6 +2825,8 @@ public class DatabaseInitializer {
         ensureChildTableSyncColumns(conn, stmt, "company_details");
         ensureChildTableSyncColumns(conn, stmt, "number_sequences");
         ensurePaymentDetailsHaveUuid(conn, stmt);
+
+
 
         ensureInvoiceMasterColumnDefaults(conn, stmt);
         ensureInvoicePaymentIndexes(stmt);
@@ -2862,6 +2850,8 @@ public class DatabaseInitializer {
             System.err.println("Migration: payment_details uuid backfill failed: " + e.getMessage());
         }
     }
+
+
 
     private static void ensureChildTableSyncColumns(Connection conn, Statement stmt, String table)
             throws Exception {
@@ -3667,7 +3657,7 @@ public class DatabaseInitializer {
     }
 
     private static void migrateBillingToCanonicalIfNeeded(Connection conn, Statement stmt) throws Exception {
-        stmt.execute("CREATE TABLE IF NOT EXISTS billing (uuid TEXT PRIMARY KEY)");
+        stmt.execute("DROP TABLE IF EXISTS billing");
         stmt.execute("DROP TABLE IF EXISTS billing_old");
     }
 
@@ -3728,7 +3718,7 @@ public class DatabaseInitializer {
     private static void assertNoLegacyIntegerIdColumns(Connection conn) throws Exception {
         String[] tables = {
                 "clients", "jobs", "job_items", "invoice_master", "invoice_adjustments", "invoice_job_mapping",
-                "payments", "payment_allocations", "payment_details", "billing", "suppliers",
+                "payments", "payment_allocations", "payment_details", "suppliers",
                 "printing_items", "paper_items", "binding_items", "lamination_items", "ctp_items"
         };
         for (String table : tables) {

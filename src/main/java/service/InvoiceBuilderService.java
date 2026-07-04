@@ -396,7 +396,7 @@ public class InvoiceBuilderService {
 									else if (part.startsWith("HSN:"))  { String h = part.substring(4); if (!h.isBlank()) snapHsn = h; }
 									else if (part.startsWith("GST:"))  { double g = Double.parseDouble(part.substring(4)); if (g > 0) snapGst = g; }
 									else if (part.startsWith("DESC:")) desc = part.substring(5);
-								} catch (Exception ignored) {}
+								} catch (Exception e) { service.LoggerService.dbWarn("Failed to parse invoice snapshot param: " + part + " - " + e.getMessage()); }
 							}
 						}
 						snapAmountByJob.put(jobUuid, new double[]{qty, rate, snapGst, snapAmount});
@@ -493,7 +493,7 @@ public class InvoiceBuilderService {
 									else if (part.startsWith("GST:"))   gstRate      = Double.parseDouble(part.substring(4));
 									else if (part.startsWith("HSN:"))   hsnSac       = part.substring(4);
 								}
-							} catch (Exception ignored) {}
+							} catch (Exception e) { service.LoggerService.dbWarn("Failed to parse legacy invoice QTY string: " + e.getMessage()); }
 						} else {
 							boolean isCustomItem = jobNo == null || jobNo.isBlank();
 							qty = isCustomItem ? 0 : 1; unit = isCustomItem ? "" : "PCS";
@@ -514,7 +514,7 @@ public class InvoiceBuilderService {
 									break;
 								}
 							}
-						} catch (Exception ignored) {}
+						} catch (Exception e) { service.LoggerService.dbWarn("Failed to lookup HSN/SAC for job " + jobUuid + ": " + e.getMessage()); }
 					}
 					job.setQuantity(qty); job.setUnit(unit); job.setRatePerUnit(ratePerUnit);
 					job.setHsnSac(hsnSac); job.setGstRate(gstRate);
@@ -699,7 +699,7 @@ public class InvoiceBuilderService {
 			if (jobDesc != null && !jobDesc.isBlank()) {
 				return jobDesc.trim();
 			}
-		} catch (SQLException ignored) {}
+		} catch (SQLException e) { service.LoggerService.dbWarn("Failed to read job_desc from ResultSet: " + e.getMessage()); }
 		String t = rs.getString("job_title");
 		if (t != null && !t.isBlank()) {
 			return t.trim();
@@ -721,17 +721,14 @@ public class InvoiceBuilderService {
 			if (s.length() >= 10 && s.charAt(4) == '-' && s.charAt(7) == '-') {
 				try {
 					return LocalDate.parse(s.substring(0, 10));
-				} catch (DateTimeParseException ignored) {
-				}
+				} catch (DateTimeParseException e2) { service.LoggerService.debug("Failed to parse partial job_date: " + s); }
 			}
 			try {
 				return LocalDate.parse(s, DateTimeFormatter.ofPattern("d/M/uuuu"));
-			} catch (DateTimeParseException ignored) {
-			}
+			} catch (DateTimeParseException e3) { service.LoggerService.debug("Failed to parse d/M/uuuu: " + s); }
 			try {
 				return LocalDate.parse(s, DateTimeFormatter.ofPattern("dd/MM/uuuu"));
-			} catch (DateTimeParseException ignored) {
-			}
+			} catch (DateTimeParseException e4) { service.LoggerService.debug("Failed to parse dd/MM/uuuu: " + s); }
 		}
 		return null;
 	}

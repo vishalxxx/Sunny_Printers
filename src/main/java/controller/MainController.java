@@ -2351,6 +2351,7 @@ public class MainController implements Initializable {
 		
 		syncManager.syncingProperty().addListener((obs, oldVal, syncing) -> updateSyncStatusUI());
 		syncManager.onlineProperty().addListener((obs, oldVal, online) -> updateSyncStatusUI());
+		syncManager.syncQueuedProperty().addListener((obs, oldVal, queued) -> updateSyncStatusUI());
 		updateSyncStatusUI();
 
 		if (lblPendingSync != null) {
@@ -2385,7 +2386,10 @@ public class MainController implements Initializable {
 		Platform.runLater(() -> {
 			service.sync.SyncStatusManager syncManager = service.sync.SyncStatusManager.getInstance();
 			if (lblSyncStatus != null) {
-				if (syncManager.isSyncing()) {
+				if (syncManager.isSyncQueued()) {
+					lblSyncStatus.setText("🟡 Sync Queued...");
+					lblSyncStatus.setStyle("-fx-text-fill: #FFA500; -fx-font-weight: bold; -fx-font-size: 11px;");
+				} else if (syncManager.isSyncing()) {
 					lblSyncStatus.setText("🟡 Syncing...");
 					lblSyncStatus.setStyle("-fx-text-fill: #D4AF37; -fx-font-weight: bold; -fx-font-size: 11px;");
 				} else if (syncManager.isOnline()) {

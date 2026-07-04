@@ -9,6 +9,7 @@ public final class SyncStatusManager {
 
     private final BooleanProperty online = new SimpleBooleanProperty(true);
     private final BooleanProperty syncing = new SimpleBooleanProperty(false);
+    private final BooleanProperty syncQueued = new SimpleBooleanProperty(false);
     private final ObjectProperty<LocalDateTime> lastSyncTime = new SimpleObjectProperty<>(null);
     private final IntegerProperty pendingSyncCount = new SimpleIntegerProperty(0);
     private final StringProperty lastError = new SimpleStringProperty(null);
@@ -46,4 +47,8 @@ public final class SyncStatusManager {
     public StringProperty lastErrorProperty() { return lastError; }
     public String getLastError() { return lastError.get(); }
     public void setLastError(String value) { runOnFxThread(() -> this.lastError.set(value)); }
+
+    public BooleanProperty syncQueuedProperty() { return syncQueued; }
+    public boolean isSyncQueued() { return syncQueued.get(); }
+    public void setSyncQueued(boolean value) { runOnFxThread(() -> this.syncQueued.set(value)); }
 }

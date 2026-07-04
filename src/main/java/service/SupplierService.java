@@ -23,59 +23,65 @@ import utils.SessionManager;
 public class SupplierService {
 
 	public void addSupplier(Supplier s) {
-		String sql = """
-				    INSERT INTO suppliers
-				    (uuid, supplier_code, name, business_name, type, phone, address, gst_number, created_by_user_uuid, updated_by_user_uuid,
-				     mobile, email, website, state, city, pincode, payment_terms, credit_limit, notes)
-				    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-				""";
+		service.LoggerService.beginOperation("SUPPLIER-CREATE");
+		try {
+			utils.AtomicDB.runVoid(conn -> {
+				String sql = """
+						    INSERT INTO suppliers
+						    (uuid, supplier_code, name, business_name, type, phone, address, gst_number, created_by_user_uuid, updated_by_user_uuid,
+						     mobile, email, website, state, city, pincode, payment_terms, credit_limit, notes)
+						    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+						""";
 
-		try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+				try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+					if (s.getUuid() == null || s.getUuid().isBlank()) {
+						s.setUuid(java.util.UUID.randomUUID().toString());
+					}
+					String code = s.getSupplierCode();
+					if (code == null || code.isBlank() || "SUP-NEW".equals(code) || code.startsWith("TEMP-")) {
+						try {
+							service.sync.UniversalNumberAllocator seqAlloc = service.sync.UniversalNumberAllocator.getInstance();
+							service.NumberSequenceAllocationService.AllocatedNumber allocated = seqAlloc.allocateSupplierCode(conn);
+							code = allocated.value();
+						} catch (Exception ex) {
+							System.err.println("Failed to allocate supplier_code: " + ex.getMessage());
+							code = "SUP-" + (System.currentTimeMillis() % 100000);
+						}
+						s.setSupplierCode(code);
+					}
+					stmt.setString(1, s.getUuid());
+					stmt.setString(2, code);
+					stmt.setString(3, s.getName());
+					stmt.setString(4, s.getbusinessName()); // 🔥 REQUIRED
+					stmt.setString(5, s.getType());
+					stmt.setString(6, s.getPhone());
+					stmt.setString(7, s.getAddress());
+					stmt.setString(8, s.getGstNumber());
+					
+					String userUuid = null;
+					if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+					    userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+					}
+					stmt.setString(9, userUuid);
+					stmt.setString(10, userUuid);
+					stmt.setString(11, s.getMobile());
+					stmt.setString(12, s.getEmail());
+					stmt.setString(13, s.getWebsite());
+					stmt.setString(14, s.getState());
+					stmt.setString(15, s.getCity());
+					stmt.setString(16, s.getPincode());
+					stmt.setString(17, s.getPaymentTerms());
+					stmt.setDouble(18, s.getCreditLimit());
+					stmt.setString(19, s.getNotes());
 
-			if (s.getUuid() == null || s.getUuid().isBlank()) {
-				s.setUuid(java.util.UUID.randomUUID().toString());
-			}
-			String code = s.getSupplierCode();
-			if (code == null || code.isBlank() || "SUP-NEW".equals(code) || code.startsWith("TEMP-")) {
-				try {
-					service.sync.UniversalNumberAllocator seqAlloc = service.sync.UniversalNumberAllocator.getInstance();
-					service.NumberSequenceAllocationService.AllocatedNumber allocated = seqAlloc.allocateSupplierCode(conn);
-					code = allocated.value();
-				} catch (Exception ex) {
-					System.err.println("Failed to allocate supplier_code: " + ex.getMessage());
-					code = "SUP-" + (System.currentTimeMillis() % 100000);
+					stmt.executeUpdate();
+					service.sync.UniversalSyncEngine.scheduleSyncAsync();
+					service.LoggerService.endOperation("SUPPLIER-CREATE", true, "UUID: " + s.getUuid() + ", Code: " + code);
 				}
-				s.setSupplierCode(code);
-			}
-			stmt.setString(1, s.getUuid());
-			stmt.setString(2, code);
-			stmt.setString(3, s.getName());
-			stmt.setString(4, s.getbusinessName()); // 🔥 REQUIRED
-			stmt.setString(5, s.getType());
-			stmt.setString(6, s.getPhone());
-			stmt.setString(7, s.getAddress());
-			stmt.setString(8, s.getGstNumber());
-			
-			String userUuid = null;
-			if (utils.SessionManager.getInstance().getCurrentUser() != null) {
-			    userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
-			}
-			stmt.setString(9, userUuid);
-			stmt.setString(10, userUuid);
-			stmt.setString(11, s.getMobile());
-			stmt.setString(12, s.getEmail());
-			stmt.setString(13, s.getWebsite());
-			stmt.setString(14, s.getState());
-			stmt.setString(15, s.getCity());
-			stmt.setString(16, s.getPincode());
-			stmt.setString(17, s.getPaymentTerms());
-			stmt.setDouble(18, s.getCreditLimit());
-			stmt.setString(19, s.getNotes());
-
-			stmt.executeUpdate();
-			service.sync.UniversalSyncEngine.scheduleSyncAsync();
+			});
 		} catch (Exception e) {
-			e.printStackTrace();
+			service.LoggerService.endOperation("SUPPLIER-CREATE", false, "Exception: " + e.getMessage());
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -196,41 +202,48 @@ public class SupplierService {
 	}
 
 	public void updateSupplier(Supplier s) {
-		String sql = """
-				    UPDATE suppliers
-				    SET supplier_code = ?, name = ?, business_name = ?, type = ?, phone = ?, address = ?, gst_number = ?, updated_by_user_uuid = ?,
-				        mobile = ?, email = ?, website = ?, state = ?, city = ?, pincode = ?, payment_terms = ?, credit_limit = ?, notes = ?
-				    WHERE uuid = ?
-				""";
+		service.LoggerService.beginOperation("SUPPLIER-UPDATE");
+		try {
+			utils.AtomicDB.runVoid(conn -> {
+				String sql = """
+						    UPDATE suppliers
+						    SET supplier_code = ?, name = ?, business_name = ?, type = ?, phone = ?, address = ?, gst_number = ?, updated_by_user_uuid = ?,
+						        mobile = ?, email = ?, website = ?, state = ?, city = ?, pincode = ?, payment_terms = ?, credit_limit = ?, notes = ?
+						    WHERE uuid = ?
+						""";
 
-		try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-			stmt.setString(1, s.getSupplierCode());
-			stmt.setString(2, s.getName());
-			stmt.setString(3, s.getbusinessName());
-			stmt.setString(4, s.getType());
-			stmt.setString(5, s.getPhone());
-			stmt.setString(6, s.getAddress());
-			stmt.setString(7, s.getGstNumber());
-			
-			String userUuid = null;
-			if (utils.SessionManager.getInstance().getCurrentUser() != null) {
-			    userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
-			}
-			stmt.setString(8, userUuid);
-			stmt.setString(9, s.getMobile());
-			stmt.setString(10, s.getEmail());
-			stmt.setString(11, s.getWebsite());
-			stmt.setString(12, s.getState());
-			stmt.setString(13, s.getCity());
-			stmt.setString(14, s.getPincode());
-			stmt.setString(15, s.getPaymentTerms());
-			stmt.setDouble(16, s.getCreditLimit());
-			stmt.setString(17, s.getNotes());
-			stmt.setString(18, s.getUuid());
-			stmt.executeUpdate();
-			service.sync.UniversalSyncEngine.scheduleSyncAsync();
+				try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+					stmt.setString(1, s.getSupplierCode());
+					stmt.setString(2, s.getName());
+					stmt.setString(3, s.getbusinessName());
+					stmt.setString(4, s.getType());
+					stmt.setString(5, s.getPhone());
+					stmt.setString(6, s.getAddress());
+					stmt.setString(7, s.getGstNumber());
+					
+					String userUuid = null;
+					if (utils.SessionManager.getInstance().getCurrentUser() != null) {
+					    userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
+					}
+					stmt.setString(8, userUuid);
+					stmt.setString(9, s.getMobile());
+					stmt.setString(10, s.getEmail());
+					stmt.setString(11, s.getWebsite());
+					stmt.setString(12, s.getState());
+					stmt.setString(13, s.getCity());
+					stmt.setString(14, s.getPincode());
+					stmt.setString(15, s.getPaymentTerms());
+					stmt.setDouble(16, s.getCreditLimit());
+					stmt.setString(17, s.getNotes());
+					stmt.setString(18, s.getUuid());
+					stmt.executeUpdate();
+					service.sync.UniversalSyncEngine.scheduleSyncAsync();
+					service.LoggerService.endOperation("SUPPLIER-UPDATE", true, "UUID: " + s.getUuid());
+				}
+			});
 		} catch (Exception e) {
-			e.printStackTrace();
+			service.LoggerService.endOperation("SUPPLIER-UPDATE", false, "Exception: " + e.getMessage());
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -238,13 +251,20 @@ public class SupplierService {
 		if (uuid == null || uuid.isBlank()) {
 			return;
 		}
-		String sql = "UPDATE suppliers SET is_deleted = 1, is_active = 0, deleted_at = datetime('now'), sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
-		try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-			stmt.setString(1, uuid);
-			stmt.executeUpdate();
-			service.sync.UniversalSyncEngine.scheduleSyncAsync();
+		service.LoggerService.beginOperation("SUPPLIER-DELETE");
+		try {
+			utils.AtomicDB.runVoid(conn -> {
+				String sql = "UPDATE suppliers SET is_deleted = 1, is_active = 0, deleted_at = datetime('now'), sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+				try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+					stmt.setString(1, uuid);
+					stmt.executeUpdate();
+					service.sync.UniversalSyncEngine.scheduleSyncAsync();
+					service.LoggerService.endOperation("SUPPLIER-DELETE", true, "UUID: " + uuid);
+				}
+			});
 		} catch (Exception e) {
-			e.printStackTrace();
+			service.LoggerService.endOperation("SUPPLIER-DELETE", false, "Exception: " + e.getMessage());
+			throw new RuntimeException(e);
 		}
 		SupabaseGate.restClientIfConfigured().ifPresent(http -> {
 			Runnable task = () -> {
@@ -277,11 +297,15 @@ public class SupplierService {
 		User current = SessionManager.getInstance().getCurrentUser();
 		boolean isAdmin = current != null && current.getRole() != null && "ADMIN".equalsIgnoreCase(current.getRole());
 		if (isAdmin) {
-			String sql = "UPDATE suppliers SET is_deleted = 0, is_active = 1, deleted_at = NULL, sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
-			try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-				stmt.setString(1, uuid);
-				stmt.executeUpdate();
-				service.sync.UniversalSyncEngine.scheduleSyncAsync();
+			try {
+				utils.AtomicDB.runVoid(conn -> {
+					String sql = "UPDATE suppliers SET is_deleted = 0, is_active = 1, deleted_at = NULL, sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+					try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+						stmt.setString(1, uuid);
+						stmt.executeUpdate();
+						service.sync.UniversalSyncEngine.scheduleSyncAsync();
+					}
+				});
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

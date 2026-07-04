@@ -45,7 +45,7 @@ public final class SyncConflictResolver {
                     if (clean.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
                         return LocalDateTime.parse(clean + "T00:00:00").toInstant(ZoneOffset.UTC);
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception ex2) { service.LoggerService.dbWarn("[SYNC] Failed to parse fallback TS " + ts + ": " + ex2.getMessage()); }
                 System.err.println("[SyncConflictResolver] Failed to parse timestamp: " + ts + " - " + ex.getMessage());
                 return Instant.MIN;
             }
@@ -281,11 +281,10 @@ public final class SyncConflictResolver {
                 }
             }
 
-            // Insert into invoice_history
+            // Log double spend rejection details
             if (invoiceUuid != null) {
-                String invDetailsSql = "SELECT invoice_no, client_uuid, client_name, invoice_date, amount, type FROM invoice_master WHERE uuid = ?";
+                String invDetailsSql = "SELECT invoice_no, client_name, invoice_date, amount, type FROM invoice_master WHERE uuid = ?";
                 String invNo = "";
-                String clId = clientUuid;
                 String clName = "";
                 String invDate = "";
                 double invAmt = 0.0;
@@ -301,23 +300,10 @@ public final class SyncConflictResolver {
                             invType = rs.getString("type");
                         }
                     }
+                } catch (Exception e) {
+                    service.LoggerService.dbWarn("[CONFLICT] Failed to read invoice details for rejected allocation " + allocUuid + ": " + e.getMessage());
                 }
-
-                String histSql = """
-                    INSERT INTO invoice_history (invoice_no, client_id, client_name, invoice_date, amount, type, status, file_path)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """;
-                try (PreparedStatement ps = con.prepareStatement(histSql)) {
-                    ps.setString(1, invNo);
-                    ps.setString(2, clId);
-                    ps.setString(3, clName);
-                    ps.setString(4, invDate);
-                    ps.setDouble(5, invAmt);
-                    ps.setString(6, "DOUBLE_SPEND_REJECTION");
-                    ps.setString(7, "REJECTED: Allocation " + allocUuid + " failed validation (negative client balance)");
-                    ps.setString(8, LocalDateTime.now().toString());
-                    ps.executeUpdate();
-                }
+                service.LoggerService.dbWarn("[CONFLICT] DOUBLE_SPEND_REJECTION for invoice=" + invNo + " (UUID=" + invoiceUuid + "), client=" + clName + ", amount=" + invAmt + ", reason=Allocation " + allocUuid + " failed validation (negative client balance)");
             }
 
             if (invoiceUuid != null) {
@@ -326,7 +312,7 @@ public final class SyncConflictResolver {
 
             try {
                 controller.MainController.showSyncConflictNotification();
-            } catch (Throwable ignored) {}
+            } catch (Throwable e) { service.LoggerService.dbWarn("[SYNC] UI notification failed for conflict: " + e.getMessage()); }
 
             return true;
         }

@@ -463,7 +463,7 @@ public class EditJobController implements utils.DirtySupport {
         } catch (Exception e) {
         	try {
         		con.rollback();
-            } catch (Exception ignored) {}
+            } catch (Exception e2) { service.LoggerService.dbWarn("Failed to rollback EditJobController: " + e2.getMessage()); }
             e.printStackTrace();
             Toast.show(
                 (Stage) jobNumberLabel.getScene().getWindow(),
@@ -474,7 +474,7 @@ public class EditJobController implements utils.DirtySupport {
             if (con != null) {
                 try {
                     con.close();
-                } catch (Exception ignored) {}
+                } catch (Exception e2) { service.LoggerService.dbWarn("Failed to close connection in EditJobController: " + e2.getMessage()); }
             }
         }
     }

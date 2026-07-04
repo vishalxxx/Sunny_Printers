@@ -143,8 +143,7 @@ public final class SupabaseAuthService {
 				if (o.has("message") && !o.get("message").isJsonNull()) {
 					return o.get("message").getAsString();
 				}
-			} catch (Exception ignored) {
-			}
+			} catch (Exception e) { service.LoggerService.debug("Failed to parse auth error message: " + e.getMessage()); }
 		}
 		return fallback + " (HTTP " + code + ")";
 	}

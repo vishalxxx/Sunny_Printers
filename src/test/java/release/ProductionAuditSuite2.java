@@ -3,6 +3,8 @@ import service.sync.RemoteToLocalSync;
 import service.sync.UniversalSyncEngine;
 import utils.ClientIdentifiers;
 import utils.DBConnection;
+import utils.TestDatabaseHelper;
+import utils.TestEnvironment;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.*;
@@ -23,12 +25,31 @@ import api.supabase.*;
 @Tag("release")
 public class ProductionAuditSuite2 {
 
+    private static String testDbUrl;
+
     @BeforeAll
-    public static void setup() {
-        System.out.println("--- Starting Audit Suite 2 ---");
-        // Production audit suite: uses DBConnection.PRODUCTION_URL (~/.sunnyprinters/database.db) automatically.
+    public static void setup() throws Exception {
+        System.out.println("--- Starting Audit Suite 2 (TEST environment) ---");
+
+        // Create isolated SQLite database
+        testDbUrl = TestDatabaseHelper.createIsolatedDb("AuditSuite2");
+        DBConnection.setTestDatabaseUrl(testDbUrl);
+        DBConnection.setGlobalTestDatabaseUrl(testDbUrl);
+
+        // Load and inject TEST Supabase credentials
+        TestEnvironment.load();
+        if (TestEnvironment.isSupabaseConfigured()) {
+            TestEnvironment.injectCredentialsIntoDatabase();
+        }
+        TestEnvironment.logContext();
 
         SupabaseReachability.invalidateCache();
+    }
+
+    @AfterAll
+    public static void teardown() {
+        DBConnection.clearTestDatabaseUrl();
+        DBConnection.clearGlobalTestDatabaseUrl();
     }
 
     @Test

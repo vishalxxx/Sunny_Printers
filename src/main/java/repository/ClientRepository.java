@@ -64,17 +64,19 @@ public class ClientRepository {
 		client.setCreatedByUserUuid(userUuid);
 		client.setUpdatedByUserUuid(userUuid);
 
-		String sql = """
-				INSERT INTO clients (
-				  uuid, client_code, client_name, business_name, mobile, alternate_mobile, email,
-				  gstin, pan_number, billing_address, shipping_address,
-				  client_type, price_category, credit_limit, payment_terms, opening_balance, balance_type,
-				  is_active, notes, state, sync_status, sync_version, is_deleted, deleted_at,
-				  created_by_user_uuid, updated_by_user_uuid
-				) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-				""";
-		try (Connection conn = DBConnection.getConnection();
-				PreparedStatement ps = conn.prepareStatement(sql)) {
+		service.LoggerService.beginOperation("CLIENT-CREATE");
+		try {
+			String sql = """
+					INSERT INTO clients (
+					  uuid, client_code, client_name, business_name, mobile, alternate_mobile, email,
+					  gstin, pan_number, billing_address, shipping_address,
+					  client_type, price_category, credit_limit, payment_terms, opening_balance, balance_type,
+					  is_active, notes, state, sync_status, sync_version, is_deleted, deleted_at,
+					  created_by_user_uuid, updated_by_user_uuid
+					) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+					""";
+			try (Connection conn = DBConnection.getConnection();
+					PreparedStatement ps = conn.prepareStatement(sql)) {
 			String uid = client.getClientUuid();
 			if (uid == null || uid.isBlank()) {
 				uid = ClientIdentifiers.newUuidV7String();
@@ -131,17 +133,23 @@ public class ClientRepository {
 			ps.setString(i++, nz(client.getCreatedByUserUuid()));
 			ps.setString(i++, nz(client.getUpdatedByUserUuid()));
 			int n = ps.executeUpdate();
-			if (n > 0) {
+			boolean ok = n > 0;
+			if (ok) {
 				if (!DocumentNumbering.isTemporaryNumber(client.getClientCode())) {
 					pushClientToSupabaseAsync(client, false);
 				}
 				UniversalSyncEngine.scheduleSyncAsync();
 			}
-			return n > 0;
-		} catch (SQLException e) {
-			e.printStackTrace();
+			service.LoggerService.endOperation("CLIENT-CREATE", ok, "UUID: " + uid + ", Code: " + code);
+			return ok;
 		}
-		return false;
+		} catch (Exception e) {
+			service.LoggerService.endOperation("CLIENT-CREATE", false, "Exception: " + e.getMessage());
+			if (e instanceof SQLException) {
+				throw (SQLException) e;
+			}
+			throw new RuntimeException(e);
+		}
 	}
 
 	private static String nz(String s) {
@@ -235,21 +243,25 @@ public class ClientRepository {
 		if (clientUuid == null || clientUuid.isBlank()) {
 			return false;
 		}
-		
-		String sql = """
-				UPDATE clients SET is_deleted=1, is_active=0, deleted_at=datetime('now'),
-				sync_status='PENDING', updated_at=datetime('now') WHERE uuid=? AND IFNULL(is_deleted,0)=0
-				""";
+		service.LoggerService.beginOperation("CLIENT-DELETE");
+		try {
+			String sql = """
+					UPDATE clients SET is_deleted=1, is_active=0, deleted_at=datetime('now'),
+					sync_status='PENDING', updated_at=datetime('now') WHERE uuid=? AND IFNULL(is_deleted,0)=0
+					""";
 
-		try (Connection conn = DBConnection.getConnection();
-				PreparedStatement ps = conn.prepareStatement(sql)) {
-			ps.setString(1, clientUuid.trim());
-			boolean ok = ps.executeUpdate() > 0;
-			if (ok) {
-				deleteClientOnSupabaseAsync(clientUuid.trim());
+			try (Connection conn = DBConnection.getConnection();
+					PreparedStatement ps = conn.prepareStatement(sql)) {
+				ps.setString(1, clientUuid.trim());
+				boolean ok = ps.executeUpdate() > 0;
+				if (ok) {
+					deleteClientOnSupabaseAsync(clientUuid.trim());
+				}
+				service.LoggerService.endOperation("CLIENT-DELETE", ok, "UUID: " + clientUuid);
+				return ok;
 			}
-			return ok;
 		} catch (Exception e) {
+			service.LoggerService.endOperation("CLIENT-DELETE", false, "Exception: " + e.getMessage());
 			e.printStackTrace();
 		}
 		return false;
@@ -383,44 +395,49 @@ public class ClientRepository {
 		}
 		client.setUpdatedByUserUuid(userUuid);
 
-		String sql = """
-				UPDATE clients SET client_name=?, business_name=?, mobile=?, alternate_mobile=?,
-				email=?, gstin=?, pan_number=?, billing_address=?, shipping_address=?,
-				client_type=?, price_category=?, credit_limit=?, payment_terms=?, opening_balance=?, balance_type=?,
-				notes=?, state=?, sync_status='PENDING', sync_version=?, updated_at=datetime('now'),
-				updated_by_user_uuid=? WHERE uuid=?
-				""";
-		try (Connection conn = DBConnection.getConnection();
-				PreparedStatement ps = conn.prepareStatement(sql)) {
-			int i = 1;
-			ps.setString(i++, nz(client.getClientName()));
-			ps.setString(i++, nz(client.getBusinessName()));
-			ps.setString(i++, nz(client.getPhone()));
-			ps.setString(i++, nz(client.getAltPhone()));
-			ps.setString(i++, nz(client.getEmail()));
-			ps.setString(i++, nz(client.getGst()));
-			ps.setString(i++, nz(client.getPan()));
-			ps.setString(i++, nz(client.getBillingAddress()));
-			ps.setString(i++, nz(client.getShippingAddress()));
-			ps.setString(i++, nz(client.getClientType()));
-			ps.setString(i++, nz(client.getPriceCategory()));
-			ps.setDouble(i++, client.getCreditLimit());
-			ps.setString(i++, nz(client.getPaymentTerms()));
-			ps.setDouble(i++, client.getOpeningBalance());
-			ps.setString(i++, nz(client.getBalanceType()));
-			ps.setString(i++, nz(client.getNotes()));
-			ps.setString(i++, nz(client.getState()));
-			ps.setInt(i++, client.getSyncVersion() + 1);
-			ps.setString(i++, nz(client.getUpdatedByUserUuid()));
-			ps.setString(i++, client.getClientUuid());
-			boolean ok = ps.executeUpdate() > 0;
-			if (ok) {
-				client.setSyncVersion(client.getSyncVersion() + 1);
-				pushClientToSupabaseAsync(client, true, before);
-				UniversalSyncEngine.scheduleSyncAsync();
+		service.LoggerService.beginOperation("CLIENT-UPDATE");
+		try {
+			String sql = """
+					UPDATE clients SET client_name=?, business_name=?, mobile=?, alternate_mobile=?,
+					email=?, gstin=?, pan_number=?, billing_address=?, shipping_address=?,
+					client_type=?, price_category=?, credit_limit=?, payment_terms=?, opening_balance=?, balance_type=?,
+					notes=?, state=?, sync_status='PENDING', sync_version=?, updated_at=datetime('now'),
+					updated_by_user_uuid=? WHERE uuid=?
+					""";
+			try (Connection conn = DBConnection.getConnection();
+					PreparedStatement ps = conn.prepareStatement(sql)) {
+				int i = 1;
+				ps.setString(i++, nz(client.getClientName()));
+				ps.setString(i++, nz(client.getBusinessName()));
+				ps.setString(i++, nz(client.getPhone()));
+				ps.setString(i++, nz(client.getAltPhone()));
+				ps.setString(i++, nz(client.getEmail()));
+				ps.setString(i++, nz(client.getGst()));
+				ps.setString(i++, nz(client.getPan()));
+				ps.setString(i++, nz(client.getBillingAddress()));
+				ps.setString(i++, nz(client.getShippingAddress()));
+				ps.setString(i++, nz(client.getClientType()));
+				ps.setString(i++, nz(client.getPriceCategory()));
+				ps.setDouble(i++, client.getCreditLimit());
+				ps.setString(i++, nz(client.getPaymentTerms()));
+				ps.setDouble(i++, client.getOpeningBalance());
+				ps.setString(i++, nz(client.getBalanceType()));
+				ps.setString(i++, nz(client.getNotes()));
+				ps.setString(i++, nz(client.getState()));
+				ps.setInt(i++, client.getSyncVersion() + 1);
+				ps.setString(i++, nz(client.getUpdatedByUserUuid()));
+				ps.setString(i++, client.getClientUuid());
+				boolean ok = ps.executeUpdate() > 0;
+				if (ok) {
+					client.setSyncVersion(client.getSyncVersion() + 1);
+					pushClientToSupabaseAsync(client, true, before);
+					UniversalSyncEngine.scheduleSyncAsync();
+				}
+				service.LoggerService.endOperation("CLIENT-UPDATE", ok, "UUID: " + client.getClientUuid());
+				return ok;
 			}
-			return ok;
 		} catch (Exception e) {
+			service.LoggerService.endOperation("CLIENT-UPDATE", false, "Exception: " + e.getMessage());
 			e.printStackTrace();
 		}
 		return false;
@@ -524,9 +541,9 @@ public class ClientRepository {
 				}
 			};
 			if (SupabaseGate.isOverrideActive()) {
-				task.run();
+				utils.SQLiteWriteCoordinator.runAsBackground(task);
 			} else {
-				CompletableFuture.runAsync(task);
+				CompletableFuture.runAsync(() -> utils.SQLiteWriteCoordinator.runAsBackground(task));
 			}
 		});
 	}
@@ -554,9 +571,9 @@ public class ClientRepository {
 				}
 			};
 			if (SupabaseGate.isOverrideActive()) {
-				task.run();
+				utils.SQLiteWriteCoordinator.runAsBackground(task);
 			} else {
-				CompletableFuture.runAsync(task);
+				CompletableFuture.runAsync(() -> utils.SQLiteWriteCoordinator.runAsBackground(task));
 			}
 		});
 	}

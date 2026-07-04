@@ -40,56 +40,62 @@ public class InvoiceMasterService {
             Invoice invoice,
             String type,
             String filePath) {
+        service.LoggerService.beginOperation("INVOICE-DRAFT");
+        try {
+            CreateOrGetResult result = AtomicDB.run(con -> {
 
-        CreateOrGetResult result = AtomicDB.run(con -> {
+                if (invoice.getJobs() == null || invoice.getJobs().isEmpty()) {
+                    throw new RuntimeException("Cannot create an empty invoice. No jobs found.");
+                }
 
-            if (invoice.getJobs() == null || invoice.getJobs().isEmpty()) {
-                throw new RuntimeException("Cannot create an empty invoice. No jobs found.");
-            }
+                MasterDocumentSeries series = invoice.getMasterDocumentSeries();
+                if (series == null) {
+                    series = MasterDocumentSeries.GST_INVOICE;
+                }
+                AllocatedNumber allocated;
+                if (series == MasterDocumentSeries.PROFORMA_INVOICE) {
+                    allocated = service.sync.UniversalTemporaryNumberEngine.getInstance().allocateTemporary(con, "proforma_invoice");
+                } else {
+                    allocated = numberAllocator.allocateInvoiceNumber(con, series, invoice.getInvoiceDate());
+                }
+                String invoiceNo = allocated.value();
+                invoice.setInvoiceNo(invoiceNo);
 
-            MasterDocumentSeries series = invoice.getMasterDocumentSeries();
-            if (series == null) {
-                series = MasterDocumentSeries.GST_INVOICE;
-            }
-            AllocatedNumber allocated;
-            if (series == MasterDocumentSeries.PROFORMA_INVOICE) {
-                allocated = service.sync.UniversalTemporaryNumberEngine.getInstance().allocateTemporary(con, "proforma_invoice");
-            } else {
-                allocated = numberAllocator.allocateInvoiceNumber(con, series, invoice.getInvoiceDate());
-            }
-            String invoiceNo = allocated.value();
-            invoice.setInvoiceNo(invoiceNo);
+                InvoiceMaster inv = new InvoiceMaster(
+                        invoiceNo,
+                        invoice.getClientId(),
+                        invoice.getClientName(),
+                        invoice.getInvoiceDate(),
+                        invoice.getGrandTotal(),
+                        type,
+                        "DRAFT");
 
-            InvoiceMaster inv = new InvoiceMaster(
-                    invoiceNo,
-                    invoice.getClientId(),
-                    invoice.getClientName(),
-                    invoice.getInvoiceDate(),
-                    invoice.getGrandTotal(),
-                    type,
-                    "DRAFT");
+                inv.setFilePath(filePath);
+                inv.setPeriodFrom(invoice.getFromDate());
+                inv.setPeriodTo(invoice.getToDate());
+                inv.setDocumentSeries(series.name());
+                inv.setSyncStatus("PENDING");
+                if (invoice.getTotalAfterTax() != null) {
+                    inv.setTotalAfterTax(invoice.getTotalAfterTax());
+                } else {
+                    inv.setTotalAfterTax(invoice.getGrandTotal());
+                }
+                if (invoice.getRoundOff() != null) {
+                    inv.setRoundOff(invoice.getRoundOff());
+                } else {
+                    inv.setRoundOff(0.0);
+                }
 
-            inv.setFilePath(filePath);
-            inv.setPeriodFrom(invoice.getFromDate());
-            inv.setPeriodTo(invoice.getToDate());
-            inv.setDocumentSeries(series.name());
-            inv.setSyncStatus("PENDING");
-            if (invoice.getTotalAfterTax() != null) {
-                inv.setTotalAfterTax(invoice.getTotalAfterTax());
-            } else {
-                inv.setTotalAfterTax(invoice.getGrandTotal());
-            }
-            if (invoice.getRoundOff() != null) {
-                inv.setRoundOff(invoice.getRoundOff());
-            } else {
-                inv.setRoundOff(0.0);
-            }
-
-            repo.insert(con, inv);
-            return new CreateOrGetResult(inv, true);
-        });
-        UniversalSyncEngine.scheduleSyncAsync();
-        return result;
+                repo.insert(con, inv);
+                return new CreateOrGetResult(inv, true);
+            });
+            UniversalSyncEngine.scheduleSyncAsync();
+            service.LoggerService.endOperation("INVOICE-DRAFT", true, "Invoice No: " + result.master().getInvoiceNo());
+            return result;
+        } catch (Exception e) {
+            service.LoggerService.endOperation("INVOICE-DRAFT", false, "Exception: " + e.getMessage());
+            throw e;
+        }
     }
 
     /**
@@ -1254,111 +1260,125 @@ public class InvoiceMasterService {
 
 
     public void updateInvoiceStatus(String invoiceUuid, String newStatus) {
-        AtomicDB.runVoid(con -> {
-            InvoiceMaster inv = repo.findByUuid(con, invoiceUuid);
-            if (inv != null) {
-                if ("CANCELLED".equalsIgnoreCase(newStatus)) {
-                    String invNo = inv.getInvoiceNo();
-                    boolean isProforma = (inv.getDocumentSeries() != null && ("PROFORMA_INVOICE".equalsIgnoreCase(inv.getDocumentSeries()) || "PROFORMA".equalsIgnoreCase(inv.getDocumentSeries())))
-                                       || (inv.getType() != null && (inv.getType().toUpperCase().contains("PROFORMA") || inv.getType().toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(inv.getType()) || "DATE_RANGE".equalsIgnoreCase(inv.getType()) || inv.getType().toUpperCase().contains("MONTHLY")))
-                                       || (inv.getInvoiceNo() != null && inv.getInvoiceNo().toUpperCase().contains("/PI/"));
-                    if (!isProforma) {
-                        if ("DRAFT".equals(inv.getStatus()) || (invNo != null && invNo.startsWith("TEMP-"))) {
-                            unlinkJobsFromInvoice(con, inv.getUuid());
-                            repo.deleteInvoice(con, inv.getUuid());
-                            return; // Done
+        service.LoggerService.beginOperation("INVOICE-UPDATE-STATUS");
+        try {
+            AtomicDB.runVoid(con -> {
+                InvoiceMaster inv = repo.findByUuid(con, invoiceUuid);
+                if (inv != null) {
+                    if ("CANCELLED".equalsIgnoreCase(newStatus)) {
+                        String invNo = inv.getInvoiceNo();
+                        boolean isProforma = (inv.getDocumentSeries() != null && ("PROFORMA_INVOICE".equalsIgnoreCase(inv.getDocumentSeries()) || "PROFORMA".equalsIgnoreCase(inv.getDocumentSeries())))
+                                           || (inv.getType() != null && (inv.getType().toUpperCase().contains("PROFORMA") || inv.getType().toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(inv.getType()) || "DATE_RANGE".equalsIgnoreCase(inv.getType()) || inv.getType().toUpperCase().contains("MONTHLY")))
+                                           || (inv.getInvoiceNo() != null && inv.getInvoiceNo().toUpperCase().contains("/PI/"));
+                        if (!isProforma) {
+                            if ("DRAFT".equals(inv.getStatus()) || (invNo != null && invNo.startsWith("TEMP-"))) {
+                                unlinkJobsFromInvoice(con, inv.getUuid());
+                                repo.deleteInvoice(con, inv.getUuid());
+                                return; // Done
+                            }
                         }
                     }
-                }
 
-                inv.setStatus(newStatus);
-                if ("CANCELLED".equalsIgnoreCase(newStatus)) {
-                    inv.setPaymentStatus("Void");
-                    inv.setVoid(false); // Stay visible in table
-                    releaseJobsKeepHistory(con, inv.getUuid());
-                    inv.setAmount(0);
-                    inv.setDueAmount(0);
-                } else if ("VOID".equalsIgnoreCase(newStatus)) {
-                    inv.setPaymentStatus("VOID");
-                    inv.setVoid(true);
-                    inv.setVoidReason("User updated status to VOID");
-                    inv.setVoidDate(LocalDate.now());
-                    repo.updatePayment(con, inv.getUuid(), inv.getPaidAmount(), inv.getDueAmount(), "VOID", LocalDate.now());
-                    unlinkJobsFromInvoice(con, inv.getUuid());
+                    inv.setStatus(newStatus);
+                    if ("CANCELLED".equalsIgnoreCase(newStatus)) {
+                        inv.setPaymentStatus("Void");
+                        inv.setVoid(false); // Stay visible in table
+                        releaseJobsKeepHistory(con, inv.getUuid());
+                        inv.setAmount(0);
+                        inv.setDueAmount(0);
+                    } else if ("VOID".equalsIgnoreCase(newStatus)) {
+                        inv.setPaymentStatus("VOID");
+                        inv.setVoid(true);
+                        inv.setVoidReason("User updated status to VOID");
+                        inv.setVoidDate(LocalDate.now());
+                        repo.updatePayment(con, inv.getUuid(), inv.getPaidAmount(), inv.getDueAmount(), "VOID", LocalDate.now());
+                        unlinkJobsFromInvoice(con, inv.getUuid());
+                    }
+                    repo.update(con, inv);
                 }
-                repo.update(con, inv);
-            }
-        });
+            });
+            service.LoggerService.endOperation("INVOICE-UPDATE-STATUS", true, "UUID: " + invoiceUuid + " -> " + newStatus);
+        } catch (Exception e) {
+            service.LoggerService.endOperation("INVOICE-UPDATE-STATUS", false, "Exception: " + e.getMessage());
+            throw e;
+        }
     }
 
     public String finalizeInvoice(String invoiceUuid) {
-        String finalNo = AtomicDB.runExclusive(con -> {
-            InvoiceMaster inv = repo.findByUuid(con, invoiceUuid);
-            if (inv == null) {
-                throw new RuntimeException("Invoice not found: " + invoiceUuid);
-            }
-            if (!"DRAFT".equals(inv.getStatus())) {
-                throw new RuntimeException("Only DRAFT invoices can be finalized");
-            }
+        service.LoggerService.beginOperation("INVOICE-FINALIZE");
+        try {
+            String finalNo = AtomicDB.runExclusive(con -> {
+                InvoiceMaster inv = repo.findByUuid(con, invoiceUuid);
+                if (inv == null) {
+                    throw new RuntimeException("Invoice not found: " + invoiceUuid);
+                }
+                if (!"DRAFT".equals(inv.getStatus())) {
+                    throw new RuntimeException("Only DRAFT invoices can be finalized");
+                }
 
-            String currentNo = inv.getInvoiceNo();
-            String resolvedNo;
+                String currentNo = inv.getInvoiceNo();
+                String resolvedNo;
 
-            if (currentNo != null && currentNo.contains("-R")) {
-                resolvedNo = currentNo;
-            } else {
-                MasterDocumentSeries series = inv.resolveDocumentSeries();
-                if (series == MasterDocumentSeries.PROFORMA_INVOICE) {
-                    if (api.supabase.SupabaseReachability.isReachable()) {
-                        if (!numberAllocator.isRemoteReachable("proforma_invoice")) {
-                            throw new RuntimeException("Cannot finalize: Supabase number sequence endpoint for Proforma Invoice is not accessible.");
+                if (currentNo != null && currentNo.contains("-R")) {
+                    resolvedNo = currentNo;
+                } else {
+                    MasterDocumentSeries series = inv.resolveDocumentSeries();
+                    if (series == MasterDocumentSeries.PROFORMA_INVOICE) {
+                        if (api.supabase.SupabaseReachability.isReachable()) {
+                            if (!numberAllocator.isRemoteReachable("proforma_invoice")) {
+                                throw new RuntimeException("Cannot finalize: Supabase number sequence endpoint for Proforma Invoice is not accessible.");
+                            }
+                            var permanent = numberAllocator.tryAllocatePermanentInvoice(con, series, inv.getInvoiceDate());
+                            if (permanent.isPresent()) {
+                                resolvedNo = permanent.get().value();
+                            } else {
+                                throw new RuntimeException("Cannot finalize: Failed to allocate a permanent Proforma Invoice number from Supabase.");
+                            }
+                        } else {
+                            if (currentNo != null && DocumentNumbering.isTemporaryNumber(currentNo)) {
+                                resolvedNo = currentNo;
+                            } else {
+                                AllocatedNumber fallback = service.sync.UniversalTemporaryNumberEngine.getInstance().allocateTemporary(con, "proforma_invoice");
+                                resolvedNo = fallback.value();
+                            }
                         }
+                    } else {
                         var permanent = numberAllocator.tryAllocatePermanentInvoice(con, series, inv.getInvoiceDate());
                         if (permanent.isPresent()) {
                             resolvedNo = permanent.get().value();
                         } else {
-                            throw new RuntimeException("Cannot finalize: Failed to allocate a permanent Proforma Invoice number from Supabase.");
-                        }
-                    } else {
-                        if (currentNo != null && DocumentNumbering.isTemporaryNumber(currentNo)) {
-                            resolvedNo = currentNo;
-                        } else {
-                            AllocatedNumber fallback = service.sync.UniversalTemporaryNumberEngine.getInstance().allocateTemporary(con, "proforma_invoice");
-                            resolvedNo = fallback.value();
-                        }
-                    }
-                } else {
-                    var permanent = numberAllocator.tryAllocatePermanentInvoice(con, series, inv.getInvoiceDate());
-                    if (permanent.isPresent()) {
-                        resolvedNo = permanent.get().value();
-                    } else {
-                        if (currentNo != null && DocumentNumbering.isTemporaryNumber(currentNo)) {
-                            resolvedNo = currentNo;
-                        } else {
-                            AllocatedNumber fallback = numberAllocator.allocateInvoiceNumber(con, series, inv.getInvoiceDate());
-                            resolvedNo = fallback.value();
+                            if (currentNo != null && DocumentNumbering.isTemporaryNumber(currentNo)) {
+                                resolvedNo = currentNo;
+                            } else {
+                                AllocatedNumber fallback = numberAllocator.allocateInvoiceNumber(con, series, inv.getInvoiceDate());
+                                resolvedNo = fallback.value();
+                            }
                         }
                     }
                 }
-            }
 
-            inv.setInvoiceNo(resolvedNo);
-            inv.setStatus("FINAL");
-            inv.setSyncStatus("PENDING");
-            repo.update(con, inv);
+                inv.setInvoiceNo(resolvedNo);
+                inv.setStatus("FINAL");
+                inv.setSyncStatus("PENDING");
+                repo.update(con, inv);
 
-            updateJobsStatusByInvoice(con, invoiceUuid, "Invoiced");
+                updateJobsStatusByInvoice(con, invoiceUuid, "Invoiced");
 
-            try {
-                recalculateInvoiceTotals(con, invoiceUuid);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to recalculate totals during finalization: " + e.getMessage(), e);
-            }
+                try {
+                    recalculateInvoiceTotals(con, invoiceUuid);
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to recalculate totals during finalization: " + e.getMessage(), e);
+                }
 
-            return resolvedNo;
-        });
-        UniversalSyncEngine.scheduleSyncAsync();
-        return finalNo;
+                return resolvedNo;
+            });
+            UniversalSyncEngine.scheduleSyncAsync();
+            service.LoggerService.endOperation("INVOICE-FINALIZE", true, "Invoice UUID: " + invoiceUuid + " -> No: " + finalNo);
+            return finalNo;
+        } catch (Exception e) {
+            service.LoggerService.endOperation("INVOICE-FINALIZE", false, "Exception: " + e.getMessage());
+            throw e;
+        }
     }
 
     private void updateJobsStatusByInvoice(java.sql.Connection con, String invoiceUuid, String status) {

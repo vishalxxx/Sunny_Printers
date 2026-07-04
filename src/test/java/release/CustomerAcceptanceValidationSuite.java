@@ -11,6 +11,7 @@ import utils.ClearAllExceptSettings;
 import utils.ClearRemoteDatabase;
 import utils.MetricsExtractor;
 import utils.SchemaAndSyncChecker;
+import utils.TestEnvironment;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.sql.Connection;
@@ -41,6 +42,10 @@ public class CustomerAcceptanceValidationSuite {
         dbBackup = TestDatabaseHelper.createIsolatedDb("CustAccept_Backup");
         fakeSupabase = new FakeSupabaseRestClient();
         SupabaseGate.setOverrideClient(fakeSupabase);
+
+        // Log test environment context
+        TestEnvironment.load();
+        TestEnvironment.logContext();
     }
 
     @AfterAll

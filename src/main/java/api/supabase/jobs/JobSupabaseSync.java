@@ -38,9 +38,9 @@ public final class JobSupabaseSync {
 				}
 			};
 			if (SupabaseGate.isOverrideActive()) {
-				task.run();
+				utils.SQLiteWriteCoordinator.runAsBackground(task);
 			} else {
-				CompletableFuture.runAsync(task);
+				CompletableFuture.runAsync(() -> utils.SQLiteWriteCoordinator.runAsBackground(task));
 			}
 		});
 	}
@@ -112,8 +112,7 @@ public final class JobSupabaseSync {
 						"UPDATE clients SET sync_status='SYNCED', synced_at=datetime('now') WHERE uuid=?")) {
 			ps.setString(1, clientUuid);
 			ps.executeUpdate();
-		} catch (Exception ignored) {
-		}
+		} catch (Exception e) { service.LoggerService.dbWarn("Failed to mark client synced locally: " + e.getMessage()); }
 	}
 
 	private static void markSyncedLocally(String jobUuid) {
