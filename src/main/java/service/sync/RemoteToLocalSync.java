@@ -192,11 +192,11 @@ public final class RemoteToLocalSync {
 							} else if ("PENDING".equalsIgnoreCase(localSyncStatus)) {
 								conflicts++;
 								if (remoteInst.isAfter(localInst)) {
-									SyncConflictResolver.logConflict(table, uuid, localUpdatedAt, remoteUpdatedAtStr,
+									SyncConflictResolver.logConflict(conn, table, uuid, localUpdatedAt, remoteUpdatedAtStr,
 										"Local unpushed edit overwritten by newer remote update", o.toString(), "LAST_WRITE_WINS_REMOTE_WINS");
 									shouldUpsert = true;
 								} else {
-									SyncConflictResolver.logConflict(table, uuid, localUpdatedAt, remoteUpdatedAtStr,
+									SyncConflictResolver.logConflict(conn, table, uuid, localUpdatedAt, remoteUpdatedAtStr,
 										"Local unpushed edit kept; older remote update rejected", o.toString(), "LAST_WRITE_WINS_LOCAL_WINS");
 									shouldUpsert = false;
 									skipped++;
