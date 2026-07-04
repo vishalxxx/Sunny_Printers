@@ -52,12 +52,11 @@ public final class SyncConflictResolver {
         }
     }
 
-    public static void logConflict(String tableName, String recordUuid, String localUpdatedAt,
+    public static void logConflict(Connection conn, String tableName, String recordUuid, String localUpdatedAt,
                                    String remoteUpdatedAt, String localData, String remoteData, String strategy) {
         System.out.println("[SyncConflictResolver] Conflict detected on " + tableName + " with UUID " + recordUuid + ". Resolution strategy: " + strategy);
         String sql = "INSERT INTO sync_conflicts (table_name, record_uuid, local_updated_at, remote_updated_at, local_data, remote_data, resolution_strategy) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, tableName);
             ps.setString(2, recordUuid);
             ps.setString(3, localUpdatedAt);
@@ -92,8 +91,10 @@ public final class SyncConflictResolver {
             Instant localInst = parseTimestamp(localUpdatedAt);
             Instant remoteInst = parseTimestamp(remoteUpdatedAt);
 
+            System.out.println("[DIAGNOSTIC] Conflict check for " + table + " " + uuid + ": local='" + localUpdatedAt + "' (" + localInst + "), remote='" + remoteUpdatedAt + "' (" + remoteInst + ")");
+
             if (remoteInst != Instant.MIN && localInst != Instant.MIN && remoteInst.isAfter(localInst.plusMillis(1000))) {
-                logConflict(table, uuid, localUpdatedAt, remoteUpdatedAt, "Local push rejected; remote is newer", remoteObj.toString(), "LAST_WRITE_WINS_REMOTE_WINS");
+                logConflict(conn, table, uuid, localUpdatedAt, remoteUpdatedAt, "Local push rejected; remote is newer", remoteObj.toString(), "LAST_WRITE_WINS_REMOTE_WINS");
 
                 var fullRes = http.get(endpoint, "uuid=eq." + uuid + "&select=*");
                 if (fullRes.statusCode() == 200) {
@@ -261,6 +262,7 @@ public final class SyncConflictResolver {
             System.out.println("[Double-Spend Prevention] Rejecting allocation " + allocUuid + " for client " + clientUuid + ". Available: " + available + ", requested: " + allocatedAmount);
             
             logConflict(
+                con,
                 "payment_allocations",
                 allocUuid,
                 LocalDateTime.now().toString(),
