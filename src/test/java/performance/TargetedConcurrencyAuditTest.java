@@ -82,7 +82,7 @@ public class TargetedConcurrencyAuditTest {
                 "printing_items", "paper_items", "binding_items", "lamination_items", "ctp_items", 
                 "job_items", "jobs", "payment_allocations", "payment_details", "payments", 
                 "invoice_job_mapping", "invoice_master", "invoice_adjustments", 
-                "invoice_additional_charges", "document_number_mappings", "billing", 
+                "invoice_additional_charges", "document_number_mappings", 
                 "suppliers", "clients", "sync_conflicts"
             };
             for (String table : tables) {

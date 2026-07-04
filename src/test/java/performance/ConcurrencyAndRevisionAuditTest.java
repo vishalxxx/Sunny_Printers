@@ -354,14 +354,13 @@ public class ConcurrencyAndRevisionAuditTest {
             boolean rejected = SyncConflictResolver.validateAndResolveDoubleSpend(con, allocUuid, paymentUuid, 1000.0, true, "2026-06-20 14:00:00", "{}");
             assertTrue(rejected);
 
-            // Verify entry is written to invoice_history
-            try (PreparedStatement ps = con.prepareStatement("SELECT * FROM invoice_history WHERE type = 'DOUBLE_SPEND_REJECTION'")) {
+            // Verify entry is written to sync_conflicts
+            try (PreparedStatement ps = con.prepareStatement("SELECT * FROM sync_conflicts WHERE resolution_strategy = 'DOUBLE_SPEND_REJECTION'")) {
                 try (ResultSet rs = ps.executeQuery()) {
-                    assertTrue(rs.next(), "Invoice history should record DOUBLE_SPEND_REJECTION");
-                    assertEquals("PI-999", rs.getString("invoice_no"));
-                    assertEquals(clientUuid, rs.getString("client_id"));
-                    assertTrue(rs.getString("status").contains("REJECTED"));
-                    assertTrue(rs.getString("status").contains(allocUuid));
+                    assertTrue(rs.next(), "Sync conflicts should record DOUBLE_SPEND_REJECTION");
+                    assertEquals("payment_allocations", rs.getString("table_name"));
+                    assertEquals(allocUuid, rs.getString("record_uuid"));
+                    assertTrue(rs.getString("local_data").contains("Local double-spend prevention: rejected allocation due to negative client balance"));
                 }
             }
         }
