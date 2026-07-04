@@ -22,6 +22,9 @@ public final class SupabaseReachability {
 			cachedReachable = false;
 			return false;
 		}
+		if (SupabaseGate.isOverrideActive()) {
+			return httpOpt.get().ping();
+		}
 		long now = System.currentTimeMillis();
 		long ttl = Boolean.TRUE.equals(cachedReachable) ? CACHE_TTL_OK_MS : CACHE_TTL_FAIL_MS;
 		if (cachedReachable != null && now - cachedAtMs < ttl) {
