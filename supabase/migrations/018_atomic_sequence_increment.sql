@@ -22,3 +22,5 @@ BEGIN
     RETURNING public.number_sequences.sequence_key, public.number_sequences.display_name, public.number_sequences.prefix, public.number_sequences.current_number, public.number_sequences.digit_width, public.number_sequences.financial_year;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+NOTIFY pgrst, 'reload schema';
