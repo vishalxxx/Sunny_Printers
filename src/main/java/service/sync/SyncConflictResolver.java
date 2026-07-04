@@ -74,6 +74,7 @@ public final class SyncConflictResolver {
                                                       SupabaseEndpoints endpoint, String uuid, String localUpdatedAt, List<String> cols) {
         try {
             var res = http.get(endpoint, "uuid=eq." + uuid + "&select=updated_at");
+            System.out.println("[DIAGNOSTIC] GET updated_at status=" + res.statusCode() + " body=" + res.body());
             if (res.statusCode() != 200) {
                 return false;
             }
@@ -91,27 +92,27 @@ public final class SyncConflictResolver {
             Instant localInst = parseTimestamp(localUpdatedAt);
             Instant remoteInst = parseTimestamp(remoteUpdatedAt);
 
-            System.out.println("[DIAGNOSTIC] Conflict check for " + table + " " + uuid + ": local='" + localUpdatedAt + "' (" + localInst + "), remote='" + remoteUpdatedAt + "' (" + remoteInst + ")");
+            boolean isRemoteNewer = remoteInst != Instant.MIN && localInst != Instant.MIN && remoteInst.isAfter(localInst.plusMillis(1000));
+            System.out.println("[DIAGNOSTIC] Conflict check for " + table + " " + uuid + ": local='" + localUpdatedAt + "' (" + localInst + "), remote='" + remoteUpdatedAt + "' (" + remoteInst + "). isRemoteNewer=" + isRemoteNewer);
 
-            if (remoteInst != Instant.MIN && localInst != Instant.MIN && remoteInst.isAfter(localInst.plusMillis(1000))) {
+            if (isRemoteNewer) {
                 logConflict(conn, table, uuid, localUpdatedAt, remoteUpdatedAt, "Local push rejected; remote is newer", remoteObj.toString(), "LAST_WRITE_WINS_REMOTE_WINS");
 
                 var fullRes = http.get(endpoint, "uuid=eq." + uuid + "&select=*");
+                System.out.println("[DIAGNOSTIC] GET full record status=" + fullRes.statusCode() + " body=" + fullRes.body());
                 if (fullRes.statusCode() == 200) {
                     JsonElement fullRoot = JsonParser.parseString(fullRes.body());
                     if (fullRoot.isJsonArray() && fullRoot.getAsJsonArray().size() > 0) {
                         JsonObject fullRemote = fullRoot.getAsJsonArray().get(0).getAsJsonObject();
+                        System.out.println("[DIAGNOSTIC] Upserting remote object to local: " + fullRemote);
                         upsertRemoteObjectToLocal(conn, table, fullRemote, cols);
-                        // CRITICAL FIX: Explicitly mark as SYNCED immediately after conflict resolution.
-                        // upsertRemoteObjectToLocal uses INSERT OR REPLACE, so sync_status is set to SYNCED inside it.
-                        // But we also issue a targeted UPDATE here to handle edge cases where the INSERT OR REPLACE
-                        // might not have included the sync_status column (e.g., if column is absent in remote response).
-                        // This prevents any concurrent push thread from re-pushing the stale local value.
+                        System.out.println("[DIAGNOSTIC] Upsert remote object complete.");
+                        
                         try (PreparedStatement markPs = conn.prepareStatement(
                                 "UPDATE " + table + " SET sync_status='SYNCED', synced_at=datetime('now') WHERE uuid=?")) {
                             markPs.setString(1, uuid);
-                            markPs.executeUpdate();
-                            System.out.println("[SyncConflictResolver] Marked " + table + " " + uuid + " as SYNCED after remote-wins resolution.");
+                            int rows = markPs.executeUpdate();
+                            System.out.println("[DIAGNOSTIC] Marked as SYNCED rows updated=" + rows);
                         } catch (Exception markEx) {
                             System.err.println("[SyncConflictResolver] Failed to mark " + table + " " + uuid + " as SYNCED: " + markEx.getMessage());
                         }
@@ -121,6 +122,7 @@ public final class SyncConflictResolver {
             }
         } catch (Exception e) {
             System.err.println("[SyncConflictResolver] Error checking push conflict: " + e.getMessage());
+            e.printStackTrace();
         }
         return false;
     }
@@ -128,6 +130,8 @@ public final class SyncConflictResolver {
     public static void upsertRemoteObjectToLocal(Connection conn, String table, JsonObject o, List<String> cols) throws Exception {
         List<String> insertCols = new ArrayList<>();
         List<Object> values = new ArrayList<>();
+
+        System.out.println("[DIAGNOSTIC] upsertRemoteObjectToLocal: table=" + table + ", cols=" + cols + ", json=" + o);
 
         for (String col : cols) {
             if (o.has(col)) {
@@ -159,6 +163,7 @@ public final class SyncConflictResolver {
         }
 
         if (insertCols.isEmpty()) {
+            System.out.println("[DIAGNOSTIC] No overlapping columns to insert!");
             return;
         }
 
@@ -189,6 +194,8 @@ public final class SyncConflictResolver {
             first = false;
         }
 
+        System.out.println("[DIAGNOSTIC] SQL=" + sb.toString() + " | values=" + values);
+
         try (PreparedStatement ps = conn.prepareStatement(sb.toString())) {
             for (int i = 0; i < values.size(); i++) {
                 Object v = values.get(i);
@@ -198,7 +205,8 @@ public final class SyncConflictResolver {
                     ps.setObject(i + 1, v);
                 }
             }
-            ps.executeUpdate();
+            int updatedRows = ps.executeUpdate();
+            System.out.println("[DIAGNOSTIC] ps.executeUpdate() returned: " + updatedRows);
         }
     }
 
