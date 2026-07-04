@@ -1,6 +1,5 @@
 package integration;
 
-
 import org.junit.jupiter.api.Tag;
 import utils.FakeSupabaseRestClient;
 import utils.TestDatabaseHelper;
@@ -61,14 +60,14 @@ public class GstInvoiceAuditTest {
     @BeforeEach
     public void resetDb() throws Exception {
         try (Connection conn = DBConnection.getConnection();
-             Statement stmt = conn.createStatement()) {
+                Statement stmt = conn.createStatement()) {
             stmt.execute("PRAGMA foreign_keys = OFF;");
             String[] tables = {
-                "printing_items", "paper_items", "binding_items", "lamination_items", "ctp_items", 
-                "job_items", "jobs", "payment_allocations", "payment_details", "payments", 
-                "invoice_job_mapping", "invoice_master", "invoice_adjustments", 
-                "invoice_additional_charges", "document_number_mappings", "billing", 
-                "suppliers", "clients"
+                    "printing_items", "paper_items", "binding_items", "lamination_items", "ctp_items",
+                    "job_items", "jobs", "payment_allocations", "payment_details", "payments",
+                    "invoice_job_mapping", "invoice_master", "invoice_adjustments",
+                    "invoice_additional_charges", "document_number_mappings",
+                    "suppliers", "clients"
             };
             for (String table : tables) {
                 stmt.execute("DELETE FROM " + table);
@@ -89,8 +88,8 @@ public class GstInvoiceAuditTest {
         // Set CompanyProfile preferences directly
         CompanyProfile.setGst("07BPPPS3532E2ZO");
 
-
-        // Let's create two clients: one intra-state (Delhi, 07) and one inter-state (Punjab, 03)
+        // Let's create two clients: one intra-state (Delhi, 07) and one inter-state
+        // (Punjab, 03)
         String clientDelhiUuid = ClientIdentifiers.newUuidV7String();
         String clientPunjabUuid = ClientIdentifiers.newUuidV7String();
 
@@ -126,7 +125,7 @@ public class GstInvoiceAuditTest {
         int totalTested = 100;
         int passedCount = 0;
         int failedCount = 0;
-        
+
         List<String> auditLogs = new ArrayList<>();
         List<String> mismatchLogs = new ArrayList<>();
         List<String> roundOffAnomalies = new ArrayList<>();
@@ -137,13 +136,14 @@ public class GstInvoiceAuditTest {
         for (int i = 1; i <= totalTested; i++) {
             boolean isIntra = rand.nextBoolean();
             String clientUuid = isIntra ? clientDelhiUuid : clientPunjabUuid;
-            String clientName = isIntra ? "Delhi Customer Ltd (Delhi Customer)" : "Punjab Customer Ltd (Punjab Customer)";
+            String clientName = isIntra ? "Delhi Customer Ltd (Delhi Customer)"
+                    : "Punjab Customer Ltd (Punjab Customer)";
             String buyerGst = isIntra ? "07AAAAA0000A1Z5" : "03BBBBB1111B2Z6";
 
             // Generate a scenario:
             // Mix of single-job, multi-job, freight, design, etc.
             int numJobs = rand.nextInt(4) + 1; // 1 to 4 jobs
-            
+
             // Build jobs and job items in DB
             List<String> jobUuids = new ArrayList<>();
             List<ItemRowModel> simulatedRows = new ArrayList<>();
@@ -156,7 +156,7 @@ public class GstInvoiceAuditTest {
                     String jobUuid = ClientIdentifiers.newUuidV7String();
                     String jobCode = "JOB-" + i + "-" + j;
                     String jobTitle = "Job Title " + i + "-" + j;
-                    
+
                     // insert job
                     String insJob = "INSERT INTO jobs (uuid, client_uuid, job_code, job_title, status, job_date) VALUES (?,?,?,?,?,?)";
                     try (PreparedStatement ps = conn.prepareStatement(insJob)) {
@@ -176,7 +176,7 @@ public class GstInvoiceAuditTest {
                     long qty = rand.nextInt(5000) + 100;
                     double rate = Math.round((amount / qty) * 100.0) / 100.0;
                     amount = Math.round(qty * rate * 100.0) / 100.0; // Recalculate based on rounded rate
-                    
+
                     String insItem = "INSERT INTO job_items (uuid, job_uuid, type, description, amount, sort_order) VALUES (?,?,?,?,?,?)";
                     try (PreparedStatement ps = conn.prepareStatement(insItem)) {
                         ps.setString(1, ClientIdentifiers.newUuidV7String());
@@ -189,7 +189,7 @@ public class GstInvoiceAuditTest {
                     }
 
                     jobUuids.add(jobUuid);
-                    
+
                     // Tax calculation
                     double gstRate = 0.18; // Default GST
                     double cgst = 0;
@@ -203,22 +203,22 @@ public class GstInvoiceAuditTest {
                     }
 
                     ItemRowModel row = new ItemRowModel(
-                        jobUuid,
-                        jobCode,
-                        slNo++,
-                        "Printing of items " + j,
-                        "4821",
-                        qty,
-                        "PCS",
-                        rate,
-                        amount,
-                        gstRate,
-                        cgst,
-                        sgst,
-                        igst,
-                        amount + cgst + sgst + igst,
-                        false, // isCustom
-                        false  // isCharge
+                            jobUuid,
+                            jobCode,
+                            slNo++,
+                            "Printing of items " + j,
+                            "4821",
+                            qty,
+                            "PCS",
+                            rate,
+                            amount,
+                            gstRate,
+                            cgst,
+                            sgst,
+                            igst,
+                            amount + cgst + sgst + igst,
+                            false, // isCustom
+                            false // isCharge
                     );
                     simulatedRows.add(row);
                 }
@@ -236,23 +236,22 @@ public class GstInvoiceAuditTest {
                         igst = Math.round(freightAmount * gstRate * 100.0) / 100.0;
                     }
                     simulatedRows.add(new ItemRowModel(
-                        ClientIdentifiers.newUuidV7String(),
-                        "",
-                        slNo++,
-                        "FREIGHT OUTWARD CHARGES",
-                        "9965",
-                        0,
-                        "",
-                        0,
-                        freightAmount,
-                        gstRate,
-                        cgst,
-                        sgst,
-                        igst,
-                        freightAmount + cgst + sgst + igst,
-                        true,
-                        true
-                    ));
+                            ClientIdentifiers.newUuidV7String(),
+                            "",
+                            slNo++,
+                            "FREIGHT OUTWARD CHARGES",
+                            "9965",
+                            0,
+                            "",
+                            0,
+                            freightAmount,
+                            gstRate,
+                            cgst,
+                            sgst,
+                            igst,
+                            freightAmount + cgst + sgst + igst,
+                            true,
+                            true));
                 }
 
                 if (rand.nextBoolean()) {
@@ -267,23 +266,22 @@ public class GstInvoiceAuditTest {
                         igst = Math.round(designAmount * gstRate * 100.0) / 100.0;
                     }
                     simulatedRows.add(new ItemRowModel(
-                        ClientIdentifiers.newUuidV7String(),
-                        "",
-                        slNo++,
-                        "DESIGN CHARGES",
-                        "9983",
-                        0,
-                        "",
-                        0,
-                        designAmount,
-                        gstRate,
-                        cgst,
-                        sgst,
-                        igst,
-                        designAmount + cgst + sgst + igst,
-                        true,
-                        true
-                    ));
+                            ClientIdentifiers.newUuidV7String(),
+                            "",
+                            slNo++,
+                            "DESIGN CHARGES",
+                            "9983",
+                            0,
+                            "",
+                            0,
+                            designAmount,
+                            gstRate,
+                            cgst,
+                            sgst,
+                            igst,
+                            designAmount + cgst + sgst + igst,
+                            true,
+                            true));
                 }
 
                 conn.commit();
@@ -294,7 +292,8 @@ public class GstInvoiceAuditTest {
                 conn.close();
             }
 
-            // Let's build the model.Invoice object exactly like GenerateGSTInvoiceController does!
+            // Let's build the model.Invoice object exactly like
+            // GenerateGSTInvoiceController does!
             Invoice invoice = new Invoice();
             invoice.setInvoiceNo("INV-AUDIT-" + i);
             invoice.setInvoiceDate(LocalDate.now());
@@ -317,13 +316,13 @@ public class GstInvoiceAuditTest {
                 invJob.setJobId(r.jobUuid);
                 invJob.setJobNo(r.jobNo);
                 invJob.setJobDate(LocalDate.now());
-                
+
                 String printedDesc = r.description;
                 if (r.isCharge) {
                     String pctStr = String.format("%.0f%%", r.gstRate * 100.0);
                     printedDesc = printedDesc + " - " + pctStr;
                 }
-                
+
                 invJob.setJobName(printedDesc);
                 invJob.setHsnSac(r.hsnSac);
                 invJob.setQuantity(r.qty);
@@ -350,17 +349,17 @@ public class GstInvoiceAuditTest {
 
             // Save snapshot into invoice_additional_charges using controller logic
             String invoiceUuid = invoiceMasterService.saveGeneratedInvoice(invoice, "GST_INVOICE", "SENT", null);
-            
+
             // Replicate saveInvoiceAdditionalChargesToDb
             try (Connection con = DBConnection.getConnection()) {
                 con.setAutoCommit(false);
                 try {
                     String insertSql = """
-                        INSERT INTO invoice_additional_charges (
-                            uuid, invoice_uuid, charge_type, description, amount, hsn_sac, gst_rate, taxable_flag,
-                            sync_status, sync_version, is_deleted, is_active, created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'PENDING', 1, 0, 1, datetime('now'), datetime('now'))
-                        """;
+                            INSERT INTO invoice_additional_charges (
+                                uuid, invoice_uuid, charge_type, description, amount, hsn_sac, gst_rate, taxable_flag,
+                                sync_status, sync_version, is_deleted, is_active, created_at, updated_at
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'PENDING', 1, 0, 1, datetime('now'), datetime('now'))
+                            """;
                     try (PreparedStatement ps = con.prepareStatement(insertSql)) {
                         for (ItemRowModel r : simulatedRows) {
                             String chargeType = (!r.isCustom && !r.isCharge) ? "JOB" : (r.isCharge ? "CHARGE" : "ITEM");
@@ -398,39 +397,50 @@ public class GstInvoiceAuditTest {
 
             if (!invoice.getInvoiceNo().equals(regenerated.getInvoiceNo())) {
                 success = false;
-                mismatchBuilder.append(String.format("InvoiceNo mismatch: expected %s, got %s. ", invoice.getInvoiceNo(), regenerated.getInvoiceNo()));
+                mismatchBuilder.append(String.format("InvoiceNo mismatch: expected %s, got %s. ",
+                        invoice.getInvoiceNo(), regenerated.getInvoiceNo()));
             }
             if (!invoice.getClientId().equals(regenerated.getClientId())) {
                 success = false;
-                mismatchBuilder.append(String.format("ClientId mismatch: expected %s, got %s. ", invoice.getClientId(), regenerated.getClientId()));
+                mismatchBuilder.append(String.format("ClientId mismatch: expected %s, got %s. ", invoice.getClientId(),
+                        regenerated.getClientId()));
             }
             if (!invoice.getClientName().equals(regenerated.getClientName())) {
                 success = false;
-                mismatchBuilder.append(String.format("ClientName mismatch: expected %s, got %s. ", invoice.getClientName(), regenerated.getClientName()));
+                mismatchBuilder.append(String.format("ClientName mismatch: expected %s, got %s. ",
+                        invoice.getClientName(), regenerated.getClientName()));
             }
             if (!invoice.getBuyerAddress().equals(regenerated.getBuyerAddress())) {
                 success = false;
-                mismatchBuilder.append(String.format("BuyerAddress mismatch: expected %s, got %s. ", invoice.getBuyerAddress(), regenerated.getBuyerAddress()));
+                mismatchBuilder.append(String.format("BuyerAddress mismatch: expected %s, got %s. ",
+                        invoice.getBuyerAddress(), regenerated.getBuyerAddress()));
             }
             if (!invoice.getBuyerGstin().equals(regenerated.getBuyerGstin())) {
                 success = false;
-                mismatchBuilder.append(String.format("BuyerGstin mismatch: expected %s, got %s. ", invoice.getBuyerGstin(), regenerated.getBuyerGstin()));
+                mismatchBuilder.append(String.format("BuyerGstin mismatch: expected %s, got %s. ",
+                        invoice.getBuyerGstin(), regenerated.getBuyerGstin()));
             }
             if (!invoice.getBuyerStateName().equals(regenerated.getBuyerStateName())) {
                 success = false;
-                mismatchBuilder.append(String.format("BuyerStateName mismatch: expected %s, got %s. ", invoice.getBuyerStateName(), regenerated.getBuyerStateName()));
+                mismatchBuilder.append(String.format("BuyerStateName mismatch: expected %s, got %s. ",
+                        invoice.getBuyerStateName(), regenerated.getBuyerStateName()));
             }
             if (Math.abs(invoice.getGrandTotal() - regenerated.getGrandTotal()) > 0.001) {
                 success = false;
-                mismatchBuilder.append(String.format("GrandTotal mismatch: expected %.2f, got %.2f. ", invoice.getGrandTotal(), regenerated.getGrandTotal()));
+                mismatchBuilder.append(String.format("GrandTotal mismatch: expected %.2f, got %.2f. ",
+                        invoice.getGrandTotal(), regenerated.getGrandTotal()));
             }
-            if (invoice.getRoundOff() != null && regenerated.getRoundOff() != null && Math.abs(invoice.getRoundOff() - regenerated.getRoundOff()) > 0.001) {
+            if (invoice.getRoundOff() != null && regenerated.getRoundOff() != null
+                    && Math.abs(invoice.getRoundOff() - regenerated.getRoundOff()) > 0.001) {
                 success = false;
-                mismatchBuilder.append(String.format("RoundOff mismatch: expected %.2f, got %.2f. ", invoice.getRoundOff(), regenerated.getRoundOff()));
+                mismatchBuilder.append(String.format("RoundOff mismatch: expected %.2f, got %.2f. ",
+                        invoice.getRoundOff(), regenerated.getRoundOff()));
             }
-            if (invoice.getTotalAfterTax() != null && regenerated.getTotalAfterTax() != null && Math.abs(invoice.getTotalAfterTax() - regenerated.getTotalAfterTax()) > 0.001) {
+            if (invoice.getTotalAfterTax() != null && regenerated.getTotalAfterTax() != null
+                    && Math.abs(invoice.getTotalAfterTax() - regenerated.getTotalAfterTax()) > 0.001) {
                 success = false;
-                mismatchBuilder.append(String.format("TotalAfterTax mismatch: expected %.2f, got %.2f. ", invoice.getTotalAfterTax(), regenerated.getTotalAfterTax()));
+                mismatchBuilder.append(String.format("TotalAfterTax mismatch: expected %.2f, got %.2f. ",
+                        invoice.getTotalAfterTax(), regenerated.getTotalAfterTax()));
             }
 
             // Split original jobs into actual jobs and custom charges
@@ -455,39 +465,54 @@ public class GstInvoiceAuditTest {
             // Compare actual jobs
             if (origActualJobs.size() != regenActualJobs.size()) {
                 success = false;
-                mismatchBuilder.append(String.format("Actual jobs count mismatch: expected %d, got %d. ", origActualJobs.size(), regenActualJobs.size()));
+                mismatchBuilder.append(String.format("Actual jobs count mismatch: expected %d, got %d. ",
+                        origActualJobs.size(), regenActualJobs.size()));
             } else {
                 for (int k = 0; k < origActualJobs.size(); k++) {
                     InvoiceJob originalJob = origActualJobs.get(k);
                     InvoiceJob regenJob = regenActualJobs.get(k);
-                    
+
                     if (!originalJob.getJobUuid().equals(regenJob.getJobUuid())) {
                         success = false;
-                        mismatchBuilder.append(String.format("Job UUID mismatch at actual job index %d: expected %s, got %s. ", k, originalJob.getJobUuid(), regenJob.getJobUuid()));
+                        mismatchBuilder
+                                .append(String.format("Job UUID mismatch at actual job index %d: expected %s, got %s. ",
+                                        k, originalJob.getJobUuid(), regenJob.getJobUuid()));
                     }
                     if (!originalJob.getJobNo().equals(regenJob.getJobNo())) {
                         success = false;
-                        mismatchBuilder.append(String.format("Job No mismatch at actual job index %d: expected %s, got %s. ", k, originalJob.getJobNo(), regenJob.getJobNo()));
+                        mismatchBuilder
+                                .append(String.format("Job No mismatch at actual job index %d: expected %s, got %s. ",
+                                        k, originalJob.getJobNo(), regenJob.getJobNo()));
                     }
                     if (!originalJob.getJobName().equals(regenJob.getJobName())) {
                         success = false;
-                        mismatchBuilder.append(String.format("Job Name mismatch at actual job index %d: expected %s, got %s. ", k, originalJob.getJobName(), regenJob.getJobName()));
+                        mismatchBuilder
+                                .append(String.format("Job Name mismatch at actual job index %d: expected %s, got %s. ",
+                                        k, originalJob.getJobName(), regenJob.getJobName()));
                     }
                     if (Math.abs(originalJob.getJobTotal() - regenJob.getJobTotal()) > 0.001) {
                         success = false;
-                        mismatchBuilder.append(String.format("Job Total mismatch at actual job index %d: expected %.2f, got %.2f. ", k, originalJob.getJobTotal(), regenJob.getJobTotal()));
+                        mismatchBuilder.append(
+                                String.format("Job Total mismatch at actual job index %d: expected %.2f, got %.2f. ", k,
+                                        originalJob.getJobTotal(), regenJob.getJobTotal()));
                     }
                     if (originalJob.getQuantity() != regenJob.getQuantity()) {
                         success = false;
-                        mismatchBuilder.append(String.format("Job Qty mismatch at actual job index %d: expected %d, got %d. ", k, originalJob.getQuantity(), regenJob.getQuantity()));
+                        mismatchBuilder
+                                .append(String.format("Job Qty mismatch at actual job index %d: expected %d, got %d. ",
+                                        k, originalJob.getQuantity(), regenJob.getQuantity()));
                     }
                     if (!originalJob.getHsnSac().equals(regenJob.getHsnSac())) {
                         success = false;
-                        mismatchBuilder.append(String.format("Job HSN mismatch at actual job index %d: expected %s, got %s. ", k, originalJob.getHsnSac(), regenJob.getHsnSac()));
+                        mismatchBuilder
+                                .append(String.format("Job HSN mismatch at actual job index %d: expected %s, got %s. ",
+                                        k, originalJob.getHsnSac(), regenJob.getHsnSac()));
                     }
                     if (Math.abs(originalJob.getGstRate() - regenJob.getGstRate()) > 0.001) {
                         success = false;
-                        mismatchBuilder.append(String.format("Job GST Rate mismatch at actual job index %d: expected %.4f, got %.4f. ", k, originalJob.getGstRate(), regenJob.getGstRate()));
+                        mismatchBuilder.append(
+                                String.format("Job GST Rate mismatch at actual job index %d: expected %.4f, got %.4f. ",
+                                        k, originalJob.getGstRate(), regenJob.getGstRate()));
                     }
                 }
             }
@@ -495,31 +520,39 @@ public class GstInvoiceAuditTest {
             // Compare custom charges
             if (origCustomCharges.size() != regenCustomCharges.size()) {
                 success = false;
-                mismatchBuilder.append(String.format("Custom charges count mismatch: expected %d, got %d. ", origCustomCharges.size(), regenCustomCharges.size()));
+                mismatchBuilder.append(String.format("Custom charges count mismatch: expected %d, got %d. ",
+                        origCustomCharges.size(), regenCustomCharges.size()));
             } else {
                 for (int k = 0; k < origCustomCharges.size(); k++) {
                     InvoiceJob originalCharge = origCustomCharges.get(k);
                     InvoiceJob regenCharge = regenCustomCharges.get(k);
-                    
+
                     if (!originalCharge.getJobName().equals(regenCharge.getJobName())) {
                         success = false;
-                        mismatchBuilder.append(String.format("Charge Name mismatch at index %d: expected %s, got %s. ", k, originalCharge.getJobName(), regenCharge.getJobName()));
+                        mismatchBuilder.append(String.format("Charge Name mismatch at index %d: expected %s, got %s. ",
+                                k, originalCharge.getJobName(), regenCharge.getJobName()));
                     }
                     if (Math.abs(originalCharge.getJobTotal() - regenCharge.getJobTotal()) > 0.001) {
                         success = false;
-                        mismatchBuilder.append(String.format("Charge Total mismatch at index %d: expected %.2f, got %.2f. ", k, originalCharge.getJobTotal(), regenCharge.getJobTotal()));
+                        mismatchBuilder
+                                .append(String.format("Charge Total mismatch at index %d: expected %.2f, got %.2f. ", k,
+                                        originalCharge.getJobTotal(), regenCharge.getJobTotal()));
                     }
                     if (originalCharge.getQuantity() != regenCharge.getQuantity()) {
                         success = false;
-                        mismatchBuilder.append(String.format("Charge Qty mismatch at index %d: expected %d, got %d. ", k, originalCharge.getQuantity(), regenCharge.getQuantity()));
+                        mismatchBuilder.append(String.format("Charge Qty mismatch at index %d: expected %d, got %d. ",
+                                k, originalCharge.getQuantity(), regenCharge.getQuantity()));
                     }
                     if (!originalCharge.getHsnSac().equals(regenCharge.getHsnSac())) {
                         success = false;
-                        mismatchBuilder.append(String.format("Charge HSN mismatch at index %d: expected %s, got %s. ", k, originalCharge.getHsnSac(), regenCharge.getHsnSac()));
+                        mismatchBuilder.append(String.format("Charge HSN mismatch at index %d: expected %s, got %s. ",
+                                k, originalCharge.getHsnSac(), regenCharge.getHsnSac()));
                     }
                     if (Math.abs(originalCharge.getGstRate() - regenCharge.getGstRate()) > 0.001) {
                         success = false;
-                        mismatchBuilder.append(String.format("Charge GST Rate mismatch at index %d: expected %.4f, got %.4f. ", k, originalCharge.getGstRate(), regenCharge.getGstRate()));
+                        mismatchBuilder
+                                .append(String.format("Charge GST Rate mismatch at index %d: expected %.4f, got %.4f. ",
+                                        k, originalCharge.getGstRate(), regenCharge.getGstRate()));
                     }
                 }
             }
@@ -536,10 +569,12 @@ public class GstInvoiceAuditTest {
             double calculatedRoundOff = grandTotal - unroundedTotal;
             if (Math.abs(calculatedRoundOff - roundOff) > 0.001) {
                 success = false;
-                mismatchBuilder.append(String.format("RoundOff calculation error: calculated %.4f, stored %.4f. ", calculatedRoundOff, roundOff));
+                mismatchBuilder.append(String.format("RoundOff calculation error: calculated %.4f, stored %.4f. ",
+                        calculatedRoundOff, roundOff));
             }
             if (Math.abs(roundOff) > 0.50) {
-                roundOffAnomalies.add(String.format("Invoice %s has high round-off: %.4f", invoice.getInvoiceNo(), roundOff));
+                roundOffAnomalies
+                        .add(String.format("Invoice %s has high round-off: %.4f", invoice.getInvoiceNo(), roundOff));
             }
 
             if (success) {
@@ -559,10 +594,11 @@ public class GstInvoiceAuditTest {
             fw.write(String.format("* **Total Invoices Tested**: %d\n", totalTested));
             fw.write(String.format("* **Passed**: %d\n", passedCount));
             fw.write(String.format("* **Failed**: %d\n\n", failedCount));
-            
+
             if (failedCount == 0) {
                 fw.write("> [!NOTE]\n");
-                fw.write("> Confirmation: Generated and regenerated invoices are **100% identical** across all tested scenarios.\n\n");
+                fw.write(
+                        "> Confirmation: Generated and regenerated invoices are **100% identical** across all tested scenarios.\n\n");
             } else {
                 fw.write("> [!WARNING]\n");
                 fw.write("> Mismatches found between originally generated and regenerated invoices.\n\n");
@@ -571,7 +607,8 @@ public class GstInvoiceAuditTest {
             fw.write("## Pass/Fail Summary\n\n");
             fw.write("| Total Tested | Passed | Failed | Status |\n");
             fw.write("| --- | --- | --- | --- |\n");
-            fw.write(String.format("| %d | %d | %d | %s |\n\n", totalTested, passedCount, failedCount, failedCount == 0 ? "PASSED" : "FAILED"));
+            fw.write(String.format("| %d | %d | %d | %s |\n\n", totalTested, passedCount, failedCount,
+                    failedCount == 0 ? "PASSED" : "FAILED"));
 
             fw.write("## Mismatch Report\n\n");
             if (mismatchLogs.isEmpty()) {
@@ -585,7 +622,8 @@ public class GstInvoiceAuditTest {
 
             fw.write("## Round-Off Anomaly Report\n\n");
             if (roundOffAnomalies.isEmpty()) {
-                fw.write("* All round-offs are mathematically correct and within standard ranges (|round-off| <= 0.50).\n\n");
+                fw.write(
+                        "* All round-offs are mathematically correct and within standard ranges (|round-off| <= 0.50).\n\n");
             } else {
                 for (String anomaly : roundOffAnomalies) {
                     fw.write("- " + anomaly + "\n");
@@ -594,8 +632,10 @@ public class GstInvoiceAuditTest {
             }
 
             fw.write("## Root Cause Analysis & Investigation\n\n");
-            fw.write("1. **Regeneration Source**: Verified that `buildInvoiceFromMasterForPdfExport` retrieves details from `invoice_additional_charges` snapshot (with fallback to live jobs/job_items for legacy data). This ensures edited invoice values are correctly preserved.\n");
-            fw.write("2. **Rounding behavior**: Round off is mathematically bounded within `[-0.50, 0.50]`, and Grand Total always equals `Taxable Amount + Taxes + Charges + Round Off`.\n");
+            fw.write(
+                    "1. **Regeneration Source**: Verified that `buildInvoiceFromMasterForPdfExport` retrieves details from `invoice_additional_charges` snapshot (with fallback to live jobs/job_items for legacy data). This ensures edited invoice values are correctly preserved.\n");
+            fw.write(
+                    "2. **Rounding behavior**: Round off is mathematically bounded within `[-0.50, 0.50]`, and Grand Total always equals `Taxable Amount + Taxes + Charges + Round Off`.\n");
         }
 
         System.out.println("Audit finished. Results written to: " + REPORT_PATH);
@@ -620,9 +660,10 @@ public class GstInvoiceAuditTest {
         boolean isCustom;
         boolean isCharge;
 
-        public ItemRowModel(String jobUuid, String jobNo, int slNo, String description, String hsnSac, long qty, String unit,
-                            double rate, double taxable, double gstRate, double cgst, double sgst, double igst,
-                            double total, boolean isCustom, boolean isCharge) {
+        public ItemRowModel(String jobUuid, String jobNo, int slNo, String description, String hsnSac, long qty,
+                String unit,
+                double rate, double taxable, double gstRate, double cgst, double sgst, double igst,
+                double total, boolean isCustom, boolean isCharge) {
             this.jobUuid = jobUuid;
             this.jobNo = jobNo;
             this.slNo = slNo;
@@ -642,4 +683,3 @@ public class GstInvoiceAuditTest {
         }
     }
 }
-
