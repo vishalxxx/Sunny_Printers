@@ -10,7 +10,8 @@ import api.supabase.SupabaseGate;
 public class CleanupUtility {
     public static void main(String[] args) throws Exception {
         System.out.println("Cleaning up all data...");
-        DBConnection.setUrl("jdbc:sqlite:database/sunnyprinters.db?busy_timeout=15000&journal_mode=WAL");
+        // Uses DBConnection.PRODUCTION_URL (~/.sunnyprinters/database.db) automatically.
+
 
         // Cleanup local SQLite
         try (Connection con = DBConnection.getExclusiveConnection();

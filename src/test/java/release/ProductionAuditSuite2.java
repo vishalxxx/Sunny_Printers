@@ -1,4 +1,4 @@
-﻿package release;
+package release;
 import service.sync.RemoteToLocalSync;
 import service.sync.UniversalSyncEngine;
 import utils.ClientIdentifiers;
@@ -26,7 +26,8 @@ public class ProductionAuditSuite2 {
     @BeforeAll
     public static void setup() {
         System.out.println("--- Starting Audit Suite 2 ---");
-        // Production audit suite: uses DBConnection.PRODUCTION_URL automatically.
+        // Production audit suite: uses DBConnection.PRODUCTION_URL (~/.sunnyprinters/database.db) automatically.
+
         SupabaseReachability.invalidateCache();
     }
 
@@ -130,4 +131,3 @@ public class ProductionAuditSuite2 {
         assertEquals(0, changesSecondPull, "Incremental pull with no changes must return 0 total changes");
     }
 }
-

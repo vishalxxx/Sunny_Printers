@@ -30,7 +30,8 @@ public class ProductionAuditSuite3 {
     @BeforeAll
     public static void setup() {
         System.out.println("--- Starting Audit Suite 3 ---");
-        DBConnection.setUrl("jdbc:sqlite:database/sunnyprinters.db?busy_timeout=15000&journal_mode=WAL");
+        // Production audit suite: uses DBConnection.PRODUCTION_URL (~/.sunnyprinters/database.db) automatically.
+
         SupabaseReachability.invalidateCache();
     }
 

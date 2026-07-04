@@ -35,7 +35,8 @@ public class ProductionRegressionTestSuite {
     @BeforeAll
     public static void setup() {
         System.out.println("Starting Production Regression Test Suite on Live Environment");
-        DBConnection.setUrl("jdbc:sqlite:database/sunnyprinters.db?busy_timeout=15000&journal_mode=WAL");
+        // Production regression suite: uses DBConnection.PRODUCTION_URL (~/.sunnyprinters/database.db) automatically.
+
         
         // Save environment credentials to database if they exist
         String envUrl = System.getenv("SUPABASE_URL");
