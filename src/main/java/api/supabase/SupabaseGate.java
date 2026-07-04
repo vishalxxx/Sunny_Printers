@@ -11,22 +11,27 @@ import utils.SessionManager;
  */
 public final class SupabaseGate {
 
-	private static SupabaseRestClient overrideClient = null;
+	private static final ThreadLocal<SupabaseRestClient> overrideClient = new ThreadLocal<>();
 
 	public static void setOverrideClient(SupabaseRestClient client) {
-		overrideClient = client;
+		if (client == null) {
+			overrideClient.remove();
+		} else {
+			overrideClient.set(client);
+		}
 	}
 
 	public static boolean isOverrideActive() {
-		return overrideClient != null;
+		return overrideClient.get() != null;
 	}
 
 	private SupabaseGate() {
 	}
 
 	public static Optional<SupabaseRestClient> restClientIfConfigured() {
-		if (overrideClient != null) {
-			return Optional.of(overrideClient);
+		SupabaseRestClient override = overrideClient.get();
+		if (override != null) {
+			return Optional.of(override);
 		}
 		try {
 			SupabaseSettings s = new SupabaseSettingsRepository().load();
