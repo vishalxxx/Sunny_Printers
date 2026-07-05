@@ -2281,8 +2281,8 @@ public class ViewJobsController {
         if (path == null || path.isEmpty()) return;
         
         try {
-            File file = new File(path);
-            if (!file.exists()) {
+            File file = utils.ImageStorage.resolveImageFile(path);
+            if (file == null || !file.exists()) {
                 toast("Image file not found ❌");
                 return;
             }

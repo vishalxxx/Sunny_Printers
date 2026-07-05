@@ -170,8 +170,8 @@ public class EditJobController implements utils.DirtySupport {
         // General Tab
         if (currentJob.getRemarks() != null) jobRemarksArea.setText(currentJob.getRemarks());
         if (currentJob.getImagePath() != null && !currentJob.getImagePath().isBlank()) {
-            File f = new File(currentJob.getImagePath());
-            if (f.exists()) {
+            File f = utils.ImageStorage.resolveImageFile(currentJob.getImagePath());
+            if (f != null && f.exists()) {
                 jobImagePreview.setImage(new Image(f.toURI().toString()));
                 jobImagePreview.setVisible(true); jobImagePreview.setManaged(true);
                 filePlaceholder.setVisible(false); filePlaceholder.setManaged(false);
@@ -389,16 +389,7 @@ public class EditJobController implements utils.DirtySupport {
             }
 
             if (selectedImageFile != null) {
-                File dir = new File("Images");
-                if (!dir.exists()) dir.mkdirs();
-                String ext = "";
-                String name = selectedImageFile.getName();
-                int dotIndex = name.lastIndexOf('.');
-                if (dotIndex > 0) ext = name.substring(dotIndex);
-                String newFileName = "job_" + currentJob.getUuid().replace("-", "") + "_" + System.currentTimeMillis() + ext;
-                File targetFile = new File(dir, newFileName);
-                Files.copy(selectedImageFile.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                String relativePath = "Images/" + newFileName;
+                String relativePath = utils.ImageStorage.saveImage(selectedImageFile, currentJob.getUuid());
                 
                 String userUuid = null;
                 if (utils.SessionManager.getInstance().getCurrentUser() != null) {

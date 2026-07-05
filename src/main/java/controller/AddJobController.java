@@ -723,16 +723,7 @@ public class AddJobController implements utils.DirtySupport {
 			}
 
 			if (selectedImageFile != null) {
-				java.io.File dir = new java.io.File("Images");
-				if (!dir.exists()) dir.mkdirs();
-				String ext = "";
-				String name = selectedImageFile.getName();
-				int dotIndex = name.lastIndexOf('.');
-				if (dotIndex > 0) ext = name.substring(dotIndex);
-				String newFileName = "job_" + jobUuid.replace("-", "") + "_" + System.currentTimeMillis() + ext;
-				java.io.File targetFile = new java.io.File(dir, newFileName);
-				java.nio.file.Files.copy(selectedImageFile.toPath(), targetFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-				String relativePath = "Images/" + newFileName;
+				String relativePath = utils.ImageStorage.saveImage(selectedImageFile, jobUuid);
 				String userUuid = null;
 				if (utils.SessionManager.getInstance().getCurrentUser() != null) {
 					userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
