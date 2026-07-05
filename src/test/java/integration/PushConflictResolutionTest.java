@@ -56,6 +56,7 @@ public class PushConflictResolutionTest {
 
     @BeforeEach
     public void resetDbAndFake() throws Exception {
+        SupabaseGate.setOverrideClient(fakeSupabase);
         fakeSupabase.clear();
         SupabaseReachability.invalidateCache();
 
