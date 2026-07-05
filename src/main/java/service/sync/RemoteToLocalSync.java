@@ -166,21 +166,24 @@ public final class RemoteToLocalSync {
 						boolean localExists = false;
 						String localSyncStatus = null;
 						String localUpdatedAt = null;
+						long localSyncVersion = 0L;
 
 						if (uuid != null && cols.contains("sync_status") && cols.contains("updated_at")) {
-							try (PreparedStatement checkPs = conn.prepareStatement("SELECT sync_status, updated_at FROM " + table + " WHERE uuid = ?")) {
+							try (PreparedStatement checkPs = conn.prepareStatement("SELECT sync_status, updated_at, sync_version FROM " + table + " WHERE uuid = ?")) {
 								checkPs.setString(1, uuid);
 								try (ResultSet checkRs = checkPs.executeQuery()) {
 									if (checkRs.next()) {
 										localExists = true;
 										localSyncStatus = checkRs.getString("sync_status");
 										localUpdatedAt = checkRs.getString("updated_at");
+										localSyncVersion = checkRs.getLong("sync_version");
 									}
 								}
 							}
 						}
 
 						boolean shouldUpsert = true;
+						String skipReason = "Local updated_at matches remote";
 						if (localExists) {
 							String remoteUpdatedAtStr = o.has(timestampCol) && !o.get(timestampCol).isJsonNull() ? o.get(timestampCol).getAsString() : null;
 							java.time.Instant localInst = SyncConflictResolver.parseTimestamp(localUpdatedAt);
@@ -188,6 +191,7 @@ public final class RemoteToLocalSync {
 
 							if (remoteInst.equals(localInst)) {
 								shouldUpsert = false;
+								skipReason = "Local and remote updated_at are identical";
 								skipped++;
 							} else if ("PENDING".equalsIgnoreCase(localSyncStatus)) {
 								conflicts++;
@@ -199,14 +203,19 @@ public final class RemoteToLocalSync {
 									SyncConflictResolver.logConflict(conn, table, uuid, localUpdatedAt, remoteUpdatedAtStr,
 										"Local unpushed edit kept; older remote update rejected", o.toString(), "LAST_WRITE_WINS_LOCAL_WINS");
 									shouldUpsert = false;
+									skipReason = "Local pending edit is newer than or equal to remote update";
 									skipped++;
 								}
 							} else {
 								if (remoteInst.isBefore(localInst)) {
 									shouldUpsert = false;
+									skipReason = "Local synced edit is newer than remote update";
 									skipped++;
 								}
 							}
+
+							long remoteSyncVersion = o.has("sync_version") && !o.get("sync_version").isJsonNull() ? o.get("sync_version").getAsLong() : 0L;
+							System.out.println("[DIAGNOSTIC] Pull Sync check for " + table + " " + uuid + ": local.updated_at='" + localUpdatedAt + "' (" + localInst + "), remote.updated_at='" + remoteUpdatedAtStr + "' (" + remoteInst + "), local.sync_version=" + localSyncVersion + ", remote.sync_version=" + remoteSyncVersion + ". shouldUpsert=" + shouldUpsert + (shouldUpsert ? "" : ", skipReason=" + skipReason));
 						}
 
 						if (!shouldUpsert) {
