@@ -75,6 +75,19 @@ public class ProductionConcurrencyAuditTest {
         DBConnection.setGlobalTestDatabaseUrl(testDbUrl);
 
         fakeSupabase = new FakeSupabaseRestClient();
+
+        com.google.gson.JsonObject proformaSeq = new com.google.gson.JsonObject();
+        proformaSeq.addProperty("uuid", java.util.UUID.randomUUID().toString());
+        proformaSeq.addProperty("sequence_key", "proforma_invoice");
+        proformaSeq.addProperty("current_value", 100);
+        fakeSupabase.getTableData(api.supabase.SupabaseEndpoints.NUMBER_SEQUENCES).add(proformaSeq);
+
+        com.google.gson.JsonObject gstSeq = new com.google.gson.JsonObject();
+        gstSeq.addProperty("uuid", java.util.UUID.randomUUID().toString());
+        gstSeq.addProperty("sequence_key", "gst_invoice");
+        gstSeq.addProperty("current_value", 100);
+        fakeSupabase.getTableData(api.supabase.SupabaseEndpoints.NUMBER_SEQUENCES).add(gstSeq);
+
         api.supabase.SupabaseGate.setOverrideClient(fakeSupabase);
 
         CompanyProfile.setName("Sunny Printers");
@@ -126,14 +139,35 @@ public class ProductionConcurrencyAuditTest {
 
         // 1. Start Custom Sync Engine Loop
         Thread syncThread = new Thread(() -> {
-            while (!Thread.currentThread().isInterrupted()) {
-                try {
-                    UniversalSyncEngine.syncAllPending();
-                    Thread.sleep(5000); // 5 seconds polling
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
+            api.supabase.SupabaseGate.setOverrideClient(fakeSupabase);
+            try {
+                while (!Thread.currentThread().isInterrupted()) {
+                    try {
+                        utils.SQLiteWriteCoordinator.runAsBackground(() -> {
+                            try {
+                                UniversalSyncEngine.syncAllPending();
+                            } catch (Exception ex) {
+                                if (Thread.currentThread().isInterrupted() || ex.getMessage() != null && ex.getMessage().contains("Interrupted")) {
+                                    Thread.currentThread().interrupt();
+                                } else {
+                                    ex.printStackTrace();
+                                }
+                            }
+                        });
+                        Thread.sleep(5000); // 5 seconds polling
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    } catch (Exception e) {
+                        if (Thread.currentThread().isInterrupted() || e.getMessage() != null && e.getMessage().contains("Interrupted")) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                        e.printStackTrace();
+                    }
                 }
+            } finally {
+                api.supabase.SupabaseGate.setOverrideClient(null);
             }
         });
         syncThread.setDaemon(true);
@@ -148,6 +182,7 @@ public class ProductionConcurrencyAuditTest {
         for (int i = 0; i < 100; i++) {
             final int clientIndex = i;
             tasks.add(() -> {
+                api.supabase.SupabaseGate.setOverrideClient(fakeSupabase);
                 try {
                     String clientUuid = ClientIdentifiers.newUuidV7String();
                     String name = "ProdAudit Client " + clientIndex;
@@ -180,6 +215,8 @@ public class ProductionConcurrencyAuditTest {
                     }
                 } catch (Exception e) {
                     caughtExceptions.add(e);
+                } finally {
+                    api.supabase.SupabaseGate.setOverrideClient(null);
                 }
                 return null;
             });
@@ -190,6 +227,7 @@ public class ProductionConcurrencyAuditTest {
         for (int i = 0; i < 90; i++) {
             final int invoiceIndex = i;
             tasks.add(() -> {
+                api.supabase.SupabaseGate.setOverrideClient(fakeSupabase);
                 try {
                     // Wait for some clients/jobs to exist
                     while (clientUuids.isEmpty() || jobUuids.isEmpty()) {
@@ -269,6 +307,8 @@ public class ProductionConcurrencyAuditTest {
 
                 } catch (Exception e) {
                     caughtExceptions.add(e);
+                } finally {
+                    api.supabase.SupabaseGate.setOverrideClient(null);
                 }
                 return null;
             });
@@ -277,6 +317,7 @@ public class ProductionConcurrencyAuditTest {
         // Phase 3: Background View Invoices Searches (Simulate aggressive reads)
         for (int i = 0; i < 50; i++) {
             tasks.add(() -> {
+                api.supabase.SupabaseGate.setOverrideClient(fakeSupabase);
                 try {
                     for(int attempt=0; attempt<5; attempt++) {
                         Thread.sleep(200);
@@ -284,6 +325,8 @@ public class ProductionConcurrencyAuditTest {
                     }
                 } catch (Exception e) {
                     caughtExceptions.add(e);
+                } finally {
+                    api.supabase.SupabaseGate.setOverrideClient(null);
                 }
                 return null;
             });

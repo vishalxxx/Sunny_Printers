@@ -10,10 +10,12 @@ import java.lang.reflect.Proxy;
 public class WriteCoordinatedConnection implements InvocationHandler {
     private final Connection delegate;
     private boolean lockAcquired = false;
+    private boolean lockAcquiredAsBackground = false;
 
     public WriteCoordinatedConnection(Connection delegate, boolean acquireLockImmediately) {
         this.delegate = delegate;
         if (acquireLockImmediately) {
+            this.lockAcquiredAsBackground = SQLiteWriteCoordinator.isBackground();
             SQLiteWriteCoordinator.beginWrite();
             this.lockAcquired = true;
         }
@@ -29,6 +31,7 @@ public class WriteCoordinatedConnection implements InvocationHandler {
 
     public void forceAcquireLock() {
         if (!lockAcquired) {
+            this.lockAcquiredAsBackground = SQLiteWriteCoordinator.isBackground();
             SQLiteWriteCoordinator.beginWrite();
             lockAcquired = true;
         }
@@ -41,6 +44,7 @@ public class WriteCoordinatedConnection implements InvocationHandler {
         if ("setAutoCommit".equals(methodName) && args.length == 1) {
             boolean autoCommit = (Boolean) args[0];
             if (!autoCommit && !lockAcquired) {
+                this.lockAcquiredAsBackground = SQLiteWriteCoordinator.isBackground();
                 SQLiteWriteCoordinator.beginWrite();
                 lockAcquired = true;
             }
@@ -49,7 +53,7 @@ public class WriteCoordinatedConnection implements InvocationHandler {
                 return method.invoke(delegate, args);
             } finally {
                 if (lockAcquired) {
-                    SQLiteWriteCoordinator.endWrite();
+                    SQLiteWriteCoordinator.endWrite(lockAcquiredAsBackground);
                     lockAcquired = false;
                 }
             }
@@ -57,6 +61,7 @@ public class WriteCoordinatedConnection implements InvocationHandler {
             if (args != null && args.length > 0 && args[0] instanceof String) {
                 String sql = ((String) args[0]).trim().toUpperCase();
                 if (isWriteQuery(sql)) {
+                    this.lockAcquiredAsBackground = SQLiteWriteCoordinator.isBackground();
                     SQLiteWriteCoordinator.beginWrite();
                     lockAcquired = true;
                 }

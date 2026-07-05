@@ -94,8 +94,11 @@ public final class SQLiteWriteCoordinator {
     }
 
     public static void endWrite() {
+        endWrite(isBackground());
+    }
+
+    public static void endWrite(boolean bg) {
         Thread current = Thread.currentThread();
-        boolean bg = isBackground();
 
         synchronized (lock) {
             if (activeWriter != current) {

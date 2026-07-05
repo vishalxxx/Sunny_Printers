@@ -1324,15 +1324,17 @@ public class InvoiceMasterService {
                 } else {
                     MasterDocumentSeries series = inv.resolveDocumentSeries();
                     if (series == MasterDocumentSeries.PROFORMA_INVOICE) {
-                        if (api.supabase.SupabaseReachability.isReachable()) {
-                            if (!numberAllocator.isRemoteReachable("proforma_invoice")) {
-                                throw new RuntimeException("Cannot finalize: Supabase number sequence endpoint for Proforma Invoice is not accessible.");
-                            }
+                        if (api.supabase.SupabaseReachability.isReachable() && numberAllocator.isRemoteReachable("proforma_invoice")) {
                             var permanent = numberAllocator.tryAllocatePermanentInvoice(con, series, inv.getInvoiceDate());
                             if (permanent.isPresent()) {
                                 resolvedNo = permanent.get().value();
                             } else {
-                                throw new RuntimeException("Cannot finalize: Failed to allocate a permanent Proforma Invoice number from Supabase.");
+                                if (currentNo != null && DocumentNumbering.isTemporaryNumber(currentNo)) {
+                                    resolvedNo = currentNo;
+                                } else {
+                                    AllocatedNumber fallback = service.sync.UniversalTemporaryNumberEngine.getInstance().allocateTemporary(con, "proforma_invoice");
+                                    resolvedNo = fallback.value();
+                                }
                             }
                         } else {
                             if (currentNo != null && DocumentNumbering.isTemporaryNumber(currentNo)) {
