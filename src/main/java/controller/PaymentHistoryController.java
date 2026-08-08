@@ -266,7 +266,7 @@ public class PaymentHistoryController implements Initializable {
             sql.append(" AND p.payment_date <= '").append(to.toString()).append("'");
         }
 
-        sql.append(" ORDER BY p.payment_date DESC");
+        sql.append(" ORDER BY datetime(COALESCE(p.updated_at, p.created_at)) DESC, p.payment_date DESC");
 
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql.toString());

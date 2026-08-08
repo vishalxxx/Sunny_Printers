@@ -109,6 +109,9 @@ public class ClientFormController implements Initializable {
 		if (altPhoneField != null) {
 			altPhoneField.textProperty().addListener((obs, oldVal, newVal) -> validateAltPhoneRealtime(newVal));
 		}
+		if (creditLimitField != null) {
+			creditLimitField.setDisable(true);
+		}
 	}
 
 	/** Register / Update stays disabled until both business name and client name are non-empty. */
@@ -193,6 +196,9 @@ public class ClientFormController implements Initializable {
 		}
 		creditLimitField.setText(String.valueOf(client.getCreditLimit()));
 		openingBalanceField.setText(String.valueOf(client.getOpeningBalance()));
+		if (openingBalanceField != null) {
+			openingBalanceField.setDisable(true);
+		}
 		billingAddressField.setText(client.getBillingAddress());
 		shippingAddressField.setText(client.getShippingAddress());
 		notesField.setText(client.getNotes());
@@ -272,6 +278,9 @@ public class ClientFormController implements Initializable {
 		panField.clear();
 		creditLimitField.setText("0.0");
 		openingBalanceField.setText("0.0");
+		if (openingBalanceField != null) {
+			openingBalanceField.setDisable(false);
+		}
 		billingAddressField.clear();
 		shippingAddressField.clear();
 		notesField.clear();

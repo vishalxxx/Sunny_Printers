@@ -98,6 +98,16 @@ public class JobItem {
 	public String getDeletedAt() { return deletedAt; }
 	public void setDeletedAt(String deletedAt) { this.deletedAt = deletedAt; }
 
+	private int includeInInvoice = 1;
+
+	public int getIncludeInInvoice() {
+		return includeInInvoice;
+	}
+
+	public void setIncludeInInvoice(int includeInInvoice) {
+		this.includeInInvoice = includeInInvoice;
+	}
+
 	public String getCreatedAt() { return createdAt; }
 	public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
 }

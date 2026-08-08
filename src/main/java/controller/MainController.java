@@ -78,6 +78,17 @@ public class MainController implements Initializable {
 	@FXML
 	private Label lblOverdue;
 
+	@FXML private Label lblRevenuePercent;
+	@FXML private Label lblOutstandingPercent;
+	@FXML private Label lblCollectedPercent;
+	@FXML private Label lblOverduePercent;
+
+	@FXML private javafx.scene.layout.Region barRevenueProgress;
+	@FXML private javafx.scene.layout.Region barOutstandingProgress;
+	@FXML private javafx.scene.layout.Region barCollectedProgress;
+	@FXML private javafx.scene.layout.Region barOverdueProgress;
+
+
 	// Analysis Bars
 	@FXML
 	private javafx.scene.layout.Region cashFlow_M1_total;
@@ -235,6 +246,10 @@ public class MainController implements Initializable {
 	private javafx.stage.Popup downloadsPopup;
 	private DownloadsPopupController popupController;
 
+	@FXML
+	private StackPane btnNotifications;
+	private javafx.stage.Popup notificationsPopup;
+
 	public void addDownload(String fileName, String type, String size, String path) {
 		model.DownloadItem item = new model.DownloadItem(fileName, type, size, java.time.LocalDateTime.now(), path);
 		recentDownloads.add(0, item); // Add to top
@@ -260,6 +275,74 @@ public class MainController implements Initializable {
 
 		if (popupController != null) {
 			popupController.setDownloads(recentDownloads);
+		}
+	}
+
+	@FXML
+	private void toggleNotificationsPopup(MouseEvent event) {
+		if (notificationsPopup == null) {
+			notificationsPopup = new javafx.stage.Popup();
+			notificationsPopup.setAutoHide(true);
+
+			VBox popupRoot = new VBox();
+			popupRoot.setPadding(new javafx.geometry.Insets(16));
+			popupRoot.setSpacing(12);
+			popupRoot.setStyle("-fx-background-color: white; -fx-border-color: #EFE9DB; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 4);");
+			popupRoot.setMinWidth(260);
+			popupRoot.setPrefWidth(260);
+
+			Label titleLabel = new Label("Notifications");
+			titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1C1917;");
+			
+			javafx.scene.control.Separator sep = new javafx.scene.control.Separator();
+			sep.setStyle("-fx-opacity: 0.1;");
+
+			VBox contentBox = new VBox();
+			contentBox.setAlignment(javafx.geometry.Pos.CENTER);
+			contentBox.setPadding(new javafx.geometry.Insets(20, 0, 20, 0));
+			
+			Label noNotifLabel = new Label("No notifications");
+			noNotifLabel.setStyle("-fx-text-fill: #716D68; -fx-font-size: 12px;");
+			contentBox.getChildren().add(noNotifLabel);
+
+			popupRoot.getChildren().addAll(titleLabel, sep, contentBox);
+			notificationsPopup.getContent().add(popupRoot);
+		}
+
+		if (notificationsPopup.isShowing()) {
+			notificationsPopup.hide();
+		} else {
+			Parent root = (Parent) notificationsPopup.getContent().get(0);
+			root.applyCss();
+			root.layout();
+			double popupW = 260;
+			double gap = 6;
+
+			javafx.geometry.Bounds iconBounds = btnNotifications.localToScreen(btnNotifications.getBoundsInLocal());
+			javafx.stage.Window hostWindow = btnNotifications.getScene() != null ? btnNotifications.getScene().getWindow() : null;
+
+			double screenX = iconBounds.getMaxX() - popupW;
+			double screenY = iconBounds.getMaxY() + gap;
+
+			if (hostWindow != null) {
+				double wx = hostWindow.getX();
+				double ww = hostWindow.getWidth();
+				double pad = 8;
+				if (screenX < wx + pad) {
+					screenX = wx + pad;
+				}
+				if (screenX + popupW > wx + ww - pad) {
+					screenX = wx + ww - popupW - pad;
+				}
+			}
+
+			if (hostWindow != null) {
+				notificationsPopup.show(hostWindow, screenX, screenY);
+			} else {
+				double localX = btnNotifications.getWidth() - popupW;
+				double localY = btnNotifications.getHeight() + gap;
+				notificationsPopup.show(btnNotifications, localX, localY);
+			}
 		}
 	}
 
@@ -448,10 +531,25 @@ public class MainController implements Initializable {
 
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
-		setPageTitle("Dashboard");
-		openCenterDashboard();
-		// Set initial state so first push creates history
-		utils.NavigationManager.getInstance().push(null, "Dashboard", "Overview", null);
+		boolean companyExists = checkCompanyExists();
+		if (!companyExists) {
+			loadGeneralSettings();
+			refreshNavigationLocks();
+			Platform.runLater(() -> {
+				javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
+				alert.setTitle("Warning");
+				alert.setHeaderText("Company Details Required");
+				alert.setContentText("No company registered. Please configure a company under General Settings to enable all features.");
+				alert.getDialogPane().getStyleClass().add("settings-warm-dialog");
+				alert.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+				alert.show();
+			});
+		} else {
+			setPageTitle("Dashboard");
+			openCenterDashboard();
+			// Set initial state so first push creates history
+			utils.NavigationManager.getInstance().push(null, "Dashboard", "Overview", null);
+		}
 
 		// Initialize Filter Dropdown
 		if (comboTimeRange != null) {
@@ -871,6 +969,46 @@ public class MainController implements Initializable {
 		loadTableData();
 	}
 
+	private void setKPIProgress(javafx.scene.layout.Region bar, double fraction) {
+		if (bar == null) return;
+		double f = Math.max(0.0, Math.min(1.0, fraction));
+		Platform.runLater(() -> {
+			if (bar.getParent() instanceof javafx.scene.layout.Region) {
+				bar.prefWidthProperty().bind(((javafx.scene.layout.Region) bar.getParent()).widthProperty().multiply(f));
+				bar.setMaxWidth(Double.MAX_VALUE);
+			} else {
+				bar.setPrefWidth(120 * f);
+			}
+		});
+	}
+
+	private void updateKPIPercent(Label lbl, double current, double previous) {
+		if (lbl == null) return;
+		Platform.runLater(() -> {
+			if (previous <= 0) {
+				if (current > 0) {
+					lbl.setText("+100%");
+					lbl.setStyle("-fx-text-fill: #68765A; -fx-font-weight: 800;");
+				} else {
+					lbl.setText("0%");
+					lbl.setStyle("-fx-text-fill: #758385; -fx-font-weight: 800;");
+				}
+			} else {
+				double change = ((current - previous) / previous) * 100;
+				if (change > 0) {
+					lbl.setText(String.format("+%.0f%%", change));
+					lbl.setStyle("-fx-text-fill: #68765A; -fx-font-weight: 800;");
+				} else if (change < 0) {
+					lbl.setText(String.format("%.0f%%", change));
+					lbl.setStyle("-fx-text-fill: #D27357; -fx-font-weight: 800;");
+				} else {
+					lbl.setText("0%");
+					lbl.setStyle("-fx-text-fill: #758385; -fx-font-weight: 800;");
+				}
+			}
+		});
+	}
+
 	private void loadSummaryData() {
 		try (Connection con = DBConnection.getConnection()) {
 			String filter = getTimeFilterSQL();
@@ -905,7 +1043,6 @@ public class MainController implements Initializable {
 				}
 			}
 			totalBilled = totalBilled + totalDN - totalCN;
-			// Note: totalDue also needs adjustment if CN/DN affect balance
 			totalDue = totalDue + totalDN - totalCN;
 
 			if (lblTotalRevenue != null) {
@@ -917,10 +1054,6 @@ public class MainController implements Initializable {
 				lblOutstanding.setText(String.format("₹%,.0f", totalDue));
 			if (lblDonutTotal != null)
 				lblDonutTotal.setText(String.format("₹%,.0f", totalBilled));
-			if (lblOverdue != null)
-				lblOverdue.setText(String.format("₹%,.0f", totalDue - totalPaid)); // Default logic for "Overdue" kpi
-																					// card often means dynamic
-																					// outstanding
 
 			// 2. Collection Ratio / Health Score (Within Range)
 			double collectionRatio = totalBilled > 0 ? (totalPaid / totalBilled) : 0;
@@ -979,8 +1112,90 @@ public class MainController implements Initializable {
 				donut_ring_orange.setLength(orangePercent * 360);
 			}
 
-			if (lblOverdue != null)
-				lblOverdue.setText(String.format("₹%,.0f", overdueAmt));
+			// 7. DYNAMIC KPI PERCENTAGES AND PROGRESS BARS
+			double revThisMonth = 0, revLastMonth = 0;
+			double collThisMonth = 0, collLastMonth = 0;
+			double outToday = totalDue, outLastMonth = 0;
+			double overdueToday = overdueAmt, overdueLastMonth = 0;
+
+			// Query Revenue and Paid for This Month and Last Month
+			String sqlMonths = """
+				SELECT 
+					SUM(CASE WHEN strftime('%Y-%m', invoice_date) = strftime('%Y-%m', 'now') THEN amount ELSE 0 END) as rev_curr,
+					SUM(CASE WHEN strftime('%Y-%m', invoice_date) = strftime('%Y-%m', 'now', '-1 month') THEN amount ELSE 0 END) as rev_prev
+				FROM invoice_master WHERE is_void = 0
+				""";
+			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sqlMonths)) {
+				if (rs.next()) {
+					revThisMonth = rs.getDouble(1);
+					revLastMonth = rs.getDouble(2);
+				}
+			}
+
+			// Adjust Revenue with CN/DN for this month and last month
+			String sqlCN_DN = """
+				SELECT 
+					type,
+					SUM(CASE WHEN strftime('%Y-%m', date) = strftime('%Y-%m', 'now') THEN amount ELSE 0 END) as adj_curr,
+					SUM(CASE WHEN strftime('%Y-%m', date) = strftime('%Y-%m', 'now', '-1 month') THEN amount ELSE 0 END) as adj_prev
+				FROM invoice_adjustments
+				GROUP BY type
+				""";
+			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sqlCN_DN)) {
+				while (rs.next()) {
+					String type = rs.getString(1);
+					double curr = rs.getDouble(2);
+					double prev = rs.getDouble(3);
+					if ("Debit Note".equalsIgnoreCase(type)) {
+						revThisMonth += curr;
+						revLastMonth += prev;
+					} else if ("Credit Note".equalsIgnoreCase(type)) {
+						revThisMonth -= curr;
+						revLastMonth -= prev;
+					}
+				}
+			}
+
+			// Query payments this month vs same period last month (collections)
+			String currentDayStr = java.time.LocalDate.now().toString().substring(8, 10);
+			String sqlPayments = """
+				SELECT 
+					SUM(CASE WHEN strftime('%Y-%m', payment_date) = strftime('%Y-%m', 'now') THEN amount ELSE 0 END) as pay_curr,
+					SUM(CASE WHEN strftime('%Y-%m', payment_date) = strftime('%Y-%m', 'now', '-1 month') AND strftime('%d', payment_date) <= ? THEN amount ELSE 0 END) as pay_prev
+				FROM payments
+				""";
+			try (java.sql.PreparedStatement ps = con.prepareStatement(sqlPayments)) {
+				ps.setString(1, currentDayStr);
+				try (ResultSet rs = ps.executeQuery()) {
+					if (rs.next()) {
+						collThisMonth = rs.getDouble(1);
+						collLastMonth = rs.getDouble(2);
+					}
+				}
+			}
+
+			// Outstanding at end of last month
+			outLastMonth = outToday - (revThisMonth - collThisMonth);
+
+			// Overdue last month (unpaid invoices older than 30 days from the start of this month)
+			String sqlOverduePrev = "SELECT SUM(due_amount) FROM invoice_master WHERE is_void = 0 AND due_amount > 0 AND date(invoice_date) < date('now', 'start of month', '-30 days')";
+			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sqlOverduePrev)) {
+				if (rs.next()) {
+					overdueLastMonth = rs.getDouble(1);
+				}
+			}
+
+			// Update percentage labels
+			updateKPIPercent(lblRevenuePercent, revThisMonth, revLastMonth);
+			updateKPIPercent(lblOutstandingPercent, outToday, outLastMonth);
+			updateKPIPercent(lblCollectedPercent, collThisMonth, collLastMonth);
+			updateKPIPercent(lblOverduePercent, overdueToday, overdueLastMonth);
+
+			// Update progress bar lines
+			setKPIProgress(barRevenueProgress, revThisMonth > 0 ? (collThisMonth / revThisMonth) : 0);
+			setKPIProgress(barOutstandingProgress, totalBilled > 0 ? (totalDue / totalBilled) : 0);
+			setKPIProgress(barCollectedProgress, collLastMonth > 0 ? (collThisMonth / collLastMonth) : 0);
+			setKPIProgress(barOverdueProgress, totalDue > 0 ? (overdueAmt / totalDue) : 0);
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -1269,6 +1484,11 @@ public class MainController implements Initializable {
 
 					if (controller instanceof GenerateInvoiceController genInv) {
 						genInv.onShownAfterNavigation();
+						if (pendingInvoicingClientUuid != null && pendingInvoicingJobUuid != null) {
+							genInv.preSelectJob(pendingInvoicingClientUuid, pendingInvoicingJobUuid);
+							pendingInvoicingClientUuid = null;
+							pendingInvoicingJobUuid = null;
+						}
 					}
 
 					if (controller instanceof AddJobController addJobController) {
@@ -1793,6 +2013,7 @@ public class MainController implements Initializable {
 					this.currentController = prevState.getController(); // ⚡ RESTORE CONTROLLER
 					centerContentHost.getChildren().setAll(prevState.getView());
 					updateCenterHeaderTitle(prevState.getFxmlPath());
+					refreshActiveScreen();
 				} else if (prevState.getFxmlPath() == null) {
 					// 🏠 Back to Dashboard
 					collapseAllSubmenus(true);
@@ -2468,6 +2689,30 @@ public class MainController implements Initializable {
 			javafx.animation.TranslateTransition transition = new javafx.animation.TranslateTransition(Duration.millis(300), banner);
 			transition.setToY(0);
 			transition.play();
+		});
+	}
+
+	public boolean checkCompanyExists() {
+		try (Connection conn = utils.DBConnection.getConnection()) {
+			return !new repository.CompanyDetailsRepository().listAll(conn, false).isEmpty();
+		} catch (Exception e) {
+			service.LoggerService.error("Failed to check company existence: " + e.getMessage(), MainController.class, e);
+			return false;
+		}
+	}
+
+	public void refreshNavigationLocks() {
+		Platform.runLater(() -> {
+			boolean companyExists = checkCompanyExists();
+			boolean disableNav = !companyExists;
+
+			if (dashboardBtn != null) dashboardBtn.setDisable(disableNav);
+			if (jobsBtn != null) jobsBtn.setDisable(disableNav);
+			if (clientsBtn != null) clientsBtn.setDisable(disableNav);
+			if (suppliersBtn != null) suppliersBtn.setDisable(disableNav);
+			if (billingBtn != null) billingBtn.setDisable(disableNav);
+			if (paymentBtn != null) paymentBtn.setDisable(disableNav);
+			if (ledgerBtn != null) ledgerBtn.setDisable(disableNav);
 		});
 	}
 }

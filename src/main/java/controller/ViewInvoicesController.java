@@ -107,6 +107,7 @@ public class ViewInvoicesController {
 
     private final Map<String, String> clientIdToEmail = new HashMap<>();
     private final Set<String> selectedInvoiceUuids = new HashSet<>();
+    private boolean isSelectionUpdating = false;
 
     private final ClientService clientService = new ClientService();
     private final InvoiceMasterService invoiceMasterService = new InvoiceMasterService();
@@ -130,6 +131,7 @@ public class ViewInvoicesController {
 
     private static ViewInvoicesController instance;
     public static ViewInvoicesController getInstance() { return instance; }
+    private String lastAlertedTempNumber = "";
 
     public void refresh() {
         handleSearch(null);
@@ -166,6 +168,9 @@ public class ViewInvoicesController {
             invoiceTable.setFixedCellSize(58);
 
             invoiceTable.getSelectionModel().getSelectedItems().addListener((javafx.collections.ListChangeListener.Change<? extends InvoiceMaster> c) -> {
+                if (isSelectionUpdating) {
+                    return;
+                }
                 selectedInvoiceUuids.clear();
                 for (InvoiceMaster inv : invoiceTable.getSelectionModel().getSelectedItems()) {
                     if (inv != null && inv.getUuid() != null) {
@@ -195,17 +200,17 @@ public class ViewInvoicesController {
                         return;
                     }
                     Node target = (Node) e.getTarget();
-                    boolean isCheckboxClick = false;
+                    boolean isIgnoredClick = false;
                     for (Node n = target; n != null; n = n.getParent()) {
                         if (n instanceof TableCell) {
                             TableCell<?, ?> cell = (TableCell<?, ?>) n;
-                            if (cell.getTableColumn() == colSelect) {
-                                isCheckboxClick = true;
+                            if (cell.getTableColumn() == colSelect || cell.getTableColumn() == colActions) {
+                                isIgnoredClick = true;
                                 break;
                             }
                         }
                     }
-                    if (isCheckboxClick) {
+                    if (isIgnoredClick) {
                         return;
                     }
                     e.consume(); // Prevent default JavaFX selection on press
@@ -218,17 +223,17 @@ public class ViewInvoicesController {
                         return;
                     }
                     Node target = (Node) e.getTarget();
-                    boolean isCheckboxClick = false;
+                    boolean isIgnoredClick = false;
                     for (Node n = target; n != null; n = n.getParent()) {
                         if (n instanceof TableCell) {
                             TableCell<?, ?> cell = (TableCell<?, ?>) n;
-                            if (cell.getTableColumn() == colSelect) {
-                                isCheckboxClick = true;
+                            if (cell.getTableColumn() == colSelect || cell.getTableColumn() == colActions) {
+                                isIgnoredClick = true;
                                 break;
                             }
                         }
                     }
-                    if (isCheckboxClick) {
+                    if (isIgnoredClick) {
                         return;
                     }
                     InvoiceMaster item = row.getItem();
@@ -241,23 +246,14 @@ public class ViewInvoicesController {
                 row.setOnMouseClicked(event -> {
                     if (event.getClickCount() == 2 && (!row.isEmpty())) {
                         InvoiceMaster selected = row.getItem();
-                        String stat = selected.getStatus() != null ? selected.getStatus().toUpperCase() : "";
-                        String ds = selected.getDocumentSeries();
-                        String tp = selected.getType();
-                        boolean isProforma = (ds != null && ("PROFORMA_INVOICE".equalsIgnoreCase(ds) || "PROFORMA".equalsIgnoreCase(ds)))
-                                           || (tp != null && (tp.toUpperCase().contains("PROFORMA") || tp.toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(tp) || "DATE_RANGE".equalsIgnoreCase(tp) || tp.toUpperCase().contains("MONTHLY")))
-                                           || (selected.getInvoiceNo() != null && selected.getInvoiceNo().toUpperCase().contains("/PI/"));
-                        boolean canEdit = false;
-                        if (isProforma) {
-                            canEdit = !"REVISED".equals(stat) && !"CANCELLED".equals(stat) && !"VOID".equals(stat);
-                        } else {
-                            canEdit = "DRAFT".equals(stat) || "FINAL".equals(stat);
-                        }
-                        if (canEdit) {
-                            invoiceTable.getSelectionModel().select(selected);
-                            handleEditAction(null);
-                        } else {
-                            handleViewOnlyAction(selected);
+                        if (selected != null) {
+                            InvoiceActionState state = InvoiceActionState.from(selected);
+                            if (state.edit) {
+                                invoiceTable.getSelectionModel().select(selected);
+                                handleEditAction(null);
+                            } else {
+                                handleViewOnlyAction(selected);
+                            }
                         }
                     }
                 });
@@ -989,29 +985,35 @@ public class ViewInvoicesController {
             if (isProforma) {
                 // Proforma Payment Rules: Unpaid, Partial Paid, Paid all allow Edit Invoice and Cancel Invoice
                 // But Process Status Revised/Cancelled/Void block them
+                // Also, finalized proformas (FINAL/SENT) cannot be edited.
                 boolean processLocked = "REVISED".equals(status) || "CANCELLED".equals(status) || "VOID".equals(status);
-                edit = !processLocked;
+                boolean isFinalized = "FINAL".equals(status) || "SENT TO CLIENT".equals(status) || "SENT".equals(status);
+                edit = !processLocked && !isFinalized;
                 cancel = !processLocked;
             } else {
                 // GST Payment Rules:
-                // Unpaid: Edit = No, Cancel Invoice = Yes (Void)
-                // Partial Paid, Paid, Overdue: Edit = No, Cancel Invoice = No
-                // Also, process status Draft is editable and cancelable (under general matrix)
+                // Unpaid, Partial Paid, Paid, Overdue: Edit = No, Cancel Invoice = Yes
+                // Also, process status Draft is editable and cancelable
                 if (isDraft) {
                     edit = true;
                     cancel = true;
                 } else {
                     edit = false;
-                    cancel = "UNPAID".equals(pStatus) && !isPaid && !isPartialPaid && !isOverdue && !"CANCELLED".equals(status) && !"VOID".equals(status);
+                    cancel = !"CANCELLED".equals(status) && !"VOID".equals(status);
                 }
             }
 
             boolean finalize = isDraft;
+            if (finalize && !isProforma) {
+                if (!api.supabase.SupabaseReachability.isReachable()) {
+                    finalize = false;
+                }
+            }
             boolean send = isFinal || isSent;
             String sendText = isSent ? "Send Again" : "Send";
             boolean revised = (isFinal || isSent) && !hasPayments;
             boolean payment = isSent && !isPaid;
-            boolean raiseCnDn = isSent && !"UNPAID".equals(pStatus);
+            boolean raiseCnDn = false; // Disabled for now
             
             String invNo = inv.getInvoiceNo();
             boolean isTemp = isDraft || (invNo != null && invNo.startsWith("TEMP-"));
@@ -1114,6 +1116,8 @@ public class ViewInvoicesController {
         if (inv == null || invoiceTable == null) {
             return;
         }
+        selectedInvoiceUuids.clear();
+        selectedInvoiceUuids.add(inv.getUuid());
         if (!invoiceTable.getSelectionModel().getSelectedItems().contains(inv)) {
             invoiceTable.getSelectionModel().clearSelection();
             invoiceTable.getSelectionModel().select(inv);
@@ -1343,6 +1347,38 @@ public class ViewInvoicesController {
         return btn;
     }
 
+    private void checkAndAlertPermanentNumber(String searchStr) {
+        if (searchStr == null || !searchStr.toUpperCase().startsWith("TEMP-")) {
+            return;
+        }
+        String clean = searchStr.trim().toUpperCase();
+        if (clean.equals(lastAlertedTempNumber)) {
+            return;
+        }
+        try (java.sql.Connection con = utils.DBConnection.getConnection();
+             java.sql.PreparedStatement ps = con.prepareStatement("SELECT permanent_number FROM document_number_mappings WHERE UPPER(temporary_number) = ?")) {
+            ps.setString(1, clean);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String permNo = rs.getString(1);
+                    lastAlertedTempNumber = clean;
+                    Platform.runLater(() -> {
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                        alert.setTitle("Permanent Number Mapping");
+                        alert.setHeaderText("Offline Number Mapped");
+                        alert.setContentText("Permanent number assigned for this temporary number is:\n" + permNo);
+                        alert.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+                        alert.getDialogPane().getStyleClass().add("atelier-alert");
+                        alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+                        alert.show();
+                    });
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     /** Invoked from live filter listeners and programmatic refresh; not an FXML button. */
     private void handleSearch(ActionEvent event) {
         final String clientId = (clientComboBox != null && clientComboBox.getValue() != null
@@ -1354,6 +1390,9 @@ public class ViewInvoicesController {
         LocalDate start = (startDatePicker != null) ? startDatePicker.getValue() : null;
         LocalDate end = (endDatePicker != null) ? endDatePicker.getValue() : null;
         String invoiceNo = (invoiceSearchField != null) ? invoiceSearchField.getText() : "";
+        if (invoiceNo != null && !invoiceNo.isBlank()) {
+            checkAndAlertPermanentNumber(invoiceNo);
+        }
         String typeFilterVal = (typeComboBox != null) ? typeComboBox.getValue() : "All";
         String documentSeries = "All";
         if ("GST Invoice".equalsIgnoreCase(typeFilterVal)) {
@@ -1365,41 +1404,81 @@ public class ViewInvoicesController {
         InvoiceMaster selected = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
         final String selectedUuid = (selected != null) ? selected.getUuid() : null;
 
+        final java.util.Set<String> uuidsToRestore = new java.util.HashSet<>(selectedInvoiceUuids);
         final String finalDocumentSeries = documentSeries;
         new Thread(() -> {
             try {
                 List<InvoiceMaster> results = invoiceMasterService.getFilteredInvoices(clientId, status, invoiceStatus, start, end, invoiceNo, finalDocumentSeries);
                 Platform.runLater(() -> {
-                    fullInvoiceResults.clear();
-                    fullInvoiceResults.addAll(results);
-                    isFullTotalsCached = false;
-                    selectedInvoiceUuids.clear();
-                    currentPageIndex = 0;
-                    repaginate();
-
-                    if (invoiceTable != null) {
-                        if (selectedUuid != null) {
+                    isSelectionUpdating = true;
+                    try {
+                        fullInvoiceResults.clear();
+                        fullInvoiceResults.addAll(results);
+                        isFullTotalsCached = false;
+                        
+                        // Prune selectedInvoiceUuids to only contain UUIDs present in the new results
+                        java.util.Set<String> validUuids = new java.util.HashSet<>();
+                        for (InvoiceMaster inv : fullInvoiceResults) {
+                            if (inv.getUuid() != null) {
+                                validUuids.add(inv.getUuid());
+                            }
+                        }
+                        selectedInvoiceUuids.retainAll(validUuids);
+                        
+                        currentPageIndex = 0;
+                        String targetPageUuid = selectedUuid;
+                        if (targetPageUuid == null && !uuidsToRestore.isEmpty()) {
+                            targetPageUuid = uuidsToRestore.iterator().next();
+                        }
+                        if (targetPageUuid != null) {
                             int idx = -1;
                             for (int i = 0; i < fullInvoiceResults.size(); i++) {
-                                if (fullInvoiceResults.get(i).getUuid().equals(selectedUuid)) {
+                                if (targetPageUuid.equals(fullInvoiceResults.get(i).getUuid())) {
                                     idx = i;
                                     break;
                                 }
                             }
                             if (idx >= 0) {
                                 currentPageIndex = idx / pageSize;
-                                repaginate();
-                                InvoiceMaster sel = fullInvoiceResults.get(idx);
-                                invoiceTable.getSelectionModel().select(sel);
-                                invoiceTable.requestFocus();
-                            } else {
-                                invoiceTable.getSelectionModel().clearSelection();
                             }
-                        } else {
-                            invoiceTable.getSelectionModel().clearSelection();
                         }
+                        
+                        repaginate();
+
+                        if (invoiceTable != null) {
+                            invoiceTable.getSelectionModel().clearSelection();
+                            java.util.List<Integer> indicesToSelect = new java.util.ArrayList<>();
+                            int activeIdx = -1;
+                            for (int i = 0; i < tablePageItems.size(); i++) {
+                                InvoiceMaster item = tablePageItems.get(i);
+                                if (item != null && item.getUuid() != null) {
+                                    if (selectedInvoiceUuids.contains(item.getUuid())) {
+                                        indicesToSelect.add(i);
+                                    }
+                                    if (item.getUuid().equals(selectedUuid)) {
+                                        activeIdx = i;
+                                    }
+                                }
+                            }
+                            
+                            if (activeIdx >= 0 && !indicesToSelect.contains(activeIdx)) {
+                                indicesToSelect.add(activeIdx);
+                            }
+
+                            if (!indicesToSelect.isEmpty()) {
+                                int first = indicesToSelect.get(0);
+                                int[] rest = new int[indicesToSelect.size() - 1];
+                                for (int k = 1; k < indicesToSelect.size(); k++) {
+                                    rest[k - 1] = indicesToSelect.get(k);
+                                }
+                                invoiceTable.getSelectionModel().selectIndices(first, rest);
+                                invoiceTable.requestFocus();
+                            }
+                        }
+                        refreshInvoiceSummaryPanel();
+                    } finally {
+                        isSelectionUpdating = false;
                     }
-                    refreshInvoiceSummaryPanel();
                 });
             } catch (Exception e) {
                 e.printStackTrace();
@@ -1408,35 +1487,57 @@ public class ViewInvoicesController {
     }
 
     private void repaginate() {
-        if (paginationInfoLabel == null) {
-            tablePageItems.clear();
+        isSelectionUpdating = true;
+        try {
+            if (paginationInfoLabel == null) {
+                tablePageItems.clear();
+                int total = fullInvoiceResults.size();
+                int from = currentPageIndex * pageSize;
+                int to = Math.min(from + pageSize, total);
+                if (from < to) {
+                    tablePageItems.addAll(fullInvoiceResults.subList(from, to));
+                }
+                if (invoiceTable != null) {
+                    invoiceTable.refresh();
+                }
+                return;
+            }
             int total = fullInvoiceResults.size();
+            int pages = Math.max(1, (int) Math.ceil(total / (double) pageSize));
+            if (currentPageIndex >= pages) {
+                currentPageIndex = Math.max(0, pages - 1);
+            }
             int from = currentPageIndex * pageSize;
             int to = Math.min(from + pageSize, total);
+            tablePageItems.clear();
             if (from < to) {
                 tablePageItems.addAll(fullInvoiceResults.subList(from, to));
             }
+            int fromDisplay = total == 0 ? 0 : from + 1;
+            paginationInfoLabel.setText(String.format("Showing %d to %d of %d invoices", fromDisplay, to, total));
+            rebuildPaginationControls(pages);
             if (invoiceTable != null) {
                 invoiceTable.refresh();
+                
+                invoiceTable.getSelectionModel().clearSelection();
+                java.util.List<Integer> indicesToSelect = new java.util.ArrayList<>();
+                for (int i = 0; i < tablePageItems.size(); i++) {
+                    InvoiceMaster item = tablePageItems.get(i);
+                    if (item != null && item.getUuid() != null && selectedInvoiceUuids.contains(item.getUuid())) {
+                        indicesToSelect.add(i);
+                    }
+                }
+                if (!indicesToSelect.isEmpty()) {
+                    int first = indicesToSelect.get(0);
+                    int[] rest = new int[indicesToSelect.size() - 1];
+                    for (int k = 1; k < indicesToSelect.size(); k++) {
+                        rest[k - 1] = indicesToSelect.get(k);
+                    }
+                    invoiceTable.getSelectionModel().selectIndices(first, rest);
+                }
             }
-            return;
-        }
-        int total = fullInvoiceResults.size();
-        int pages = Math.max(1, (int) Math.ceil(total / (double) pageSize));
-        if (currentPageIndex >= pages) {
-            currentPageIndex = Math.max(0, pages - 1);
-        }
-        int from = currentPageIndex * pageSize;
-        int to = Math.min(from + pageSize, total);
-        tablePageItems.clear();
-        if (from < to) {
-            tablePageItems.addAll(fullInvoiceResults.subList(from, to));
-        }
-        int fromDisplay = total == 0 ? 0 : from + 1;
-        paginationInfoLabel.setText(String.format("Showing %d to %d of %d invoices", fromDisplay, to, total));
-        rebuildPaginationControls(pages);
-        if (invoiceTable != null) {
-            invoiceTable.refresh();
+        } finally {
+            isSelectionUpdating = false;
         }
     }
 
@@ -1800,14 +1901,26 @@ public class ViewInvoicesController {
 
     @FXML private void handleFinalizeAction(ActionEvent e) {
         if (invoiceTable == null) return;
-        java.util.List<InvoiceMaster> selected = new java.util.ArrayList<>(invoiceTable.getSelectionModel().getSelectedItems());
-        if (selected.isEmpty()) return;
+        java.util.List<InvoiceMaster> toProcess = new java.util.ArrayList<>();
+        if (!selectedInvoiceUuids.isEmpty()) {
+            for (InvoiceMaster inv : fullInvoiceResults) {
+                if (inv.getUuid() != null && selectedInvoiceUuids.contains(inv.getUuid())) {
+                    toProcess.add(inv);
+                }
+            }
+        } else {
+            InvoiceMaster sel = invoiceTable.getSelectionModel().getSelectedItem();
+            if (sel != null) {
+                toProcess.add(sel);
+            }
+        }
+        if (toProcess.isEmpty()) return;
         
         int success = 0;
         int failed = 0;
         String lastNewNo = null;
 
-        for (InvoiceMaster inv : selected) {
+        for (InvoiceMaster inv : toProcess) {
             try {
                 lastNewNo = invoiceMasterService.finalizeInvoice(inv.getUuid());
                 success++;
@@ -1831,28 +1944,200 @@ public class ViewInvoicesController {
     @FXML private void handleSendAction(ActionEvent e) { updateStatus("SENT TO CLIENT"); }
     @FXML private void handleCancelAction(ActionEvent e) {
         if (invoiceTable == null) return;
-        java.util.List<InvoiceMaster> selected = new java.util.ArrayList<>(invoiceTable.getSelectionModel().getSelectedItems());
-        if (selected.isEmpty()) return;
+        java.util.List<InvoiceMaster> toProcess = new java.util.ArrayList<>();
+        if (!selectedInvoiceUuids.isEmpty()) {
+            for (InvoiceMaster inv : fullInvoiceResults) {
+                if (inv.getUuid() != null && selectedInvoiceUuids.contains(inv.getUuid())) {
+                    toProcess.add(inv);
+                }
+            }
+        } else {
+            InvoiceMaster sel = invoiceTable.getSelectionModel().getSelectedItem();
+            if (sel != null) {
+                toProcess.add(sel);
+            }
+        }
+        if (toProcess.isEmpty()) return;
 
-        for (InvoiceMaster inv : selected) {
+        for (InvoiceMaster inv : toProcess) {
             String ds = inv.getDocumentSeries();
             String tp = inv.getType();
             boolean isProforma = (ds != null && ("PROFORMA_INVOICE".equalsIgnoreCase(ds) || "PROFORMA".equalsIgnoreCase(ds)))
                                || (tp != null && (tp.toUpperCase().contains("PROFORMA") || tp.toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(tp) || "DATE_RANGE".equalsIgnoreCase(tp) || tp.toUpperCase().contains("MONTHLY")))
                                || (inv.getInvoiceNo() != null && inv.getInvoiceNo().toUpperCase().contains("/PI/"));
             
-            String st = (!isProforma && !"DRAFT".equals(inv.getStatus())) ? "VOID" : "CANCELLED";
-            invoiceMasterService.updateInvoiceStatus(inv.getUuid(), st);
+            boolean isGstDraft = !isProforma && "DRAFT".equalsIgnoreCase(inv.getStatus());
+            boolean isGstFinalOrSent = !isProforma && ("FINAL".equalsIgnoreCase(inv.getStatus()) || "SENT TO CLIENT".equalsIgnoreCase(inv.getStatus()));
+
+            boolean hasPayment = inv.getPaidAmount() > 0.0001;
+            boolean proceedWithCancel = true;
+
+            if (hasPayment) {
+                ButtonType btnRefund = new ButtonType("Refund Payment");
+                ButtonType btnKeep = new ButtonType("Keep Payment");
+                ButtonType btnCancel = new ButtonType("Cancel/Abort", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
+
+                Alert dialog = new Alert(Alert.AlertType.CONFIRMATION);
+                dialog.setTitle("Payment Exist");
+                dialog.setHeaderText("Payment Exist");
+                dialog.setContentText("This invoice has a payment of ₹" + inv.getPaidAmount() + " linked. How would you like to handle the payment before cancellation?");
+                dialog.getButtonTypes().setAll(btnRefund, btnKeep, btnCancel);
+                
+                dialog.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+                dialog.getDialogPane().getStyleClass().add("atelier-alert");
+                dialog.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+                dialog.getDialogPane().setStyle("-fx-min-width: 550px; -fx-pref-width: 550px; -fx-max-width: 550px;");
+
+                // Prevent button text truncation by configuring on showing
+                dialog.setOnShowing(dialogEvent -> {
+                    dialog.getDialogPane().getButtonTypes().forEach(buttonType -> {
+                        javafx.scene.control.Button btn = (javafx.scene.control.Button) dialog.getDialogPane().lookupButton(buttonType);
+                        if (btn != null) {
+                            btn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                        }
+                    });
+                });
+
+                java.util.Optional<ButtonType> opt = dialog.showAndWait();
+                if (opt.isPresent()) {
+                    if (opt.get() == btnRefund) {
+                        Alert confirmRefund = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to refund the payment amount of ₹" + inv.getPaidAmount() + "?", ButtonType.YES, ButtonType.NO);
+                        confirmRefund.setTitle("Confirm Refund");
+                        confirmRefund.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+                        confirmRefund.getDialogPane().getStyleClass().add("atelier-alert");
+                        confirmRefund.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+                        
+                        confirmRefund.setOnShowing(dialogEvent -> {
+                            confirmRefund.getDialogPane().getButtonTypes().forEach(buttonType -> {
+                                javafx.scene.control.Button btn = (javafx.scene.control.Button) confirmRefund.getDialogPane().lookupButton(buttonType);
+                                if (btn != null) {
+                                    btn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                                }
+                            });
+                        });
+
+                        java.util.Optional<ButtonType> confOpt = confirmRefund.showAndWait();
+                        if (confOpt.isPresent() && confOpt.get() == ButtonType.YES) {
+                            try {
+                                invoiceMasterService.refundAdvanceForInvoice(inv.getUuid(), inv.getClientId(), inv.getPaidAmount());
+                                inv.setPaymentStatus("REFUNDED");
+                                Toast.show((Stage) invoiceTable.getScene().getWindow(), "Refund created for payment.");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                                Toast.show((Stage) invoiceTable.getScene().getWindow(), "Failed to refund: " + ex.getMessage());
+                                proceedWithCancel = false;
+                            }
+                        } else {
+                            Toast.show((Stage) invoiceTable.getScene().getWindow(), "Refund cancelled.");
+                            proceedWithCancel = false;
+                        }
+                    } else if (opt.get() == btnKeep) {
+                        try {
+                            invoiceMasterService.deallocatePaymentsForInvoice(inv.getUuid());
+                            inv.setPaymentStatus("KEPT_AS_ADVANCE");
+                            Toast.show((Stage) invoiceTable.getScene().getWindow(), "Payment deallocated (kept).");
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                            Toast.show((Stage) invoiceTable.getScene().getWindow(), "Failed to deallocate: " + ex.getMessage());
+                            proceedWithCancel = false;
+                        }
+                    } else {
+                        Toast.show((Stage) invoiceTable.getScene().getWindow(), "Cancellation aborted.");
+                        proceedWithCancel = false;
+                    }
+                } else {
+                    proceedWithCancel = false;
+                }
+            }
+
+            if (!proceedWithCancel) {
+                continue;
+            }
+
+            if (isProforma) {
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                alert.setTitle("Cancel Proforma Invoice");
+                alert.setHeaderText("Cancel Invoice: " + inv.getInvoiceNo());
+                alert.setContentText("Do you want to keep the jobs in this invoice (return them to the completed pool), or cancel them as well?");
+                alert.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+                alert.getDialogPane().getStyleClass().add("atelier-alert");
+                alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+                alert.getDialogPane().setStyle("-fx-min-width: 500px; -fx-pref-width: 500px; -fx-max-width: 500px;");
+
+                ButtonType btnKeep = new ButtonType("Keep Jobs");
+                ButtonType btnCancelJobs = new ButtonType("Cancel Jobs");
+                ButtonType btnCancelAction = ButtonType.CANCEL;
+
+                alert.getButtonTypes().setAll(btnKeep, btnCancelJobs, btnCancelAction);
+
+                alert.setOnShowing(dialogEvent -> {
+                    alert.getDialogPane().getButtonTypes().forEach(buttonType -> {
+                        javafx.scene.control.Button btn = (javafx.scene.control.Button) alert.getDialogPane().lookupButton(buttonType);
+                        if (btn != null) {
+                            btn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                        }
+                    });
+                });
+
+                java.util.Optional<ButtonType> res = alert.showAndWait();
+                if (res.isPresent() && res.get() != btnCancelAction) {
+                    boolean cancelJobs = (res.get() == btnCancelJobs);
+                    invoiceMasterService.cancelProformaInvoice(inv.getUuid(), cancelJobs);
+                }
+            } else {
+                // GST Invoice (Draft or Final/Sent)
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                alert.setTitle(isGstDraft ? "Delete Draft GST Invoice" : "Cancel GST Invoice");
+                alert.setHeaderText((isGstDraft ? "Delete Draft Invoice: " : "Cancel Invoice: ") + inv.getInvoiceNo());
+                alert.setContentText("Are you sure you want to " + (isGstDraft ? "delete" : "cancel") + " this GST invoice? All linked jobs will be marked as Cancelled.");
+                alert.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+                alert.getDialogPane().getStyleClass().add("atelier-alert");
+                alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+
+                ButtonType btnYes = ButtonType.YES;
+                ButtonType btnNo = ButtonType.NO;
+                alert.getButtonTypes().setAll(btnYes, btnNo);
+
+                alert.setOnShowing(dialogEvent -> {
+                    alert.getDialogPane().getButtonTypes().forEach(buttonType -> {
+                        javafx.scene.control.Button btn = (javafx.scene.control.Button) alert.getDialogPane().lookupButton(buttonType);
+                        if (btn != null) {
+                            btn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                        }
+                    });
+                });
+
+                java.util.Optional<ButtonType> res = alert.showAndWait();
+                if (res.isPresent() && res.get() == btnYes) {
+                    if (isGstDraft) {
+                        invoiceMasterService.deleteDraftGstInvoice(inv.getUuid(), true);
+                    } else {
+                        invoiceMasterService.updateInvoiceStatus(inv.getUuid(), "CANCELLED");
+                    }
+                }
+            }
         }
         handleSearch(null);
     }
 
     private void updateStatus(String status) {
         if (invoiceTable == null) return;
-        java.util.List<InvoiceMaster> selected = new java.util.ArrayList<>(invoiceTable.getSelectionModel().getSelectedItems());
-        if (selected.isEmpty()) return;
+        java.util.List<InvoiceMaster> toProcess = new java.util.ArrayList<>();
+        if (!selectedInvoiceUuids.isEmpty()) {
+            for (InvoiceMaster inv : fullInvoiceResults) {
+                if (inv.getUuid() != null && selectedInvoiceUuids.contains(inv.getUuid())) {
+                    toProcess.add(inv);
+                }
+            }
+        } else {
+            InvoiceMaster sel = invoiceTable.getSelectionModel().getSelectedItem();
+            if (sel != null) {
+                toProcess.add(sel);
+            }
+        }
+        if (toProcess.isEmpty()) return;
 
-        for (InvoiceMaster inv : selected) {
+        for (InvoiceMaster inv : toProcess) {
             invoiceMasterService.updateInvoiceStatus(inv.getUuid(), status);
         }
         handleSearch(null);
@@ -1883,6 +2168,10 @@ public class ViewInvoicesController {
     @FXML private void handleEditAction(ActionEvent event) {
         InvoiceMaster inv = (invoiceTable != null) ? invoiceTable.getSelectionModel().getSelectedItem() : null;
         if (inv != null) {
+            InvoiceActionState state = InvoiceActionState.from(inv);
+            if (!state.edit) {
+                return;
+            }
             ViewInvoiceJobsController.pendingPrefillInvoice = inv;
             ViewInvoiceJobsController.viewOnlyMode = false;
             MainController.getInstance().loadViewInvoiceJobs();

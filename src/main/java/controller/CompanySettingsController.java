@@ -82,7 +82,10 @@ public class CompanySettingsController implements Initializable {
 	}
 
 	private void wireActions() {
-		if (newBtn != null) newBtn.setOnAction(e -> beginEdit(newBlank()));
+		if (newBtn != null) newBtn.setOnAction(e -> {
+			if (companyTable != null) companyTable.getSelectionModel().clearSelection();
+			beginEdit(newBlank());
+		});
 		if (saveBtn != null) saveBtn.setOnAction(e -> save());
 		if (deleteBtn != null) deleteBtn.setOnAction(e -> deleteSelected());
 	}
@@ -105,6 +108,25 @@ public class CompanySettingsController implements Initializable {
 	private void beginEdit(CompanyDetails c) {
 		editing = c;
 		applyToForm(c);
+		if (defaultCheck != null) {
+			boolean isOnlyOne = (rows.size() == 1 && c.getUuid() != null) || rows.isEmpty();
+			boolean isCurrentDefault = c.isDefault();
+			if (isOnlyOne || isCurrentDefault) {
+				defaultCheck.setSelected(true);
+				defaultCheck.setDisable(true);
+			} else {
+				defaultCheck.setDisable(false);
+			}
+		}
+		if (activeCheck != null) {
+			boolean isDefault = c.isDefault();
+			if (isDefault) {
+				activeCheck.setSelected(true);
+				activeCheck.setDisable(true);
+			} else {
+				activeCheck.setDisable(false);
+			}
+		}
 		updateDeleteState();
 	}
 
@@ -134,8 +156,13 @@ public class CompanySettingsController implements Initializable {
 		c.setEmail(text(emailField));
 		c.setGstin(text(gstinField));
 		c.setState(text(stateField));
-		c.setDefault(defaultCheck != null && defaultCheck.isSelected());
-		c.setActive(activeCheck == null || activeCheck.isSelected());
+		boolean isDef = defaultCheck != null && defaultCheck.isSelected();
+		c.setDefault(isDef);
+		if (isDef) {
+			c.setActive(true);
+		} else {
+			c.setActive(activeCheck == null || activeCheck.isSelected());
+		}
 	}
 
 	private void save() {
@@ -155,12 +182,22 @@ public class CompanySettingsController implements Initializable {
 			return;
 		}
 
+		// Prevent duplicates
+		for (CompanyDetails row : rows) {
+			if (row.getTradeName() != null && row.getTradeName().equalsIgnoreCase(editing.getTradeName())) {
+				if (editing.getUuid() == null || !row.getUuid().equalsIgnoreCase(editing.getUuid())) {
+					showWarn("A company with this trade name already exists.");
+					return;
+				}
+			}
+		}
+
 		CompanyDetails saved = companyService.save(editing);
 		loadData();
 
 		if (companyTable != null) {
 			for (int i = 0; i < rows.size(); i++) {
-				if (rows.get(i).getUuid() != null && rows.get(i).getUuid().equals(saved.getUuid())) {
+				if (rows.get(i).getUuid() != null && rows.get(i).getUuid().equalsIgnoreCase(saved.getUuid())) {
 					companyTable.getSelectionModel().select(i);
 					break;
 				}
@@ -168,6 +205,7 @@ public class CompanySettingsController implements Initializable {
 		}
 
 		showInfo("Company saved.");
+		MainController.getInstance().refreshNavigationLocks();
 	}
 
 	private void deleteSelected() {
@@ -187,6 +225,7 @@ public class CompanySettingsController implements Initializable {
 		loadData();
 		selectFirstRow();
 		showInfo("Deleted.");
+		MainController.getInstance().refreshNavigationLocks();
 	}
 
 	private static CompanyDetails newBlank() {
@@ -266,6 +305,11 @@ public class CompanySettingsController implements Initializable {
 		alert.getDialogPane().getStyleClass().add("settings-warm-dialog");
 		alert.getDialogPane().getStylesheets().add(CompanySettingsController.class.getResource("/css/theme.css").toExternalForm());
 		alert.getDialogPane().getStylesheets().add(CompanySettingsController.class.getResource("/css/settings_screens.css").toExternalForm());
+	}
+
+	public void refresh() {
+		loadData();
+		selectFirstRow();
 	}
 }
 

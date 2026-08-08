@@ -84,6 +84,14 @@ public class DatabaseInitializer {
                     );
                     """.formatted(SYNC_COLUMNS));
             try {
+                if (!columnExists(conn, "job_items", "include_in_invoice")) {
+                    stmt.execute("ALTER TABLE job_items ADD COLUMN include_in_invoice INTEGER DEFAULT 1;");
+                    System.out.println("✔ Migration: Added include_in_invoice column to job_items table.");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
                 if (!columnExists(conn, "suppliers", "supplier_code")) {
                     stmt.execute("ALTER TABLE suppliers ADD COLUMN supplier_code TEXT DEFAULT '';");
                     System.out.println("✔ Migration: Added supplier_code column to suppliers table.");
@@ -732,16 +740,8 @@ public class DatabaseInitializer {
                         %s
                     );
                     """.formatted(SYNC_COLUMNS));
-            try {
-                stmt.execute(
-                        """
-                                INSERT INTO bank_details (uuid, bank_name, account_holder_name, account_no, branch_ifsc, is_default, is_active)
-                                SELECT lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
-                                       'INDIAN OVERSEAS BANK', 'SUNNY PRINTER', '15980200000000780', 'PITAMPURA & IOBA0001598', 1, 1
-                                WHERE NOT EXISTS (SELECT 1 FROM bank_details)
-                                """);
-            } catch (Exception e) {
-            }
+            // No seeding for bank_details by default
+
 
             // ================== COMPANY DETAILS (MULTI-COMPANY) ==================
             migrateTableToUuidPrimaryKey(conn, "company_details", """
@@ -776,19 +776,8 @@ public class DatabaseInitializer {
                         %s
                     );
                     """.formatted(SYNC_COLUMNS));
-            try {
-                String trade = utils.CompanyProfile.getName().replace("'", "''");
-                String addr = utils.CompanyProfile.getAddress().replace("'", "''");
-                String phone = utils.CompanyProfile.getPhone().replace("'", "''");
-                String email = utils.CompanyProfile.getEmail().replace("'", "''");
-                String gst = utils.CompanyProfile.getGst().replace("'", "''");
-                stmt.execute(
-                        "INSERT INTO company_details (uuid,trade_name,address,phone,alt_phone,email,gstin,state,is_default,is_active) "
-                                + "SELECT '" + java.util.UUID.randomUUID().toString() + "','" + trade + "','" + addr
-                                + "','" + phone + "','','" + email + "','" + gst
-                                + "','',1,1 WHERE NOT EXISTS (SELECT 1 FROM company_details)");
-            } catch (Exception e) {
-            }
+            // No seeding for company_details by default
+
 
             stmt.execute("""
                     CREATE TABLE IF NOT EXISTS supabase_settings (

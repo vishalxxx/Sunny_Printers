@@ -39,6 +39,8 @@
                     <Region styleClass="filter-icon" />
                 </graphic>
             </Button>
+            <Region HBox.hgrow="ALWAYS" />
+            <Button text="+ Add Job" onAction="#handleAddJob" style="-fx-background-color: #CD7B4E; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 4; -fx-padding: 8 16; -fx-cursor: hand;"/>
         </HBox>
     </VBox>
     

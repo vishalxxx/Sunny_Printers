@@ -71,23 +71,38 @@ public class JobItemService {
             switch (type) {
                 case "PRINTING" -> {
                     Printing p = printingRepo.findByJobItemUuid(ji.getUuid());
-                    if (p != null) cards.add(p);
+                    if (p != null) {
+                        p.setIncludeNotesInInvoice(ji.getIncludeInInvoice() == 1);
+                        cards.add(p);
+                    }
                 }
                 case "PAPER" -> {
                     Paper p = paperRepo.findByJobItemUuid(ji.getUuid());
-                    if (p != null) cards.add(p);
+                    if (p != null) {
+                        p.setIncludeNotesInInvoice(ji.getIncludeInInvoice() == 1);
+                        cards.add(p);
+                    }
                 }
                 case "BINDING" -> {
                     Binding b = bindingRepo.findByJobItemUuid(ji.getUuid());
-                    if (b != null) cards.add(b);
+                    if (b != null) {
+                        b.setIncludeNotesInInvoice(ji.getIncludeInInvoice() == 1);
+                        cards.add(b);
+                    }
                 }
                 case "LAMINATION" -> {
                     Lamination l = laminationRepo.findByJobItemUuid(ji.getUuid());
-                    if (l != null) cards.add(l);
+                    if (l != null) {
+                        l.setIncludeNotesInInvoice(ji.getIncludeInInvoice() == 1);
+                        cards.add(l);
+                    }
                 }
                 case "CTP" -> {
                     CtpPlate c = ctpRepo.findByJobItemUuid(ji.getUuid());
-                    if (c != null) cards.add(c);
+                    if (c != null) {
+                        c.setIncludeNotesInInvoice(ji.getIncludeInInvoice() == 1);
+                        cards.add(c);
+                    }
                 }
                 default -> cards.add(ji);
             }
@@ -140,6 +155,7 @@ public class JobItemService {
              ji.setDescription(buildPrintingDescription(p));
              ji.setAmount(p.getAmount());
              ji.setSortOrder(1);
+             ji.setIncludeInInvoice(p.isIncludeNotesInInvoice() ? 1 : 0);
 
              savedJobItem = jobItemRepo.save(con, ji);
              p.setJobItemUuid(savedJobItem.getUuid());
@@ -155,6 +171,7 @@ public class JobItemService {
              ji.setDescription(buildPaperDescription(p));
              ji.setAmount(p.getAmount());
              ji.setSortOrder(2);
+             ji.setIncludeInInvoice(p.isIncludeNotesInInvoice() ? 1 : 0);
 
              savedJobItem = jobItemRepo.save(con, ji);
              p.setJobItemUuid(savedJobItem.getUuid());
@@ -170,6 +187,7 @@ public class JobItemService {
              ji.setDescription(buildBindingDescription(b));
              ji.setAmount(b.getAmount());
              ji.setSortOrder(3);
+             ji.setIncludeInInvoice(b.isIncludeNotesInInvoice() ? 1 : 0);
 
              savedJobItem = jobItemRepo.save(con, ji);
              b.setJobItemUuid(savedJobItem.getUuid());
@@ -185,6 +203,7 @@ public class JobItemService {
              ji.setDescription(buildLaminationDescription(l));
              ji.setAmount(l.getAmount());
              ji.setSortOrder(4);
+             ji.setIncludeInInvoice(l.isIncludeNotesInInvoice() ? 1 : 0);
 
              savedJobItem = jobItemRepo.save(con, ji);
              l.setJobItemUuid(savedJobItem.getUuid());
@@ -200,6 +219,7 @@ public class JobItemService {
              ji.setDescription(buildCtpDescription(ctp));
              ji.setAmount(ctp.getAmount());
              ji.setSortOrder(5);
+             ji.setIncludeInInvoice(ctp.isIncludeNotesInInvoice() ? 1 : 0);
 
              savedJobItem = jobItemRepo.save(con, ji);
              ctp.setJobItemUuid(savedJobItem.getUuid());
@@ -257,9 +277,10 @@ public class JobItemService {
         StringBuilder sb = new StringBuilder("Printing ");
         if (p.getQty() > 0) sb.append(p.getQty()).append(" ");
         if (p.getUnits() != null && !p.getUnits().equalsIgnoreCase("Select Unit")) sb.append(p.getUnits()).append(" ");
-        if (p.getSets() != null && !p.getSets().isBlank()) sb.append("[").append(p.getSets()).append(" Sets] ");
-        if (p.getColor() != null && !p.getColor().equalsIgnoreCase("Select Color")) sb.append(p.getColor()).append(" ");
-        if (p.isWithCtp()) sb.append("with CTP ");
+        if (p.getSets() != null && !p.getSets().isBlank()) sb.append(p.getSets()).append(" Set ");
+        if (p.getColor() != null && !p.getColor().equalsIgnoreCase("Select Color")) sb.append(p.getColor()).append(" Color ");
+        if (p.getSide() != null && !p.getSide().isBlank()) sb.append(p.getSide()).append(" Side ");
+        if (p.isWithCtp()) sb.append("With CTP ");
         if (p.isIncludeNotesInInvoice() && p.getNotes() != null && !p.getNotes().isBlank())
             sb.append("- ").append(p.getNotes());
         return sb.toString().trim();

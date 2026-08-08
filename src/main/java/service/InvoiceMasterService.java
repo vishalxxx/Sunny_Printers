@@ -56,7 +56,7 @@ public class InvoiceMasterService {
                 if (series == MasterDocumentSeries.PROFORMA_INVOICE) {
                     allocated = service.sync.UniversalTemporaryNumberEngine.getInstance().allocateTemporary(con, "proforma_invoice");
                 } else {
-                    allocated = numberAllocator.allocateInvoiceNumber(con, series, invoice.getInvoiceDate());
+                    allocated = numberAllocator.allocateTempInvoiceNumber(con);
                 }
                 String invoiceNo = allocated.value();
                 invoice.setInvoiceNo(invoiceNo);
@@ -132,7 +132,9 @@ public class InvoiceMasterService {
                 series = MasterDocumentSeries.GST_INVOICE;
             }
             AllocatedNumber allocated;
-            if (series == MasterDocumentSeries.PROFORMA_INVOICE) {
+            if ("DRAFT".equalsIgnoreCase(status)) {
+                allocated = numberAllocator.allocateTempInvoiceNumber(con);
+            } else if (series == MasterDocumentSeries.PROFORMA_INVOICE) {
                 allocated = service.sync.UniversalTemporaryNumberEngine.getInstance().allocateTemporary(con, "proforma_invoice");
             } else {
                 allocated = numberAllocator.allocateInvoiceNumber(con, series, invoice.getInvoiceDate());
@@ -457,15 +459,49 @@ public class InvoiceMasterService {
         }
 
         String type = "";
-        try (java.sql.PreparedStatement psType = con.prepareStatement("SELECT type FROM invoice_master WHERE uuid = ?")) {
+        String documentSeries = "";
+        String invoiceStatus = "";
+        try (java.sql.PreparedStatement psType = con.prepareStatement("SELECT type, document_series, status FROM invoice_master WHERE uuid = ?")) {
             psType.setString(1, invoiceUuid);
             try (java.sql.ResultSet rs = psType.executeQuery()) {
-                if (rs.next()) type = rs.getString(1);
+                if (rs.next()) {
+                    type = rs.getString(1);
+                    documentSeries = rs.getString(2);
+                    invoiceStatus = rs.getString(3);
+                }
             }
         } catch (Exception ignore) {}
 
+        boolean isGst = "GST_INVOICE".equalsIgnoreCase(documentSeries);
+        boolean isDraft = "DRAFT".equalsIgnoreCase(invoiceStatus);
+        if (isGst && !isDraft) {
+            String updateJobsSql = """
+                UPDATE jobs SET status = 'Cancelled', sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now')
+                WHERE invoice_uuid = ?
+                   OR uuid IN (
+                     SELECT job_uuid FROM invoice_job_mapping
+                     WHERE invoice_uuid = ? AND COALESCE(is_deleted, 0) = 0
+                   )
+                """;
+            try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql)) {
+                psUpdate.setString(1, invoiceUuid);
+                psUpdate.setString(2, invoiceUuid);
+                psUpdate.executeUpdate();
+            } catch (Exception e) {
+                System.err.println("Failed to cancel jobs for GST invoice: " + e.getMessage());
+            }
+            return;
+        }
+
         String targetStatus = "Performa Bills".equalsIgnoreCase(type) ? "Cancelled" : "Completed";
-        String updateJobsSql = "UPDATE jobs SET invoice_uuid = NULL, status = ?, sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now') WHERE invoice_uuid = ?";
+        String updateJobsSql = """
+            UPDATE jobs SET invoice_uuid = NULL, status = ?, sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now')
+            WHERE invoice_uuid = ?
+               OR uuid IN (
+                 SELECT job_uuid FROM invoice_job_mapping
+                 WHERE invoice_uuid = ? AND COALESCE(is_deleted, 0) = 0
+               )
+            """;
         
         String deleteMappingSql = "UPDATE invoice_job_mapping SET is_deleted = 1, sync_status = 'PENDING', updated_at = datetime('now') WHERE invoice_uuid = ?";
 
@@ -474,6 +510,7 @@ public class InvoiceMasterService {
 
             psUpdate.setString(1, targetStatus);
             psUpdate.setString(2, invoiceUuid);
+            psUpdate.setString(3, invoiceUuid);
             psUpdate.executeUpdate();
 
             psDelMap.setString(1, invoiceUuid);
@@ -499,10 +536,18 @@ public class InvoiceMasterService {
         } catch (Exception ignore) {}
 
         String targetStatus = "Performa Bills".equalsIgnoreCase(type) ? "Cancelled" : "Completed";
-        String updateJobsSql = "UPDATE jobs SET invoice_uuid = NULL, status = ?, sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now') WHERE invoice_uuid = ?";
+        String updateJobsSql = """
+            UPDATE jobs SET invoice_uuid = NULL, status = ?, sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now')
+            WHERE invoice_uuid = ?
+               OR uuid IN (
+                 SELECT job_uuid FROM invoice_job_mapping
+                 WHERE invoice_uuid = ? AND COALESCE(is_deleted, 0) = 0
+               )
+            """;
         try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql)) {
             psUpdate.setString(1, targetStatus);
             psUpdate.setString(2, invoiceUuid);
+            psUpdate.setString(3, invoiceUuid);
             psUpdate.executeUpdate();
         } catch (Exception e) {
             System.err.println("Failed to release jobs for history: " + e.getMessage());
@@ -656,7 +701,7 @@ public class InvoiceMasterService {
 
     public void unlinkJobsAndRecalculateProforma(String invoiceUuid, List<String> jobUuids) {
         AtomicDB.runVoid(con -> {
-            String updateJobsSql = "UPDATE jobs SET invoice_uuid = NULL, status = CASE WHEN status = 'Cancelled' THEN 'Cancelled' ELSE 'Completed' END, sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now') WHERE uuid IN (" + 
+            String updateJobsSql = "UPDATE jobs SET invoice_uuid = NULL, status = CASE WHEN UPPER(status) = 'CANCELLED' THEN 'Cancelled' ELSE 'Completed' END, sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now') WHERE uuid IN (" + 
                 jobUuids.stream().map(u -> "?").collect(java.util.stream.Collectors.joining(",")) + ")";
             try (java.sql.PreparedStatement ps = con.prepareStatement(updateJobsSql)) {
                 int idx = 1;
@@ -677,7 +722,7 @@ public class InvoiceMasterService {
                 ps.setString(1, invoiceUuid);
                 ps.executeUpdate();
             }
-            String updateInv = "UPDATE invoice_master SET paid_amount = 0, due_amount = amount, sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+            String updateInv = "UPDATE invoice_master SET paid_amount = 0, due_amount = amount, payment_status = 'KEPT_AS_ADVANCE', sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
             try (java.sql.PreparedStatement ps = con.prepareStatement(updateInv)) {
                 ps.setString(1, invoiceUuid);
                 ps.executeUpdate();
@@ -709,7 +754,7 @@ public class InvoiceMasterService {
                 ps.executeUpdate();
             }
 
-            String updateInv = "UPDATE invoice_master SET paid_amount = paid_amount - ?, due_amount = due_amount + ?, sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
+            String updateInv = "UPDATE invoice_master SET paid_amount = paid_amount - ?, due_amount = due_amount + ?, payment_status = 'REFUNDED', sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?";
             try (java.sql.PreparedStatement ps = con.prepareStatement(updateInv)) {
                 ps.setDouble(1, amount);
                 ps.setDouble(2, amount);
@@ -779,6 +824,9 @@ public class InvoiceMasterService {
             if (inv == null) {
                 return;
             }
+            if ("CANCELLED".equalsIgnoreCase(inv.getStatus())) {
+                return;
+            }
 
         boolean isProforma = (inv.getDocumentSeries() != null && ("PROFORMA_INVOICE".equalsIgnoreCase(inv.getDocumentSeries()) || "PROFORMA".equalsIgnoreCase(inv.getDocumentSeries())))
                 || (inv.getType() != null && (inv.getType().toUpperCase().contains("PROFORMA") || inv.getType().toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(inv.getType()) || "DATE_RANGE".equalsIgnoreCase(inv.getType()) || inv.getType().toUpperCase().contains("MONTHLY")))
@@ -832,7 +880,7 @@ public class InvoiceMasterService {
 
         repository.HsnSacRepository hsnRepo = new repository.HsnSacRepository();
         for (String jobUuid : activeJobUuids) {
-            String itemsSql = "SELECT type, description, amount FROM job_items WHERE job_uuid = ? AND COALESCE(is_deleted, 0) = 0";
+            String itemsSql = "SELECT type, description, amount FROM job_items WHERE job_uuid = ? AND COALESCE(is_deleted, 0) = 0 AND COALESCE(include_in_invoice, 1) = 1";
             try (java.sql.PreparedStatement ps = con.prepareStatement(itemsSql)) {
                 ps.setString(1, jobUuid);
                 try (java.sql.ResultSet rs = ps.executeQuery()) {
@@ -1185,7 +1233,7 @@ public class InvoiceMasterService {
 
     private JobTaxDetails getJobTaxDetails(java.sql.Connection con, String jobUuid, boolean isGst, boolean intra, repository.HsnSacRepository hsnRepo) throws Exception {
         JobTaxDetails details = new JobTaxDetails();
-        String itemsSql = "SELECT type, description, amount FROM job_items WHERE job_uuid = ? AND COALESCE(is_deleted, 0) = 0";
+        String itemsSql = "SELECT type, description, amount FROM job_items WHERE job_uuid = ? AND COALESCE(is_deleted, 0) = 0 AND COALESCE(include_in_invoice, 1) = 1";
         try (java.sql.PreparedStatement ps = con.prepareStatement(itemsSql)) {
             ps.setString(1, jobUuid);
             try (java.sql.ResultSet rs = ps.executeQuery()) {
@@ -1223,7 +1271,7 @@ public class InvoiceMasterService {
     private double calculateJobTotalWithTax(java.sql.Connection con, String jobUuid, boolean isGst, boolean intra, repository.HsnSacRepository hsnRepo) throws Exception {
         double taxable = 0.0;
         double totalTax = 0.0;
-        String itemsSql = "SELECT type, description, amount FROM job_items WHERE job_uuid = ? AND COALESCE(is_deleted, 0) = 0";
+        String itemsSql = "SELECT type, description, amount FROM job_items WHERE job_uuid = ? AND COALESCE(is_deleted, 0) = 0 AND COALESCE(include_in_invoice, 1) = 1";
         try (java.sql.PreparedStatement ps = con.prepareStatement(itemsSql)) {
             ps.setString(1, jobUuid);
             try (java.sql.ResultSet rs = ps.executeQuery()) {
@@ -1267,25 +1315,20 @@ public class InvoiceMasterService {
                 if (inv != null) {
                     if ("CANCELLED".equalsIgnoreCase(newStatus)) {
                         String invNo = inv.getInvoiceNo();
-                        boolean isProforma = (inv.getDocumentSeries() != null && ("PROFORMA_INVOICE".equalsIgnoreCase(inv.getDocumentSeries()) || "PROFORMA".equalsIgnoreCase(inv.getDocumentSeries())))
-                                           || (inv.getType() != null && (inv.getType().toUpperCase().contains("PROFORMA") || inv.getType().toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(inv.getType()) || "DATE_RANGE".equalsIgnoreCase(inv.getType()) || inv.getType().toUpperCase().contains("MONTHLY")))
-                                           || (inv.getInvoiceNo() != null && inv.getInvoiceNo().toUpperCase().contains("/PI/"));
-                        if (!isProforma) {
-                            if ("DRAFT".equals(inv.getStatus()) || (invNo != null && invNo.startsWith("TEMP-"))) {
-                                unlinkJobsFromInvoice(con, inv.getUuid());
-                                repo.deleteInvoice(con, inv.getUuid());
-                                return; // Done
-                            }
+                        if ("DRAFT".equalsIgnoreCase(inv.getStatus()) || (invNo != null && invNo.startsWith("TEMP-"))) {
+                            unlinkJobsFromInvoice(con, inv.getUuid());
+                            repo.deleteInvoice(con, inv.getUuid());
+                            return; // Done
                         }
                     }
 
                     inv.setStatus(newStatus);
                     if ("CANCELLED".equalsIgnoreCase(newStatus)) {
-                        inv.setPaymentStatus("Void");
+                        if (inv.getPaymentStatus() == null || (!inv.getPaymentStatus().equalsIgnoreCase("REFUNDED") && !inv.getPaymentStatus().equalsIgnoreCase("KEPT_AS_ADVANCE"))) {
+                            inv.setPaymentStatus("Void");
+                        }
                         inv.setVoid(false); // Stay visible in table
-                        releaseJobsKeepHistory(con, inv.getUuid());
-                        inv.setAmount(0);
-                        inv.setDueAmount(0);
+                        updateJobsStatusByInvoice(con, inv.getUuid(), "Cancelled");
                     } else if ("VOID".equalsIgnoreCase(newStatus)) {
                         inv.setPaymentStatus("VOID");
                         inv.setVoid(true);
@@ -1300,6 +1343,160 @@ public class InvoiceMasterService {
             service.LoggerService.endOperation("INVOICE-UPDATE-STATUS", true, "UUID: " + invoiceUuid + " -> " + newStatus);
         } catch (Exception e) {
             service.LoggerService.endOperation("INVOICE-UPDATE-STATUS", false, "Exception: " + e.getMessage());
+            throw e;
+        }
+    }
+
+    public void cancelProformaInvoice(String invoiceUuid, boolean cancelJobs) {
+        service.LoggerService.beginOperation("PROFORMA-CANCEL");
+        try {
+            AtomicDB.runVoid(con -> {
+                InvoiceMaster inv = repo.findByUuid(con, invoiceUuid);
+                if (inv != null) {
+                    boolean isDraft = "DRAFT".equalsIgnoreCase(inv.getStatus()) || (inv.getInvoiceNo() != null && inv.getInvoiceNo().startsWith("TEMP-"));
+                    if (isDraft) {
+                        // Draft is cancelled directly without finalizing - delete it entirely
+                        String targetStatus = cancelJobs ? "Cancelled" : "Completed";
+                        String updateJobsSql = """
+                            UPDATE jobs SET invoice_uuid = NULL, status = ?, sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now')
+                            WHERE invoice_uuid = ?
+                               OR uuid IN (
+                                 SELECT job_uuid FROM invoice_job_mapping
+                                 WHERE invoice_uuid = ? AND COALESCE(is_deleted, 0) = 0
+                               )
+                            """;
+                        try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql)) {
+                            psUpdate.setString(1, targetStatus);
+                            psUpdate.setString(2, invoiceUuid);
+                            psUpdate.setString(3, invoiceUuid);
+                            psUpdate.executeUpdate();
+                        }
+
+                        // Delete mappings in invoice_job_mapping
+                        String deleteMappingSql = "UPDATE invoice_job_mapping SET is_deleted = 1, sync_status = 'PENDING', updated_at = datetime('now') WHERE invoice_uuid = ?";
+                        try (java.sql.PreparedStatement psDelMap = con.prepareStatement(deleteMappingSql)) {
+                            psDelMap.setString(1, invoiceUuid);
+                            psDelMap.executeUpdate();
+                        }
+
+                        repo.deleteInvoice(con, invoiceUuid);
+                    } else {
+                        // It was finalized, so keep it in DB as CANCELLED
+                        inv.setStatus("CANCELLED");
+                        if (inv.getPaymentStatus() == null || (!inv.getPaymentStatus().equalsIgnoreCase("REFUNDED") && !inv.getPaymentStatus().equalsIgnoreCase("KEPT_AS_ADVANCE"))) {
+                            inv.setPaymentStatus("Void");
+                        }
+                        inv.setVoid(false); // Stay visible in table
+                        inv.setSyncStatus("PENDING");
+                        repo.update(con, inv);
+
+                        // Now handle jobs status based on the cancelJobs flag
+                        if (cancelJobs) {
+                            String updateJobsSql = """
+                                UPDATE jobs SET status = 'Cancelled', sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now')
+                                WHERE invoice_uuid = ?
+                                   OR uuid IN (
+                                     SELECT job_uuid FROM invoice_job_mapping
+                                     WHERE invoice_uuid = ? AND COALESCE(is_deleted, 0) = 0
+                                   )
+                                """;
+                            try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql)) {
+                                psUpdate.setString(1, invoiceUuid);
+                                psUpdate.setString(2, invoiceUuid);
+                                psUpdate.executeUpdate();
+                            }
+                        } else {
+                            String updateJobsSql = """
+                                UPDATE jobs SET invoice_uuid = NULL, status = 'Completed', sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now')
+                                WHERE invoice_uuid = ?
+                                   OR uuid IN (
+                                     SELECT job_uuid FROM invoice_job_mapping
+                                     WHERE invoice_uuid = ? AND COALESCE(is_deleted, 0) = 0
+                                   )
+                                """;
+                            try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql)) {
+                                psUpdate.setString(1, invoiceUuid);
+                                psUpdate.setString(2, invoiceUuid);
+                                psUpdate.executeUpdate();
+                            }
+
+                            // Delete mappings in invoice_job_mapping
+                            String deleteMappingSql = "UPDATE invoice_job_mapping SET is_deleted = 1, sync_status = 'PENDING', updated_at = datetime('now') WHERE invoice_uuid = ?";
+                            try (java.sql.PreparedStatement psDelMap = con.prepareStatement(deleteMappingSql)) {
+                                psDelMap.setString(1, invoiceUuid);
+                                psDelMap.executeUpdate();
+                            }
+
+                            deleteEmptyInvoices(con);
+                        }
+                    }
+                }
+            });
+            UniversalSyncEngine.scheduleSyncAsync();
+            service.LoggerService.endOperation("PROFORMA-CANCEL", true, "UUID: " + invoiceUuid + ", cancelJobs: " + cancelJobs);
+        } catch (Exception e) {
+            service.LoggerService.endOperation("PROFORMA-CANCEL", false, "Exception: " + e.getMessage());
+            throw e;
+        }
+    }
+
+    public void deleteDraftGstInvoice(String invoiceUuid, boolean cancelJobs) {
+        service.LoggerService.beginOperation("GST-DRAFT-DELETE");
+        try {
+            AtomicDB.runVoid(con -> {
+                InvoiceMaster inv = repo.findByUuid(con, invoiceUuid);
+                if (inv != null && "DRAFT".equalsIgnoreCase(inv.getStatus())) {
+                    if (cancelJobs) {
+                        inv.setStatus("CANCELLED");
+                        inv.setPaymentStatus("Void");
+                        inv.setSyncStatus("PENDING");
+                        repo.update(con, inv);
+
+                        // Set jobs to Cancelled but keep linked
+                        String updateJobsSql = """
+                            UPDATE jobs SET status = 'Cancelled', sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now')
+                            WHERE invoice_uuid = ?
+                               OR uuid IN (
+                                 SELECT job_uuid FROM invoice_job_mapping
+                                 WHERE invoice_uuid = ? AND COALESCE(is_deleted, 0) = 0
+                               )
+                            """;
+                        try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql)) {
+                            psUpdate.setString(1, invoiceUuid);
+                            psUpdate.setString(2, invoiceUuid);
+                            psUpdate.executeUpdate();
+                        }
+                    } else {
+                        // Keep jobs (unlink them) and delete the invoice
+                        String updateJobsSql = """
+                            UPDATE jobs SET invoice_uuid = NULL, status = 'Completed', sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now')
+                            WHERE invoice_uuid = ?
+                               OR uuid IN (
+                                 SELECT job_uuid FROM invoice_job_mapping
+                                 WHERE invoice_uuid = ? AND COALESCE(is_deleted, 0) = 0
+                               )
+                            """;
+                        try (java.sql.PreparedStatement psUpdate = con.prepareStatement(updateJobsSql)) {
+                            psUpdate.setString(1, invoiceUuid);
+                            psUpdate.setString(2, invoiceUuid);
+                            psUpdate.executeUpdate();
+                        }
+
+                        // Delete mappings in invoice_job_mapping
+                        String deleteMappingSql = "UPDATE invoice_job_mapping SET is_deleted = 1, sync_status = 'PENDING', updated_at = datetime('now') WHERE invoice_uuid = ?";
+                        try (java.sql.PreparedStatement psDelMap = con.prepareStatement(deleteMappingSql)) {
+                            psDelMap.setString(1, invoiceUuid);
+                            psDelMap.executeUpdate();
+                        }
+
+                        repo.deleteInvoice(con, invoiceUuid);
+                    }
+                }
+            });
+            UniversalSyncEngine.scheduleSyncAsync();
+            service.LoggerService.endOperation("GST-DRAFT-DELETE", true, "UUID: " + invoiceUuid + ", cancelJobs: " + cancelJobs);
+        } catch (Exception e) {
+            service.LoggerService.endOperation("GST-DRAFT-DELETE", false, "Exception: " + e.getMessage());
             throw e;
         }
     }
@@ -1387,10 +1584,18 @@ public class InvoiceMasterService {
         if (invoiceUuid == null || invoiceUuid.isBlank()) {
             return;
         }
-        String sql = "UPDATE jobs SET status = ?, sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now') WHERE invoice_uuid = ?";
+        String sql = """
+            UPDATE jobs SET status = ?, sync_status = 'PENDING', sync_version = COALESCE(sync_version, 0) + 1, updated_at = datetime('now')
+            WHERE invoice_uuid = ?
+               OR uuid IN (
+                 SELECT job_uuid FROM invoice_job_mapping
+                 WHERE invoice_uuid = ? AND COALESCE(is_deleted, 0) = 0
+               )
+            """;
         try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, status);
             ps.setString(2, invoiceUuid);
+            ps.setString(3, invoiceUuid);
             ps.executeUpdate();
         } catch (Exception e) {
             System.err.println("Failed to update jobs status for invoice " + invoiceUuid + ": " + e.getMessage());
@@ -1472,24 +1677,174 @@ public class InvoiceMasterService {
             old.setReplacedByInvoiceUuid(newInv.getUuid());
             repo.update(con, old);
 
-            // 5. Clone Mappings from OLD to NEW in invoice_job_mapping for history
+            // 5. Clone/Copy jobs and job items from OLD to NEW revised invoice
             String oldUuid = old.getUuid();
             String newUuid = newInv.getUuid();
             if (oldUuid != null && newUuid != null) {
-                try (java.sql.PreparedStatement ps = con.prepareStatement(
-                        "SELECT job_uuid FROM invoice_job_mapping WHERE invoice_uuid = ?")) {
+                // Find all active jobs in the old invoice
+                String selectJobsSql = """
+                    SELECT uuid, client_uuid, job_title, job_date, job_type, description, remarks, image_path, amount, job_number_mode, delivery_date, created_by_user_uuid 
+                    FROM jobs 
+                    WHERE (invoice_uuid = ? OR uuid IN (SELECT job_uuid FROM invoice_job_mapping WHERE invoice_uuid = ? AND COALESCE(is_deleted, 0) = 0))
+                      AND COALESCE(is_deleted, 0) = 0
+                """;
+                java.util.List<java.util.Map<String, Object>> oldJobs = new java.util.ArrayList<>();
+                try (java.sql.PreparedStatement ps = con.prepareStatement(selectJobsSql)) {
                     ps.setString(1, oldUuid);
+                    ps.setString(2, oldUuid);
                     try (java.sql.ResultSet rs = ps.executeQuery()) {
                         while (rs.next()) {
-                            insertInvoiceJobMapping(con, newUuid, rs.getString("job_uuid"));
+                            java.util.Map<String, Object> jobData = new java.util.HashMap<>();
+                            jobData.put("uuid", rs.getString("uuid"));
+                            jobData.put("client_uuid", rs.getString("client_uuid"));
+                            jobData.put("job_title", rs.getString("job_title"));
+                            jobData.put("job_date", rs.getString("job_date"));
+                            jobData.put("job_type", rs.getString("job_type"));
+                            jobData.put("description", rs.getString("description"));
+                            jobData.put("remarks", rs.getString("remarks"));
+                            jobData.put("image_path", rs.getString("image_path"));
+                            jobData.put("amount", rs.getDouble("amount"));
+                            jobData.put("job_number_mode", rs.getString("job_number_mode"));
+                            jobData.put("delivery_date", rs.getString("delivery_date"));
+                            jobData.put("created_by_user_uuid", rs.getString("created_by_user_uuid"));
+                            oldJobs.add(jobData);
                         }
                     }
                 }
-                String moveJobsSql = "UPDATE jobs SET invoice_uuid = ? WHERE invoice_uuid = ?";
-                try (java.sql.PreparedStatement ps = con.prepareStatement(moveJobsSql)) {
-                    ps.setString(1, newUuid);
-                    ps.setString(2, oldUuid);
-                    ps.executeUpdate();
+
+                String insertJobSql = """
+                    INSERT INTO jobs (
+                        uuid, job_code, client_uuid, job_title, job_date, job_type, description,
+                        status, child_status, remarks, image_path, invoice_uuid, amount, job_number_mode,
+                        delivery_date, is_deleted, is_active, sync_status, sync_version, created_at, updated_at,
+                        created_by_user_uuid, updated_by_user_uuid
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Invoice Drafted', 'Invoice Drafted', ?, ?, ?, ?, ?, ?, 0, 1, 'PENDING', 1, datetime('now'), datetime('now'), ?, ?)
+                """;
+
+                String insertJobItemSql = """
+                    INSERT INTO job_items (uuid, job_uuid, type, description, amount, sort_order, include_in_invoice, sync_status, is_deleted, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', 0, datetime('now'), datetime('now'))
+                """;
+
+                for (java.util.Map<String, Object> oldJob : oldJobs) {
+                    String oldJobUuid = (String) oldJob.get("uuid");
+                    String newJobUuid = utils.JobIdentifiers.newUuidString();
+                    String newJobCode = "";
+                    try {
+                        newJobCode = service.sync.UniversalNumberAllocator.getInstance().allocateJobCode(con).value();
+                    } catch (Exception ex) {
+                        newJobCode = "J-" + System.currentTimeMillis();
+                    }
+
+                    // Insert cloned job
+                    try (java.sql.PreparedStatement ps = con.prepareStatement(insertJobSql)) {
+                        ps.setString(1, newJobUuid);
+                        ps.setString(2, newJobCode);
+                        ps.setString(3, (String) oldJob.get("client_uuid"));
+                        ps.setString(4, (String) oldJob.get("job_title"));
+                        ps.setString(5, (String) oldJob.get("job_date"));
+                        ps.setString(6, (String) oldJob.get("job_type"));
+                        ps.setString(7, (String) oldJob.get("description"));
+                        ps.setString(8, (String) oldJob.get("remarks"));
+                        ps.setString(9, (String) oldJob.get("image_path"));
+                        ps.setString(10, newUuid);
+                        ps.setDouble(11, (Double) oldJob.get("amount"));
+                        ps.setString(12, (String) oldJob.get("job_number_mode"));
+                        ps.setString(13, (String) oldJob.get("delivery_date"));
+                        ps.setString(14, (String) oldJob.get("created_by_user_uuid"));
+                        ps.setString(15, (String) oldJob.get("created_by_user_uuid"));
+                        ps.executeUpdate();
+                    }
+
+                    // Insert mapping in invoice_job_mapping
+                    insertInvoiceJobMapping(con, newUuid, newJobUuid);
+
+                    // Fetch and clone job items
+                    String selectJobItemsSql = "SELECT uuid, type, description, amount, sort_order, include_in_invoice FROM job_items WHERE job_uuid = ? AND COALESCE(is_deleted, 0) = 0";
+                    try (java.sql.PreparedStatement ps = con.prepareStatement(selectJobItemsSql)) {
+                        ps.setString(1, oldJobUuid);
+                        try (java.sql.ResultSet rs = ps.executeQuery()) {
+                            while (rs.next()) {
+                                String oldJobItemUuid = rs.getString("uuid");
+                                String newJobItemUuid = utils.ClientIdentifiers.newUuidString();
+                                String type = rs.getString("type");
+
+                                try (java.sql.PreparedStatement psItem = con.prepareStatement(insertJobItemSql)) {
+                                    psItem.setString(1, newJobItemUuid);
+                                    psItem.setString(2, newJobUuid);
+                                    psItem.setString(3, type);
+                                    psItem.setString(4, rs.getString("description"));
+                                    psItem.setDouble(5, rs.getDouble("amount"));
+                                    psItem.setInt(6, rs.getInt("sort_order"));
+                                    psItem.setInt(7, rs.getInt("include_in_invoice"));
+                                    psItem.executeUpdate();
+                                }
+
+                                // Copy the type-specific detail record
+                                if ("Paper".equalsIgnoreCase(type)) {
+                                    String copyPaperSql = """
+                                        INSERT INTO paper_items (uuid, job_item_uuid, qty, units, size, gsm, type, source, supplier_uuid, supplier_name, notes, amount, sync_status, is_deleted, created_at, updated_at)
+                                        SELECT ?, ?, qty, units, size, gsm, type, source, supplier_uuid, supplier_name, notes, amount, 'PENDING', 0, datetime('now'), datetime('now')
+                                        FROM paper_items WHERE job_item_uuid = ? AND COALESCE(is_deleted, 0) = 0
+                                    """;
+                                    try (java.sql.PreparedStatement psDetail = con.prepareStatement(copyPaperSql)) {
+                                        psDetail.setString(1, utils.ClientIdentifiers.newUuidString());
+                                        psDetail.setString(2, newJobItemUuid);
+                                        psDetail.setString(3, oldJobItemUuid);
+                                        psDetail.executeUpdate();
+                                    }
+                                } else if ("Printing".equalsIgnoreCase(type)) {
+                                    String copyPrintingSql = """
+                                        INSERT INTO printing_items (uuid, job_item_uuid, qty, units, sets, color, side, with_ctp, notes, amount, sync_status, is_deleted, created_at, updated_at)
+                                        SELECT ?, ?, qty, units, sets, color, side, with_ctp, notes, amount, 'PENDING', 0, datetime('now'), datetime('now')
+                                        FROM printing_items WHERE job_item_uuid = ? AND COALESCE(is_deleted, 0) = 0
+                                    """;
+                                    try (java.sql.PreparedStatement psDetail = con.prepareStatement(copyPrintingSql)) {
+                                        psDetail.setString(1, utils.ClientIdentifiers.newUuidString());
+                                        psDetail.setString(2, newJobItemUuid);
+                                        psDetail.setString(3, oldJobItemUuid);
+                                        psDetail.executeUpdate();
+                                    }
+                                } else if ("Binding".equalsIgnoreCase(type)) {
+                                    String copyBindingSql = """
+                                        INSERT INTO binding_items (uuid, job_item_uuid, process, qty, rate, notes, amount, sync_status, is_deleted, created_at, updated_at)
+                                        SELECT ?, ?, process, qty, rate, notes, amount, 'PENDING', 0, datetime('now'), datetime('now')
+                                        FROM binding_items WHERE job_item_uuid = ? AND COALESCE(is_deleted, 0) = 0
+                                    """;
+                                    try (java.sql.PreparedStatement psDetail = con.prepareStatement(copyBindingSql)) {
+                                        psDetail.setString(1, utils.ClientIdentifiers.newUuidString());
+                                        psDetail.setString(2, newJobItemUuid);
+                                        psDetail.setString(3, oldJobItemUuid);
+                                        psDetail.executeUpdate();
+                                    }
+                                } else if ("Lamination".equalsIgnoreCase(type)) {
+                                    String copyLaminationSql = """
+                                        INSERT INTO lamination_items (uuid, job_item_uuid, qty, unit, type, side, size, notes, amount, sync_status, is_deleted, created_at, updated_at)
+                                        SELECT ?, ?, qty, unit, type, side, size, notes, amount, 'PENDING', 0, datetime('now'), datetime('now')
+                                        FROM lamination_items WHERE job_item_uuid = ? AND COALESCE(is_deleted, 0) = 0
+                                    """;
+                                    try (java.sql.PreparedStatement psDetail = con.prepareStatement(copyLaminationSql)) {
+                                        psDetail.setString(1, utils.ClientIdentifiers.newUuidString());
+                                        psDetail.setString(2, newJobItemUuid);
+                                        psDetail.setString(3, oldJobItemUuid);
+                                        psDetail.executeUpdate();
+                                    }
+                                } else if ("CTP".equalsIgnoreCase(type)) {
+                                    String copyCtpSql = """
+                                        INSERT INTO ctp_items (uuid, job_item_uuid, qty, plate_size, gauge, backing, color, supplier_uuid, supplier_name, notes, amount, sync_status, is_deleted, created_at, updated_at)
+                                        SELECT ?, ?, qty, plate_size, gauge, backing, color, supplier_uuid, supplier_name, notes, amount, 'PENDING', 0, datetime('now'), datetime('now')
+                                        FROM ctp_items WHERE job_item_uuid = ? AND COALESCE(is_deleted, 0) = 0
+                                    """;
+                                    try (java.sql.PreparedStatement psDetail = con.prepareStatement(copyCtpSql)) {
+                                        psDetail.setString(1, utils.ClientIdentifiers.newUuidString());
+                                        psDetail.setString(2, newJobItemUuid);
+                                        psDetail.setString(3, oldJobItemUuid);
+                                        psDetail.executeUpdate();
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 

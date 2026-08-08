@@ -51,6 +51,7 @@ public class BankDetailsService {
 				} else {
 					repo.update(con, b);
 				}
+				enforceSingleDefault(con);
 				con.commit();
 				return b;
 			} catch (Exception e) {
@@ -77,9 +78,29 @@ public class BankDetailsService {
 			return;
 		}
 		try (Connection con = DBConnection.getConnection()) {
-			repo.delete(con, uuid);
+			con.setAutoCommit(false);
+			try {
+				repo.delete(con, uuid);
+				enforceSingleDefault(con);
+				con.commit();
+			} catch (Exception e) {
+				try { con.rollback(); } catch (Exception e2) { service.LoggerService.dbWarn("Failed to rollback BankDetailsService.delete: " + e2.getMessage()); }
+				throw e;
+			} finally {
+				try { con.setAutoCommit(true); } catch (Exception e2) { service.LoggerService.dbWarn("Failed to reset auto-commit in BankDetailsService.delete: " + e2.getMessage()); }
+			}
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to delete bank details", e);
+		}
+	}
+
+	private void enforceSingleDefault(Connection con) throws Exception {
+		BankDetails def = repo.findDefault(con);
+		if (def == null) {
+			List<BankDetails> active = repo.listAll(con, false);
+			if (!active.isEmpty()) {
+				repo.setDefault(con, active.get(0).getUuid());
+			}
 		}
 	}
 

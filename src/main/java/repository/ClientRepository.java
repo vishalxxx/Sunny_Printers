@@ -135,6 +135,19 @@ public class ClientRepository {
 			int n = ps.executeUpdate();
 			boolean ok = n > 0;
 			if (ok) {
+				if (client.getOpeningBalance() > 0) {
+					String payUuid = ClientIdentifiers.newUuidV7String();
+					String sqlPay = """
+							INSERT INTO payments (uuid, client_uuid, amount, payment_date, method, type, sync_status, sync_version, is_deleted, is_active)
+							VALUES (?, ?, ?, date('now'), 'Opening Balance', 'Opening Balance', 'PENDING', 1, 0, 1)
+							""";
+					try (PreparedStatement psPay = conn.prepareStatement(sqlPay)) {
+						psPay.setString(1, payUuid);
+						psPay.setString(2, uid);
+						psPay.setDouble(3, client.getOpeningBalance());
+						psPay.executeUpdate();
+					}
+				}
 				if (!DocumentNumbering.isTemporaryNumber(client.getClientCode())) {
 					pushClientToSupabaseAsync(client, false);
 				}
@@ -395,6 +408,11 @@ public class ClientRepository {
 		}
 		client.setUpdatedByUserUuid(userUuid);
 
+		boolean hasTxns = hasFinancialTransactions(client.getClientUuid());
+		if (hasTxns && Double.compare(before.getOpeningBalance(), client.getOpeningBalance()) != 0) {
+			throw new IllegalStateException("Cannot edit opening balance after other financial transactions are posted.");
+		}
+
 		service.LoggerService.beginOperation("CLIENT-UPDATE");
 		try {
 			String sql = """
@@ -430,6 +448,49 @@ public class ClientRepository {
 				boolean ok = ps.executeUpdate() > 0;
 				if (ok) {
 					client.setSyncVersion(client.getSyncVersion() + 1);
+					
+					// Handle Opening Balance transaction creation/update/deletion
+					if (!hasTxns && Double.compare(before.getOpeningBalance(), client.getOpeningBalance()) != 0) {
+						String checkSql = "SELECT uuid FROM payments WHERE client_uuid = ? AND type = 'Opening Balance' AND IFNULL(is_deleted, 0) = 0";
+						String txnUuid = null;
+						try (PreparedStatement psCheck = conn.prepareStatement(checkSql)) {
+							psCheck.setString(1, client.getClientUuid());
+							try (ResultSet rsCheck = psCheck.executeQuery()) {
+								if (rsCheck.next()) {
+									txnUuid = rsCheck.getString(1);
+								}
+							}
+						}
+						if (txnUuid != null) {
+							if (client.getOpeningBalance() <= 0) {
+								String delSql = "UPDATE payments SET is_deleted = 1, sync_status = 'PENDING', sync_version = sync_version + 1, updated_at = datetime('now') WHERE uuid = ?";
+								try (PreparedStatement psDel = conn.prepareStatement(delSql)) {
+									psDel.setString(1, txnUuid);
+									psDel.executeUpdate();
+								}
+							} else {
+								String updSql = "UPDATE payments SET amount = ?, sync_status = 'PENDING', sync_version = sync_version + 1, updated_at = datetime('now') WHERE uuid = ?";
+								try (PreparedStatement psUpd = conn.prepareStatement(updSql)) {
+									psUpd.setDouble(1, client.getOpeningBalance());
+									psUpd.setString(2, txnUuid);
+									psUpd.executeUpdate();
+								}
+							}
+						} else if (client.getOpeningBalance() > 0) {
+							String newUuid = ClientIdentifiers.newUuidV7String();
+							String insSql = """
+									INSERT INTO payments (uuid, client_uuid, amount, payment_date, method, type, sync_status, sync_version, is_deleted, is_active)
+									VALUES (?, ?, ?, date('now'), 'Opening Balance', 'Opening Balance', 'PENDING', 1, 0, 1)
+									""";
+							try (PreparedStatement psIns = conn.prepareStatement(insSql)) {
+								psIns.setString(1, newUuid);
+								psIns.setString(2, client.getClientUuid());
+								psIns.setDouble(3, client.getOpeningBalance());
+								psIns.executeUpdate();
+							}
+						}
+					}
+					
 					pushClientToSupabaseAsync(client, true, before);
 					UniversalSyncEngine.scheduleSyncAsync();
 				}
@@ -438,6 +499,38 @@ public class ClientRepository {
 			}
 		} catch (Exception e) {
 			service.LoggerService.endOperation("CLIENT-UPDATE", false, "Exception: " + e.getMessage());
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	public boolean hasFinancialTransactions(String clientUuid) {
+		if (clientUuid == null || clientUuid.isBlank()) {
+			return false;
+		}
+		String sqlInvoices = "SELECT COUNT(*) FROM invoice_master WHERE client_uuid = ? AND IFNULL(is_deleted, 0) = 0 AND IFNULL(is_void, 0) = 0";
+		String sqlPayments = "SELECT COUNT(*) FROM payments WHERE client_uuid = ? AND IFNULL(is_deleted, 0) = 0 AND LOWER(type) <> 'opening balance'";
+		String sqlAdjustments = "SELECT COUNT(*) FROM invoice_adjustments WHERE IFNULL(is_deleted, 0) = 0 AND invoice_uuid IN (SELECT uuid FROM invoice_master WHERE client_uuid = ?)";
+		try (Connection conn = DBConnection.getConnection()) {
+			try (PreparedStatement ps = conn.prepareStatement(sqlInvoices)) {
+				ps.setString(1, clientUuid);
+				try (ResultSet rs = ps.executeQuery()) {
+					if (rs.next() && rs.getInt(1) > 0) return true;
+				}
+			}
+			try (PreparedStatement ps = conn.prepareStatement(sqlPayments)) {
+				ps.setString(1, clientUuid);
+				try (ResultSet rs = ps.executeQuery()) {
+					if (rs.next() && rs.getInt(1) > 0) return true;
+				}
+			}
+			try (PreparedStatement ps = conn.prepareStatement(sqlAdjustments)) {
+				ps.setString(1, clientUuid);
+				try (ResultSet rs = ps.executeQuery()) {
+					if (rs.next() && rs.getInt(1) > 0) return true;
+				}
+			}
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return false;

@@ -257,7 +257,7 @@
                             <Separator orientation="VERTICAL" prefHeight="24" style="-fx-opacity: 0.1; -fx-padding: 0 5;"/>
 
                             <!-- Notification Icon -->
-                            <StackPane styleClass="header-icon-btn">
+                            <StackPane fx:id="btnNotifications" styleClass="header-icon-btn" onMouseClicked="#toggleNotificationsPopup">
                                 <Region styleClass="sidebar-icon, icon-notification" style="-fx-background-color: #716D68; -fx-min-width: 18; -fx-min-height: 18;"/>
                             </StackPane>
                             
@@ -318,50 +318,50 @@
                             <!-- NEW KPI CARDS ROW -->
                             <HBox spacing="16" alignment="CENTER">
                                 <!-- CARD 1 -->
-                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10">
+                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10" maxWidth="Infinity" prefWidth="100">
                                     <Label text="TOTAL REVENUE" styleClass="kpi-title"/>
                                     <HBox alignment="BASELINE_LEFT" spacing="8">
                                         <Label fx:id="lblTotalRevenue" text="₹0" styleClass="kpi-value"/>
-                                        <Label text="+12%" styleClass="kpi-percent" style="-fx-text-fill: #758385;"/>
+                                        <Label fx:id="lblRevenuePercent" text="+0%" styleClass="kpi-percent" style="-fx-text-fill: #758385;"/>
                                     </HBox>
                                     <StackPane styleClass="kpi-progress-bg" alignment="CENTER_LEFT">
-                                        <Region styleClass="kpi-progress-fill, kpi-fill-revenue" style="-fx-max-width: 120;"/>
+                                        <Region fx:id="barRevenueProgress" styleClass="kpi-progress-fill, kpi-fill-revenue" style="-fx-max-width: 0;"/>
                                     </StackPane>
                                 </VBox>
                                 
                                 <!-- CARD 2 -->
-                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10">
+                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10" maxWidth="Infinity" prefWidth="100">
                                     <Label text="OUTSTANDING AMOUNT" styleClass="kpi-title"/>
                                     <HBox alignment="BASELINE_LEFT" spacing="8">
                                         <Label fx:id="lblOutstanding" text="₹0" styleClass="kpi-value"/>
-                                        <Label text="+4%" styleClass="kpi-percent" style="-fx-text-fill: #C06138;"/>
+                                        <Label fx:id="lblOutstandingPercent" text="+0%" styleClass="kpi-percent" style="-fx-text-fill: #C06138;"/>
                                     </HBox>
                                     <StackPane styleClass="kpi-progress-bg" alignment="CENTER_LEFT">
-                                        <Region styleClass="kpi-progress-fill, kpi-fill-revenue" style="-fx-max-width: 60;"/>
+                                        <Region fx:id="barOutstandingProgress" styleClass="kpi-progress-fill, kpi-fill-revenue" style="-fx-max-width: 0;"/>
                                     </StackPane>
                                 </VBox>
 
                                 <!-- CARD 3 -->
-                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10">
+                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10" maxWidth="Infinity" prefWidth="100">
                                     <Label text="COLLECTED THIS MONTH" styleClass="kpi-title"/>
                                     <HBox alignment="BASELINE_LEFT" spacing="8">
                                         <Label fx:id="lblCollected" text="₹0" styleClass="kpi-value"/>
-                                        <Label text="+8%" styleClass="kpi-percent" style="-fx-text-fill: #758385;"/>
+                                        <Label fx:id="lblCollectedPercent" text="+0%" styleClass="kpi-percent" style="-fx-text-fill: #758385;"/>
                                     </HBox>
                                     <StackPane styleClass="kpi-progress-bg" alignment="CENTER_LEFT">
-                                        <Region styleClass="kpi-progress-fill, kpi-fill-collected" style="-fx-max-width: 80;"/>
+                                        <Region fx:id="barCollectedProgress" styleClass="kpi-progress-fill, kpi-fill-collected" style="-fx-max-width: 0;"/>
                                     </StackPane>
                                 </VBox>
 
                                 <!-- CARD 4 -->
-                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10">
+                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10" maxWidth="Infinity" prefWidth="100">
                                     <Label text="OVERDUE AMOUNT" styleClass="kpi-title"/>
                                     <HBox alignment="BASELINE_LEFT" spacing="8">
                                         <Label fx:id="lblOverdue" text="₹0" styleClass="kpi-value" style="-fx-text-fill: #D27357;"/>
-                                        <Label text="-2%" styleClass="kpi-percent" style="-fx-text-fill: #758385;"/>
+                                        <Label fx:id="lblOverduePercent" text="+0%" styleClass="kpi-percent" style="-fx-text-fill: #758385;"/>
                                     </HBox>
                                     <StackPane styleClass="kpi-progress-bg" alignment="CENTER_LEFT">
-                                        <Region styleClass="kpi-progress-fill, kpi-fill-overdue" style="-fx-max-width: 40;"/>
+                                        <Region fx:id="barOverdueProgress" styleClass="kpi-progress-fill, kpi-fill-overdue" style="-fx-max-width: 0;"/>
                                     </StackPane>
                                 </VBox>
                             </HBox>

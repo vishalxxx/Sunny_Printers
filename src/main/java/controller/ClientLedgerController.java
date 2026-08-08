@@ -661,8 +661,26 @@ public class ClientLedgerController implements Initializable {
         // Invoices — no receipt_no, use NULL placeholder
         sql.append("SELECT uuid as txn_id, invoice_date as txn_date, created_at as created_ts, invoice_no as ref, 'INVOICE' as type, ");
         sql.append("'-' as mode, ");
-        sql.append("0 as debit, amount as credit, status, payment_status, NULL as receipt_no ");
-        sql.append("FROM invoice_master WHERE client_uuid = ? AND IFNULL(is_deleted, 0) = 0 AND IFNULL(is_void, 0) = 0 ");
+        sql.append("0 as debit, amount as credit, status, payment_status, NULL as receipt_no, ");
+        sql.append("1 as type_priority ");
+        sql.append("FROM invoice_master WHERE client_uuid = ? AND IFNULL(is_deleted, 0) = 0 AND IFNULL(is_void, 0) = 0 AND UPPER(status) != 'DRAFT' ");
+        if (from != null)
+            sql.append("AND invoice_date >= ? ");
+        if (to != null)
+            sql.append("AND invoice_date <= ? ");
+
+        sql.append("UNION ALL ");
+
+        // Cancelled Invoices Entries
+        sql.append("SELECT uuid || '-cancel' as txn_id, invoice_date as txn_date, updated_at as created_ts, ");
+        sql.append("CASE WHEN payment_status = 'KEPT_AS_ADVANCE' THEN invoice_no || ' Invoice Cancelled Payment Kept' ");
+        sql.append("     WHEN payment_status = 'REFUNDED' THEN invoice_no || ' Invoice Cancelled Payment Refunded' ");
+        sql.append("     ELSE invoice_no || ' Invoice Cancelled' END as ref, ");
+        sql.append("'INVOICE CANCEL' as type, ");
+        sql.append("'-' as mode, ");
+        sql.append("amount as debit, 0 as credit, status, payment_status, NULL as receipt_no, ");
+        sql.append("5 as type_priority ");
+        sql.append("FROM invoice_master WHERE client_uuid = ? AND UPPER(status) = 'CANCELLED' AND IFNULL(is_deleted, 0) = 0 AND IFNULL(is_void, 0) = 0 ");
         if (from != null)
             sql.append("AND invoice_date >= ? ");
         if (to != null)
@@ -672,14 +690,35 @@ public class ClientLedgerController implements Initializable {
 
         // Payments
         sql.append("SELECT p.uuid as txn_id, p.payment_date as txn_date, p.created_at as created_ts, ");
-        sql.append("COALESCE(");
-        sql.append("  (SELECT GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid AND COALESCE(a.is_deleted, 0) = 0), ");
-        sql.append("  CASE WHEN p.type = 'Refund' THEN 'Advance Refund' ELSE 'Advance' END");
-        sql.append(") as ref, ");
+        sql.append("CASE WHEN UPPER(p.type) = 'REFUND' THEN ");
+        sql.append("  'Refund against ' || COALESCE( ");
+        sql.append("    (SELECT GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid), ");
+        sql.append("    (SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'remarks'), ");
+        sql.append("    'Advance' ");
+        sql.append("  ) ");
+        sql.append("ELSE ");
+        sql.append("  COALESCE( ");
+        sql.append("    (SELECT GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid), ");
+        sql.append("    (SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'remarks'), ");
+        sql.append("    CASE WHEN p.type = 'Opening Balance' THEN 'Opening Balance' ELSE 'Advance' END ");
+        sql.append("  ) ");
+        sql.append("END as ref, ");
         sql.append("UPPER(p.type) as type, ");
-        sql.append("p.method as mode, ");
-        sql.append("p.amount as debit, 0 as credit, 'SUCCESS' as status, '' as payment_status, ");
-        sql.append("(SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'receipt_no') as receipt_no ");
+        sql.append("p.method || ");
+        sql.append("COALESCE(");
+        sql.append("  CASE ");
+        sql.append("    WHEN LOWER(p.method) = 'cheque' THEN ");
+        sql.append("      (SELECT ' (No: ' || field_value || ')' FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'cheque_number' AND NULLIF(field_value, '') IS NOT NULL) ");
+        sql.append("    WHEN LOWER(p.method) = 'upi' THEN ");
+        sql.append("      (SELECT ' (ID: ' || field_value || ')' FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'upi_id' AND NULLIF(field_value, '') IS NOT NULL) ");
+        sql.append("    ELSE NULL ");
+        sql.append("  END, ");
+        sql.append("  ''");
+        sql.append(") as mode, ");
+        sql.append("CASE WHEN p.type = 'Opening Balance' THEN 0 ELSE p.amount END as debit, ");
+        sql.append("CASE WHEN p.type = 'Opening Balance' THEN p.amount ELSE 0 END as credit, 'SUCCESS' as status, '' as payment_status, ");
+        sql.append("(SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'receipt_no') as receipt_no, ");
+        sql.append("CASE WHEN p.type = 'Refund' THEN 3 WHEN p.type = 'Advance' THEN 4 ELSE 2 END as type_priority ");
         sql.append("FROM payments p WHERE p.client_uuid = ? AND IFNULL(p.is_deleted, 0) = 0 ");
         if (from != null)
             sql.append("AND p.payment_date >= ? ");
@@ -695,10 +734,11 @@ public class ClientLedgerController implements Initializable {
         sql.append("'-' as mode, ");
         sql.append("CASE WHEN adj.type = 'Credit Note' THEN adj.amount ELSE 0 END as debit, ");
         sql.append("CASE WHEN adj.type = 'Debit Note' THEN adj.amount ELSE 0 END as credit, ");
-        sql.append("'SUCCESS' as status, '' as payment_status, adj.note_no as receipt_no ");
+        sql.append("'SUCCESS' as status, '' as payment_status, adj.note_no as receipt_no, ");
+        sql.append("2 as type_priority ");
         sql.append("FROM invoice_adjustments adj ");
         sql.append("JOIN invoice_master inv ON adj.invoice_uuid = inv.uuid ");
-        sql.append("WHERE inv.client_uuid = ? AND IFNULL(adj.is_deleted, 0) = 0 AND IFNULL(inv.is_deleted, 0) = 0 AND IFNULL(inv.is_void, 0) = 0 ");
+        sql.append("WHERE inv.client_uuid = ? AND IFNULL(adj.is_deleted, 0) = 0 AND IFNULL(inv.is_deleted, 0) = 0 AND IFNULL(inv.is_void, 0) = 0 AND UPPER(inv.status) != 'DRAFT' ");
         if (from != null)
             sql.append("AND adj.date >= ? ");
         if (to != null)
@@ -707,12 +747,12 @@ public class ClientLedgerController implements Initializable {
         sql.append(") AS ledger_view ");
 
         if (rbInvoice != null && rbInvoice.isSelected()) {
-            sql.append("WHERE type IN ('INVOICE', 'DEBIT NOTE') ");
+            sql.append("WHERE type IN ('INVOICE', 'DEBIT NOTE', 'OPENING BALANCE', 'INVOICE CANCEL') ");
         } else if (rbPayment != null && rbPayment.isSelected()) {
             sql.append("WHERE type IN ('PAYMENT', 'REFUND', 'CREDIT NOTE') ");
         }
 
-        sql.append("ORDER BY substr(txn_date, 1, 10) ASC, CASE WHEN type = 'INVOICE' THEN 1 WHEN type = 'DEBIT NOTE' THEN 2 WHEN type = 'PAYMENT' THEN 3 ELSE 4 END ASC, created_ts ASC, txn_id ASC");
+        sql.append("ORDER BY datetime(txn_date) ASC, datetime(created_ts) ASC, type_priority ASC, txn_id ASC");
 
         double totalDebit = 0.0;
         double totalCredit = 0.0;
@@ -724,6 +764,13 @@ public class ClientLedgerController implements Initializable {
             int idx = 1;
 
             // Invoices params
+            ps.setString(idx++, clientUuid);
+            if (from != null)
+                ps.setString(idx++, from.toString());
+            if (to != null)
+                ps.setString(idx++, to.toString());
+
+            // Cancelled Invoices params
             ps.setString(idx++, clientUuid);
             if (from != null)
                 ps.setString(idx++, from.toString());

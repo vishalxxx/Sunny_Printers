@@ -119,8 +119,60 @@ public class ClientProfileController implements Initializable {
         refreshProfile();
     }
 
+    private void calculateClientAnalytics(Client c) {
+        try (Connection con = DBConnection.getConnection()) {
+            String clientUuid = c.getClientUuid();
+            
+            // 1. LTV Logic: Invoices + Opening Balance
+            double ltv = 0;
+            String sqlLtv = "SELECT SUM(amount) FROM invoice_master WHERE client_uuid = ? AND is_void = 0 AND IFNULL(is_deleted, 0) = 0 AND UPPER(status) != 'DRAFT'";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(sqlLtv)) {
+                ps.setString(1, clientUuid);
+                java.sql.ResultSet rs = ps.executeQuery();
+                if (rs.next()) ltv = rs.getDouble(1);
+            }
+            
+            // Neutralize cancelled invoices with no payments from LTV/Balance
+            double cancelledNoPaymentSum = 0;
+            String sqlCancelled = "SELECT SUM(amount) FROM invoice_master WHERE client_uuid = ? AND status = 'CANCELLED' AND IFNULL(is_deleted, 0) = 0 " +
+                                  "AND NOT EXISTS (SELECT 1 FROM payment_allocations a WHERE a.invoice_uuid = invoice_master.uuid AND COALESCE(a.is_deleted, 0) = 0)";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(sqlCancelled)) {
+                ps.setString(1, clientUuid);
+                java.sql.ResultSet rs = ps.executeQuery();
+                if (rs.next()) cancelledNoPaymentSum = rs.getDouble(1);
+            }
+            ltv = ltv - cancelledNoPaymentSum;
+            
+            ltv += c.getOpeningBalance();
+            c.setLtv(ltv);
+            
+            // 2. Balance Logic: Total outstanding - Payments
+            double totalPaid = 0;
+            String sqlPaid = "SELECT SUM(amount) FROM payments WHERE client_uuid = ? AND IFNULL(is_deleted, 0) = 0 AND type <> 'Opening Balance'";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(sqlPaid)) {
+                ps.setString(1, clientUuid);
+                java.sql.ResultSet rs = ps.executeQuery();
+                if (rs.next()) totalPaid = rs.getDouble(1);
+            }
+            
+            double adjustments = 0;
+            String sqlAdj = "SELECT SUM(CASE WHEN type='Debit Note' THEN amount ELSE -amount END) FROM invoice_adjustments WHERE invoice_uuid IN (SELECT uuid FROM invoice_master WHERE client_uuid = ? AND IFNULL(is_deleted, 0) = 0 AND is_void = 0 AND UPPER(status) != 'DRAFT') AND IFNULL(is_deleted, 0) = 0";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(sqlAdj)) {
+                ps.setString(1, clientUuid);
+                java.sql.ResultSet rs = ps.executeQuery();
+                if (rs.next()) adjustments = rs.getDouble(1);
+            }
+            
+            c.setBalance(ltv + adjustments - totalPaid);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public void refreshProfile() {
         if (currentClient == null) return;
+        
+        calculateClientAnalytics(currentClient);
         
         utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, currentClient.getBusinessName(), () -> handleBack(null));
         
@@ -327,15 +379,15 @@ public class ClientProfileController implements Initializable {
         return "Unknown_Client";
     }
 
-    private void loadInvoiceHistory() {
+        private void loadInvoiceHistory() {
         if (historyContainer == null) return;
         
         List<Invoice> history = new ArrayList<>();
         NumberSequenceAllocationService receiptNumbers = new NumberSequenceAllocationService();
         try (Connection con = DBConnection.getConnection()) {
-            String sql = "SELECT invoice_no, invoice_date, amount, status, payment_status, 'INVOICE' as row_type, CAST(NULL AS TEXT) as payment_uuid FROM invoice_master WHERE client_uuid = ? AND is_void = 0 "
+            String sql = "SELECT invoice_no, invoice_date, amount, status, payment_status, 'INVOICE' as row_type, CAST(NULL AS TEXT) as payment_uuid FROM invoice_master WHERE client_uuid = ? AND is_void = 0 AND IFNULL(is_deleted, 0) = 0 AND UPPER(status) != 'DRAFT' "
                          + "UNION ALL "
-                         + "SELECT '', payment_date, amount, 'PAID', 'PAID', 'PAYMENT' as row_type, uuid as payment_uuid FROM payments WHERE client_uuid = ? "
+                         + "SELECT '', payment_date, amount, 'PAID', 'PAID', type as row_type, uuid as payment_uuid FROM payments WHERE client_uuid = ? AND IFNULL(is_deleted, 0) = 0 "
                          + "ORDER BY invoice_date DESC LIMIT 10";
                          
             try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
@@ -346,19 +398,22 @@ public class ClientProfileController implements Initializable {
                     Invoice inv = new Invoice();
                     String payUuid = rs.getString(7);
                     String dateStr = rs.getString(2);
+                    String rowType = rs.getString(6);
                     if (dateStr != null && !dateStr.isEmpty()) {
                         try { inv.setInvoiceDate(LocalDate.parse(dateStr.contains(" ") ? dateStr.split(" ")[0] : dateStr)); } catch (Exception e) {}
                     }
                     if (payUuid != null) {
                         inv.setStandalonePaymentUuid(payUuid);
-                        // Still need a numeric ID for some legacy logic or just use UUID
-                        inv.setInvoiceNo(receiptNumbers.resolvePaymentReceiptNo(con, payUuid, inv.getInvoiceDate(), false));
+                        if ("Opening Balance".equalsIgnoreCase(rowType)) {
+                            inv.setInvoiceNo("Opening Balance");
+                        } else {
+                            inv.setInvoiceNo(receiptNumbers.resolvePaymentReceiptNo(con, payUuid, inv.getInvoiceDate(), false));
+                        }
                     } else {
                         inv.setInvoiceNo(rs.getString(1));
                     }
                     inv.setGrandTotal(rs.getDouble(3));
                     
-                    String rowType = rs.getString(6);
                     if ("INVOICE".equals(rowType)) {
                         String invStatus = rs.getString(4) != null ? rs.getString(4).toUpperCase() : "";
                         String payStatus = rs.getString(5) != null ? rs.getString(5).toUpperCase() : "";
@@ -368,6 +423,8 @@ public class ClientProfileController implements Initializable {
                             finalStatus = payStatus;
                         }
                         inv.setStatus(finalStatus);
+                    } else if ("Opening Balance".equalsIgnoreCase(rowType)) {
+                        inv.setStatus("OPENING BALANCE");
                     } else {
                         inv.setStatus("PAID"); // Standalone Payment
                     }

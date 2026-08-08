@@ -20,6 +20,7 @@ import utils.CompanyDataLayout;
 import utils.CompanyProfile;
 import utils.UniversalDownloadPath;
 import utils.SupabaseRestProbe;
+import javafx.scene.image.ImageView;
 
 import java.io.File;
 import java.net.URL;
@@ -41,6 +42,10 @@ public class GeneralSettingsController implements Initializable {
 
     @FXML private TextField downloadPathField;
     @FXML private Button browseDownloadPathBtn;
+
+    @FXML private ImageView signaturePreview;
+    @FXML private Button btnUploadSignature;
+    @FXML private Button btnRemoveSignature;
 
     @FXML private TextField supabaseUrlField;
     @FXML private PasswordField supabaseAnonKeyField;
@@ -77,6 +82,12 @@ public class GeneralSettingsController implements Initializable {
         if (browseDownloadPathBtn != null) {
             browseDownloadPathBtn.setOnAction(e -> browseDownloadPath());
         }
+        if (btnUploadSignature != null) {
+            btnUploadSignature.setOnAction(e -> uploadSignature());
+        }
+        if (btnRemoveSignature != null) {
+            btnRemoveSignature.setOnAction(e -> removeSignature());
+        }
         wireSupabaseActions();
     }
 
@@ -95,6 +106,7 @@ public class GeneralSettingsController implements Initializable {
             loadSupabaseFields();
             setupCompanyCombo();
             setupBankCombo();
+            loadSignaturePreview();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -128,8 +140,12 @@ public class GeneralSettingsController implements Initializable {
             companyCombo.getSelectionModel().select(0);
             applyCompanyToForm(companyCombo.getValue());
         } else {
-            // fallback to Preferences (single company) if DB is empty
-            applyCompanyProfileToForm();
+            // Clear all fields if no company is registered
+            if (companyAddressArea != null) companyAddressArea.setText("");
+            if (companyPhoneField != null) companyPhoneField.setText("");
+            if (companyEmailField != null) companyEmailField.setText("");
+            if (companyGstField != null) companyGstField.setText("");
+            if (downloadPathField != null) downloadPathField.setText("");
         }
 
         companyCombo.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
@@ -374,6 +390,7 @@ public class GeneralSettingsController implements Initializable {
             saveSupabaseFromForm();
 
             showInfo("Settings saved successfully.");
+            MainController.getInstance().refreshNavigationLocks();
         } catch (Exception e) {
             e.printStackTrace();
             showError("Failed to save settings", e);
@@ -404,5 +421,83 @@ public class GeneralSettingsController implements Initializable {
         alert.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
         alert.getDialogPane().getStylesheets().add(getClass().getResource("/css/settings_screens.css").toExternalForm());
         alert.show();
+    }
+
+    private void loadSignaturePreview() {
+        if (signaturePreview == null) return;
+        String path = utils.DigitalSignaturePath.get();
+        if (path != null && !path.isBlank()) {
+            File f = new File(path);
+            if (f.exists() && f.isFile()) {
+                try {
+                    javafx.scene.image.Image img = new javafx.scene.image.Image(f.toURI().toString());
+                    signaturePreview.setImage(img);
+                    if (btnRemoveSignature != null) {
+                        btnRemoveSignature.setDisable(false);
+                    }
+                    return;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        signaturePreview.setImage(null);
+        if (btnRemoveSignature != null) {
+            btnRemoveSignature.setDisable(true);
+        }
+    }
+
+    private void uploadSignature() {
+        javafx.stage.FileChooser fc = new javafx.stage.FileChooser();
+        fc.setTitle("Select Digital Signature Image");
+        fc.getExtensionFilters().addAll(
+            new javafx.stage.FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp")
+        );
+        File selectedFile = fc.showOpenDialog(saveBtn.getScene().getWindow());
+        if (selectedFile != null) {
+            try {
+                File destDir = new File(System.getProperty("user.home") + "/.sunnyprinters");
+                if (!destDir.exists()) {
+                    destDir.mkdirs();
+                }
+                String ext = "";
+                String name = selectedFile.getName();
+                int idx = name.lastIndexOf('.');
+                if (idx > 0) {
+                    ext = name.substring(idx);
+                }
+                File dest = new File(destDir, "digital_signature" + ext);
+                java.nio.file.Files.copy(selectedFile.toPath(), dest.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                
+                utils.DigitalSignaturePath.set(dest.getAbsolutePath());
+                loadSignaturePreview();
+                showInfo("Signature uploaded successfully.");
+            } catch (Exception e) {
+                e.printStackTrace();
+                showError("Failed to upload signature", e);
+            }
+        }
+    }
+
+    private void removeSignature() {
+        String path = utils.DigitalSignaturePath.get();
+        if (path != null && !path.isBlank()) {
+            try {
+                File f = new File(path);
+                if (f.exists()) {
+                    f.delete();
+                }
+                utils.DigitalSignaturePath.set(null);
+                loadSignaturePreview();
+                showInfo("Signature removed successfully.");
+            } catch (Exception e) {
+                e.printStackTrace();
+                showError("Failed to remove signature", e);
+            }
+        }
+    }
+
+    public void refresh() {
+        loadSettings();
     }
 }

@@ -145,6 +145,7 @@ public class RecordPaymentController implements Initializable {
     private Label excessPaymentLabel;
 
     private final ObservableList<InvoiceRow> invoiceItems = FXCollections.observableArrayList();
+    private CheckBox selectAllCheckBox;
     private final ClientService clientService = new ClientService();
 
     public static InvoiceMaster pendingPrefillInvoice = null;
@@ -511,6 +512,18 @@ public class RecordPaymentController implements Initializable {
         selectColumn.setCellFactory(CheckBoxTableCell.forTableColumn(selectColumn));
         selectColumn.setEditable(true);
 
+        if (selectAllCheckBox == null) {
+            selectAllCheckBox = new CheckBox();
+            selectColumn.setGraphic(selectAllCheckBox);
+            selectColumn.setText(null);
+            selectAllCheckBox.setOnAction(e -> {
+                boolean checked = selectAllCheckBox.isSelected();
+                for (InvoiceRow row : invoiceItems) {
+                    row.setSelected(checked);
+                }
+            });
+        }
+
         invoiceNoColumn.setCellValueFactory(param -> param.getValue().invoiceNoProperty());
         statusColumn.setCellValueFactory(param -> param.getValue().statusProperty());
         invoiceDateColumn.setCellValueFactory(param -> param.getValue().invoiceDateProperty());
@@ -531,6 +544,17 @@ public class RecordPaymentController implements Initializable {
             row.setAllocateAmount(event.getNewValue());
             refreshFooterTotals();
         });
+
+        // Center align all columns programmatically
+        for (TableColumn<?, ?> col : new TableColumn<?, ?>[]{
+            selectColumn, invoiceNoColumn, statusColumn, invoiceDateColumn,
+            totalAmountColumn, adjustmentColumn, netTotalColumn, netPaidColumn,
+            dueAmountColumn, allocateAmountColumn
+        }) {
+            if (col != null && !col.getStyleClass().contains("rp-chead-center")) {
+                col.getStyleClass().add("rp-chead-center");
+            }
+        }
 
         if (invoiceTable.getColumns().isEmpty()) {
             invoiceTable.getColumns().add(selectColumn);
@@ -668,6 +692,25 @@ public class RecordPaymentController implements Initializable {
             }
         }
 
+        long countSelected = invoiceItems.stream().filter(InvoiceRow::isSelected).count();
+        String remarks = "";
+        if (countSelected == 0) {
+            TextInputDialog dialog = new TextInputDialog();
+            dialog.setTitle("Enter Remarks");
+            dialog.setHeaderText("No invoices selected for allocation.");
+            dialog.setContentText("Please enter a mandatory Remark for this payment:");
+            dialog.getDialogPane().getStyleClass().add("alert-dialog-premium");
+            
+            Optional<String> result = dialog.showAndWait();
+            if (result.isPresent() && !result.get().trim().isEmpty()) {
+                remarks = result.get().trim();
+            } else {
+                new Alert(Alert.AlertType.WARNING, "Remarks are mandatory when no invoices are selected.", ButtonType.OK).showAndWait();
+                return;
+            }
+        }
+        final String finalRemarks = remarks;
+
         try {
             AtomicDB.runVoid(con -> {
                 String clientId = getSelectedClientUuid(con);
@@ -799,7 +842,7 @@ public class RecordPaymentController implements Initializable {
                 }
 
                 // 3) Payment details
-                savePaymentDetails(con, paymentUuid, mode);
+                savePaymentDetails(con, paymentUuid, mode, finalRemarks);
             });
 
             // Show success message
@@ -974,8 +1017,12 @@ public class RecordPaymentController implements Initializable {
                 row.selectedProperty().addListener((obs, o, n) -> {
                     performAutoAllocation();
                     refreshFooterTotals();
+                    updateSelectAllCheckBoxState();
                 });
             });
+
+            performAutoAllocation();
+            updateSelectAllCheckBoxState();
 
             if (invoiceTable != null) {
                 invoiceTable.refresh();
@@ -1089,9 +1136,12 @@ public class RecordPaymentController implements Initializable {
         return list;
     }
 
-    private void savePaymentDetails(Connection con, String paymentUuid, String mode) throws Exception {
+    private void savePaymentDetails(Connection con, String paymentUuid, String mode, String remarks) throws Exception {
 
         insertPaymentDetail(con, paymentUuid, "mode", mode);
+        if (remarks != null && !remarks.isBlank()) {
+            insertPaymentDetail(con, paymentUuid, "remarks", remarks);
+        }
 
         if ("Cheque".equalsIgnoreCase(mode)) {
             insertPaymentDetail(con, paymentUuid, "cheque_number", chequeNumberField.getText());
@@ -1265,6 +1315,7 @@ public class RecordPaymentController implements Initializable {
         EditingBigDecimalCell() {
             textField.getStyleClass().add("taste-field");
             textField.setStyle("-fx-min-height: 28; -fx-padding: 4 8;");
+            textField.setAlignment(javafx.geometry.Pos.CENTER);
             textField.setOnAction(e -> commitEdit(parse(textField.getText())));
             textField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
                 if (!isNowFocused) {
@@ -1554,5 +1605,27 @@ public class RecordPaymentController implements Initializable {
         javafx.application.Platform.runLater(() -> {
             loadOutstandingInvoicesForSelectedClient();
         });
+    }
+
+    private void updateSelectAllCheckBoxState() {
+        if (selectAllCheckBox == null) {
+            return;
+        }
+        if (invoiceItems.isEmpty()) {
+            selectAllCheckBox.setSelected(false);
+            selectAllCheckBox.setIndeterminate(false);
+            return;
+        }
+        long selectedCount = invoiceItems.stream().filter(InvoiceRow::isSelected).count();
+        if (selectedCount == 0) {
+            selectAllCheckBox.setSelected(false);
+            selectAllCheckBox.setIndeterminate(false);
+        } else if (selectedCount == invoiceItems.size()) {
+            selectAllCheckBox.setSelected(true);
+            selectAllCheckBox.setIndeterminate(false);
+        } else {
+            selectAllCheckBox.setSelected(false);
+            selectAllCheckBox.setIndeterminate(true);
+        }
     }
 }

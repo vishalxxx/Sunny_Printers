@@ -132,7 +132,7 @@ public class InvoiceBuilderService {
 				       ji.type,
 				       ji.sort_order
 				FROM jobs j
-				JOIN job_items ji ON ji.job_uuid = j.uuid
+				JOIN job_items ji ON ji.job_uuid = j.uuid AND COALESCE(ji.include_in_invoice, 1) = 1
 				WHERE j.client_uuid = ?
 				  AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
 				  AND j.invoice_uuid IS NULL
@@ -425,7 +425,7 @@ public class InvoiceBuilderService {
 				       ji.type,
 				       ji.sort_order
 				FROM jobs j
-				JOIN job_items ji ON ji.job_uuid = j.uuid
+				JOIN job_items ji ON ji.job_uuid = j.uuid AND COALESCE(ji.include_in_invoice, 1) = 1
 				WHERE j.uuid IN (""" + placeholders + ") ORDER BY j.job_date, j.uuid, ji.sort_order";
 		try (PreparedStatement ps = con.prepareStatement(sql)) {
 			int index = 1;
@@ -507,6 +507,9 @@ public class InvoiceBuilderService {
 							ratePerUnit = qty > 0 ? (jobTaxable / qty) : jobTaxable;
 							service.HsnSacService hsnSacService = new service.HsnSacService();
 							for (model.JobItem ji : items) {
+								if (ji.getIncludeInInvoice() == 0) {
+									continue;
+								}
 								model.HsnSacInfo info = hsnSacService.lookup(ji);
 								if (info != null && info.getHsnSac() != null && !info.getHsnSac().isBlank()) {
 									hsnSac = info.getHsnSac();
@@ -634,7 +637,7 @@ public class InvoiceBuilderService {
 				ji.type,
 				ji.sort_order
 				FROM jobs j
-				JOIN job_items ji ON ji.job_uuid = j.uuid
+				JOIN job_items ji ON ji.job_uuid = j.uuid AND COALESCE(ji.include_in_invoice, 1) = 1
 				WHERE j.client_uuid = ?
 				AND DATE(j.job_date) BETWEEN ? AND ?
 				AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'

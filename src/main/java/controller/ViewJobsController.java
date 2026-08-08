@@ -347,12 +347,22 @@ public class ViewJobsController {
                 bulkStartBtn.setVisible(true);   bulkStartBtn.setManaged(true);
                 bulkCompleteBtn.setVisible(true); bulkCompleteBtn.setManaged(true);
                 bulkInvoiceBtn.setVisible(true);  bulkInvoiceBtn.setManaged(true);
-                bulkCancelBtn.setVisible(true);   bulkCancelBtn.setManaged(true);
+                
+                boolean hasLinkedToInvoice = selected.stream().anyMatch(j -> {
+                    if ("Invoice Drafted".equalsIgnoreCase(j.getStatus())) return false;
+                    return j.getInvoiceUuid() != null || utils.JobWorkflow.majorFromJobStatus(j.getStatus()) == utils.JobWorkflow.Major.INVOICE;
+                });
+                boolean showCancel = !hasLinkedToInvoice;
+                bulkCancelBtn.setVisible(showCancel);
+                bulkCancelBtn.setManaged(showCancel);
 
                 long draftCount      = selected.stream().filter(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()) == utils.JobWorkflow.Major.DRAFT).count();
                 long processingCount = selected.stream().filter(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()) == utils.JobWorkflow.Major.PROCESSING).count();
                 long completedCount  = selected.stream().filter(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()) == utils.JobWorkflow.Major.COMPLETED).count();
-                long anyButCancelled = selected.stream().filter(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()) != utils.JobWorkflow.Major.CANCELLED).count();
+                long anyButCancelled = selected.stream().filter(j -> {
+                    utils.JobWorkflow.Major major = utils.JobWorkflow.majorFromJobStatus(j.getStatus());
+                    return major != utils.JobWorkflow.Major.CANCELLED && (major != utils.JobWorkflow.Major.INVOICE || "Invoice Drafted".equalsIgnoreCase(j.getStatus()));
+                }).count();
 
                 bulkStartBtn.setText("Start Processing (" + draftCount + ")");
                 bulkStartBtn.setDisable(draftCount == 0);
@@ -364,9 +374,13 @@ public class ViewJobsController {
                 bulkInvoiceBtn.setDisable(completedCount == 0);
 
                 bulkCancelBtn.setText("Cancel Job (" + anyButCancelled + ")");
-                boolean canBulkCancel = uniqueStatuses.contains(utils.JobWorkflow.Major.DRAFT) 
-                                     || uniqueStatuses.contains(utils.JobWorkflow.Major.PROCESSING) 
-                                     || uniqueStatuses.contains(utils.JobWorkflow.Major.COMPLETED);
+                boolean canBulkCancel = selected.stream().allMatch(j -> {
+                    utils.JobWorkflow.Major m = utils.JobWorkflow.majorFromJobStatus(j.getStatus());
+                    return m == utils.JobWorkflow.Major.DRAFT 
+                        || m == utils.JobWorkflow.Major.PROCESSING 
+                        || m == utils.JobWorkflow.Major.COMPLETED 
+                        || "Invoice Drafted".equalsIgnoreCase(j.getStatus());
+                });
                 bulkCancelBtn.setDisable(!canBulkCancel);
             }
         }
@@ -380,6 +394,11 @@ public class ViewJobsController {
         fromDatePicker.setValue(null);
         toDatePicker.setValue(null);
         applyFilters();
+    }
+
+    @FXML
+    private void handleAddJob() {
+        MainController.getInstance().loadAddJob();
     }
 
     @FXML
@@ -465,6 +484,8 @@ public class ViewJobsController {
 
         List<Job> toProcess = jobsToCancel.stream()
                 .filter(j -> !"Cancelled".equalsIgnoreCase(j.getStatus()))
+                .filter(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()) != utils.JobWorkflow.Major.INVOICE 
+                          || "Invoice Drafted".equalsIgnoreCase(j.getStatus()))
                 .collect(Collectors.toList());
 
         if (toProcess.isEmpty()) return;
@@ -494,6 +515,14 @@ public class ViewJobsController {
                 if (invoice == null || !isProforma) {
                     if (invoice != null) {
                         String stat = invoice.getStatus() != null ? invoice.getStatus().toUpperCase() : "";
+                        if ("VOID".equals(stat)) {
+                            for (Job job : jobsForInv) {
+                                jobService.updateJobStatus(job.getUuid(), "Cancelled");
+                                job.setStatus("Cancelled");
+                                applyDefaultChildForNewMajor(job, "Cancelled");
+                            }
+                            continue;
+                        }
                         if (!stat.isEmpty() && !stat.startsWith("DRAFT")) {
                             Alert blockAlert = new Alert(Alert.AlertType.ERROR);
                             blockAlert.setTitle("Action Blocked");
@@ -517,11 +546,17 @@ public class ViewJobsController {
                 } else {
                     String stat = invoice.getStatus() != null ? invoice.getStatus().toUpperCase() : "";
                     if ("REVISED".equals(stat) || "CANCELLED".equals(stat) || "VOID".equals(stat)) {
-                        Alert blockAlert = new Alert(Alert.AlertType.ERROR);
-                        blockAlert.setTitle("Action Blocked");
-                        blockAlert.setHeaderText("Cannot Cancel Job");
-                        blockAlert.setContentText("Job " + jobsForInv.get(0).getJobNo() + " is linked to a Proforma Invoice (" + invoice.getInvoiceNo() + ") that is " + stat + ". Cancellation is blocked.");
-                        blockAlert.showAndWait();
+                        for (Job job : jobsForInv) {
+                            jobService.updateJobStatus(job.getUuid(), "Cancelled");
+                            job.setStatus("Cancelled");
+                            applyDefaultChildForNewMajor(job, "Cancelled");
+                        }
+                        try {
+                            List<String> jobUuidsToUnlink = jobsForInv.stream().map(Job::getUuid).collect(Collectors.toList());
+                            invoiceService.unlinkJobsAndRecalculateProforma(invUuid, jobUuidsToUnlink);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
                         continue;
                     }
                     List<Job> allLinkedJobs = jobService.getJobsByInvoice(invoice);
@@ -542,7 +577,7 @@ public class ViewJobsController {
                             invoiceService.updateInvoiceStatus(invUuid, "CANCELLED");
                         } else {
                             ButtonType btnRefund = new ButtonType("Refund Advance");
-                            ButtonType btnKeep = new ButtonType("Keep as Customer Advance");
+                            ButtonType btnKeep = new ButtonType("Keep Payment");
                             ButtonType btnCancel = new ButtonType("Cancel/Abort", ButtonBar.ButtonData.CANCEL_CLOSE);
 
                             Alert dialog = new Alert(Alert.AlertType.CONFIRMATION);
@@ -550,20 +585,46 @@ public class ViewJobsController {
                             dialog.setHeaderText("Advance Received: " + invoice.getPaidAmount() + " for Proforma " + invoice.getInvoiceNo());
                             dialog.setContentText("This proforma invoice will be cancelled. How would you like to handle the advance payment?");
                             dialog.getButtonTypes().setAll(btnRefund, btnKeep, btnCancel);
+                            dialog.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+                            dialog.getDialogPane().getStyleClass().add("atelier-alert");
+                            dialog.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+                            dialog.getDialogPane().setStyle("-fx-min-width: 550px; -fx-pref-width: 550px; -fx-max-width: 550px;");
+                            
+                            dialog.setOnShowing(dialogEvent -> {
+                                 dialog.getDialogPane().getButtonTypes().forEach(buttonType -> {
+                                     javafx.scene.control.Button btn = (javafx.scene.control.Button) dialog.getDialogPane().lookupButton(buttonType);
+                                     if (btn != null) {
+                                         btn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                                     }
+                                 });
+                             });
 
-                            Optional<ButtonType> opt = dialog.showAndWait();
-                            if (opt.isPresent()) {
-                                if (opt.get() == btnRefund) {
-                                    Alert confirmRefund = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to refund the advance amount of ₹" + invoice.getPaidAmount() + "?", ButtonType.YES, ButtonType.NO);
-                                    confirmRefund.setTitle("Confirm Refund");
-                                    Optional<ButtonType> confOpt = confirmRefund.showAndWait();
-                                    if (confOpt.isPresent() && confOpt.get() == ButtonType.YES) {
-                                        invoiceService.refundAdvanceForInvoice(invUuid, invoice.getClientUuid(), invoice.getPaidAmount());
-                                        Toast.show((javafx.stage.Stage) jobsTable.getScene().getWindow(), "Refund created for advance.");
-                                    } else {
-                                        toast("Refund cancelled.");
-                                        return;
-                                    }
+                             Optional<ButtonType> opt = dialog.showAndWait();
+                             if (opt.isPresent()) {
+                                 if (opt.get() == btnRefund) {
+                                     Alert confirmRefund = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to refund the advance amount of ₹" + invoice.getPaidAmount() + "?", ButtonType.YES, ButtonType.NO);
+                                     confirmRefund.setTitle("Confirm Refund");
+                                     confirmRefund.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+                                     confirmRefund.getDialogPane().getStyleClass().add("atelier-alert");
+                                     confirmRefund.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+                                     
+                                     confirmRefund.setOnShowing(dialogEvent -> {
+                                         confirmRefund.getDialogPane().getButtonTypes().forEach(buttonType -> {
+                                             javafx.scene.control.Button btn = (javafx.scene.control.Button) confirmRefund.getDialogPane().lookupButton(buttonType);
+                                             if (btn != null) {
+                                                 btn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                                             }
+                                         });
+                                     });
+
+                                     Optional<ButtonType> confOpt = confirmRefund.showAndWait();
+                                     if (confOpt.isPresent() && confOpt.get() == ButtonType.YES) {
+                                         invoiceService.refundAdvanceForInvoice(invUuid, invoice.getClientUuid(), invoice.getPaidAmount());
+                                         Toast.show((javafx.stage.Stage) jobsTable.getScene().getWindow(), "Refund created for advance.");
+                                     } else {
+                                         toast("Refund cancelled.");
+                                         return;
+                                     }                        
                                 } else if (opt.get() == btnKeep) {
                                     invoiceService.deallocatePaymentsForInvoice(invUuid);
                                     Toast.show((javafx.stage.Stage) jobsTable.getScene().getWindow(), "Advance deallocated (kept as Customer Advance).");
@@ -846,15 +907,15 @@ public class ViewJobsController {
                 iconBox.getStyleClass().removeAll("icon-box-orange", "icon-box-blue", "icon-box-green", "icon-box-red", "icon-box-purple");
                 icon.getStyleClass().removeAll("icon-inner-orange", "icon-inner-blue", "icon-inner-green", "icon-inner-red", "icon-inner-purple");
                 
-                String statusLower = job.getStatus() != null ? job.getStatus().toLowerCase() : "";
+                utils.JobWorkflow.Major major = utils.JobWorkflow.majorFromJobStatus(job.getStatus());
                 String type = "orange"; // Default
                 String shape = "M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zM12 18H6v-4h6v4z"; // Store
                 
-                if (statusLower.contains("draft")) { type = "orange"; shape = "M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zM12 18H6v-4h6v4z"; }
-                else if (statusLower.contains("process")) { type = "blue"; shape = "M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"; }
-                else if (statusLower.contains("complet")) { type = "green"; shape = "M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"; }
-                else if (statusLower.contains("invoice") || statusLower.contains("final")) { type = "purple"; shape = "M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"; }
-                else if (statusLower.contains("cancel")) { type = "red"; shape = "M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"; }
+                if (major == utils.JobWorkflow.Major.DRAFT) { type = "orange"; shape = "M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zM12 18H6v-4h6v4z"; }
+                else if (major == utils.JobWorkflow.Major.PROCESSING) { type = "blue"; shape = "M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"; }
+                else if (major == utils.JobWorkflow.Major.COMPLETED) { type = "green"; shape = "M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"; }
+                else if (major == utils.JobWorkflow.Major.INVOICE) { type = "purple"; shape = "M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"; }
+                else if (major == utils.JobWorkflow.Major.CANCELLED) { type = "red"; shape = "M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"; }
                 
                 iconBox.getStyleClass().add("icon-box-" + type);
                 String colorHex = type.equals("orange") ? "#FA8C16" : type.equals("blue") ? "#1890FF" : type.equals("green") ? "#52C41A" : type.equals("purple") ? "#722ED1" : "#F5222D";
@@ -1066,8 +1127,16 @@ public class ViewJobsController {
                 root.getChildren().clear();
                 
                 String statusMsg = job.getStatus() != null ? job.getStatus().toLowerCase() : "";
+                utils.JobWorkflow.Major major = utils.JobWorkflow.majorFromJobStatus(job.getStatus());
                 boolean isCancelled = statusMsg.contains("cancel");
-                boolean isInvoiced = statusMsg.contains("invoice") || statusMsg.contains("invoic") || (job.getInvoiceUuid() != null && !job.getInvoiceUuid().isBlank());
+                boolean isInvoiceDraft = false;
+                if (job.getInvoiceUuid() != null && !job.getInvoiceUuid().isBlank()) {
+                    String invStatus = job.getInvoiceStatus() != null ? job.getInvoiceStatus().trim().toUpperCase() : "";
+                    if (invStatus.startsWith("DRAFT")) {
+                        isInvoiceDraft = true;
+                    }
+                }
+                boolean isInvoiced = (major == utils.JobWorkflow.Major.INVOICE) || ((statusMsg.contains("invoice") || statusMsg.contains("invoic") || (job.getInvoiceUuid() != null && !job.getInvoiceUuid().isBlank())) && !isInvoiceDraft);
                 
                 Button primaryBtn = new Button();
                 primaryBtn.setMinHeight(24);
@@ -1076,17 +1145,17 @@ public class ViewJobsController {
                 primaryBtn.setPadding(new Insets(2, 8, 2, 8));
                 
                 if (!isInvoiced) {
-                    if (statusMsg.contains("draft") || statusMsg.contains("created")) {
+                    if (major == utils.JobWorkflow.Major.DRAFT) {
                         primaryBtn.setText("Start Processing");
                         primaryBtn.getStyleClass().setAll("row-action-btn-primary");
                         primaryBtn.setGraphic(createIcon("M8 5v14l11-7z", "white"));
                         primaryBtn.setOnAction(e -> handleStartActionForJob(job));
-                    } else if (statusMsg.contains("progress")) {
+                    } else if (major == utils.JobWorkflow.Major.PROCESSING) {
                         primaryBtn.setText("Mark Completed");
                         primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-green");
                         primaryBtn.setGraphic(createIcon("M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z", "white"));
                         primaryBtn.setOnAction(e -> handleCompleteActionForJob(job));
-                    } else if (statusMsg.contains("completed")) {
+                    } else if (major == utils.JobWorkflow.Major.COMPLETED) {
                         primaryBtn.setText("Generate Invoice");
                         primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-purple");
                         primaryBtn.setGraphic(createIcon("M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z", "white"));
@@ -1131,12 +1200,12 @@ public class ViewJobsController {
                         }
                     }
                 }
-                boolean canEdit = !isCancelled && !isLockedInvoice;
+                boolean canEdit = !isCancelled && !isLockedInvoice && !isInvoiced;
                 if (canEdit) {
                     root.getChildren().add(eBtn);
                 }
                 root.getChildren().add(mailBtn);
-                boolean canCancel = !isCancelled && !isLockedInvoice;
+                boolean canCancel = !isCancelled && !isLockedInvoice && !isInvoiced;
                 if (canCancel) {
                     root.getChildren().add(cancelBtn);
                 }
@@ -2182,23 +2251,8 @@ public class ViewJobsController {
             return;
         }
         String status = job.getStatus() != null ? job.getStatus().toLowerCase() : "";
-        boolean isLockedInvoice = false;
         if (job.getInvoiceUuid() != null && !job.getInvoiceUuid().isBlank()) {
-            String invStatus = job.getInvoiceStatus() != null ? job.getInvoiceStatus().trim().toUpperCase() : "";
-            String invType = job.getInvoiceType() != null ? job.getInvoiceType().toUpperCase() : "";
-            boolean isProforma = invType.contains("PROFORMA") || invType.contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(invType) || "DATE_RANGE".equalsIgnoreCase(invType) || invType.contains("MONTHLY");
-            if (isProforma) {
-                if ("REVISED".equals(invStatus) || "CANCELLED".equals(invStatus) || "VOID".equals(invStatus)) {
-                    isLockedInvoice = true;
-                }
-            } else {
-                if (!invStatus.isEmpty() && !invStatus.startsWith("DRAFT")) {
-                    isLockedInvoice = true;
-                }
-            }
-        }
-        if (isLockedInvoice) {
-            toast("❌ Invoiced jobs with finalized invoices cannot be edited.");
+            toast("❌ Invoiced/Drafted jobs cannot be edited.");
             return;
         }
         if (status.contains("cancel")) {

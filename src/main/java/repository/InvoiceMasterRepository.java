@@ -297,7 +297,8 @@ public class InvoiceMasterRepository {
 
         String sql = """
                     SELECT * FROM invoice_master
-                    ORDER BY created_at DESC
+                    WHERE COALESCE(is_deleted, 0) = 0
+                    ORDER BY datetime(created_at) DESC
                     LIMIT ?
                 """;
 
@@ -326,8 +327,8 @@ public class InvoiceMasterRepository {
 
         String sql = """
                     SELECT * FROM invoice_master
-                    WHERE client_uuid = ? AND is_void = 0
-                    ORDER BY invoice_date DESC, uuid DESC
+                    WHERE client_uuid = ? AND is_void = 0 AND COALESCE(is_deleted, 0) = 0
+                    ORDER BY datetime(created_at) DESC, uuid DESC
                 """;
 
         List<InvoiceMaster> list = new ArrayList<>();
@@ -352,7 +353,7 @@ public class InvoiceMasterRepository {
      * =========================================================
      */
     public List<InvoiceMaster> findFiltered(Connection con, String clientId, String paymentStatus, String invoiceStatus, LocalDate start, LocalDate end, String invoiceNo, String documentSeries) throws Exception {
-        StringBuilder sql = new StringBuilder("SELECT * FROM invoice_master WHERE is_void = 0");
+        StringBuilder sql = new StringBuilder("SELECT * FROM invoice_master WHERE is_void = 0 AND COALESCE(is_deleted, 0) = 0");
         List<Object> params = new ArrayList<>();
 
         if (clientId != null && !clientId.isBlank()) {
@@ -370,7 +371,8 @@ public class InvoiceMasterRepository {
         if (invoiceNo != null && !invoiceNo.trim().isEmpty()) {
             String needle = DocumentNumbering.stripLeadingHash(invoiceNo.trim());
             if (needle != null && !needle.isEmpty()) {
-                sql.append(" AND invoice_no LIKE ?");
+                sql.append(" AND (invoice_no LIKE ? OR uuid IN (SELECT entity_uuid FROM document_number_mappings WHERE temporary_number LIKE ?))");
+                params.add("%" + needle + "%");
                 params.add("%" + needle + "%");
             }
         }
@@ -387,7 +389,7 @@ public class InvoiceMasterRepository {
             params.add(documentSeries.trim());
         }
 
-        sql.append(" ORDER BY invoice_date DESC, COALESCE(updated_at, created_at) DESC");
+        sql.append(" ORDER BY datetime(created_at) DESC");
 
         List<InvoiceMaster> list = new ArrayList<>();
 

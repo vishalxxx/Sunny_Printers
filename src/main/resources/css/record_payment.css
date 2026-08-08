@@ -551,3 +551,10 @@
     -fx-border-color: rgba(251, 191, 36, 0.28);
     -fx-border-radius: 999;
 }
+
+.record-payment-root .rp-invoice-table .rp-chead-center {
+    -fx-alignment: CENTER;
+}
+.record-payment-root .rp-invoice-table .rp-chead-center .label {
+    -fx-alignment: CENTER;
+}

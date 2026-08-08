@@ -66,12 +66,12 @@ public class JobRepository {
                 END
             )) AS invoice_type,
             (SELECT COALESCE(SUM(ji.amount), 0) FROM job_items ji
-                WHERE ji.job_uuid = j.uuid AND COALESCE(ji.is_deleted, 0) = 0) AS job_total
+                WHERE ji.job_uuid = j.uuid AND COALESCE(ji.is_deleted, 0) = 0 AND COALESCE(ji.include_in_invoice, 1) = 1) AS job_total
             """;
 
     private static final String JOB_ITEMS_TOTAL_SUBQUERY =
             "(SELECT COALESCE(SUM(ji.amount), 0) FROM job_items ji"
-                    + " WHERE ji.job_uuid = j.uuid AND COALESCE(ji.is_deleted, 0) = 0)";
+                    + " WHERE ji.job_uuid = j.uuid AND COALESCE(ji.is_deleted, 0) = 0 AND COALESCE(ji.include_in_invoice, 1) = 1)";
 
     /*
      * =====================================================
@@ -232,7 +232,7 @@ public class JobRepository {
 
         List<Job> list = new ArrayList<>();
 
-        String sql = "SELECT " + JOB_SELECT + " FROM jobs j WHERE (j.job_type IS NULL OR j.job_type != 'CHARGE') ORDER BY COALESCE(j.updated_at, j.created_at) DESC, j.created_at DESC";
+        String sql = "SELECT " + JOB_SELECT + " FROM jobs j WHERE (j.job_type IS NULL OR j.job_type != 'CHARGE') ORDER BY datetime(COALESCE(j.updated_at, j.created_at)) DESC, datetime(j.created_at) DESC";
 
         try (Connection con = DBConnection.getConnection();
                 PreparedStatement ps = con.prepareStatement(sql);
@@ -265,7 +265,7 @@ public class JobRepository {
                     OR LOWER(j.job_title) LIKE ?
                     OR LOWER(j.remarks) LIKE ?)
                    AND (j.job_type IS NULL OR j.job_type != 'CHARGE')
-                 ORDER BY COALESCE(j.updated_at, j.created_at) DESC, j.created_at DESC
+                 ORDER BY datetime(COALESCE(j.updated_at, j.created_at)) DESC, datetime(j.created_at) DESC
                 """;
 
         try (Connection con = DBConnection.getConnection();
@@ -439,7 +439,7 @@ public class JobRepository {
 
         List<Job> list = new ArrayList<>();
 
-        String sql = "SELECT " + JOB_SELECT + " FROM jobs j WHERE j.client_uuid = ? AND (j.job_type IS NULL OR j.job_type != 'CHARGE') ORDER BY j.created_at DESC";
+        String sql = "SELECT " + JOB_SELECT + " FROM jobs j WHERE j.client_uuid = ? AND (j.job_type IS NULL OR j.job_type != 'CHARGE') ORDER BY datetime(COALESCE(j.updated_at, j.created_at)) DESC, datetime(j.created_at) DESC";
 
         try (Connection con = DBConnection.getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
@@ -501,7 +501,7 @@ public class JobRepository {
         String sql = "SELECT " + JOB_SELECT + " FROM jobs j "
                 + "WHERE j.client_uuid = ? AND j.invoice_uuid IS NULL "
                 + "AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed' "
-                + "ORDER BY j.created_at DESC";
+                + "ORDER BY datetime(COALESCE(j.updated_at, j.created_at)) DESC, datetime(j.created_at) DESC";
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, clientId);
@@ -531,11 +531,11 @@ public class JobRepository {
                         j.job_title,
                         j.job_date,
                         j.status as workflow,
-                        (SELECT SUM(amount) FROM job_items ji WHERE ji.job_uuid = j.uuid) as total_val
+                        (SELECT SUM(amount) FROM job_items ji WHERE ji.job_uuid = j.uuid AND COALESCE(ji.is_deleted, 0) = 0 AND COALESCE(ji.include_in_invoice, 1) = 1) as total_val
                     FROM jobs j
                     LEFT JOIN clients c ON j.client_uuid = c.uuid
                     WHERE j.status != 'DRAFT' AND (j.job_type IS NULL OR j.job_type != 'CHARGE')
-                    ORDER BY j.created_at DESC
+                    ORDER BY datetime(COALESCE(j.updated_at, j.created_at)) DESC, datetime(j.created_at) DESC
                     LIMIT ?
                 """;
 
@@ -655,7 +655,7 @@ public class JobRepository {
                    AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
                    AND DATE(j.job_date) >= DATE(?)
                    AND DATE(j.job_date) <= DATE(?)
-                 ORDER BY j.created_at DESC
+                 ORDER BY COALESCE(j.updated_at, j.created_at) DESC, j.created_at DESC
                 """;
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
@@ -716,7 +716,7 @@ public class JobRepository {
                       AND j.invoice_uuid IS NULL
                       AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
                       AND DATE(j.job_date) BETWEEN DATE(?) AND DATE(?)
-                    ORDER BY j.created_at DESC
+                    ORDER BY datetime(COALESCE(j.updated_at, j.created_at)) DESC, datetime(j.created_at) DESC
                 """;
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
@@ -748,7 +748,7 @@ public class JobRepository {
                   amount = (
                     SELECT COALESCE(SUM(ji.amount), 0)
                     FROM job_items ji
-                    WHERE ji.job_uuid = ? AND COALESCE(ji.is_deleted, 0) = 0
+                    WHERE ji.job_uuid = ? AND COALESCE(ji.is_deleted, 0) = 0 AND COALESCE(ji.include_in_invoice, 1) = 1
                   ),
                   sync_status = CASE
                     WHEN COALESCE(sync_status, '') = 'SYNCED' THEN 'PENDING'
@@ -774,7 +774,7 @@ public class JobRepository {
             return 0.0;
         }
         String placeholders = String.join(",", jobUuids.stream().map(x -> "?").toList());
-        String sql = "SELECT COALESCE(SUM(amount), 0) AS total_amt FROM job_items WHERE job_uuid IN ("
+        String sql = "SELECT COALESCE(SUM(amount), 0) AS total_amt FROM job_items WHERE COALESCE(is_deleted, 0) = 0 AND COALESCE(include_in_invoice, 1) = 1 AND job_uuid IN ("
                 + placeholders + ")";
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
