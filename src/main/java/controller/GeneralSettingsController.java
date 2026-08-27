@@ -6,12 +6,19 @@ import javafx.application.Platform;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Window;
 import model.EmailSettings;
 import model.CompanyDetails;
 import model.BankDetails;
 import model.SupabaseSettings;
+import model.User;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
+import javafx.concurrent.Task;
 import repository.EmailSettingsRepository;
 import repository.SupabaseSettingsRepository;
 import service.BankDetailsService;
@@ -56,6 +63,7 @@ public class GeneralSettingsController implements Initializable {
     @FXML private Button supabaseSyncTestBtn;
 
     @FXML private Button saveBtn;
+    @FXML private Button resetDbBtn;
     @FXML private Button manageCompaniesBtn;
     @FXML private Button manageBanksBtn;
 
@@ -73,6 +81,14 @@ public class GeneralSettingsController implements Initializable {
                 () -> MainController.getInstance().handleBack(null));
         loadSettings();
         saveBtn.setOnAction(e -> saveSettings());
+        if (resetDbBtn != null) {
+            boolean admin = !isReadOnly();
+            resetDbBtn.setVisible(admin);
+            resetDbBtn.setManaged(admin);
+            if (admin) {
+                resetDbBtn.setOnAction(e -> handleResetDatabase());
+            }
+        }
         if (manageCompaniesBtn != null) {
             manageCompaniesBtn.setOnAction(e -> MainController.getInstance().loadCompanySettings());
         }
@@ -499,5 +515,226 @@ public class GeneralSettingsController implements Initializable {
 
     public void refresh() {
         loadSettings();
+    }
+
+    private boolean isReadOnly() {
+        User currentUser = utils.SessionManager.getInstance().getCurrentUser();
+        return currentUser == null || currentUser.getRole() == null || 
+               !(currentUser.getRole().equalsIgnoreCase("ADMIN") || 
+                 currentUser.getRole().equalsIgnoreCase("ADMINISTRATOR"));
+    }
+
+    private final Map<String, CheckBox> checkboxMap = new HashMap<>();
+    private final Map<String, List<String>> parentToChildren = Map.of(
+        "jobs", List.of("job_items", "job_cancellation_audit", "invoice_job_mapping"),
+        "invoice_master", List.of("invoice_job_mapping", "invoice_additional_charges", "invoice_adjustments", "payment_allocations"),
+        "payments", List.of("payment_details", "payment_allocations"),
+        "clients", List.of("jobs", "invoice_master", "payments")
+    );
+    private boolean isUpdatingCheckboxes = false;
+
+    private void handleResetDatabase() {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Reset Database Tables");
+        dialog.setHeaderText("Select the tables you want to clear from both local and remote databases.\n"
+                + "Dependencies will be automatically managed (checking a table checks its dependencies).");
+
+        DialogPane dialogPane = dialog.getDialogPane();
+        dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        dialogPane.getStyleClass().add("settings-warm-dialog");
+        dialogPane.getStylesheets().addAll(
+            getClass().getResource("/css/theme.css").toExternalForm(),
+            getClass().getResource("/css/settings_screens.css").toExternalForm()
+        );
+
+        checkboxMap.clear();
+        VBox contentBox = new VBox(8);
+        contentBox.setStyle("-fx-padding: 10;");
+
+        // Helper buttons
+        HBox helperBox = new HBox(10);
+        Button btnSelectAll = new Button("Select All");
+        Button btnDeselectAll = new Button("Deselect All");
+        btnSelectAll.setOnAction(e -> {
+            isUpdatingCheckboxes = true;
+            for (CheckBox cb : checkboxMap.values()) {
+                cb.setSelected(true);
+            }
+            isUpdatingCheckboxes = false;
+        });
+        btnDeselectAll.setOnAction(e -> {
+            isUpdatingCheckboxes = true;
+            for (CheckBox cb : checkboxMap.values()) {
+                cb.setSelected(false);
+            }
+            isUpdatingCheckboxes = false;
+        });
+        helperBox.getChildren().addAll(btnSelectAll, btnDeselectAll);
+        contentBox.getChildren().add(helperBox);
+
+        // List tables
+        List<String> clearable = service.DatabaseCleanupService.getClearableTables();
+        for (String table : clearable) {
+            CheckBox cb = new CheckBox(service.DatabaseCleanupService.getDisplayName(table) + " (" + table + ")");
+            cb.setId(table);
+            checkboxMap.put(table, cb);
+            contentBox.getChildren().add(cb);
+        }
+
+        setupCheckboxListeners();
+
+        ScrollPane scrollPane = new ScrollPane(contentBox);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefViewportHeight(400);
+        scrollPane.setPrefViewportWidth(450);
+        dialogPane.setContent(scrollPane);
+
+        dialog.showAndWait().ifPresent(buttonType -> {
+            if (buttonType == ButtonType.OK) {
+                List<String> selected = new ArrayList<>();
+                for (Map.Entry<String, CheckBox> entry : checkboxMap.entrySet()) {
+                    if (entry.getValue().isSelected()) {
+                        selected.add(entry.getKey());
+                    }
+                }
+
+                if (selected.isEmpty()) {
+                    showInfo("No tables selected to clear.");
+                    return;
+                }
+
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+                confirm.getDialogPane().getStyleClass().add("settings-warm-dialog");
+                confirm.getDialogPane().getStylesheets().addAll(
+                    getClass().getResource("/css/theme.css").toExternalForm(),
+                    getClass().getResource("/css/settings_screens.css").toExternalForm()
+                );
+                confirm.setTitle("Confirm Hard Reset");
+                confirm.setHeaderText("Warning: Permanent Data Loss!");
+                confirm.setContentText("You have selected " + selected.size() + " tables to clear. "
+                        + "This will delete all records from these tables in BOTH local SQLite and remote Supabase databases, "
+                        + "and reset their number sequences to 1.\n\nAre you absolutely sure you want to proceed?");
+                
+                confirm.showAndWait().ifPresent(btn -> {
+                    if (btn == ButtonType.OK) {
+                        executeCleanup(selected);
+                    }
+                });
+            }
+        });
+    }
+
+    private void setupCheckboxListeners() {
+        for (Map.Entry<String, List<String>> entry : parentToChildren.entrySet()) {
+            String parent = entry.getKey();
+            List<String> children = entry.getValue();
+            CheckBox parentCb = checkboxMap.get(parent);
+            if (parentCb == null) continue;
+
+            parentCb.selectedProperty().addListener((obs, oldVal, newVal) -> {
+                if (isUpdatingCheckboxes) return;
+                if (newVal) {
+                    isUpdatingCheckboxes = true;
+                    for (String child : children) {
+                        CheckBox childCb = checkboxMap.get(child);
+                        if (childCb != null) {
+                            childCb.setSelected(true);
+                            propagateSelection(child, true);
+                        }
+                    }
+                    isUpdatingCheckboxes = false;
+                }
+            });
+        }
+
+        for (CheckBox cb : checkboxMap.values()) {
+            cb.selectedProperty().addListener((obs, oldVal, newVal) -> {
+                if (isUpdatingCheckboxes) return;
+                if (!newVal) {
+                    isUpdatingCheckboxes = true;
+                    uncheckParentsOf(cb.getId());
+                    isUpdatingCheckboxes = false;
+                }
+            });
+        }
+    }
+
+    private void propagateSelection(String parent, boolean selected) {
+        List<String> children = parentToChildren.get(parent);
+        if (children == null) return;
+        for (String child : children) {
+            CheckBox childCb = checkboxMap.get(child);
+            if (childCb != null) {
+                childCb.setSelected(selected);
+                propagateSelection(child, selected);
+            }
+        }
+    }
+
+    private void uncheckParentsOf(String childId) {
+        for (Map.Entry<String, List<String>> entry : parentToChildren.entrySet()) {
+            String parent = entry.getKey();
+            List<String> children = entry.getValue();
+            if (children.contains(childId)) {
+                CheckBox parentCb = checkboxMap.get(parent);
+                if (parentCb != null && parentCb.isSelected()) {
+                    parentCb.setSelected(false);
+                    uncheckParentsOf(parent);
+                }
+            }
+        }
+    }
+
+    private void executeCleanup(List<String> selected) {
+        Dialog<Void> progressDialog = new Dialog<>();
+        progressDialog.setTitle("Clearing Database...");
+        progressDialog.setHeaderText("Clearing " + selected.size() + " tables. Please wait...");
+        
+        DialogPane dialogPane = progressDialog.getDialogPane();
+        dialogPane.getStyleClass().add("settings-warm-dialog");
+        dialogPane.getStylesheets().addAll(
+            getClass().getResource("/css/theme.css").toExternalForm(),
+            getClass().getResource("/css/settings_screens.css").toExternalForm()
+        );
+        
+        // Add close button type so we can close programmatically
+        dialogPane.getButtonTypes().add(ButtonType.CLOSE);
+        Platform.runLater(() -> {
+            javafx.scene.Node closeBtn = dialogPane.lookupButton(ButtonType.CLOSE);
+            if (closeBtn != null) {
+                closeBtn.setVisible(false);
+                closeBtn.setManaged(false);
+            }
+        });
+
+        ProgressIndicator pi = new ProgressIndicator();
+        VBox vbox = new VBox(20, pi);
+        vbox.setStyle("-fx-padding: 30; -fx-alignment: center;");
+        dialogPane.setContent(vbox);
+        progressDialog.getDialogPane().getScene().getWindow().setOnCloseRequest(e -> e.consume());
+
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                service.DatabaseCleanupService.clearTables(selected);
+                return null;
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            progressDialog.close();
+            showInfo("Successfully cleared selected tables and reset their sequence counters locally and on Supabase!");
+        });
+
+        task.setOnFailed(e -> {
+            progressDialog.close();
+            Throwable ex = task.getException();
+            ex.printStackTrace();
+            showError("Failed to clear database tables", ex instanceof Exception ? (Exception) ex : new Exception(ex));
+        });
+
+        // Start task and show dialog
+        new Thread(task).start();
+        progressDialog.showAndWait();
     }
 }

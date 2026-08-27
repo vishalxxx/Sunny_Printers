@@ -88,6 +88,8 @@ public class ViewJobsController {
 
     /** When set before opening View Jobs, client filter selects this client id once clients load. */
     public static volatile String pendingFilterClientUuid;
+    /** When set before opening View Jobs, status filter selects this status. */
+    public static volatile String pendingFilterStatus;
 
     private final ClientService clientService = new ClientService();
     private final JobService jobService = new JobService();
@@ -163,7 +165,13 @@ public class ViewJobsController {
         setupTableColumns();
 
         statusFilterComboBox.getItems().addAll("All", "Draft", "In Progress", "Completed", "Invoiced", "Cancelled");
-        statusFilterComboBox.getSelectionModel().selectFirst();
+        if (pendingFilterStatus != null) {
+            String statusToSelect = pendingFilterStatus;
+            pendingFilterStatus = null;
+            statusFilterComboBox.getSelectionModel().select(statusToSelect);
+        } else {
+            statusFilterComboBox.getSelectionModel().selectFirst();
+        }
         statusFilterComboBox.valueProperty().addListener((obs, oldV, newV) -> applyFilters());
 
         if (bulkCommandCombo != null) {
@@ -2091,8 +2099,14 @@ public class ViewJobsController {
             boolean matchesStatus = true;
             String statusFilter = statusFilterComboBox.getValue();
             if (statusFilter != null && !statusFilter.equals("All")) {
-                if (job.getStatus() == null || !job.getStatus().equalsIgnoreCase(statusFilter)) {
+                if (job.getStatus() == null) {
                     matchesStatus = false;
+                } else {
+                    utils.JobWorkflow.Major filterMajor = utils.JobWorkflow.majorFromJobStatus(statusFilter);
+                    utils.JobWorkflow.Major jobMajor = utils.JobWorkflow.majorFromJobStatus(job.getStatus());
+                    if (filterMajor != jobMajor) {
+                        matchesStatus = false;
+                    }
                 }
             }
 

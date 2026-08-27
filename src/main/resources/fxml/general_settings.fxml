@@ -18,6 +18,7 @@
 
         <HBox alignment="CENTER_RIGHT" spacing="10">
             <padding><Insets bottom="6"/></padding>
+            <Button fx:id="resetDbBtn" text="Reset Database" styleClass="button, btn-secondary" style="-fx-text-fill: #E53E3E; -fx-border-color: #E53E3E;"/>
             <Button fx:id="saveBtn" text="Save Configuration" styleClass="button, btn-primary"/>
         </HBox>
 

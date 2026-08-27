@@ -467,7 +467,9 @@ public class JobRepository {
                     SELECT uuid, job_code, job_title, job_date
                     FROM jobs
                     WHERE client_uuid = ?
-                      AND invoice_uuid IS NULL
+                      AND (invoice_uuid IS NULL OR EXISTS (
+                          SELECT 1 FROM invoice_master inv WHERE inv.uuid = invoice_uuid AND (inv.is_deleted = 1 OR inv.status = 'CANCELLED')
+                      ))
                       AND (job_type IS NULL OR job_type != 'CHARGE')
                       AND LOWER(TRIM(REPLACE(COALESCE(status,''), '_', ' '))) = 'completed'
                     ORDER BY created_at DESC
@@ -499,7 +501,9 @@ public class JobRepository {
     public List<Job> findCompletedJobsByClientId(String clientId) {
         List<Job> list = new ArrayList<>();
         String sql = "SELECT " + JOB_SELECT + " FROM jobs j "
-                + "WHERE j.client_uuid = ? AND j.invoice_uuid IS NULL "
+                + "WHERE j.client_uuid = ? AND (j.invoice_uuid IS NULL OR EXISTS ( "
+                + "    SELECT 1 FROM invoice_master inv WHERE inv.uuid = j.invoice_uuid AND (inv.is_deleted = 1 OR inv.status = 'CANCELLED') "
+                + ")) "
                 + "AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed' "
                 + "ORDER BY datetime(COALESCE(j.updated_at, j.created_at)) DESC, datetime(j.created_at) DESC";
         try (Connection con = DBConnection.getConnection();
@@ -651,7 +655,9 @@ public class JobRepository {
         String sql = "SELECT " + JOB_SELECT + """
                  FROM jobs j
                  WHERE j.client_uuid = ?
-                   AND j.invoice_uuid IS NULL
+                   AND (j.invoice_uuid IS NULL OR EXISTS (
+                       SELECT 1 FROM invoice_master inv WHERE inv.uuid = j.invoice_uuid AND (inv.is_deleted = 1 OR inv.status = 'CANCELLED')
+                   ))
                    AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
                    AND DATE(j.job_date) >= DATE(?)
                    AND DATE(j.job_date) <= DATE(?)
@@ -682,7 +688,9 @@ public class JobRepository {
         String sql = "SELECT " + JOB_SELECT + ", c.business_name AS client_business_name "
                 + "FROM jobs j "
                 + "INNER JOIN clients c ON c.uuid = j.client_uuid "
-                + "WHERE j.invoice_uuid IS NULL "
+                + "WHERE (j.invoice_uuid IS NULL OR EXISTS ( "
+                + "    SELECT 1 FROM invoice_master inv WHERE inv.uuid = j.invoice_uuid AND (inv.is_deleted = 1 OR inv.status = 'CANCELLED') "
+                + ")) "
                 + "AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed' "
                 + "AND DATE(j.job_date) BETWEEN DATE(?) AND DATE(?) "
                 + "ORDER BY c.business_name ASC, DATE(j.job_date) DESC, j.created_at DESC";
@@ -713,7 +721,9 @@ public class JobRepository {
                     SELECT j.uuid
                     FROM jobs j
                     WHERE j.client_uuid = ?
-                      AND j.invoice_uuid IS NULL
+                      AND (j.invoice_uuid IS NULL OR EXISTS (
+                          SELECT 1 FROM invoice_master inv WHERE inv.uuid = j.invoice_uuid AND (inv.is_deleted = 1 OR inv.status = 'CANCELLED')
+                      ))
                       AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
                       AND DATE(j.job_date) BETWEEN DATE(?) AND DATE(?)
                     ORDER BY datetime(COALESCE(j.updated_at, j.created_at)) DESC, datetime(j.created_at) DESC

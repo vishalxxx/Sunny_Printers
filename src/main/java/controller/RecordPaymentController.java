@@ -340,9 +340,28 @@ public class RecordPaymentController implements Initializable {
             bankNameCombo.setEditable(false);
             bankNameCombo.getItems().setAll(getIndianBankNames());
         }
+
+        // Fetch company saved bank accounts under bank details
+        java.util.List<String> companyBanks = new java.util.ArrayList<>();
+        try {
+            java.util.List<model.BankDetails> saved = new service.BankDetailsService().listActive();
+            for (model.BankDetails b : saved) {
+                String label = b.getBankName();
+                if (b.getAccountNo() != null && !b.getAccountNo().isBlank()) {
+                    label += " - " + b.getAccountNo();
+                }
+                companyBanks.add(label);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        if (companyBanks.isEmpty()) {
+            companyBanks.addAll(getIndianBankNames());
+        }
+
         if (chequeReceiverBankCombo != null) {
             chequeReceiverBankCombo.setEditable(false);
-            chequeReceiverBankCombo.getItems().setAll(getIndianBankNames());
+            chequeReceiverBankCombo.getItems().setAll(companyBanks);
         }
         if (chequeStatusCombo != null) {
             java.util.List<String> list = new java.util.ArrayList<>(java.util.List.of("Pending", "Cleared", "Failed"));
@@ -351,7 +370,7 @@ public class RecordPaymentController implements Initializable {
         }
         if (receiverBankCombo != null) {
             receiverBankCombo.setEditable(false);
-            receiverBankCombo.getItems().setAll(getIndianBankNames());
+            receiverBankCombo.getItems().setAll(companyBanks);
         }
         if (bankTransferStatusCombo != null) {
             java.util.List<String> list = new java.util.ArrayList<>(java.util.List.of("Pending", "Success", "Failed"));
@@ -360,7 +379,7 @@ public class RecordPaymentController implements Initializable {
         }
         if (upiReceiverBankCombo != null) {
             upiReceiverBankCombo.setEditable(false);
-            upiReceiverBankCombo.getItems().setAll(getIndianBankNames());
+            upiReceiverBankCombo.getItems().setAll(companyBanks);
         }
         if (upiStatusCombo != null) {
             java.util.List<String> list = new java.util.ArrayList<>(java.util.List.of("Pending", "Success", "Failed"));
@@ -941,14 +960,14 @@ public class RecordPaymentController implements Initializable {
                 sql = """
                         SELECT * FROM invoice_master
                         WHERE client_uuid = ? AND is_void = 0
-                          AND (status = 'SENT TO CLIENT' OR status = 'SENT' OR status = 'PAID' OR status = 'PARTIAL PAID')
+                          AND (status = 'SENT TO CLIENT' OR status = 'SENT' OR status = 'FINAL' OR status = 'PAID' OR status = 'PARTIAL PAID')
                         ORDER BY invoice_no ASC
                     """;
             } else {
                 sql = """
                         SELECT * FROM invoice_master
                         WHERE client_uuid = ? AND is_void = 0 AND due_amount > 0
-                          AND (status = 'SENT TO CLIENT' OR status = 'SENT' OR status = 'PARTIAL PAID')
+                          AND (status = 'SENT TO CLIENT' OR status = 'SENT' OR status = 'FINAL' OR status = 'PARTIAL PAID')
                         ORDER BY invoice_no ASC
                     """;
             }

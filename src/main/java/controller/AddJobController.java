@@ -193,6 +193,8 @@ public class AddJobController implements utils.DirtySupport {
 	private ToggleButton lamDoubleBtn;
 	@FXML
 	private ToggleButton lamSingleBtn;
+	@FXML
+	private ToggleButton lamNaBtn;
 	private ToggleGroup lamSideGroup;
 
 	/* ========================= SERVICES ========================= */
@@ -434,6 +436,23 @@ public class AddJobController implements utils.DirtySupport {
 			addJobBtn.setVisible(currentStep == 6);
 			addJobBtn.setManaged(currentStep == 6);
 		}
+
+		// Auto-populate paper defaults on step change
+		if (currentStep == 3) {
+			if (paperUnitsCombo != null && (paperUnitsCombo.getValue() == null || "Rim".equals(paperUnitsCombo.getValue()))) {
+				String printUnit = printUnitsCombo.getValue();
+				if (printUnit != null && !"Select Unit".equals(printUnit)) {
+					paperUnitsCombo.setValue(printUnit);
+				}
+			}
+			if (paperSizeCombo != null && (paperSizeCombo.getValue() == null || "23x36".equals(paperSizeCombo.getValue()))) {
+				String ctpSize = ctpSizeCombo.getValue();
+				if (ctpSize != null && !"Select Size".equals(ctpSize)) {
+					paperSizeCombo.setValue(ctpSize);
+				}
+			}
+		}
+
 		updateFormState();
 	}
 
@@ -849,7 +868,7 @@ public class AddJobController implements utils.DirtySupport {
 
 	private void clearPrintingFields() {
 		printQtyField.clear();
-		printUnitsCombo.setValue("Sheet");
+		printUnitsCombo.setValue("Select Unit");
 		printSetField.clear();
 		printColorCombo.setValue(null);
 		sideNaBtn.setSelected(true);
@@ -1070,7 +1089,13 @@ public class AddJobController implements utils.DirtySupport {
 
 		l.setUnit(lamUnitCombo.getValue());
 		l.setType(lamTypeCombo.getValue());
-		l.setSide(lamDoubleBtn.isSelected() ? "Double Side" : "Single Side");
+		if (lamDoubleBtn.isSelected()) {
+			l.setSide("Double Side");
+		} else if (lamSingleBtn.isSelected()) {
+			l.setSide("Single Side");
+		} else {
+			l.setSide("N/A");
+		}
 		l.setSize(lamSizeCombo.getValue());
 		l.setNotes(lamNotesArea.getText());
 		l.setIncludeNotesInInvoice(includeLaminationInInvoiceToggle.isSelected());
@@ -1098,7 +1123,11 @@ public class AddJobController implements utils.DirtySupport {
 		lamQtyField.clear();
 		lamUnitCombo.setValue(null);
 		lamTypeCombo.setValue(null);
-		lamDoubleBtn.setSelected(true);
+		if (lamNaBtn != null) {
+			lamNaBtn.setSelected(true);
+		} else {
+			lamDoubleBtn.setSelected(true);
+		}
 		lamSizeCombo.setValue(null);
 		lamNotesArea.clear();
 		if (lamIncludeNotesToggle != null) {
@@ -1412,7 +1441,12 @@ public class AddJobController implements utils.DirtySupport {
 		lamSideGroup = new ToggleGroup();
 		lamDoubleBtn.setToggleGroup(lamSideGroup);
 		lamSingleBtn.setToggleGroup(lamSideGroup);
-		lamDoubleBtn.setSelected(true);
+		if (lamNaBtn != null) {
+			lamNaBtn.setToggleGroup(lamSideGroup);
+			lamNaBtn.setSelected(true);
+		} else {
+			lamDoubleBtn.setSelected(true);
+		}
 
 		// ✅ step buttons jump
 		step1Btn.setOnMouseClicked(e -> { currentStep = 1; updateStepUI(); });
@@ -1461,7 +1495,7 @@ public class AddJobController implements utils.DirtySupport {
 		java.util.List<String> printUnits = new java.util.ArrayList<>(java.util.List.of("Select Unit", "Copies", "Sets", "Rim", "Pkt", "Sheet"));
 		utils.ComboBoxSorter.sortStrings(printUnits);
 		printUnitsCombo.getItems().setAll(printUnits);
-		printUnitsCombo.setValue("Sheet");
+		printUnitsCombo.setValue("Select Unit");
 
 		java.util.List<String> printColors = new java.util.ArrayList<>(java.util.List.of("Select Color", "1", "2", "4", "4+4", "Spot", "Custom"));
 		utils.ComboBoxSorter.sortStrings(printColors);

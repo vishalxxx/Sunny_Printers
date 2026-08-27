@@ -132,10 +132,10 @@ public class InvoiceMasterService {
                 series = MasterDocumentSeries.GST_INVOICE;
             }
             AllocatedNumber allocated;
-            if ("DRAFT".equalsIgnoreCase(status)) {
-                allocated = numberAllocator.allocateTempInvoiceNumber(con);
-            } else if (series == MasterDocumentSeries.PROFORMA_INVOICE) {
+            if (series == MasterDocumentSeries.PROFORMA_INVOICE) {
                 allocated = service.sync.UniversalTemporaryNumberEngine.getInstance().allocateTemporary(con, "proforma_invoice");
+            } else if ("DRAFT".equalsIgnoreCase(status)) {
+                allocated = numberAllocator.allocateTempInvoiceNumber(con);
             } else {
                 allocated = numberAllocator.allocateInvoiceNumber(con, series, invoice.getInvoiceDate());
             }
@@ -1353,7 +1353,7 @@ public class InvoiceMasterService {
             AtomicDB.runVoid(con -> {
                 InvoiceMaster inv = repo.findByUuid(con, invoiceUuid);
                 if (inv != null) {
-                    boolean isDraft = "DRAFT".equalsIgnoreCase(inv.getStatus()) || (inv.getInvoiceNo() != null && inv.getInvoiceNo().startsWith("TEMP-"));
+                    boolean isDraft = "DRAFT".equalsIgnoreCase(inv.getStatus());
                     if (isDraft) {
                         // Draft is cancelled directly without finalizing - delete it entirely
                         String targetStatus = cancelJobs ? "Cancelled" : "Completed";
@@ -1516,7 +1516,7 @@ public class InvoiceMasterService {
                 String currentNo = inv.getInvoiceNo();
                 String resolvedNo;
 
-                if (currentNo != null && currentNo.contains("-R")) {
+                if (currentNo != null && !DocumentNumbering.isTemporaryNumber(currentNo)) {
                     resolvedNo = currentNo;
                 } else {
                     MasterDocumentSeries series = inv.resolveDocumentSeries();

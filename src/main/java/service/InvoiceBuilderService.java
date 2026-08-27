@@ -135,7 +135,9 @@ public class InvoiceBuilderService {
 				JOIN job_items ji ON ji.job_uuid = j.uuid AND COALESCE(ji.include_in_invoice, 1) = 1
 				WHERE j.client_uuid = ?
 				  AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
-				  AND j.invoice_uuid IS NULL
+				  AND (j.invoice_uuid IS NULL OR EXISTS (
+				      SELECT 1 FROM invoice_master inv WHERE inv.uuid = j.invoice_uuid AND (inv.is_deleted = 1 OR inv.status = 'CANCELLED')
+				  ))
 				  AND j.uuid IN (""" + placeholders + ") " + "ORDER BY j.job_date, j.uuid, ji.sort_order";
 
 		try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -564,7 +566,9 @@ public class InvoiceBuilderService {
             JOIN clients c ON c.uuid = j.client_uuid
             WHERE DATE(j.job_date) BETWEEN ? AND ?
             AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
-            AND j.invoice_uuid IS NULL
+            AND (j.invoice_uuid IS NULL OR EXISTS (
+                SELECT 1 FROM invoice_master inv WHERE inv.uuid = j.invoice_uuid AND (inv.is_deleted = 1 OR inv.status = 'CANCELLED')
+            ))
             ORDER BY c.business_name, c.client_name, c.uuid
         """;
 
@@ -641,7 +645,9 @@ public class InvoiceBuilderService {
 				WHERE j.client_uuid = ?
 				AND DATE(j.job_date) BETWEEN ? AND ?
 				AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
-				AND j.invoice_uuid IS NULL
+				AND (j.invoice_uuid IS NULL OR EXISTS (
+				    SELECT 1 FROM invoice_master inv WHERE inv.uuid = j.invoice_uuid AND (inv.is_deleted = 1 OR inv.status = 'CANCELLED')
+				))
 				ORDER BY j.job_date, j.uuid, ji.sort_order
 				""";
 

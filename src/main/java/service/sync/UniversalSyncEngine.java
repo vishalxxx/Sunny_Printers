@@ -542,6 +542,7 @@ public final class UniversalSyncEngine {
 			} catch (Exception e) {
 				if (isForeignKeyFailure(e)) {
 					markTableWaitingDependency("jobs", "uuid", job.getUuid());
+					resetParentToPendingIfMissingOnRemote("clients", job.getClientUuid());
 				} else {
 					report.failures++;
 				}
@@ -589,6 +590,7 @@ public final class UniversalSyncEngine {
 			} catch (Exception e) {
 				if (isForeignKeyFailure(e)) {
 					markTableWaitingDependency("invoice_master", "uuid", inv.getUuid());
+					resetParentToPendingIfMissingOnRemote("clients", inv.getClientUuid());
 				} else {
 					report.failures++;
 				}
@@ -633,6 +635,7 @@ public final class UniversalSyncEngine {
 			} catch (Exception e) {
 				if (isForeignKeyFailure(e)) {
 					markTableWaitingDependency("payments", "uuid", payment.getUuid());
+					resetParentToPendingIfMissingOnRemote("clients", payment.getClientUuid());
 				} else {
 					report.failures++;
 				}
@@ -712,5 +715,29 @@ public final class UniversalSyncEngine {
 			System.err.println("[UniversalSyncEngine] Failed to verify parent status for " + table + " " + uuidVal + ": " + e.getMessage());
 		}
 		return false;
+	}
+
+	public static void resetParentToPendingIfMissingOnRemote(String parentTable, String parentUuid) {
+		if (parentUuid == null || parentUuid.isBlank()) return;
+		try (Connection conn = utils.DBConnection.getConnection();
+				PreparedStatement ps = conn.prepareStatement(
+						"SELECT sync_status FROM " + parentTable + " WHERE uuid = ?")) {
+			ps.setString(1, parentUuid);
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) {
+					String status = rs.getString(1);
+					if ("SYNCED".equalsIgnoreCase(status)) {
+						try (PreparedStatement updPs = conn.prepareStatement(
+								"UPDATE " + parentTable + " SET sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?")) {
+							updPs.setString(1, parentUuid);
+							updPs.executeUpdate();
+							System.out.println("[UniversalSyncEngine] Reset parent " + parentTable + " " + parentUuid + " to PENDING due to child foreign-key failure.");
+						}
+					}
+				}
+			}
+		} catch (Exception e) {
+			System.err.println("[UniversalSyncEngine] Failed to reset parent to PENDING: " + e.getMessage());
+		}
 	}
 }

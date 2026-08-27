@@ -219,10 +219,19 @@ public class PaymentHistoryController implements Initializable {
                 c.business_name, 
                 c.client_name, 
                 p.type,
-                COALESCE(
-                    (SELECT GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid),
-                    CASE WHEN p.type = 'Refund' THEN 'Advance Refund' ELSE 'Advance' END
-                ) as invoice_ref,
+                CASE WHEN UPPER(p.type) = 'REFUND' THEN
+                    COALESCE(
+                        (SELECT 'Refund against ' || GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid AND COALESCE(a.is_deleted, 0) = 0 AND COALESCE(i.is_deleted, 0) = 0),
+                        (SELECT 'Refund against ' || GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid),
+                        'Advance Refund'
+                    )
+                ELSE
+                    COALESCE(
+                        (SELECT 'Payment for invoice ' || GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid AND COALESCE(a.is_deleted, 0) = 0 AND COALESCE(i.is_deleted, 0) = 0),
+                        (SELECT 'Payment for invoice ' || GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid),
+                        'Advance'
+                    )
+                END as invoice_ref,
                 (SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'receipt_no') as receipt_no,
                 p.method, 
                 p.amount,

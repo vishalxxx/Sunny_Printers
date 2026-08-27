@@ -189,6 +189,25 @@ public final class OtherPendingEntitiesSync {
 						}
 						if (UniversalSyncEngine.isForeignKeyFailure(e)) {
 							UniversalSyncEngine.markTableWaitingDependency(def.sqliteTable(), def.uuidColumn(), uuid);
+							
+							// Auto-reset parent dependencies
+							if ("job_items".equals(def.sqliteTable())) {
+								UniversalSyncEngine.resetParentToPendingIfMissingOnRemote("jobs", rs.getString("job_uuid"));
+							} else if (isJobItemDetailTable(def.sqliteTable())) {
+								UniversalSyncEngine.resetParentToPendingIfMissingOnRemote("job_items", rs.getString("job_item_uuid"));
+							} else if ("invoice_job_mapping".equals(def.sqliteTable())) {
+								UniversalSyncEngine.resetParentToPendingIfMissingOnRemote("invoice_master", rs.getString("invoice_uuid"));
+								UniversalSyncEngine.resetParentToPendingIfMissingOnRemote("jobs", rs.getString("job_uuid"));
+							} else if ("invoice_additional_charges".equals(def.sqliteTable())) {
+								UniversalSyncEngine.resetParentToPendingIfMissingOnRemote("invoice_master", rs.getString("invoice_uuid"));
+							} else if ("invoice_adjustments".equals(def.sqliteTable())) {
+								UniversalSyncEngine.resetParentToPendingIfMissingOnRemote("invoice_master", rs.getString("invoice_uuid"));
+							} else if ("payment_allocations".equals(def.sqliteTable())) {
+								UniversalSyncEngine.resetParentToPendingIfMissingOnRemote("payments", rs.getString("payment_uuid"));
+								UniversalSyncEngine.resetParentToPendingIfMissingOnRemote("invoice_master", rs.getString("invoice_uuid"));
+							} else if ("payment_details".equals(def.sqliteTable())) {
+								UniversalSyncEngine.resetParentToPendingIfMissingOnRemote("payments", rs.getString("payment_uuid"));
+							}
 						} else {
 							report.failures++;
 						}

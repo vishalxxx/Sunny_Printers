@@ -420,8 +420,9 @@
                     <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="1">
                         <Label text="SIDE" styleClass="field-heading-sm"/>
                         <HBox styleClass="segmented-control-bg">
-                            <ToggleButton fx:id="lamDoubleBtn" text="Double" styleClass="segmented-btn, segmented-left" selected="true" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-                            <ToggleButton fx:id="lamSingleBtn" text="Single" styleClass="segmented-btn, segmented-right" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                            <ToggleButton fx:id="lamDoubleBtn" text="Double" styleClass="segmented-btn, segmented-left" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                            <ToggleButton fx:id="lamSingleBtn" text="Single" styleClass="segmented-btn" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                            <ToggleButton fx:id="lamNaBtn" text="N/A" styleClass="segmented-btn, segmented-right" selected="true" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
                         </HBox>
                     </VBox>
 

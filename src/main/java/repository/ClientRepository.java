@@ -90,10 +90,16 @@ public class ClientRepository {
 				code = allocated.value();
 				allocatedTempCode = allocated.temporary();
 				client.setClientCode(code);
+				while (ClientIdentifiers.clientCodeInUse(conn, code, null)) {
+					allocated = seqAlloc.allocateClientCode(conn);
+					code = allocated.value();
+					allocatedTempCode = allocated.temporary();
+					client.setClientCode(code);
+				}
 			} else {
 				code = code.trim();
 				client.setClientCode(code);
-				if (ClientIdentifiers.clientCodeInUse(conn, code, null)) {
+				while (ClientIdentifiers.clientCodeInUse(conn, code, null)) {
 					AllocatedNumber allocated = seqAlloc.allocateClientCode(conn);
 					code = allocated.value();
 					allocatedTempCode = allocated.temporary();
@@ -201,7 +207,9 @@ public class ClientRepository {
 				FROM clients c
 				INNER JOIN jobs j ON j.client_uuid = c.uuid
 				WHERE IFNULL(c.is_deleted,0)=0 AND IFNULL(c.is_active,1)=1
-				  AND j.invoice_uuid IS NULL
+				  AND (j.invoice_uuid IS NULL OR EXISTS (
+				      SELECT 1 FROM invoice_master inv WHERE inv.uuid = j.invoice_uuid AND (inv.is_deleted = 1 OR inv.status = 'CANCELLED')
+				  ))
 				  AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
 				ORDER BY c.business_name ASC
 				""";

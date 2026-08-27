@@ -1,0 +1,14 @@
+Total items in source = 29
+Current Page Index = 0
+Page Size = 10
+tablePageItems size = 10
+Row 0: date=04-08-2026, ref=SP/PI/26-27/0038, type=INVOICE, balance=0.0, debit=null, credit=null
+Row 1: date=04-08-2026, ref=SP/PI/26-27/0038, type=PAYMENT, balance=-100.0, debit=100.0, credit=null
+Row 2: date=04-08-2026, ref=SP/PI/26-27/0038 Invoice Cancelled, type=INVOICE CANCEL, balance=-100.0, debit=null, credit=null
+Row 3: date=04-08-2026, ref=SP/PI/26-27/0040, type=INVOICE, balance=-100.0, debit=null, credit=null
+Row 4: date=04-08-2026, ref=SP/PI/26-27/0040, type=PAYMENT, balance=-200.0, debit=100.0, credit=null
+Row 5: date=04-08-2026, ref=SP/PI/26-27/0040 Invoice Cancelled, type=INVOICE CANCEL, balance=-200.0, debit=null, credit=null
+Row 6: date=04-08-2026, ref=SP/PI/26-27/0041, type=INVOICE, balance=700.0, debit=null, credit=900.0
+Row 7: date=04-08-2026, ref=SP/PI/26-27/0041 Invoice Cancelled, type=INVOICE CANCEL, balance=-200.0, debit=900.0, credit=null
+Row 8: date=04-08-2026, ref=SP/PI/26-27/0042, type=INVOICE, balance=-200.0, debit=null, credit=null
+Row 9: date=04-08-2026, ref=SP/PI/26-27/0042 Invoice Cancelled, type=INVOICE CANCEL, balance=-200.0, debit=null, credit=null

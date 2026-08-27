@@ -1012,7 +1012,7 @@ public class ViewInvoicesController {
             boolean send = isFinal || isSent;
             String sendText = isSent ? "Send Again" : "Send";
             boolean revised = (isFinal || isSent) && !hasPayments;
-            boolean payment = isSent && !isPaid;
+            boolean payment = (isFinal || isSent) && !isPaid;
             boolean raiseCnDn = false; // Disabled for now
             
             String invNo = inv.getInvoiceNo();
@@ -1941,7 +1941,85 @@ public class ViewInvoicesController {
             Toast.show((Stage) invoiceTable.getScene().getWindow(), "❌ Failed to finalize selected invoice(s)");
         }
     }
-    @FXML private void handleSendAction(ActionEvent e) { updateStatus("SENT TO CLIENT"); }
+    @FXML private void handleSendAction(ActionEvent e) { 
+        if (invoiceTable == null) return;
+        java.util.List<InvoiceMaster> toProcess = new java.util.ArrayList<>();
+        if (!selectedInvoiceUuids.isEmpty()) {
+            for (InvoiceMaster inv : fullInvoiceResults) {
+                if (inv.getUuid() != null && selectedInvoiceUuids.contains(inv.getUuid())) {
+                    toProcess.add(inv);
+                }
+            }
+        } else {
+            InvoiceMaster sel = invoiceTable.getSelectionModel().getSelectedItem();
+            if (sel != null) {
+                toProcess.add(sel);
+            }
+        }
+        if (toProcess.isEmpty()) return;
+
+        updateStatus("SENT TO CLIENT"); 
+
+        new Thread(() -> {
+            repository.ClientRepository clientRepo = new repository.ClientRepository();
+            for (InvoiceMaster inv : toProcess) {
+                try {
+                    // 1. Fetch Client info to get their email address
+                    model.Client client = clientRepo.findByUuid(inv.getClientId());
+                    String clientEmail = client != null ? client.getEmail() : null;
+                    if (clientEmail == null || clientEmail.isBlank()) {
+                        Platform.runLater(() -> toast("⚠️ Client has no email configured: " + inv.getClientName()));
+                        continue;
+                    }
+
+                    // 2. Build Invoice detail object and generate PDF
+                    InvoiceBuilderService builder = new InvoiceBuilderService();
+                    Invoice full = builder.buildInvoiceFromMasterForPdfExport(inv.getUuid());
+                    boolean isProformaPdf = (full.getMasterDocumentSeries() == model.MasterDocumentSeries.PROFORMA_INVOICE)
+                                           || (full.getInvoiceType() != null && (full.getInvoiceType().toUpperCase().contains("PROFORMA") || full.getInvoiceType().toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(full.getInvoiceType()) || "DATE_RANGE".equalsIgnoreCase(full.getInvoiceType()) || full.getInvoiceType().toUpperCase().contains("MONTHLY")))
+                                           || (full.getInvoiceNo() != null && full.getInvoiceNo().toUpperCase().contains("/PI/"));
+                    File pdfFile;
+                    try {
+                        utils.DownloadTracker.setSuspended(true);
+                        if (isProformaPdf) {
+                            pdfFile = new PdfInvoiceService().generateSingleInvoicePDF(full);
+                        } else {
+                            pdfFile = new service.GstPdfInvoiceService().generateGstInvoice(full);
+                        }
+                    } finally {
+                        utils.DownloadTracker.setSuspended(false);
+                    }
+
+                    // 3. Send email with attached PDF
+                    final String emailCopy = clientEmail;
+                    final String invNoCopy = inv.getInvoiceNo();
+                    Platform.runLater(() -> toast("📧 Sending invoice " + invNoCopy + " to " + emailCopy + "..."));
+
+                    utils.EmailUtil.sendInvoiceEmail(
+                        clientEmail,
+                        inv.getClientName(),
+                        inv.getInvoiceNo(),
+                        pdfFile,
+                        () -> Platform.runLater(() -> toast("✅ Email sent successfully to " + emailCopy)),
+                        (errMsg) -> Platform.runLater(() -> {
+                            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                            alert.setTitle("Email Delivery Failure");
+                            alert.setHeaderText("Unable to send invoice " + invNoCopy + " to " + emailCopy);
+                            alert.setContentText(errMsg);
+                            if (invoiceTable != null && invoiceTable.getScene() != null) {
+                                alert.initOwner(invoiceTable.getScene().getWindow());
+                            }
+                            alert.showAndWait();
+                        })
+                    );
+
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    Platform.runLater(() -> toast("❌ Failed to send invoice " + inv.getInvoiceNo() + ": " + ex.getMessage()));
+                }
+            }
+        }).start();
+    }
     @FXML private void handleCancelAction(ActionEvent e) {
         if (invoiceTable == null) return;
         java.util.List<InvoiceMaster> toProcess = new java.util.ArrayList<>();

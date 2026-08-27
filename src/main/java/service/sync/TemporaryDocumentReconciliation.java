@@ -237,7 +237,7 @@ public final class TemporaryDocumentReconciliation {
 				SELECT uuid, invoice_no, document_series, invoice_date FROM invoice_master
 				WHERE IFNULL(is_deleted, 0) = 0
 				  AND invoice_no LIKE 'TEMP-%'
-				  AND (status = 'FINAL' OR document_series = 'PROFORMA_INVOICE' OR type IN ('JOB_SPECIFIC', 'DATE_RANGE', 'MONTHLY'))
+				  AND (status = 'FINAL' OR document_series = 'PROFORMA_INVOICE')
 				""");
 				var rs = ps.executeQuery()) {
 			while (rs.next()) {

@@ -77,7 +77,7 @@ public class PrintingItemService {
             desc.append(" ").append(p.getColor()).append(" Color");
         }
 
-        if (p.getSide() != null && !p.getSide().isBlank()) {
+        if (p.getSide() != null && !p.getSide().isBlank() && !p.getSide().equalsIgnoreCase("N/A")) {
             desc.append(" ").append(p.getSide()).append(" Side");
         }
 

@@ -64,6 +64,15 @@ public final class NumberSequenceCatalog {
 		if (series == MasterDocumentSeries.EWAY_BILL_REF) {
 			return "eway_bill_ref";
 		}
+		if (series == MasterDocumentSeries.PAYMENT_RECEIPT) {
+			return "payment_receipt";
+		}
+		if (series == MasterDocumentSeries.CLIENT) {
+			return "client";
+		}
+		if (series == MasterDocumentSeries.SUPPLIER) {
+			return "supplier";
+		}
 		return null;
 	}
 

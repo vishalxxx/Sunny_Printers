@@ -236,7 +236,7 @@ public class ClientProfileController implements Initializable {
         List<Job> activeJobs = new ArrayList<>();
         int totalActive = 0;
         try (Connection con = DBConnection.getConnection()) {
-            String countSql = "SELECT COUNT(*) FROM jobs WHERE client_uuid = ? AND (status IS NULL OR LOWER(TRIM(status)) != 'completed')";
+            String countSql = "SELECT COUNT(*) FROM jobs WHERE client_uuid = ? AND COALESCE(is_deleted, 0) = 0";
             try (java.sql.PreparedStatement ps = con.prepareStatement(countSql)) {
                 ps.setString(1, currentClient.getClientUuid());
                 ResultSet rs = ps.executeQuery();
@@ -244,7 +244,7 @@ public class ClientProfileController implements Initializable {
                     totalActive = rs.getInt(1);
                 }
             }
-            String sql = "SELECT job_title, status, job_code FROM jobs WHERE client_uuid = ? AND (status IS NULL OR LOWER(TRIM(status)) != 'completed') ORDER BY created_at DESC LIMIT 2";
+            String sql = "SELECT job_title, status, job_code FROM jobs WHERE client_uuid = ? AND COALESCE(is_deleted, 0) = 0 ORDER BY created_at DESC LIMIT 2";
             try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
                 ps.setString(1, currentClient.getClientUuid());
                 ResultSet rs = ps.executeQuery();
@@ -306,10 +306,15 @@ public class ClientProfileController implements Initializable {
         specs.getStyleClass().add("job-card-specs");
         nameBox.getChildren().addAll(title, specs);
         
-        String statusText = job.getStatus() == null ? "START" : job.getStatus().toUpperCase();
-        boolean isCompleted = statusText.contains("COMPLETED") || statusText.contains("SHIPPED");
-        
-        Label statusTag = new Label(isCompleted ? "COMPLETED" : "IN PRODUCTION");
+        utils.JobWorkflow.Major major = utils.JobWorkflow.majorFromJobStatus(job.getStatus());
+        boolean isCompleted = major == utils.JobWorkflow.Major.COMPLETED || major == utils.JobWorkflow.Major.INVOICE;
+        String statusLabel;
+        if (major == utils.JobWorkflow.Major.CANCELLED) {
+            statusLabel = "CANCELLED";
+        } else {
+            statusLabel = isCompleted ? "COMPLETED" : "IN PRODUCTION";
+        }
+        Label statusTag = new Label(statusLabel);
         statusTag.getStyleClass().add(isCompleted ? "status-pill-green" : "status-pill-subtle");
         
         header.getChildren().addAll(nameBox, statusTag);
@@ -317,28 +322,40 @@ public class ClientProfileController implements Initializable {
         VBox progressSection = new VBox(4);
         progressSection.setStyle("-fx-padding: 8 0 0 0;");
         
-        double progress = 0.25;
+        double progress = 0.125;
         int activeStep = 0;
-        if (statusText.contains("START")) { progress = 0.3; activeStep = 1; }
-        else if (statusText.contains("PRINTING")) { progress = 0.6; activeStep = 2; }
-        else if (statusText.contains("FINISHING")) { progress = 0.85; activeStep = 3; }
-        else if (statusText.contains("PAID") || statusText.contains("SHIPPED")) { progress = 1.0; activeStep = 4; }
+        if (major == utils.JobWorkflow.Major.PROCESSING) {
+            progress = 0.375;
+            activeStep = 1;
+        } else if (major == utils.JobWorkflow.Major.COMPLETED) {
+            progress = 0.625;
+            activeStep = 2;
+        } else if (major == utils.JobWorkflow.Major.INVOICE) {
+            progress = 1.0;
+            activeStep = 3;
+        } else if (major == utils.JobWorkflow.Major.CANCELLED) {
+            progress = 0.0;
+            activeStep = -1;
+        }
         
         ProgressBar bar = new ProgressBar(progress);
         bar.setMaxWidth(Double.MAX_VALUE);
-        bar.getStyleClass().add(progress >= 1.0 ? "pipeline-progress-green" : "pipeline-progress");
+        bar.getStyleClass().add("pipeline-progress");
+        if (progress >= 1.0) {
+            bar.getStyleClass().add("pipeline-progress-green");
+        }
         
         HBox steps = new HBox();
         steps.setAlignment(Pos.CENTER);
         
         steps.getChildren().addAll(
-            createStepLabel("PRE-PRESS", activeStep == 0),
+            createStepLabel("DRAFT", activeStep == 0),
             createSpacer(),
-            createStepLabel("PRINTING", activeStep == 1 || activeStep == 2),
+            createStepLabel("PROCESSING", activeStep == 1),
             createSpacer(),
-            createStepLabel("FINISHING", activeStep == 3),
+            createStepLabel("COMPLETE", activeStep == 2),
             createSpacer(),
-            createStepLabel(progress >= 1.0 ? "SHIPPED" : "SHIPPING", activeStep == 4)
+            createStepLabel("INVOICE", activeStep == 3)
         );
         
         progressSection.getChildren().addAll(bar, steps);

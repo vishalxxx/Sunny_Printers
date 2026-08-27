@@ -92,7 +92,6 @@ public final class SyncConflictResolver {
             Instant localInst = parseTimestamp(localUpdatedAt);
             Instant remoteInst = parseTimestamp(remoteUpdatedAt);
 
-            boolean isRemoteNewer = remoteInst != Instant.MIN && localInst != Instant.MIN && remoteInst.isAfter(localInst);
             long localSyncVersion = 0L;
             try (PreparedStatement ps = conn.prepareStatement("SELECT sync_version FROM " + table + " WHERE uuid = ?")) {
                 ps.setString(1, uuid);
@@ -103,6 +102,11 @@ public final class SyncConflictResolver {
                 }
             } catch (Exception ignored) {}
             long remoteSyncVersion = remoteObj.has("sync_version") && !remoteObj.get("sync_version").isJsonNull() ? remoteObj.get("sync_version").getAsLong() : 0L;
+
+            boolean isRemoteNewer = remoteInst != Instant.MIN && localInst != Instant.MIN 
+                && remoteInst.isAfter(localInst) 
+                && remoteSyncVersion > localSyncVersion;
+
             System.out.println("[DIAGNOSTIC] Push Conflict check for " + table + " " + uuid + ": local.updated_at='" + localUpdatedAt + "' (" + localInst + "), remote.updated_at='" + remoteUpdatedAt + "' (" + remoteInst + "), local.sync_version=" + localSyncVersion + ", remote.sync_version=" + remoteSyncVersion + ". isRemoteNewer=" + isRemoteNewer);
 
             if (isRemoteNewer) {

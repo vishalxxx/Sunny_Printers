@@ -47,6 +47,11 @@ public class Main extends Application {
 
 		primaryStage.setScene(scene);
 		primaryStage.setTitle("Sunny Printers");
+		try {
+			primaryStage.getIcons().add(new javafx.scene.image.Image(getClass().getResourceAsStream("/images/logo.png")));
+		} catch (Exception ex) {
+			service.LoggerService.warn("[Main] Failed to load window icon: " + ex.getMessage());
+		}
 		primaryStage.setMaximized(false);
 		primaryStage.setWidth(760);
 		primaryStage.setHeight(500);
