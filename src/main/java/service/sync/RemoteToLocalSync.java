@@ -335,7 +335,7 @@ public final class RemoteToLocalSync {
 					// REMOTE DELETION RECONCILIATION
 					// Fetch all active remote UUIDs for this table to detect hard-deleted or soft-deleted remote records
 					try {
-						String selectQuery = "select=uuid" + (cols.contains("is_deleted") ? ",is_deleted" : "");
+						String selectQuery = "select=uuid" + (cols.contains("is_deleted") ? ",is_deleted" : "") + (cols.contains("deleted_at") ? ",deleted_at" : "");
 						var remoteUuidsRes = http.get(endpoint, selectQuery);
 						if (remoteUuidsRes.statusCode() >= 200 && remoteUuidsRes.statusCode() < 300) {
 							String rBody = remoteUuidsRes.body();
@@ -344,6 +344,7 @@ public final class RemoteToLocalSync {
 								if (rRoot.isJsonArray()) {
 									java.util.Set<String> activeRemoteUuids = new java.util.HashSet<>();
 									java.util.Set<String> softDeletedRemoteUuids = new java.util.HashSet<>();
+									java.util.Map<String, String> softDeletedRemoteTimes = new java.util.HashMap<>();
 									for (JsonElement rEl : rRoot.getAsJsonArray()) {
 										if (rEl.isJsonObject()) {
 											JsonObject rObj = rEl.getAsJsonObject();
@@ -357,8 +358,12 @@ public final class RemoteToLocalSync {
 														rDeleted = rObj.get("is_deleted").getAsInt() != 0;
 													}
 												}
+												String rDeletedAt = (rObj.has("deleted_at") && !rObj.get("deleted_at").isJsonNull())
+													? rObj.get("deleted_at").getAsString() : null;
 												if (rDeleted) {
+													// Store uuid -> remote deleted_at so we can use it when writing locally
 													softDeletedRemoteUuids.add(rUuid);
+													softDeletedRemoteTimes.put(rUuid, rDeletedAt);
 												} else {
 													activeRemoteUuids.add(rUuid);
 												}
@@ -379,13 +384,15 @@ public final class RemoteToLocalSync {
 
 											if (softDeletedRemoteUuids.contains(lUuid)) {
 												if (!currentlyLocalDeleted && hasIsDeletedCol) {
+													String remoteDelAt = softDeletedRemoteTimes.getOrDefault(lUuid, null);
+													String deletedAtExpr = (remoteDelAt != null) ? "'" + remoteDelAt + "'" : "datetime('now')";
 													try (PreparedStatement updPs = conn.prepareStatement(
-															"UPDATE " + table + " SET is_deleted = 1, sync_status = 'SYNCED', deleted_at = datetime('now') WHERE uuid = ?")) {
+															"UPDATE " + table + " SET is_deleted = 1, sync_status = 'SYNCED', deleted_at = " + deletedAtExpr + " WHERE uuid = ?")) {
 														updPs.setString(1, lUuid);
 														updPs.executeUpdate();
 													}
 													deleted++;
-													System.out.println("[RemoteToLocalSync] Reconciled remote soft-deletion for table=" + table + ", uuid=" + lUuid);
+													System.out.println("[RemoteToLocalSync] Reconciled remote soft-deletion for table=" + table + ", uuid=" + lUuid + ", deleted_at=" + deletedAtExpr);
 												}
 											} else if (!activeRemoteUuids.contains(lUuid)) {
 												// Record was hard-deleted (physically deleted) from remote Supabase!

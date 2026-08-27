@@ -103,9 +103,13 @@ public final class SyncConflictResolver {
             } catch (Exception ignored) {}
             long remoteSyncVersion = remoteObj.has("sync_version") && !remoteObj.get("sync_version").isJsonNull() ? remoteObj.get("sync_version").getAsLong() : 0L;
 
+            // Remote is newer if: timestamp is strictly after local, AND
+            // sync_version check: only enforce when remote explicitly provides a version (> 0).
+            // When remoteSyncVersion == 0 (absent from response), fall back to timestamp-only.
+            boolean versionOk = (remoteSyncVersion == 0) || (remoteSyncVersion >= localSyncVersion);
             boolean isRemoteNewer = remoteInst != Instant.MIN && localInst != Instant.MIN 
                 && remoteInst.isAfter(localInst) 
-                && remoteSyncVersion > localSyncVersion;
+                && versionOk;
 
             System.out.println("[DIAGNOSTIC] Push Conflict check for " + table + " " + uuid + ": local.updated_at='" + localUpdatedAt + "' (" + localInst + "), remote.updated_at='" + remoteUpdatedAt + "' (" + remoteInst + "), local.sync_version=" + localSyncVersion + ", remote.sync_version=" + remoteSyncVersion + ". isRemoteNewer=" + isRemoteNewer);
 
