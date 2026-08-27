@@ -98,7 +98,7 @@ public class TaxMasterController implements Initializable {
 		}
 		try {
 			taxService.importDefaults();
-		} catch (Exception ignored) {}
+		} catch (Exception e) { service.LoggerService.dbWarn("Failed to format tax rate: " + e.getMessage()); }
 		reloadCategories();
 		reloadTable();
 
@@ -777,8 +777,7 @@ public class TaxMasterController implements Initializable {
 				alert.getDialogPane().getStylesheets().add(css.toExternalForm());
 			}
 			alert.getDialogPane().getStyleClass().add("atelier-alert");
-		} catch (Exception ignored) {
-		}
+		} catch (Exception e) { service.LoggerService.dbWarn("Failed to export template: " + e.getMessage()); }
 		return alert.showAndWait().orElse(javafx.scene.control.ButtonType.CANCEL) == javafx.scene.control.ButtonType.OK;
 	}
 

@@ -29,8 +29,9 @@ public class SchemaCacheAuditTest {
         // Use the authenticated anon key
         SupabaseSettings settings = new SupabaseSettingsRepository().load();
         String anonKey = settings.getAnonKey();
-        if (anonKey == null || anonKey.isBlank()) {
-            anonKey = "fake-anon-key";
+        if (anonKey == null || anonKey.isBlank() || anonKey.contains("placeholder")) {
+            System.out.println("Supabase not configured or uses a placeholder key. Skipping remote audit.");
+            return;
         }
         SupabaseRestClient http = new SupabaseRestClient(optClient.get().restV1Base().replace("/rest/v1/", ""), anonKey);
 

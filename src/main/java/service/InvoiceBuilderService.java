@@ -132,10 +132,12 @@ public class InvoiceBuilderService {
 				       ji.type,
 				       ji.sort_order
 				FROM jobs j
-				JOIN job_items ji ON ji.job_uuid = j.uuid
+				JOIN job_items ji ON ji.job_uuid = j.uuid AND COALESCE(ji.include_in_invoice, 1) = 1
 				WHERE j.client_uuid = ?
 				  AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
-				  AND j.invoice_uuid IS NULL
+				  AND (j.invoice_uuid IS NULL OR EXISTS (
+				      SELECT 1 FROM invoice_master inv WHERE inv.uuid = j.invoice_uuid AND (inv.is_deleted = 1 OR inv.status = 'CANCELLED')
+				  ))
 				  AND j.uuid IN (""" + placeholders + ") " + "ORDER BY j.job_date, j.uuid, ji.sort_order";
 
 		try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -396,7 +398,7 @@ public class InvoiceBuilderService {
 									else if (part.startsWith("HSN:"))  { String h = part.substring(4); if (!h.isBlank()) snapHsn = h; }
 									else if (part.startsWith("GST:"))  { double g = Double.parseDouble(part.substring(4)); if (g > 0) snapGst = g; }
 									else if (part.startsWith("DESC:")) desc = part.substring(5);
-								} catch (Exception ignored) {}
+								} catch (Exception e) { service.LoggerService.dbWarn("Failed to parse invoice snapshot param: " + part + " - " + e.getMessage()); }
 							}
 						}
 						snapAmountByJob.put(jobUuid, new double[]{qty, rate, snapGst, snapAmount});
@@ -425,7 +427,7 @@ public class InvoiceBuilderService {
 				       ji.type,
 				       ji.sort_order
 				FROM jobs j
-				JOIN job_items ji ON ji.job_uuid = j.uuid
+				JOIN job_items ji ON ji.job_uuid = j.uuid AND COALESCE(ji.include_in_invoice, 1) = 1
 				WHERE j.uuid IN (""" + placeholders + ") ORDER BY j.job_date, j.uuid, ji.sort_order";
 		try (PreparedStatement ps = con.prepareStatement(sql)) {
 			int index = 1;
@@ -493,7 +495,7 @@ public class InvoiceBuilderService {
 									else if (part.startsWith("GST:"))   gstRate      = Double.parseDouble(part.substring(4));
 									else if (part.startsWith("HSN:"))   hsnSac       = part.substring(4);
 								}
-							} catch (Exception ignored) {}
+							} catch (Exception e) { service.LoggerService.dbWarn("Failed to parse legacy invoice QTY string: " + e.getMessage()); }
 						} else {
 							boolean isCustomItem = jobNo == null || jobNo.isBlank();
 							qty = isCustomItem ? 0 : 1; unit = isCustomItem ? "" : "PCS";
@@ -507,6 +509,9 @@ public class InvoiceBuilderService {
 							ratePerUnit = qty > 0 ? (jobTaxable / qty) : jobTaxable;
 							service.HsnSacService hsnSacService = new service.HsnSacService();
 							for (model.JobItem ji : items) {
+								if (ji.getIncludeInInvoice() == 0) {
+									continue;
+								}
 								model.HsnSacInfo info = hsnSacService.lookup(ji);
 								if (info != null && info.getHsnSac() != null && !info.getHsnSac().isBlank()) {
 									hsnSac = info.getHsnSac();
@@ -514,7 +519,7 @@ public class InvoiceBuilderService {
 									break;
 								}
 							}
-						} catch (Exception ignored) {}
+						} catch (Exception e) { service.LoggerService.dbWarn("Failed to lookup HSN/SAC for job " + jobUuid + ": " + e.getMessage()); }
 					}
 					job.setQuantity(qty); job.setUnit(unit); job.setRatePerUnit(ratePerUnit);
 					job.setHsnSac(hsnSac); job.setGstRate(gstRate);
@@ -561,7 +566,9 @@ public class InvoiceBuilderService {
             JOIN clients c ON c.uuid = j.client_uuid
             WHERE DATE(j.job_date) BETWEEN ? AND ?
             AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
-            AND j.invoice_uuid IS NULL
+            AND (j.invoice_uuid IS NULL OR EXISTS (
+                SELECT 1 FROM invoice_master inv WHERE inv.uuid = j.invoice_uuid AND (inv.is_deleted = 1 OR inv.status = 'CANCELLED')
+            ))
             ORDER BY c.business_name, c.client_name, c.uuid
         """;
 
@@ -634,11 +641,13 @@ public class InvoiceBuilderService {
 				ji.type,
 				ji.sort_order
 				FROM jobs j
-				JOIN job_items ji ON ji.job_uuid = j.uuid
+				JOIN job_items ji ON ji.job_uuid = j.uuid AND COALESCE(ji.include_in_invoice, 1) = 1
 				WHERE j.client_uuid = ?
 				AND DATE(j.job_date) BETWEEN ? AND ?
 				AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
-				AND j.invoice_uuid IS NULL
+				AND (j.invoice_uuid IS NULL OR EXISTS (
+				    SELECT 1 FROM invoice_master inv WHERE inv.uuid = j.invoice_uuid AND (inv.is_deleted = 1 OR inv.status = 'CANCELLED')
+				))
 				ORDER BY j.job_date, j.uuid, ji.sort_order
 				""";
 
@@ -699,7 +708,7 @@ public class InvoiceBuilderService {
 			if (jobDesc != null && !jobDesc.isBlank()) {
 				return jobDesc.trim();
 			}
-		} catch (SQLException ignored) {}
+		} catch (SQLException e) { service.LoggerService.dbWarn("Failed to read job_desc from ResultSet: " + e.getMessage()); }
 		String t = rs.getString("job_title");
 		if (t != null && !t.isBlank()) {
 			return t.trim();
@@ -721,17 +730,14 @@ public class InvoiceBuilderService {
 			if (s.length() >= 10 && s.charAt(4) == '-' && s.charAt(7) == '-') {
 				try {
 					return LocalDate.parse(s.substring(0, 10));
-				} catch (DateTimeParseException ignored) {
-				}
+				} catch (DateTimeParseException e2) { service.LoggerService.debug("Failed to parse partial job_date: " + s); }
 			}
 			try {
 				return LocalDate.parse(s, DateTimeFormatter.ofPattern("d/M/uuuu"));
-			} catch (DateTimeParseException ignored) {
-			}
+			} catch (DateTimeParseException e3) { service.LoggerService.debug("Failed to parse d/M/uuuu: " + s); }
 			try {
 				return LocalDate.parse(s, DateTimeFormatter.ofPattern("dd/MM/uuuu"));
-			} catch (DateTimeParseException ignored) {
-			}
+			} catch (DateTimeParseException e4) { service.LoggerService.debug("Failed to parse dd/MM/uuuu: " + s); }
 		}
 		return null;
 	}

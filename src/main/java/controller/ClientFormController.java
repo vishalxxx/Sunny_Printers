@@ -109,6 +109,9 @@ public class ClientFormController implements Initializable {
 		if (altPhoneField != null) {
 			altPhoneField.textProperty().addListener((obs, oldVal, newVal) -> validateAltPhoneRealtime(newVal));
 		}
+		if (creditLimitField != null) {
+			creditLimitField.setDisable(true);
+		}
 	}
 
 	/** Register / Update stays disabled until both business name and client name are non-empty. */
@@ -193,6 +196,9 @@ public class ClientFormController implements Initializable {
 		}
 		creditLimitField.setText(String.valueOf(client.getCreditLimit()));
 		openingBalanceField.setText(String.valueOf(client.getOpeningBalance()));
+		if (openingBalanceField != null) {
+			openingBalanceField.setDisable(true);
+		}
 		billingAddressField.setText(client.getBillingAddress());
 		shippingAddressField.setText(client.getShippingAddress());
 		notesField.setText(client.getNotes());
@@ -216,9 +222,9 @@ public class ClientFormController implements Initializable {
 		String curShip = (syncAddressToggle != null && syncAddressToggle.isSelected()) ? curBill
 				: nz(shippingAddressField.getText());
 		double cl = 0;
-		try { cl = Double.parseDouble(creditLimitField.getText()); } catch (Exception ignored) {}
+		try { cl = Double.parseDouble(creditLimitField.getText()); } catch (Exception e) { service.LoggerService.debug("Failed to parse credit limit: " + e.getMessage()); }
 		double ob = 0;
-		try { ob = Double.parseDouble(openingBalanceField.getText()); } catch (Exception ignored) {}
+		try { ob = Double.parseDouble(openingBalanceField.getText()); } catch (Exception e) { service.LoggerService.debug("Failed to parse opening balance: " + e.getMessage()); }
 		return nz(businessNameField.getText()).equals(editBaseline.businessName())
 				&& nz(clientNameField.getText()).equals(editBaseline.clientName())
 				&& nz(phoneField.getText()).equals(editBaseline.phone())
@@ -272,6 +278,9 @@ public class ClientFormController implements Initializable {
 		panField.clear();
 		creditLimitField.setText("0.0");
 		openingBalanceField.setText("0.0");
+		if (openingBalanceField != null) {
+			openingBalanceField.setDisable(false);
+		}
 		billingAddressField.clear();
 		shippingAddressField.clear();
 		notesField.clear();

@@ -783,6 +783,7 @@ public class GenerateGSTInvoiceController implements Initializable {
     private void setupInitialData() {
         if (txtInvoiceNo != null) {
             txtInvoiceNo.setEditable(false);
+            refreshInvoiceNoPreview();
         }
         if (dpInvoiceDate != null) {
             dpInvoiceDate.setValue(java.time.LocalDate.now());
@@ -1183,6 +1184,7 @@ public class GenerateGSTInvoiceController implements Initializable {
                 combinedDesc = "PRINTING CHARGES TOWARDS\n    " + js.getJobTitle().toUpperCase();
                 if (items != null && !items.isEmpty()) {
                     String itemsText = items.stream()
+                            .filter(ji -> ji.getIncludeInInvoice() == 1)
                             .map(model.JobItem::getDescription)
                             .filter(d -> d != null && !d.isBlank())
                             .map(d -> "    " + d.toUpperCase())
@@ -1197,6 +1199,9 @@ public class GenerateGSTInvoiceController implements Initializable {
             // Try to find the first valid HSN info to use as default
             if (items != null) {
                 for (model.JobItem ji : items) {
+                    if (ji.getIncludeInInvoice() == 0) {
+                        continue;
+                    }
                     model.HsnSacInfo info = hsnSacService.lookup(ji);
                     if (info != null && info.getHsnSac() != null && !info.getHsnSac().isBlank()) {
                         hsn = info.getHsnSac();
@@ -2092,7 +2097,7 @@ public class GenerateGSTInvoiceController implements Initializable {
             } else {
                 try {
                     qtyRaw.set(Double.parseDouble(v.replace(",", "").trim()));
-                } catch(Exception ignored) { qtyRaw.set(0); }
+                } catch(Exception e) { service.LoggerService.debug("Failed to parse QTY: " + e.getMessage()); qtyRaw.set(0); }
             }
             recalcTaxable();
         }
@@ -2114,7 +2119,7 @@ public class GenerateGSTInvoiceController implements Initializable {
             } else {
                 try {
                     rateRaw.set(Double.parseDouble(v.replace("₹", "").replace(",", "").trim()));
-                } catch(Exception ignored) { rateRaw.set(0); }
+                } catch(Exception e) { service.LoggerService.debug("Failed to parse Rate: " + e.getMessage()); rateRaw.set(0); }
             }
             recalcTaxable();
         }
@@ -2160,7 +2165,7 @@ public class GenerateGSTInvoiceController implements Initializable {
                     rate.set(fmtMoney(rateRaw.get()));
                 }
                 recalcTaxes(g, this.intraState);
-            } catch (Exception ignored) {}
+            } catch (Exception e) { service.LoggerService.debug("Failed to calculate total: " + e.getMessage()); }
         }
         public StringProperty totalProperty() { return total; }
     }

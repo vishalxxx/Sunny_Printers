@@ -40,7 +40,7 @@ public class WatermarkSafetyTest {
         dbPath = TestDatabaseHelper.createIsolatedDb("WatermarkSafetyTest");
         fakeSupabase = new FakeSupabaseRestClient();
         SupabaseGate.setOverrideClient(fakeSupabase);
-        DBConnection.setUrl(dbPath);
+        DBConnection.setTestDatabaseUrl(dbPath);
     }
 
     @AfterAll

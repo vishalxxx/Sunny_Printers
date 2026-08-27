@@ -38,7 +38,7 @@ public class OfflineRecoveryTest {
         dbPath = TestDatabaseHelper.createIsolatedDb("OfflineRecoveryTest");
         fakeSupabase = new FakeSupabaseRestClient();
         SupabaseGate.setOverrideClient(fakeSupabase);
-        DBConnection.setUrl(dbPath);
+        DBConnection.setTestDatabaseUrl(dbPath);
     }
 
     @AfterAll

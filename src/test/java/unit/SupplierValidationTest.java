@@ -35,7 +35,7 @@ public class SupplierValidationTest {
     @BeforeAll
     public static void setup() throws Exception {
         dbPath = TestDatabaseHelper.createIsolatedDb("SupplierValidationTest");
-        DBConnection.setUrl(dbPath);
+        DBConnection.setTestDatabaseUrl(dbPath);
     }
 
     @AfterAll

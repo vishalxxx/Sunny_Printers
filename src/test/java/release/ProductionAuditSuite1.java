@@ -3,6 +3,8 @@ import service.sync.RemoteToLocalSync;
 import service.sync.UniversalSyncEngine;
 import utils.ClientIdentifiers;
 import utils.DBConnection;
+import utils.TestDatabaseHelper;
+import utils.TestEnvironment;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.*;
@@ -27,11 +29,24 @@ public class ProductionAuditSuite1 {
     public static List<String> clients = new ArrayList<>();
     public static List<String> jobs = new ArrayList<>();
     public static List<String> invoices = new ArrayList<>();
+    private static String testDbUrl;
 
     @BeforeAll
-    public static void setup() {
-        System.out.println("--- Starting Audit Suite 1 ---");
-        DBConnection.setUrl("jdbc:sqlite:database/sunnyprinters.db?busy_timeout=15000&journal_mode=WAL");
+    public static void setup() throws Exception {
+        System.out.println("--- Starting Audit Suite 1 (TEST environment) ---");
+
+        // Create isolated SQLite database
+        testDbUrl = TestDatabaseHelper.createIsolatedDb("AuditSuite1");
+        DBConnection.setTestDatabaseUrl(testDbUrl);
+        DBConnection.setGlobalTestDatabaseUrl(testDbUrl);
+
+        // Load and inject TEST Supabase credentials
+        TestEnvironment.load();
+        if (TestEnvironment.isSupabaseConfigured()) {
+            TestEnvironment.injectCredentialsIntoDatabase();
+        }
+        TestEnvironment.logContext();
+
         SupabaseReachability.invalidateCache();
         scheduler.scheduleWithFixedDelay(() -> {
             try { UniversalSyncEngine.syncAllPending(); } catch (Exception e) {}
@@ -41,6 +56,8 @@ public class ProductionAuditSuite1 {
     @AfterAll
     public static void teardown() {
         scheduler.shutdownNow();
+        DBConnection.clearTestDatabaseUrl();
+        DBConnection.clearGlobalTestDatabaseUrl();
     }
 
     @Test
@@ -206,4 +223,3 @@ public class ProductionAuditSuite1 {
         }
     }
 }
-

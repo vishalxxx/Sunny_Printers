@@ -54,7 +54,7 @@
 
                 <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2" GridPane.hgrow="ALWAYS">
                     <Label text="Invoice No." styleClass="gst-label-xs"/>
-                    <TextField fx:id="txtInvoiceNo" text="355" editable="false" styleClass="compact-field, gst-input" maxWidth="Infinity"/>
+                    <TextField fx:id="txtInvoiceNo" text="New GST" editable="false" styleClass="compact-field, gst-input" maxWidth="Infinity"/>
                 </VBox>
 
                 <VBox spacing="6" GridPane.columnIndex="2" GridPane.rowIndex="0" GridPane.columnSpan="2" GridPane.hgrow="ALWAYS">

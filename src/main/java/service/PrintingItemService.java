@@ -63,7 +63,6 @@ public class PrintingItemService {
     }
 
     private String buildPrintingDescription(Printing p) {
-
         StringBuilder desc = new StringBuilder();
 
         if (p.getQty() > 0 && p.getUnits() != null) {
@@ -71,19 +70,19 @@ public class PrintingItemService {
         }
 
         if (p.getSets() != null && !p.getSets().isBlank()) {
-            desc.append(" - ").append(p.getSets()).append(" sets");
+            desc.append(" ").append(p.getSets()).append(" Set");
         }
 
-        if (p.getColor() != null && !p.getColor().isBlank()) {
-            desc.append(" - ").append(p.getColor());
+        if (p.getColor() != null && !p.getColor().isBlank() && !p.getColor().equalsIgnoreCase("Select Color")) {
+            desc.append(" ").append(p.getColor()).append(" Color");
         }
 
-        if (p.getSide() != null && !p.getSide().isBlank()) {
-            desc.append(" - ").append(p.getSide());
+        if (p.getSide() != null && !p.getSide().isBlank() && !p.getSide().equalsIgnoreCase("N/A")) {
+            desc.append(" ").append(p.getSide()).append(" Side");
         }
 
         if (p.isWithCtp()) {
-            desc.append(" - with CTP");
+            desc.append(" With CTP");
         }
 
         // ✅ if only notes, show notes as description

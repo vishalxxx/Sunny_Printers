@@ -32,12 +32,36 @@ public final class SupabaseTablesHealthCheck {
 	public record TableProbe(SupabaseEndpoints endpoint, int status, String summary) {
 	}
 
+	public static final java.util.Set<SupabaseEndpoints> LOCAL_ONLY_TABLES = java.util.Set.of(
+			SupabaseEndpoints.SYSTEM_SETTINGS,
+			SupabaseEndpoints.EMAIL_SETTINGS,
+			SupabaseEndpoints.SUPABASE_SETTINGS
+	);
+
 	public static List<TableProbe> probeAll(SupabaseRestClient client) {
 		List<TableProbe> rows = new ArrayList<>();
 		for (SupabaseEndpoints t : SupabaseEndpoints.values()) {
-			rows.add(probeOne(client, t));
+			if (LOCAL_ONLY_TABLES.contains(t)) {
+				boolean exists = checkLocalTableExists(t.pathSegment());
+				rows.add(new TableProbe(t, 0, exists ? "LOCAL ONLY (Exists)" : "LOCAL ONLY (Missing)"));
+			} else {
+				rows.add(probeOne(client, t));
+			}
 		}
 		return rows;
+	}
+
+	private static boolean checkLocalTableExists(String tableName) {
+		try (java.sql.Connection conn = utils.DBConnection.getConnection();
+			 java.sql.PreparedStatement ps = conn.prepareStatement(
+				"SELECT 1 FROM sqlite_master WHERE type='table' AND name=?")) {
+			ps.setString(1, tableName);
+			try (java.sql.ResultSet rs = ps.executeQuery()) {
+				return rs.next();
+			}
+		} catch (Exception e) {
+			return false;
+		}
 	}
 
 	public static TableProbe probeOne(SupabaseRestClient client, SupabaseEndpoints table) {
@@ -68,12 +92,26 @@ public final class SupabaseTablesHealthCheck {
 
 	public static String formatReport(List<TableProbe> rows) {
 		StringBuilder sb = new StringBuilder();
-		int ok = 0;
+		int cloudOk = 0;
+		int cloudTotal = 0;
+		List<TableProbe> localRows = new ArrayList<>();
+		List<TableProbe> cloudRows = new ArrayList<>();
+
 		for (TableProbe r : rows) {
-			boolean good = r.status() >= 200 && r.status() < 300;
-			if (good) {
-				ok++;
+			if (LOCAL_ONLY_TABLES.contains(r.endpoint())) {
+				localRows.add(r);
+			} else {
+				cloudRows.add(r);
+				cloudTotal++;
+				if (r.status() >= 200 && r.status() < 300) {
+					cloudOk++;
+				}
 			}
+		}
+
+		sb.append("--- Cloud Sync Tables Health Check ---\n");
+		for (TableProbe r : cloudRows) {
+			boolean good = r.status() >= 200 && r.status() < 300;
 			sb.append(String.format("%-26s HTTP %4d %s%n",
 					r.endpoint().pathSegment(),
 					r.status(),
@@ -82,7 +120,15 @@ public final class SupabaseTablesHealthCheck {
 				sb.append("    ").append(r.summary().replace("\n", " ")).append('\n');
 			}
 		}
-		sb.insert(0, String.format("Tables reachable: %d / %d%n", ok, rows.size()));
+
+		sb.append("\n--- Local-Only Tables Status ---\n");
+		for (TableProbe r : localRows) {
+			sb.append(String.format("%-26s %s%n",
+					r.endpoint().pathSegment(),
+					r.summary()));
+		}
+
+		sb.insert(0, String.format("Cloud tables reachable: %d / %d%n", cloudOk, cloudTotal));
 		return sb.toString().trim();
 	}
 }

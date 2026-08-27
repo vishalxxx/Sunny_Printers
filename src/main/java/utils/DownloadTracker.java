@@ -11,7 +11,17 @@ import javafx.application.Platform;
  */
 public final class DownloadTracker {
 
+	private static final ThreadLocal<Boolean> suspended = ThreadLocal.withInitial(() -> false);
+
 	private DownloadTracker() {
+	}
+
+	public static void setSuspended(boolean suspend) {
+		suspended.set(suspend);
+	}
+
+	public static boolean isSuspended() {
+		return suspended.get();
 	}
 
 	public static void registerExportedFile(File file) {
@@ -19,6 +29,9 @@ public final class DownloadTracker {
 	}
 
 	public static void registerExportedFile(File file, String typeOverride) {
+		if (suspended.get()) {
+			return;
+		}
 		if (file == null || !file.isFile()) {
 			return;
 		}

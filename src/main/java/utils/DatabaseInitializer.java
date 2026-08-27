@@ -37,7 +37,11 @@ public class DatabaseInitializer {
      */
     public static void initialize() throws Exception {
 
-        Files.createDirectories(Path.of("database"));
+        // Parent directory creation is handled by DBConnection.ensureDatabaseParentDirectory()
+        // before this method is called. Do NOT create a relative "database/" directory here —
+        // that path resolves to the Eclipse project root in dev but to C:\Program Files\ in
+        // the installed MSI (where normal users have no write access).
+
 
         // Open a direct JDBC connection here to avoid calling
         // DBConnection.getConnection()
@@ -79,6 +83,14 @@ public class DatabaseInitializer {
                         %s
                     );
                     """.formatted(SYNC_COLUMNS));
+            try {
+                if (!columnExists(conn, "job_items", "include_in_invoice")) {
+                    stmt.execute("ALTER TABLE job_items ADD COLUMN include_in_invoice INTEGER DEFAULT 1;");
+                    System.out.println("✔ Migration: Added include_in_invoice column to job_items table.");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             try {
                 if (!columnExists(conn, "suppliers", "supplier_code")) {
                     stmt.execute("ALTER TABLE suppliers ADD COLUMN supplier_code TEXT DEFAULT '';");
@@ -127,8 +139,8 @@ public class DatabaseInitializer {
 
             stmt.execute(JOBS_DDL);
 
-            // ================== CREATE DUMMY BILLING TABLE FOR COMPATIBILITY ==================
-            stmt.execute("CREATE TABLE IF NOT EXISTS billing (uuid TEXT PRIMARY KEY);");
+            // Drop legacy billing table if it exists
+            stmt.execute("DROP TABLE IF EXISTS billing;");
 
             stmt.execute(PAYMENTS_DDL);
             stmt.execute(PAYMENT_ALLOCATIONS_DDL);
@@ -279,18 +291,20 @@ public class DatabaseInitializer {
             }
 
             // ================== INVOICE_MASTER TABLE MIGRATIONS ==================
-            try {
-                stmt.execute(
-                        "ALTER TABLE invoice_master ADD COLUMN parent_invoice_id INTEGER REFERENCES invoice_master(id);");
-                System.out.println("✔ Migration: Added parent_invoice_id to invoice_master");
-            } catch (Exception e) {
-                // Ignore if exists
-            }
+            if (columnExists(conn, "invoice_master", "id")) {
+                try {
+                    stmt.execute(
+                            "ALTER TABLE invoice_master ADD COLUMN parent_invoice_id INTEGER REFERENCES invoice_master(id);");
+                    System.out.println("✔ Migration: Added parent_invoice_id to invoice_master");
+                } catch (Exception e) {
+                    // Ignore if exists
+                }
 
-            try {
-                stmt.execute(
-                        "ALTER TABLE invoice_master ADD COLUMN replaced_by_invoice_id INTEGER REFERENCES invoice_master(id);");
-            } catch (Exception e) {
+                try {
+                    stmt.execute(
+                            "ALTER TABLE invoice_master ADD COLUMN replaced_by_invoice_id INTEGER REFERENCES invoice_master(id);");
+                } catch (Exception e) {
+                }
             }
 
             try {
@@ -726,16 +740,8 @@ public class DatabaseInitializer {
                         %s
                     );
                     """.formatted(SYNC_COLUMNS));
-            try {
-                stmt.execute(
-                        """
-                                INSERT INTO bank_details (uuid, bank_name, account_holder_name, account_no, branch_ifsc, is_default, is_active)
-                                SELECT lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))),
-                                       'INDIAN OVERSEAS BANK', 'SUNNY PRINTER', '15980200000000780', 'PITAMPURA & IOBA0001598', 1, 1
-                                WHERE NOT EXISTS (SELECT 1 FROM bank_details)
-                                """);
-            } catch (Exception e) {
-            }
+            // No seeding for bank_details by default
+
 
             // ================== COMPANY DETAILS (MULTI-COMPANY) ==================
             migrateTableToUuidPrimaryKey(conn, "company_details", """
@@ -770,19 +776,8 @@ public class DatabaseInitializer {
                         %s
                     );
                     """.formatted(SYNC_COLUMNS));
-            try {
-                String trade = utils.CompanyProfile.getName().replace("'", "''");
-                String addr = utils.CompanyProfile.getAddress().replace("'", "''");
-                String phone = utils.CompanyProfile.getPhone().replace("'", "''");
-                String email = utils.CompanyProfile.getEmail().replace("'", "''");
-                String gst = utils.CompanyProfile.getGst().replace("'", "''");
-                stmt.execute(
-                        "INSERT INTO company_details (uuid,trade_name,address,phone,alt_phone,email,gstin,state,is_default,is_active) "
-                                + "SELECT '" + java.util.UUID.randomUUID().toString() + "','" + trade + "','" + addr
-                                + "','" + phone + "','','" + email + "','" + gst
-                                + "','',1,1 WHERE NOT EXISTS (SELECT 1 FROM company_details)");
-            } catch (Exception e) {
-            }
+            // No seeding for company_details by default
+
 
             stmt.execute("""
                     CREATE TABLE IF NOT EXISTS supabase_settings (
@@ -1045,8 +1040,7 @@ public class DatabaseInitializer {
         String[] sqls = {
                 "UPDATE jobs SET client_id = NULL WHERE client_id IS NOT NULL",
                 "UPDATE invoice_master SET client_id = NULL WHERE client_id IS NOT NULL",
-                "UPDATE payments SET client_id = NULL WHERE client_id IS NOT NULL",
-                "UPDATE billing SET client_id = NULL WHERE client_id IS NOT NULL"
+                "UPDATE payments SET client_id = NULL WHERE client_id IS NOT NULL"
         };
         for (String sql : sqls) {
             try {
@@ -1282,6 +1276,7 @@ public class DatabaseInitializer {
                 description TEXT,
                 amount REAL DEFAULT 0,
                 sort_order INTEGER DEFAULT 0,
+                include_in_invoice INTEGER DEFAULT 1,
                 sync_status TEXT DEFAULT 'PENDING',
                 sync_version INTEGER DEFAULT 1,
                 is_deleted INTEGER DEFAULT 0,
@@ -1752,7 +1747,6 @@ public class DatabaseInitializer {
             remapChildClientIdToUuid(stmt, "jobs");
             remapChildClientIdToUuid(stmt, "invoice_master");
             remapChildClientIdToUuid(stmt, "payments");
-            remapChildClientIdToUuid(stmt, "billing");
             stmt.execute("""
                     CREATE TABLE clients_uuid_pk (
                         uuid TEXT PRIMARY KEY NOT NULL,
@@ -2620,6 +2614,7 @@ public class DatabaseInitializer {
                         description TEXT,
                         amount REAL DEFAULT 0,
                         sort_order INTEGER DEFAULT 0,
+                        include_in_invoice INTEGER DEFAULT 1,
                         sync_status TEXT DEFAULT 'PENDING',
                         sync_version INTEGER DEFAULT 1,
                         is_deleted INTEGER DEFAULT 0,
@@ -2805,20 +2800,8 @@ public class DatabaseInitializer {
         stmt.execute(PAYMENT_DETAILS_DDL);
         stmt.execute(JOB_CANCELLATION_AUDIT_DDL);
 
-        stmt.execute("""
-                    CREATE TABLE IF NOT EXISTS invoice_history (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        invoice_no TEXT,
-                        client_id TEXT,
-                        client_name TEXT,
-                        invoice_date TEXT,
-                        amount REAL,
-                        type TEXT,
-                        status TEXT,
-                        file_path TEXT,
-                        created_at TEXT DEFAULT (datetime('now'))
-                    )
-                """);
+        stmt.execute("DROP TABLE IF EXISTS invoice_history;");
+        stmt.execute("DROP TABLE IF EXISTS user_profiles;");
 
         migrateInvoiceMasterToCanonicalIfNeeded(conn, stmt);
         migratePaymentAllocationsToCanonicalIfNeeded(conn, stmt);
@@ -2835,6 +2818,8 @@ public class DatabaseInitializer {
         ensureChildTableSyncColumns(conn, stmt, "company_details");
         ensureChildTableSyncColumns(conn, stmt, "number_sequences");
         ensurePaymentDetailsHaveUuid(conn, stmt);
+
+
 
         ensureInvoiceMasterColumnDefaults(conn, stmt);
         ensureInvoicePaymentIndexes(stmt);
@@ -2858,6 +2843,8 @@ public class DatabaseInitializer {
             System.err.println("Migration: payment_details uuid backfill failed: " + e.getMessage());
         }
     }
+
+
 
     private static void ensureChildTableSyncColumns(Connection conn, Statement stmt, String table)
             throws Exception {
@@ -3663,7 +3650,7 @@ public class DatabaseInitializer {
     }
 
     private static void migrateBillingToCanonicalIfNeeded(Connection conn, Statement stmt) throws Exception {
-        stmt.execute("CREATE TABLE IF NOT EXISTS billing (uuid TEXT PRIMARY KEY)");
+        stmt.execute("DROP TABLE IF EXISTS billing");
         stmt.execute("DROP TABLE IF EXISTS billing_old");
     }
 
@@ -3724,7 +3711,7 @@ public class DatabaseInitializer {
     private static void assertNoLegacyIntegerIdColumns(Connection conn) throws Exception {
         String[] tables = {
                 "clients", "jobs", "job_items", "invoice_master", "invoice_adjustments", "invoice_job_mapping",
-                "payments", "payment_allocations", "payment_details", "billing", "suppliers",
+                "payments", "payment_allocations", "payment_details", "suppliers",
                 "printing_items", "paper_items", "binding_items", "lamination_items", "ctp_items"
         };
         for (String table : tables) {

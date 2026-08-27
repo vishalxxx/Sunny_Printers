@@ -27,15 +27,22 @@ public final class JobSupabaseSync {
 		if (job == null || !job.hasUuid()) {
 			return;
 		}
-		SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
-			String uuid = job.getUuid().trim();
-			try {
-				upsertToRemote(http, job);
-				markSyncedLocally(uuid);
-			} catch (Exception ex) {
-				System.err.println("[Supabase jobs] remote write failed for uuid=" + uuid + ": " + ex.getMessage());
+		SupabaseGate.restClientIfConfigured().ifPresent(http -> {
+			Runnable task = () -> {
+				String uuid = job.getUuid().trim();
+				try {
+					upsertToRemote(http, job);
+					markSyncedLocally(uuid);
+				} catch (Exception ex) {
+					System.err.println("[Supabase jobs] remote write failed for uuid=" + uuid + ": " + ex.getMessage());
+				}
+			};
+			if (SupabaseGate.isOverrideActive()) {
+				utils.SQLiteWriteCoordinator.runAsBackground(task);
+			} else {
+				CompletableFuture.runAsync(() -> utils.SQLiteWriteCoordinator.runAsBackground(task));
 			}
-		}));
+		});
 	}
 
 	/**
@@ -105,8 +112,7 @@ public final class JobSupabaseSync {
 						"UPDATE clients SET sync_status='SYNCED', synced_at=datetime('now') WHERE uuid=?")) {
 			ps.setString(1, clientUuid);
 			ps.executeUpdate();
-		} catch (Exception ignored) {
-		}
+		} catch (Exception e) { service.LoggerService.dbWarn("Failed to mark client synced locally: " + e.getMessage()); }
 	}
 
 	private static void markSyncedLocally(String jobUuid) {

@@ -45,19 +45,18 @@ public final class SyncConflictResolver {
                     if (clean.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
                         return LocalDateTime.parse(clean + "T00:00:00").toInstant(ZoneOffset.UTC);
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception ex2) { service.LoggerService.dbWarn("[SYNC] Failed to parse fallback TS " + ts + ": " + ex2.getMessage()); }
                 System.err.println("[SyncConflictResolver] Failed to parse timestamp: " + ts + " - " + ex.getMessage());
                 return Instant.MIN;
             }
         }
     }
 
-    public static void logConflict(String tableName, String recordUuid, String localUpdatedAt,
+    public static void logConflict(Connection conn, String tableName, String recordUuid, String localUpdatedAt,
                                    String remoteUpdatedAt, String localData, String remoteData, String strategy) {
         System.out.println("[SyncConflictResolver] Conflict detected on " + tableName + " with UUID " + recordUuid + ". Resolution strategy: " + strategy);
         String sql = "INSERT INTO sync_conflicts (table_name, record_uuid, local_updated_at, remote_updated_at, local_data, remote_data, resolution_strategy) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, tableName);
             ps.setString(2, recordUuid);
             ps.setString(3, localUpdatedAt);
@@ -75,6 +74,7 @@ public final class SyncConflictResolver {
                                                       SupabaseEndpoints endpoint, String uuid, String localUpdatedAt, List<String> cols) {
         try {
             var res = http.get(endpoint, "uuid=eq." + uuid + "&select=updated_at");
+            System.out.println("[DIAGNOSTIC] GET updated_at status=" + res.statusCode() + " body=" + res.body());
             if (res.statusCode() != 200) {
                 return false;
             }
@@ -92,25 +92,45 @@ public final class SyncConflictResolver {
             Instant localInst = parseTimestamp(localUpdatedAt);
             Instant remoteInst = parseTimestamp(remoteUpdatedAt);
 
-            if (remoteInst.toEpochMilli() - localInst.toEpochMilli() > 1000) {
-                logConflict(table, uuid, localUpdatedAt, remoteUpdatedAt, "Local push rejected; remote is newer", remoteObj.toString(), "LAST_WRITE_WINS_REMOTE_WINS");
+            long localSyncVersion = 0L;
+            try (PreparedStatement ps = conn.prepareStatement("SELECT sync_version FROM " + table + " WHERE uuid = ?")) {
+                ps.setString(1, uuid);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        localSyncVersion = rs.getLong(1);
+                    }
+                }
+            } catch (Exception ignored) {}
+            long remoteSyncVersion = remoteObj.has("sync_version") && !remoteObj.get("sync_version").isJsonNull() ? remoteObj.get("sync_version").getAsLong() : 0L;
+
+            // Remote is newer if: timestamp is strictly after local, AND
+            // sync_version check: only enforce when remote explicitly provides a version (> 0).
+            // When remoteSyncVersion == 0 (absent from response), fall back to timestamp-only.
+            boolean versionOk = (remoteSyncVersion == 0) || (remoteSyncVersion >= localSyncVersion);
+            boolean isRemoteNewer = remoteInst != Instant.MIN && localInst != Instant.MIN 
+                && remoteInst.isAfter(localInst) 
+                && versionOk;
+
+            System.out.println("[DIAGNOSTIC] Push Conflict check for " + table + " " + uuid + ": local.updated_at='" + localUpdatedAt + "' (" + localInst + "), remote.updated_at='" + remoteUpdatedAt + "' (" + remoteInst + "), local.sync_version=" + localSyncVersion + ", remote.sync_version=" + remoteSyncVersion + ". isRemoteNewer=" + isRemoteNewer);
+
+            if (isRemoteNewer) {
+                logConflict(conn, table, uuid, localUpdatedAt, remoteUpdatedAt, "Local push rejected; remote is newer", remoteObj.toString(), "LAST_WRITE_WINS_REMOTE_WINS");
 
                 var fullRes = http.get(endpoint, "uuid=eq." + uuid + "&select=*");
+                System.out.println("[DIAGNOSTIC] GET full record status=" + fullRes.statusCode() + " body=" + fullRes.body());
                 if (fullRes.statusCode() == 200) {
                     JsonElement fullRoot = JsonParser.parseString(fullRes.body());
                     if (fullRoot.isJsonArray() && fullRoot.getAsJsonArray().size() > 0) {
                         JsonObject fullRemote = fullRoot.getAsJsonArray().get(0).getAsJsonObject();
+                        System.out.println("[DIAGNOSTIC] Upserting remote object to local: " + fullRemote);
                         upsertRemoteObjectToLocal(conn, table, fullRemote, cols);
-                        // CRITICAL FIX: Explicitly mark as SYNCED immediately after conflict resolution.
-                        // upsertRemoteObjectToLocal uses INSERT OR REPLACE, so sync_status is set to SYNCED inside it.
-                        // But we also issue a targeted UPDATE here to handle edge cases where the INSERT OR REPLACE
-                        // might not have included the sync_status column (e.g., if column is absent in remote response).
-                        // This prevents any concurrent push thread from re-pushing the stale local value.
+                        System.out.println("[DIAGNOSTIC] Upsert remote object complete.");
+                        
                         try (PreparedStatement markPs = conn.prepareStatement(
                                 "UPDATE " + table + " SET sync_status='SYNCED', synced_at=datetime('now') WHERE uuid=?")) {
                             markPs.setString(1, uuid);
-                            markPs.executeUpdate();
-                            System.out.println("[SyncConflictResolver] Marked " + table + " " + uuid + " as SYNCED after remote-wins resolution.");
+                            int rows = markPs.executeUpdate();
+                            System.out.println("[DIAGNOSTIC] Marked as SYNCED rows updated=" + rows);
                         } catch (Exception markEx) {
                             System.err.println("[SyncConflictResolver] Failed to mark " + table + " " + uuid + " as SYNCED: " + markEx.getMessage());
                         }
@@ -120,6 +140,7 @@ public final class SyncConflictResolver {
             }
         } catch (Exception e) {
             System.err.println("[SyncConflictResolver] Error checking push conflict: " + e.getMessage());
+            e.printStackTrace();
         }
         return false;
     }
@@ -127,6 +148,8 @@ public final class SyncConflictResolver {
     public static void upsertRemoteObjectToLocal(Connection conn, String table, JsonObject o, List<String> cols) throws Exception {
         List<String> insertCols = new ArrayList<>();
         List<Object> values = new ArrayList<>();
+
+        System.out.println("[DIAGNOSTIC] upsertRemoteObjectToLocal: table=" + table + ", cols=" + cols + ", json=" + o);
 
         for (String col : cols) {
             if (o.has(col)) {
@@ -158,10 +181,11 @@ public final class SyncConflictResolver {
         }
 
         if (insertCols.isEmpty()) {
+            System.out.println("[DIAGNOSTIC] No overlapping columns to insert!");
             return;
         }
 
-        StringBuilder sb = new StringBuilder("INSERT OR REPLACE INTO ").append(table).append(" (");
+        StringBuilder sb = new StringBuilder("INSERT INTO ").append(table).append(" (");
         for (int i = 0; i < insertCols.size(); i++) {
             sb.append(insertCols.get(i));
             if (i < insertCols.size() - 1) {
@@ -175,7 +199,20 @@ public final class SyncConflictResolver {
                 sb.append(",");
             }
         }
-        sb.append(")");
+        sb.append(") ON CONFLICT(uuid) DO UPDATE SET ");
+        boolean first = true;
+        for (String col : insertCols) {
+            if ("uuid".equalsIgnoreCase(col) || "id".equalsIgnoreCase(col)) {
+                continue;
+            }
+            if (!first) {
+                sb.append(", ");
+            }
+            sb.append(col).append("=excluded.").append(col);
+            first = false;
+        }
+
+        System.out.println("[DIAGNOSTIC] SQL=" + sb.toString() + " | values=" + values);
 
         try (PreparedStatement ps = conn.prepareStatement(sb.toString())) {
             for (int i = 0; i < values.size(); i++) {
@@ -186,7 +223,8 @@ public final class SyncConflictResolver {
                     ps.setObject(i + 1, v);
                 }
             }
-            ps.executeUpdate();
+            int updatedRows = ps.executeUpdate();
+            System.out.println("[DIAGNOSTIC] ps.executeUpdate() returned: " + updatedRows);
         }
     }
 
@@ -250,6 +288,7 @@ public final class SyncConflictResolver {
             System.out.println("[Double-Spend Prevention] Rejecting allocation " + allocUuid + " for client " + clientUuid + ". Available: " + available + ", requested: " + allocatedAmount);
             
             logConflict(
+                con,
                 "payment_allocations",
                 allocUuid,
                 LocalDateTime.now().toString(),
@@ -281,11 +320,10 @@ public final class SyncConflictResolver {
                 }
             }
 
-            // Insert into invoice_history
+            // Log double spend rejection details
             if (invoiceUuid != null) {
-                String invDetailsSql = "SELECT invoice_no, client_uuid, client_name, invoice_date, amount, type FROM invoice_master WHERE uuid = ?";
+                String invDetailsSql = "SELECT invoice_no, client_name, invoice_date, amount, type FROM invoice_master WHERE uuid = ?";
                 String invNo = "";
-                String clId = clientUuid;
                 String clName = "";
                 String invDate = "";
                 double invAmt = 0.0;
@@ -301,23 +339,10 @@ public final class SyncConflictResolver {
                             invType = rs.getString("type");
                         }
                     }
+                } catch (Exception e) {
+                    service.LoggerService.dbWarn("[CONFLICT] Failed to read invoice details for rejected allocation " + allocUuid + ": " + e.getMessage());
                 }
-
-                String histSql = """
-                    INSERT INTO invoice_history (invoice_no, client_id, client_name, invoice_date, amount, type, status, file_path)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """;
-                try (PreparedStatement ps = con.prepareStatement(histSql)) {
-                    ps.setString(1, invNo);
-                    ps.setString(2, clId);
-                    ps.setString(3, clName);
-                    ps.setString(4, invDate);
-                    ps.setDouble(5, invAmt);
-                    ps.setString(6, "DOUBLE_SPEND_REJECTION");
-                    ps.setString(7, "REJECTED: Allocation " + allocUuid + " failed validation (negative client balance)");
-                    ps.setString(8, LocalDateTime.now().toString());
-                    ps.executeUpdate();
-                }
+                service.LoggerService.dbWarn("[CONFLICT] DOUBLE_SPEND_REJECTION for invoice=" + invNo + " (UUID=" + invoiceUuid + "), client=" + clName + ", amount=" + invAmt + ", reason=Allocation " + allocUuid + " failed validation (negative client balance)");
             }
 
             if (invoiceUuid != null) {
@@ -326,7 +351,7 @@ public final class SyncConflictResolver {
 
             try {
                 controller.MainController.showSyncConflictNotification();
-            } catch (Throwable ignored) {}
+            } catch (Throwable e) { service.LoggerService.dbWarn("[SYNC] UI notification failed for conflict: " + e.getMessage()); }
 
             return true;
         }

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2026-07-03
+### Features
+- Migrated release manager to GitHub Release Assets and Postgres.
+- Fixed 100+ MB streaming asset upload.
+- Added dynamic integration tests for versioning.
+
 ## [1.0.1] - 2026-07-01
 ### Features
 - Added automatic WiX toolset bootstrapper to package pipeline.
@@ -16,3 +22,8 @@ All notable changes to this project will be documented in this file.
 ### Features
 - Initial stable release of Sunny Printers ERP application.
 - Configured Supabase synchronizer and local offline-first SQLite synchronization.
+
+
+## [5.0.5] - 2026-07-04
+### Features
+- Release of version 5.0.5

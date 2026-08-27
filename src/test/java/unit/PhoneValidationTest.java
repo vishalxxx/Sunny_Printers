@@ -34,7 +34,7 @@ public class PhoneValidationTest {
     @BeforeAll
     public static void setup() throws Exception {
         dbPath = TestDatabaseHelper.createIsolatedDb("PhoneValidationTest");
-        DBConnection.setUrl(dbPath);
+        DBConnection.setTestDatabaseUrl(dbPath);
     }
 
     @AfterAll

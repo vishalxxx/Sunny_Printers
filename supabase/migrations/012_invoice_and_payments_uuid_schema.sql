@@ -210,3 +210,5 @@ CREATE INDEX IF NOT EXISTS idx_document_number_mappings_permanent
 -- ---------------------------------------------------------------------------
 -- ALTER TABLE public.invoice_master ENABLE ROW LEVEL SECURITY;
 -- CREATE POLICY "invoice_master_all" ON public.invoice_master FOR ALL USING (true) WITH CHECK (true);
+
+NOTIFY pgrst, 'reload schema';

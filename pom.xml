@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>sunny_group</groupId>
   <artifactId>Sunny_Printers</artifactId>
-  <version>1.0.0</version>
+  <version>6.0.6</version>
   <name>Sunny Printers</name>
   <description>Printing Press CMS</description>
   <properties>

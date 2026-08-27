@@ -39,7 +39,7 @@ public class DuplicateSyncTest {
         dbPath = TestDatabaseHelper.createIsolatedDb("DuplicateSyncTest");
         fakeSupabase = new FakeSupabaseRestClient();
         SupabaseGate.setOverrideClient(fakeSupabase);
-        DBConnection.setUrl(dbPath);
+        DBConnection.setTestDatabaseUrl(dbPath);
     }
 
     @AfterAll

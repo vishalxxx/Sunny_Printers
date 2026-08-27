@@ -35,7 +35,7 @@ public class PermanentRecoverySyncTest {
     @BeforeAll
     public static void setup() throws Exception {
         dbUrl = TestDatabaseHelper.createIsolatedDb("PermanentRecoveryTest");
-        DBConnection.setUrl(dbUrl);
+        DBConnection.setTestDatabaseUrl(dbUrl);
     }
 
     @AfterAll

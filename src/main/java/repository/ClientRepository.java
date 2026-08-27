@@ -64,17 +64,19 @@ public class ClientRepository {
 		client.setCreatedByUserUuid(userUuid);
 		client.setUpdatedByUserUuid(userUuid);
 
-		String sql = """
-				INSERT INTO clients (
-				  uuid, client_code, client_name, business_name, mobile, alternate_mobile, email,
-				  gstin, pan_number, billing_address, shipping_address,
-				  client_type, price_category, credit_limit, payment_terms, opening_balance, balance_type,
-				  is_active, notes, state, sync_status, sync_version, is_deleted, deleted_at,
-				  created_by_user_uuid, updated_by_user_uuid
-				) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-				""";
-		try (Connection conn = DBConnection.getConnection();
-				PreparedStatement ps = conn.prepareStatement(sql)) {
+		service.LoggerService.beginOperation("CLIENT-CREATE");
+		try {
+			String sql = """
+					INSERT INTO clients (
+					  uuid, client_code, client_name, business_name, mobile, alternate_mobile, email,
+					  gstin, pan_number, billing_address, shipping_address,
+					  client_type, price_category, credit_limit, payment_terms, opening_balance, balance_type,
+					  is_active, notes, state, sync_status, sync_version, is_deleted, deleted_at,
+					  created_by_user_uuid, updated_by_user_uuid
+					) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+					""";
+			try (Connection conn = DBConnection.getConnection();
+					PreparedStatement ps = conn.prepareStatement(sql)) {
 			String uid = client.getClientUuid();
 			if (uid == null || uid.isBlank()) {
 				uid = ClientIdentifiers.newUuidV7String();
@@ -88,10 +90,16 @@ public class ClientRepository {
 				code = allocated.value();
 				allocatedTempCode = allocated.temporary();
 				client.setClientCode(code);
+				while (ClientIdentifiers.clientCodeInUse(conn, code, null)) {
+					allocated = seqAlloc.allocateClientCode(conn);
+					code = allocated.value();
+					allocatedTempCode = allocated.temporary();
+					client.setClientCode(code);
+				}
 			} else {
 				code = code.trim();
 				client.setClientCode(code);
-				if (ClientIdentifiers.clientCodeInUse(conn, code, null)) {
+				while (ClientIdentifiers.clientCodeInUse(conn, code, null)) {
 					AllocatedNumber allocated = seqAlloc.allocateClientCode(conn);
 					code = allocated.value();
 					allocatedTempCode = allocated.temporary();
@@ -131,17 +139,36 @@ public class ClientRepository {
 			ps.setString(i++, nz(client.getCreatedByUserUuid()));
 			ps.setString(i++, nz(client.getUpdatedByUserUuid()));
 			int n = ps.executeUpdate();
-			if (n > 0) {
+			boolean ok = n > 0;
+			if (ok) {
+				if (client.getOpeningBalance() > 0) {
+					String payUuid = ClientIdentifiers.newUuidV7String();
+					String sqlPay = """
+							INSERT INTO payments (uuid, client_uuid, amount, payment_date, method, type, sync_status, sync_version, is_deleted, is_active)
+							VALUES (?, ?, ?, date('now'), 'Opening Balance', 'Opening Balance', 'PENDING', 1, 0, 1)
+							""";
+					try (PreparedStatement psPay = conn.prepareStatement(sqlPay)) {
+						psPay.setString(1, payUuid);
+						psPay.setString(2, uid);
+						psPay.setDouble(3, client.getOpeningBalance());
+						psPay.executeUpdate();
+					}
+				}
 				if (!DocumentNumbering.isTemporaryNumber(client.getClientCode())) {
 					pushClientToSupabaseAsync(client, false);
 				}
 				UniversalSyncEngine.scheduleSyncAsync();
 			}
-			return n > 0;
-		} catch (SQLException e) {
-			e.printStackTrace();
+			service.LoggerService.endOperation("CLIENT-CREATE", ok, "UUID: " + uid + ", Code: " + code);
+			return ok;
 		}
-		return false;
+		} catch (Exception e) {
+			service.LoggerService.endOperation("CLIENT-CREATE", false, "Exception: " + e.getMessage());
+			if (e instanceof SQLException) {
+				throw (SQLException) e;
+			}
+			throw new RuntimeException(e);
+		}
 	}
 
 	private static String nz(String s) {
@@ -180,7 +207,9 @@ public class ClientRepository {
 				FROM clients c
 				INNER JOIN jobs j ON j.client_uuid = c.uuid
 				WHERE IFNULL(c.is_deleted,0)=0 AND IFNULL(c.is_active,1)=1
-				  AND j.invoice_uuid IS NULL
+				  AND (j.invoice_uuid IS NULL OR EXISTS (
+				      SELECT 1 FROM invoice_master inv WHERE inv.uuid = j.invoice_uuid AND (inv.is_deleted = 1 OR inv.status = 'CANCELLED')
+				  ))
 				  AND LOWER(TRIM(REPLACE(COALESCE(j.status,''), '_', ' '))) = 'completed'
 				ORDER BY c.business_name ASC
 				""";
@@ -235,21 +264,25 @@ public class ClientRepository {
 		if (clientUuid == null || clientUuid.isBlank()) {
 			return false;
 		}
-		
-		String sql = """
-				UPDATE clients SET is_deleted=1, is_active=0, deleted_at=datetime('now'),
-				sync_status='PENDING', updated_at=datetime('now') WHERE uuid=? AND IFNULL(is_deleted,0)=0
-				""";
+		service.LoggerService.beginOperation("CLIENT-DELETE");
+		try {
+			String sql = """
+					UPDATE clients SET is_deleted=1, is_active=0, deleted_at=datetime('now'),
+					sync_status='PENDING', updated_at=datetime('now') WHERE uuid=? AND IFNULL(is_deleted,0)=0
+					""";
 
-		try (Connection conn = DBConnection.getConnection();
-				PreparedStatement ps = conn.prepareStatement(sql)) {
-			ps.setString(1, clientUuid.trim());
-			boolean ok = ps.executeUpdate() > 0;
-			if (ok) {
-				deleteClientOnSupabaseAsync(clientUuid.trim());
+			try (Connection conn = DBConnection.getConnection();
+					PreparedStatement ps = conn.prepareStatement(sql)) {
+				ps.setString(1, clientUuid.trim());
+				boolean ok = ps.executeUpdate() > 0;
+				if (ok) {
+					deleteClientOnSupabaseAsync(clientUuid.trim());
+				}
+				service.LoggerService.endOperation("CLIENT-DELETE", ok, "UUID: " + clientUuid);
+				return ok;
 			}
-			return ok;
 		} catch (Exception e) {
+			service.LoggerService.endOperation("CLIENT-DELETE", false, "Exception: " + e.getMessage());
 			e.printStackTrace();
 		}
 		return false;
@@ -383,43 +416,128 @@ public class ClientRepository {
 		}
 		client.setUpdatedByUserUuid(userUuid);
 
-		String sql = """
-				UPDATE clients SET client_name=?, business_name=?, mobile=?, alternate_mobile=?,
-				email=?, gstin=?, pan_number=?, billing_address=?, shipping_address=?,
-				client_type=?, price_category=?, credit_limit=?, payment_terms=?, opening_balance=?, balance_type=?,
-				notes=?, state=?, sync_status='PENDING', sync_version=?, updated_at=datetime('now'),
-				updated_by_user_uuid=? WHERE uuid=?
-				""";
-		try (Connection conn = DBConnection.getConnection();
-				PreparedStatement ps = conn.prepareStatement(sql)) {
-			int i = 1;
-			ps.setString(i++, nz(client.getClientName()));
-			ps.setString(i++, nz(client.getBusinessName()));
-			ps.setString(i++, nz(client.getPhone()));
-			ps.setString(i++, nz(client.getAltPhone()));
-			ps.setString(i++, nz(client.getEmail()));
-			ps.setString(i++, nz(client.getGst()));
-			ps.setString(i++, nz(client.getPan()));
-			ps.setString(i++, nz(client.getBillingAddress()));
-			ps.setString(i++, nz(client.getShippingAddress()));
-			ps.setString(i++, nz(client.getClientType()));
-			ps.setString(i++, nz(client.getPriceCategory()));
-			ps.setDouble(i++, client.getCreditLimit());
-			ps.setString(i++, nz(client.getPaymentTerms()));
-			ps.setDouble(i++, client.getOpeningBalance());
-			ps.setString(i++, nz(client.getBalanceType()));
-			ps.setString(i++, nz(client.getNotes()));
-			ps.setString(i++, nz(client.getState()));
-			ps.setInt(i++, client.getSyncVersion() + 1);
-			ps.setString(i++, nz(client.getUpdatedByUserUuid()));
-			ps.setString(i++, client.getClientUuid());
-			boolean ok = ps.executeUpdate() > 0;
-			if (ok) {
-				client.setSyncVersion(client.getSyncVersion() + 1);
-				pushClientToSupabaseAsync(client, true, before);
-				UniversalSyncEngine.scheduleSyncAsync();
+		boolean hasTxns = hasFinancialTransactions(client.getClientUuid());
+		if (hasTxns && Double.compare(before.getOpeningBalance(), client.getOpeningBalance()) != 0) {
+			throw new IllegalStateException("Cannot edit opening balance after other financial transactions are posted.");
+		}
+
+		service.LoggerService.beginOperation("CLIENT-UPDATE");
+		try {
+			String sql = """
+					UPDATE clients SET client_name=?, business_name=?, mobile=?, alternate_mobile=?,
+					email=?, gstin=?, pan_number=?, billing_address=?, shipping_address=?,
+					client_type=?, price_category=?, credit_limit=?, payment_terms=?, opening_balance=?, balance_type=?,
+					notes=?, state=?, sync_status='PENDING', sync_version=?, updated_at=datetime('now'),
+					updated_by_user_uuid=? WHERE uuid=?
+					""";
+			try (Connection conn = DBConnection.getConnection();
+					PreparedStatement ps = conn.prepareStatement(sql)) {
+				int i = 1;
+				ps.setString(i++, nz(client.getClientName()));
+				ps.setString(i++, nz(client.getBusinessName()));
+				ps.setString(i++, nz(client.getPhone()));
+				ps.setString(i++, nz(client.getAltPhone()));
+				ps.setString(i++, nz(client.getEmail()));
+				ps.setString(i++, nz(client.getGst()));
+				ps.setString(i++, nz(client.getPan()));
+				ps.setString(i++, nz(client.getBillingAddress()));
+				ps.setString(i++, nz(client.getShippingAddress()));
+				ps.setString(i++, nz(client.getClientType()));
+				ps.setString(i++, nz(client.getPriceCategory()));
+				ps.setDouble(i++, client.getCreditLimit());
+				ps.setString(i++, nz(client.getPaymentTerms()));
+				ps.setDouble(i++, client.getOpeningBalance());
+				ps.setString(i++, nz(client.getBalanceType()));
+				ps.setString(i++, nz(client.getNotes()));
+				ps.setString(i++, nz(client.getState()));
+				ps.setInt(i++, client.getSyncVersion() + 1);
+				ps.setString(i++, nz(client.getUpdatedByUserUuid()));
+				ps.setString(i++, client.getClientUuid());
+				boolean ok = ps.executeUpdate() > 0;
+				if (ok) {
+					client.setSyncVersion(client.getSyncVersion() + 1);
+					
+					// Handle Opening Balance transaction creation/update/deletion
+					if (!hasTxns && Double.compare(before.getOpeningBalance(), client.getOpeningBalance()) != 0) {
+						String checkSql = "SELECT uuid FROM payments WHERE client_uuid = ? AND type = 'Opening Balance' AND IFNULL(is_deleted, 0) = 0";
+						String txnUuid = null;
+						try (PreparedStatement psCheck = conn.prepareStatement(checkSql)) {
+							psCheck.setString(1, client.getClientUuid());
+							try (ResultSet rsCheck = psCheck.executeQuery()) {
+								if (rsCheck.next()) {
+									txnUuid = rsCheck.getString(1);
+								}
+							}
+						}
+						if (txnUuid != null) {
+							if (client.getOpeningBalance() <= 0) {
+								String delSql = "UPDATE payments SET is_deleted = 1, sync_status = 'PENDING', sync_version = sync_version + 1, updated_at = datetime('now') WHERE uuid = ?";
+								try (PreparedStatement psDel = conn.prepareStatement(delSql)) {
+									psDel.setString(1, txnUuid);
+									psDel.executeUpdate();
+								}
+							} else {
+								String updSql = "UPDATE payments SET amount = ?, sync_status = 'PENDING', sync_version = sync_version + 1, updated_at = datetime('now') WHERE uuid = ?";
+								try (PreparedStatement psUpd = conn.prepareStatement(updSql)) {
+									psUpd.setDouble(1, client.getOpeningBalance());
+									psUpd.setString(2, txnUuid);
+									psUpd.executeUpdate();
+								}
+							}
+						} else if (client.getOpeningBalance() > 0) {
+							String newUuid = ClientIdentifiers.newUuidV7String();
+							String insSql = """
+									INSERT INTO payments (uuid, client_uuid, amount, payment_date, method, type, sync_status, sync_version, is_deleted, is_active)
+									VALUES (?, ?, ?, date('now'), 'Opening Balance', 'Opening Balance', 'PENDING', 1, 0, 1)
+									""";
+							try (PreparedStatement psIns = conn.prepareStatement(insSql)) {
+								psIns.setString(1, newUuid);
+								psIns.setString(2, client.getClientUuid());
+								psIns.setDouble(3, client.getOpeningBalance());
+								psIns.executeUpdate();
+							}
+						}
+					}
+					
+					pushClientToSupabaseAsync(client, true, before);
+					UniversalSyncEngine.scheduleSyncAsync();
+				}
+				service.LoggerService.endOperation("CLIENT-UPDATE", ok, "UUID: " + client.getClientUuid());
+				return ok;
 			}
-			return ok;
+		} catch (Exception e) {
+			service.LoggerService.endOperation("CLIENT-UPDATE", false, "Exception: " + e.getMessage());
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	public boolean hasFinancialTransactions(String clientUuid) {
+		if (clientUuid == null || clientUuid.isBlank()) {
+			return false;
+		}
+		String sqlInvoices = "SELECT COUNT(*) FROM invoice_master WHERE client_uuid = ? AND IFNULL(is_deleted, 0) = 0 AND IFNULL(is_void, 0) = 0";
+		String sqlPayments = "SELECT COUNT(*) FROM payments WHERE client_uuid = ? AND IFNULL(is_deleted, 0) = 0 AND LOWER(type) <> 'opening balance'";
+		String sqlAdjustments = "SELECT COUNT(*) FROM invoice_adjustments WHERE IFNULL(is_deleted, 0) = 0 AND invoice_uuid IN (SELECT uuid FROM invoice_master WHERE client_uuid = ?)";
+		try (Connection conn = DBConnection.getConnection()) {
+			try (PreparedStatement ps = conn.prepareStatement(sqlInvoices)) {
+				ps.setString(1, clientUuid);
+				try (ResultSet rs = ps.executeQuery()) {
+					if (rs.next() && rs.getInt(1) > 0) return true;
+				}
+			}
+			try (PreparedStatement ps = conn.prepareStatement(sqlPayments)) {
+				ps.setString(1, clientUuid);
+				try (ResultSet rs = ps.executeQuery()) {
+					if (rs.next() && rs.getInt(1) > 0) return true;
+				}
+			}
+			try (PreparedStatement ps = conn.prepareStatement(sqlAdjustments)) {
+				ps.setString(1, clientUuid);
+				try (ResultSet rs = ps.executeQuery()) {
+					if (rs.next() && rs.getInt(1) > 0) return true;
+				}
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -471,80 +589,94 @@ public class ClientRepository {
 			return;
 		}
 		System.out.println("[PUSH] pushClientToSupabaseAsync called for client UUID " + client.getClientUuid());
-		SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
-			try {
-				try (Connection conn = DBConnection.getConnection()) {
-					List<String> colsList = SyncConflictResolver.getColumns(conn, "clients");
-					if (SyncConflictResolver.checkPushConflictAndResolve(conn, http, "clients", SupabaseEndpoints.CLIENTS, client.getClientUuid(), client.getUpdatedAt(), colsList)) {
-						System.out.println("[PUSH] Async push skipped because of conflict resolver");
-						return; // Skip push: remote was newer, conflict was logged and resolved
+		SupabaseGate.restClientIfConfigured().ifPresent(http -> {
+			Runnable task = () -> {
+				try {
+					try (Connection conn = DBConnection.getConnection()) {
+						List<String> colsList = SyncConflictResolver.getColumns(conn, "clients");
+						if (SyncConflictResolver.checkPushConflictAndResolve(conn, http, "clients", SupabaseEndpoints.CLIENTS, client.getClientUuid(), client.getUpdatedAt(), colsList)) {
+							System.out.println("[PUSH] Async push skipped because of conflict resolver");
+							return; // Skip push: remote was newer, conflict was logged and resolved
+						}
+					} catch (Exception e) {
+						System.err.println("[ClientRepository] Push conflict check failed: " + e.getMessage());
 					}
-				} catch (Exception e) {
-					System.err.println("[ClientRepository] Push conflict check failed: " + e.getMessage());
-				}
 
-				// RACE CONDITION GUARD: Re-read sync_status before pushing.
-				// If the UniversalSyncEngine conflict resolver ran on another thread
-				// and already marked this record SYNCED, abort this push.
-				try (Connection checkConn = DBConnection.getConnection();
-						PreparedStatement checkPs = checkConn.prepareStatement(
-								"SELECT sync_status FROM clients WHERE uuid=?")) {
-					checkPs.setString(1, client.getClientUuid());
-					try (java.sql.ResultSet checkRs = checkPs.executeQuery()) {
-						if (checkRs.next()) {
-							String currentStatus = checkRs.getString(1);
-							boolean stillPending = "PENDING".equalsIgnoreCase(currentStatus)
-									|| "WAITING_DEPENDENCY".equalsIgnoreCase(currentStatus)
-									|| (currentStatus == null || currentStatus.isBlank());
-							if (!stillPending) {
-								System.out.println("[PUSH] Async push aborted - record " + client.getClientUuid() + " is no longer PENDING (status=" + currentStatus + "). Conflict resolved on another thread.");
-								return;
+					// RACE CONDITION GUARD: Re-read sync_status before pushing.
+					// If the UniversalSyncEngine conflict resolver ran on another thread
+					// and already marked this record SYNCED, abort this push.
+					try (Connection checkConn = DBConnection.getConnection();
+							PreparedStatement checkPs = checkConn.prepareStatement(
+									"SELECT sync_status FROM clients WHERE uuid=?")) {
+						checkPs.setString(1, client.getClientUuid());
+						try (java.sql.ResultSet checkRs = checkPs.executeQuery()) {
+							if (checkRs.next()) {
+								String currentStatus = checkRs.getString(1);
+								boolean stillPending = "PENDING".equalsIgnoreCase(currentStatus)
+										|| "WAITING_DEPENDENCY".equalsIgnoreCase(currentStatus)
+										|| (currentStatus == null || currentStatus.isBlank());
+								if (!stillPending) {
+									System.out.println("[PUSH] Async push aborted - record " + client.getClientUuid() + " is no longer PENDING (status=" + currentStatus + "). Conflict resolved on another thread.");
+									return;
+								}
 							}
 						}
+					} catch (Exception staleCheckEx) {
+						System.err.println("[ClientRepository] Pre-push stale check failed: " + staleCheckEx.getMessage());
 					}
-				} catch (Exception staleCheckEx) {
-					System.err.println("[ClientRepository] Pre-push stale check failed: " + staleCheckEx.getMessage());
-				}
 
-				System.out.println("[PUSH] Async dependency check PASSED. Executing POST/PATCH /clients for " + client.getClientUuid());
-				ClientsSupabaseApi api = new ClientsSupabaseApi(http);
-				if (preferPatch) {
-					api.patchUpdate(client, before);
-				} else {
-					api.upsert(client);
+					System.out.println("[PUSH] Async dependency check PASSED. Executing POST/PATCH /clients for " + client.getClientUuid());
+					ClientsSupabaseApi api = new ClientsSupabaseApi(http);
+					if (preferPatch) {
+						api.patchUpdate(client, before);
+					} else {
+						api.upsert(client);
+					}
+					System.out.println("[PUSH] Async push HTTP Success");
+					markClientSyncedLocally(client.getClientUuid());
+				} catch (Exception ex) {
+					System.err.println("[Supabase clients] remote write failed for uuid=" + client.getClientUuid() + ": "
+							+ ex.getMessage());
+					ex.printStackTrace();
+					UniversalSyncEngine.scheduleSyncAsync();
 				}
-				System.out.println("[PUSH] Async push HTTP Success");
-				markClientSyncedLocally(client.getClientUuid());
-			} catch (Exception ex) {
-				System.err.println("[Supabase clients] remote write failed for uuid=" + client.getClientUuid() + ": "
-						+ ex.getMessage());
-				ex.printStackTrace();
-				UniversalSyncEngine.scheduleSyncAsync();
+			};
+			if (SupabaseGate.isOverrideActive()) {
+				utils.SQLiteWriteCoordinator.runAsBackground(task);
+			} else {
+				CompletableFuture.runAsync(() -> utils.SQLiteWriteCoordinator.runAsBackground(task));
 			}
-		}));
+		});
 	}
 
 	private static void deleteClientOnSupabaseAsync(String clientUuid) {
 		if (clientUuid == null || clientUuid.isBlank()) {
 			return;
 		}
-		SupabaseGate.restClientIfConfigured().ifPresent(http -> CompletableFuture.runAsync(() -> {
-			try {
-				Client local = new ClientRepository().findByUuid(clientUuid);
-				if (local != null) {
-					local.setIsDeleted(true);
-					local.setIsActive(false);
-					if (local.getDeletedAt() == null || local.getDeletedAt().isBlank()) {
-						local.setDeletedAt(java.time.Instant.now().toString());
+		SupabaseGate.restClientIfConfigured().ifPresent(http -> {
+			Runnable task = () -> {
+				try {
+					Client local = new ClientRepository().findByUuid(clientUuid);
+					if (local != null) {
+						local.setIsDeleted(true);
+						local.setIsActive(false);
+						if (local.getDeletedAt() == null || local.getDeletedAt().isBlank()) {
+							local.setDeletedAt(java.time.Instant.now().toString());
+						}
+						new ClientsSupabaseApi(http).patchUpdate(local, null);
 					}
-					new ClientsSupabaseApi(http).patchUpdate(local, null);
+					markClientSyncedLocally(clientUuid);
+				} catch (Exception ex) {
+					System.err.println("[Supabase clients] delete failed for uuid=" + clientUuid + ": " + ex.getMessage());
+					ex.printStackTrace();
 				}
-				markClientSyncedLocally(clientUuid);
-			} catch (Exception ex) {
-				System.err.println("[Supabase clients] delete failed for uuid=" + clientUuid + ": " + ex.getMessage());
-				ex.printStackTrace();
+			};
+			if (SupabaseGate.isOverrideActive()) {
+				utils.SQLiteWriteCoordinator.runAsBackground(task);
+			} else {
+				CompletableFuture.runAsync(() -> utils.SQLiteWriteCoordinator.runAsBackground(task));
 			}
-		}));
+		});
 	}
 
 	private static void markClientSyncedLocally(String clientUuid) {

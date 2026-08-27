@@ -185,12 +185,16 @@ public class AddJobController implements utils.DirtySupport {
 	private ToggleButton sideDoubleBtn;
 	@FXML
 	private ToggleButton sideSingleBtn;
+	@FXML
+	private ToggleButton sideNaBtn;
 	private ToggleGroup sideGroup;
 
 	@FXML
 	private ToggleButton lamDoubleBtn;
 	@FXML
 	private ToggleButton lamSingleBtn;
+	@FXML
+	private ToggleButton lamNaBtn;
 	private ToggleGroup lamSideGroup;
 
 	/* ========================= SERVICES ========================= */
@@ -229,6 +233,16 @@ public class AddJobController implements utils.DirtySupport {
 	private TextArea printNotesArea;
 	@FXML
 	private CheckBox printIncludeNotesToggle;
+	@FXML
+	private CheckBox includePrintingInInvoiceToggle;
+	@FXML
+	private CheckBox includeCtpInInvoiceToggle;
+	@FXML
+	private CheckBox includePaperInInvoiceToggle;
+	@FXML
+	private CheckBox includeBindingInInvoiceToggle;
+	@FXML
+	private CheckBox includeLaminationInInvoiceToggle;
 	@FXML
 	private TextField printAmountField;
 
@@ -422,6 +436,23 @@ public class AddJobController implements utils.DirtySupport {
 			addJobBtn.setVisible(currentStep == 6);
 			addJobBtn.setManaged(currentStep == 6);
 		}
+
+		// Auto-populate paper defaults on step change
+		if (currentStep == 3) {
+			if (paperUnitsCombo != null && (paperUnitsCombo.getValue() == null || "Rim".equals(paperUnitsCombo.getValue()))) {
+				String printUnit = printUnitsCombo.getValue();
+				if (printUnit != null && !"Select Unit".equals(printUnit)) {
+					paperUnitsCombo.setValue(printUnit);
+				}
+			}
+			if (paperSizeCombo != null && (paperSizeCombo.getValue() == null || "23x36".equals(paperSizeCombo.getValue()))) {
+				String ctpSize = ctpSizeCombo.getValue();
+				if (ctpSize != null && !"Select Size".equals(ctpSize)) {
+					paperSizeCombo.setValue(ctpSize);
+				}
+			}
+		}
+
 		updateFormState();
 	}
 
@@ -546,67 +577,70 @@ public class AddJobController implements utils.DirtySupport {
 		}
 	}
 
-	/* ========================= UPLOAD FILE ========================= */
-	private File selectedImageFile;
+	/* ========================= MULTI UPLOAD FILE ========================= */
+	private List<File> selectedFiles = new java.util.ArrayList<>();
+
+	@FXML
+	private VBox filesListContainer;
+	@FXML
+	private Label lblUploadedFiles;
 
 	@FXML
 	private void handleUploadFile() {
 		try {
 			FileChooser chooser = new FileChooser();
 			utils.UniversalDownloadPath.prepareFileChooser(chooser);
-			chooser.setTitle("Select Image or PDF");
+			chooser.setTitle("Select Images or PDFs");
 
 			chooser.getExtensionFilters().addAll(
+					new FileChooser.ExtensionFilter("Supported Files", "*.png", "*.jpg", "*.jpeg", "*.pdf"),
 					new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg"),
 					new FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
 
-			File file = chooser.showOpenDialog(null);
-			if (file == null)
+			List<File> files = chooser.showOpenMultipleDialog(null);
+			if (files == null || files.isEmpty())
 				return;
 				
-			this.selectedImageFile = file;
-
-			String name = file.getName().toLowerCase();
-
-			if (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg")) {
-				showImagePreview(file);
-			} else if (name.endsWith(".pdf")) {
-				showPdfPreview();
-			}
+			this.selectedFiles.addAll(files);
+			showFilesListPreview();
 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-	private void showImagePreview(File file) {
-		Image img = new Image(file.toURI().toString());
-		jobImagePreview.setImage(img);
+	private void showFilesListPreview() {
+		if (selectedFiles.isEmpty()) {
+			resetUploadView();
+			return;
+		}
 
-		imagePreviewContainer.setVisible(true);
-		imagePreviewContainer.setManaged(true);
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < selectedFiles.size(); i++) {
+			sb.append(selectedFiles.get(i).getName());
+			if (i < selectedFiles.size() - 1) {
+				sb.append("\n");
+			}
+		}
+
+		lblUploadedFiles.setText(sb.toString());
+
+		imagePreviewContainer.setVisible(false);
+		imagePreviewContainer.setManaged(false);
 
 		pdfPreviewBox.setVisible(false);
 		pdfPreviewBox.setManaged(false);
 
 		filePlaceholder.setVisible(false);
 		filePlaceholder.setManaged(false);
-	}
 
-	private void showPdfPreview() {
-		imagePreviewContainer.setVisible(false);
-		imagePreviewContainer.setManaged(false);
-
-		pdfPreviewBox.setVisible(true);
-		pdfPreviewBox.setManaged(true);
-
-		filePlaceholder.setVisible(false);
-		filePlaceholder.setManaged(false);
+		filesListContainer.setVisible(true);
+		filesListContainer.setManaged(true);
 	}
 
 	@FXML
 	private void handleResetUpload() {
-		this.selectedImageFile = null;
+		this.selectedFiles.clear();
 		jobImagePreview.setImage(null);
 		
 		imagePreviewContainer.setVisible(false);
@@ -614,6 +648,11 @@ public class AddJobController implements utils.DirtySupport {
 		
 		pdfPreviewBox.setVisible(false);
 		pdfPreviewBox.setManaged(false);
+
+		if (filesListContainer != null) {
+			filesListContainer.setVisible(false);
+			filesListContainer.setManaged(false);
+		}
 		
 		filePlaceholder.setVisible(true);
 		filePlaceholder.setManaged(true);
@@ -621,13 +660,18 @@ public class AddJobController implements utils.DirtySupport {
 	
 	private void resetUploadView() {
 		jobImagePreview.setImage(null);
-		selectedImageFile = null;
+		this.selectedFiles.clear();
 
 		jobImagePreview.setVisible(false);
 		jobImagePreview.setManaged(false);
 
 		pdfPreviewBox.setVisible(false);
 		pdfPreviewBox.setManaged(false);
+
+		if (filesListContainer != null) {
+			filesListContainer.setVisible(false);
+			filesListContainer.setManaged(false);
+		}
 
 		filePlaceholder.setVisible(true);
 		filePlaceholder.setManaged(true);
@@ -722,17 +766,15 @@ public class AddJobController implements utils.DirtySupport {
 				transJis.addJobItem(con, jobUuid, item);
 			}
 
-			if (selectedImageFile != null) {
-				java.io.File dir = new java.io.File("Images");
-				if (!dir.exists()) dir.mkdirs();
-				String ext = "";
-				String name = selectedImageFile.getName();
-				int dotIndex = name.lastIndexOf('.');
-				if (dotIndex > 0) ext = name.substring(dotIndex);
-				String newFileName = "job_" + jobUuid.replace("-", "") + "_" + System.currentTimeMillis() + ext;
-				java.io.File targetFile = new java.io.File(dir, newFileName);
-				java.nio.file.Files.copy(selectedImageFile.toPath(), targetFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-				String relativePath = "Images/" + newFileName;
+			if (!selectedFiles.isEmpty()) {
+				List<String> paths = new java.util.ArrayList<>();
+				for (File file : selectedFiles) {
+					String relativePath = utils.ImageStorage.saveImage(file, jobUuid);
+					if (relativePath != null) {
+						paths.add(relativePath);
+					}
+				}
+				String joinedPaths = String.join(",", paths);
 				String userUuid = null;
 				if (utils.SessionManager.getInstance().getCurrentUser() != null) {
 					userUuid = utils.SessionManager.getInstance().getCurrentUser().getUuid();
@@ -744,12 +786,12 @@ public class AddJobController implements utils.DirtySupport {
 						WHERE uuid = ?
 						""";
 				try (java.sql.PreparedStatement ps = con.prepareStatement(updateImgQuery)) {
-					ps.setString(1, relativePath);
+					ps.setString(1, joinedPaths);
 					ps.setString(2, userUuid);
 					ps.setString(3, jobUuid);
 					ps.executeUpdate();
 				}
-				currentJob.setImagePath(relativePath);
+				currentJob.setImagePath(joinedPaths);
 			}
 
 			con.commit();
@@ -794,10 +836,16 @@ public class AddJobController implements utils.DirtySupport {
 		p.setUnits(printUnitsCombo.getValue());
 		p.setSets(printSetField.getText());
 		p.setColor(printColorCombo.getValue());
-		p.setSide(sideDoubleBtn.isSelected() ? "Double" : "Single");
+		if (sideDoubleBtn.isSelected()) {
+			p.setSide("Double");
+		} else if (sideSingleBtn.isSelected()) {
+			p.setSide("Single");
+		} else {
+			p.setSide("N/A");
+		}
 		p.setWithCtp("With CTP (Computer to Plate)".equalsIgnoreCase(printCtpCombo.getValue()));
 		p.setNotes(printNotesArea.getText());
-		p.setIncludeNotesInInvoice(printIncludeNotesToggle.isSelected());
+		p.setIncludeNotesInInvoice(includePrintingInInvoiceToggle.isSelected());
 
 		try {
 			if (printAmountField.getText() != null && !printAmountField.getText().isBlank()) {
@@ -820,14 +868,17 @@ public class AddJobController implements utils.DirtySupport {
 
 	private void clearPrintingFields() {
 		printQtyField.clear();
-		printUnitsCombo.setValue("Sheet");
+		printUnitsCombo.setValue("Select Unit");
 		printSetField.clear();
 		printColorCombo.setValue(null);
-		sideDoubleBtn.setSelected(true);
-		printCtpCombo.setValue(null);
+		sideNaBtn.setSelected(true);
+		printCtpCombo.setValue("Without CTP");
 		printNotesArea.clear();
 		if (printIncludeNotesToggle != null) {
 			printIncludeNotesToggle.setSelected(true);
+		}
+		if (includePrintingInInvoiceToggle != null) {
+			includePrintingInInvoiceToggle.setSelected(true);
 		}
 		printAmountField.clear();
 	}
@@ -850,7 +901,7 @@ public class AddJobController implements utils.DirtySupport {
 		c.setBacking(ctpBackingCombo.getValue());
 		c.setColor(ctpColorCombo.getValue());
 		c.setNotes(ctpNotesArea.getText());
-		c.setIncludeNotesInInvoice(ctpIncludeNotesToggle.isSelected());
+		c.setIncludeNotesInInvoice(includeCtpInInvoiceToggle.isSelected());
 
 		Supplier supplier = ctpSupplierCombo.getValue();
 		if (ctpOurRadio.isSelected() && supplier != null && supplier.getUuid() != null && !supplier.getUuid().isBlank()) {
@@ -887,6 +938,9 @@ public class AddJobController implements utils.DirtySupport {
 		if (ctpIncludeNotesToggle != null) {
 			ctpIncludeNotesToggle.setSelected(true);
 		}
+		if (includeCtpInInvoiceToggle != null) {
+			includeCtpInInvoiceToggle.setSelected(true);
+		}
 		ctpAmountField.clear();
 		if (ctpOurRadio != null) {
 			ctpOurRadio.setSelected(true);
@@ -911,7 +965,7 @@ public class AddJobController implements utils.DirtySupport {
 		p.setGsm(paperGsmCombo.getValue());
 		p.setType(paperTypeCombo.getValue());
 		p.setNotes(paperNotesArea.getText());
-		p.setIncludeNotesInInvoice(paperIncludeNotesToggle.isSelected());
+		p.setIncludeNotesInInvoice(includePaperInInvoiceToggle.isSelected());
 
 		String source = "Our";
 		if (paperClientRadio.isSelected())
@@ -953,6 +1007,9 @@ public class AddJobController implements utils.DirtySupport {
 		if (paperIncludeNotesToggle != null) {
 			paperIncludeNotesToggle.setSelected(true);
 		}
+		if (includePaperInInvoiceToggle != null) {
+			includePaperInInvoiceToggle.setSelected(true);
+		}
 		paperAmountField.clear();
 		paperOurRadio.setSelected(true);
 	}
@@ -982,7 +1039,7 @@ public class AddJobController implements utils.DirtySupport {
 		}
 
 		b.setNotes(bindingNotesArea.getText());
-		b.setIncludeNotesInInvoice(bindingIncludeNotesToggle.isSelected());
+		b.setIncludeNotesInInvoice(includeBindingInInvoiceToggle.isSelected());
 
 		try {
 			if (bindingAmountField.getText() != null && !bindingAmountField.getText().isBlank()) {
@@ -1011,6 +1068,9 @@ public class AddJobController implements utils.DirtySupport {
 		if (bindingIncludeNotesToggle != null) {
 			bindingIncludeNotesToggle.setSelected(true);
 		}
+		if (includeBindingInInvoiceToggle != null) {
+			includeBindingInInvoiceToggle.setSelected(true);
+		}
 		bindingAmountField.clear();
 	}
 
@@ -1029,10 +1089,16 @@ public class AddJobController implements utils.DirtySupport {
 
 		l.setUnit(lamUnitCombo.getValue());
 		l.setType(lamTypeCombo.getValue());
-		l.setSide(lamDoubleBtn.isSelected() ? "Double Side" : "Single Side");
+		if (lamDoubleBtn.isSelected()) {
+			l.setSide("Double Side");
+		} else if (lamSingleBtn.isSelected()) {
+			l.setSide("Single Side");
+		} else {
+			l.setSide("N/A");
+		}
 		l.setSize(lamSizeCombo.getValue());
 		l.setNotes(lamNotesArea.getText());
-		l.setIncludeNotesInInvoice(lamIncludeNotesToggle.isSelected());
+		l.setIncludeNotesInInvoice(includeLaminationInInvoiceToggle.isSelected());
 
 		try {
 			if (lamAmountField.getText() != null && !lamAmountField.getText().isBlank()) {
@@ -1057,11 +1123,18 @@ public class AddJobController implements utils.DirtySupport {
 		lamQtyField.clear();
 		lamUnitCombo.setValue(null);
 		lamTypeCombo.setValue(null);
-		lamDoubleBtn.setSelected(true);
+		if (lamNaBtn != null) {
+			lamNaBtn.setSelected(true);
+		} else {
+			lamDoubleBtn.setSelected(true);
+		}
 		lamSizeCombo.setValue(null);
 		lamNotesArea.clear();
 		if (lamIncludeNotesToggle != null) {
 			lamIncludeNotesToggle.setSelected(true);
+		}
+		if (includeLaminationInInvoiceToggle != null) {
+			includeLaminationInInvoiceToggle.setSelected(true);
 		}
 		lamAmountField.clear();
 	}
@@ -1358,12 +1431,22 @@ public class AddJobController implements utils.DirtySupport {
 		sideGroup = new ToggleGroup();
 		sideDoubleBtn.setToggleGroup(sideGroup);
 		sideSingleBtn.setToggleGroup(sideGroup);
-		sideDoubleBtn.setSelected(true);
+		if (sideNaBtn != null) {
+			sideNaBtn.setToggleGroup(sideGroup);
+		}
+		if (sideNaBtn != null) {
+			sideNaBtn.setSelected(true);
+		}
 
 		lamSideGroup = new ToggleGroup();
 		lamDoubleBtn.setToggleGroup(lamSideGroup);
 		lamSingleBtn.setToggleGroup(lamSideGroup);
-		lamDoubleBtn.setSelected(true);
+		if (lamNaBtn != null) {
+			lamNaBtn.setToggleGroup(lamSideGroup);
+			lamNaBtn.setSelected(true);
+		} else {
+			lamDoubleBtn.setSelected(true);
+		}
 
 		// ✅ step buttons jump
 		step1Btn.setOnMouseClicked(e -> { currentStep = 1; updateStepUI(); });
@@ -1412,7 +1495,7 @@ public class AddJobController implements utils.DirtySupport {
 		java.util.List<String> printUnits = new java.util.ArrayList<>(java.util.List.of("Select Unit", "Copies", "Sets", "Rim", "Pkt", "Sheet"));
 		utils.ComboBoxSorter.sortStrings(printUnits);
 		printUnitsCombo.getItems().setAll(printUnits);
-		printUnitsCombo.setValue("Sheet");
+		printUnitsCombo.setValue("Select Unit");
 
 		java.util.List<String> printColors = new java.util.ArrayList<>(java.util.List.of("Select Color", "1", "2", "4", "4+4", "Spot", "Custom"));
 		utils.ComboBoxSorter.sortStrings(printColors);
@@ -1421,6 +1504,7 @@ public class AddJobController implements utils.DirtySupport {
 		java.util.List<String> printCtp = new java.util.ArrayList<>(java.util.List.of("With CTP (Computer to Plate)", "Without CTP"));
 		utils.ComboBoxSorter.sortStrings(printCtp);
 		printCtpCombo.getItems().setAll(printCtp);
+		printCtpCombo.setValue("Without CTP");
 
 		// CTP
 		java.util.List<String> ctpSizes = new java.util.ArrayList<>(java.util.List.of("Select Size", "23x36", "25x36", "19x25", "18x23", "15x20", "20x30", "10x15"));

@@ -58,7 +58,7 @@ public class ConflictResolutionTest {
         String clientUuid = "00000000-0000-0000-0000-000000001234";
         
         // 1. Setup client on Machine A and sync to Supabase
-        DBConnection.setUrl(dbA);
+        DBConnection.setTestDatabaseUrl(dbA);
         ClientRepository repoA = new ClientRepository();
         Client cA = new Client("Sunny Corp", "John Doe", "123456", "", "", "", "", "Delhi", "", "");
         cA.setClientUuid(clientUuid);
@@ -71,7 +71,7 @@ public class ConflictResolutionTest {
         UniversalSyncEngine.syncAllPending();
         
         // 2. Pull on Machine B to replicate the client
-        DBConnection.setUrl(dbB);
+        DBConnection.setTestDatabaseUrl(dbB);
         RemoteToLocalSync.pullAll(fakeSupabase);
         
         ClientRepository repoB = new ClientRepository();
@@ -80,7 +80,7 @@ public class ConflictResolutionTest {
         
         // 3. Simulate conflicts with distinct timestamps
         // Machine A updates to "Delhi Branch" (relative future)
-        DBConnection.setUrl(dbA);
+        DBConnection.setTestDatabaseUrl(dbA);
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(
                  "UPDATE clients SET client_name = 'Delhi Branch', updated_at = datetime('now', '+1 hour'), sync_status = 'PENDING' WHERE uuid = ?")) {
@@ -89,7 +89,7 @@ public class ConflictResolutionTest {
         }
         
         // Machine B updates to "Noida Branch" (relative further future)
-        DBConnection.setUrl(dbB);
+        DBConnection.setTestDatabaseUrl(dbB);
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(
                  "UPDATE clients SET client_name = 'Noida Branch', updated_at = datetime('now', '+2 hours'), sync_status = 'PENDING' WHERE uuid = ?")) {
@@ -98,24 +98,24 @@ public class ConflictResolutionTest {
         }
         
         // 4. Sync Machine B (pushes 11:00:00 change)
-        DBConnection.setUrl(dbB);
+        DBConnection.setTestDatabaseUrl(dbB);
         UniversalSyncEngine.syncAllPending();
         
         // 5. Sync Machine A (attempts to push 10:00:00 change, but B is newer on remote, so A conflicts, logs conflict, and pulls Noida Branch)
-        DBConnection.setUrl(dbA);
+        DBConnection.setTestDatabaseUrl(dbA);
         UniversalSyncEngine.syncAllPending();
         
         // Verify both machines ended up with Machine B's newer version
-        DBConnection.setUrl(dbA);
+        DBConnection.setTestDatabaseUrl(dbA);
         Client finalA = repoA.findByUuid(clientUuid);
         assertEquals("Noida Branch", finalA.getClientName(), "Delhi should have been overwritten by Noida Branch");
         
-        DBConnection.setUrl(dbB);
+        DBConnection.setTestDatabaseUrl(dbB);
         Client finalB = repoB.findByUuid(clientUuid);
         assertEquals("Noida Branch", finalB.getClientName());
         
         // Check that conflict was logged on Machine A (since Noida Branch overwrote Delhi Branch)
-        DBConnection.setUrl(dbA);
+        DBConnection.setTestDatabaseUrl(dbA);
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM sync_conflicts");
              ResultSet rs = ps.executeQuery()) {

@@ -19,7 +19,7 @@ public class ClearAllExceptSettings {
             "printing_items", "paper_items", "binding_items", "lamination_items", "ctp_items", 
             "job_items", "jobs", "payment_allocations", "payment_details", "payments", 
             "invoice_job_mapping", "invoice_master", "invoice_adjustments", 
-            "invoice_additional_charges", "document_number_mappings", "billing", 
+            "invoice_additional_charges", "document_number_mappings", 
             "suppliers", "clients"
         };
 
@@ -38,7 +38,7 @@ public class ClearAllExceptSettings {
             }
             
             stmt.execute("PRAGMA foreign_keys = ON;");
-            System.out.println("âœ” Local database tables cleared successfully!");
+            System.out.println("✔ Local database tables cleared successfully!");
             
         } catch (Exception e) {
             System.err.println("Failed to connect to local database: " + e.getMessage());
@@ -76,7 +76,6 @@ public class ClearAllExceptSettings {
             SupabaseEndpoints.INVOICE_ADJUSTMENTS,
             SupabaseEndpoints.INVOICE_ADDITIONAL_CHARGES,
             SupabaseEndpoints.DOCUMENT_NUMBER_MAPPINGS,
-            SupabaseEndpoints.BILLING,
             SupabaseEndpoints.SUPPLIERS,
             SupabaseEndpoints.CLIENTS
         };

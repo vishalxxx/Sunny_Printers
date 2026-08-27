@@ -35,7 +35,7 @@ public class GstinValidationTest {
     @BeforeAll
     public static void setup() throws Exception {
         dbPath = TestDatabaseHelper.createIsolatedDb("GstinValidationTest");
-        DBConnection.setUrl(dbPath);
+        DBConnection.setTestDatabaseUrl(dbPath);
     }
 
     @AfterAll

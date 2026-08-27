@@ -60,6 +60,7 @@ public final class RemoteToLocalSync {
 			totalChanges += pullTable(http, "payment_allocations", SupabaseEndpoints.PAYMENT_ALLOCATIONS, newLastPullMap);
 			totalChanges += pullTable(http, "document_number_mappings", SupabaseEndpoints.DOCUMENT_NUMBER_MAPPINGS, newLastPullMap);
 
+
 			System.out.println("[RemoteToLocalSync] Remote-to-local sync completed successfully. Total changes: " + totalChanges);
 		} catch (Exception e) {
 			System.err.println("[RemoteToLocalSync] Failed to execute remote-to-local sync: " + e.getMessage());
@@ -137,7 +138,7 @@ public final class RemoteToLocalSync {
 								fmt += "Z";
 							}
 							maxInstant = Instant.parse(fmt);
-						} catch (Exception ignored) {}
+						} catch (Exception e) { service.LoggerService.dbWarn("[SYNC] Could not parse max timestamp for " + table + ": " + e.getMessage()); }
 					}
 
 					for (JsonElement el : arr) {
@@ -158,54 +159,64 @@ public final class RemoteToLocalSync {
 									maxInstant = remoteInst;
 									maxTimestamp = remoteUpdatedAt;
 								}
-							} catch (Exception ignored) {}
+							} catch (Exception e) { service.LoggerService.dbWarn("[SYNC] Could not parse max timestamp for " + table + ": " + e.getMessage()); }
 						}
 
 						String uuid = o.has("uuid") && !o.get("uuid").isJsonNull() ? o.get("uuid").getAsString() : null;
 						boolean localExists = false;
 						String localSyncStatus = null;
 						String localUpdatedAt = null;
+						long localSyncVersion = 0L;
 
 						if (uuid != null && cols.contains("sync_status") && cols.contains("updated_at")) {
-							try (PreparedStatement checkPs = conn.prepareStatement("SELECT sync_status, updated_at FROM " + table + " WHERE uuid = ?")) {
+							try (PreparedStatement checkPs = conn.prepareStatement("SELECT sync_status, updated_at, sync_version FROM " + table + " WHERE uuid = ?")) {
 								checkPs.setString(1, uuid);
 								try (ResultSet checkRs = checkPs.executeQuery()) {
 									if (checkRs.next()) {
 										localExists = true;
 										localSyncStatus = checkRs.getString("sync_status");
 										localUpdatedAt = checkRs.getString("updated_at");
+										localSyncVersion = checkRs.getLong("sync_version");
 									}
 								}
 							}
 						}
 
 						boolean shouldUpsert = true;
+						String skipReason = "Local updated_at matches remote";
 						if (localExists) {
 							String remoteUpdatedAtStr = o.has(timestampCol) && !o.get(timestampCol).isJsonNull() ? o.get(timestampCol).getAsString() : null;
 							java.time.Instant localInst = SyncConflictResolver.parseTimestamp(localUpdatedAt);
 							java.time.Instant remoteInst = SyncConflictResolver.parseTimestamp(remoteUpdatedAtStr);
 
+							long remoteSyncVersion = o.has("sync_version") && !o.get("sync_version").isJsonNull() ? o.get("sync_version").getAsLong() : 0L;
+
 							if (remoteInst.equals(localInst)) {
 								shouldUpsert = false;
+								skipReason = "Local and remote updated_at are identical";
 								skipped++;
 							} else if ("PENDING".equalsIgnoreCase(localSyncStatus)) {
 								conflicts++;
-								if (remoteInst.isAfter(localInst)) {
-									SyncConflictResolver.logConflict(table, uuid, localUpdatedAt, remoteUpdatedAtStr,
+								if (remoteInst.isAfter(localInst) && remoteSyncVersion > localSyncVersion) {
+									SyncConflictResolver.logConflict(conn, table, uuid, localUpdatedAt, remoteUpdatedAtStr,
 										"Local unpushed edit overwritten by newer remote update", o.toString(), "LAST_WRITE_WINS_REMOTE_WINS");
 									shouldUpsert = true;
 								} else {
-									SyncConflictResolver.logConflict(table, uuid, localUpdatedAt, remoteUpdatedAtStr,
+									SyncConflictResolver.logConflict(conn, table, uuid, localUpdatedAt, remoteUpdatedAtStr,
 										"Local unpushed edit kept; older remote update rejected", o.toString(), "LAST_WRITE_WINS_LOCAL_WINS");
 									shouldUpsert = false;
+									skipReason = "Local pending edit is newer than or equal to remote update";
 									skipped++;
 								}
 							} else {
-								if (remoteInst.isBefore(localInst)) {
+								if (remoteInst.isBefore(localInst) || remoteSyncVersion <= localSyncVersion) {
 									shouldUpsert = false;
+									skipReason = "Local synced edit is newer than or equal to remote update";
 									skipped++;
 								}
 							}
+
+							System.out.println("[DIAGNOSTIC] Pull Sync check for " + table + " " + uuid + ": local.updated_at='" + localUpdatedAt + "' (" + localInst + "), remote.updated_at='" + remoteUpdatedAtStr + "' (" + remoteInst + "), local.sync_version=" + localSyncVersion + ", remote.sync_version=" + remoteSyncVersion + ". shouldUpsert=" + shouldUpsert + (shouldUpsert ? "" : ", skipReason=" + skipReason));
 						}
 
 						if (!shouldUpsert) {
@@ -324,7 +335,7 @@ public final class RemoteToLocalSync {
 					// REMOTE DELETION RECONCILIATION
 					// Fetch all active remote UUIDs for this table to detect hard-deleted or soft-deleted remote records
 					try {
-						String selectQuery = "select=uuid" + (cols.contains("is_deleted") ? ",is_deleted" : "");
+						String selectQuery = "select=uuid" + (cols.contains("is_deleted") ? ",is_deleted" : "") + (cols.contains("deleted_at") ? ",deleted_at" : "");
 						var remoteUuidsRes = http.get(endpoint, selectQuery);
 						if (remoteUuidsRes.statusCode() >= 200 && remoteUuidsRes.statusCode() < 300) {
 							String rBody = remoteUuidsRes.body();
@@ -333,6 +344,7 @@ public final class RemoteToLocalSync {
 								if (rRoot.isJsonArray()) {
 									java.util.Set<String> activeRemoteUuids = new java.util.HashSet<>();
 									java.util.Set<String> softDeletedRemoteUuids = new java.util.HashSet<>();
+									java.util.Map<String, String> softDeletedRemoteTimes = new java.util.HashMap<>();
 									for (JsonElement rEl : rRoot.getAsJsonArray()) {
 										if (rEl.isJsonObject()) {
 											JsonObject rObj = rEl.getAsJsonObject();
@@ -346,8 +358,12 @@ public final class RemoteToLocalSync {
 														rDeleted = rObj.get("is_deleted").getAsInt() != 0;
 													}
 												}
+												String rDeletedAt = (rObj.has("deleted_at") && !rObj.get("deleted_at").isJsonNull())
+													? rObj.get("deleted_at").getAsString() : null;
 												if (rDeleted) {
+													// Store uuid -> remote deleted_at so we can use it when writing locally
 													softDeletedRemoteUuids.add(rUuid);
+													softDeletedRemoteTimes.put(rUuid, rDeletedAt);
 												} else {
 													activeRemoteUuids.add(rUuid);
 												}
@@ -368,13 +384,15 @@ public final class RemoteToLocalSync {
 
 											if (softDeletedRemoteUuids.contains(lUuid)) {
 												if (!currentlyLocalDeleted && hasIsDeletedCol) {
+													String remoteDelAt = softDeletedRemoteTimes.getOrDefault(lUuid, null);
+													String deletedAtExpr = (remoteDelAt != null) ? "'" + remoteDelAt + "'" : "datetime('now')";
 													try (PreparedStatement updPs = conn.prepareStatement(
-															"UPDATE " + table + " SET is_deleted = 1, sync_status = 'SYNCED', deleted_at = datetime('now') WHERE uuid = ?")) {
+															"UPDATE " + table + " SET is_deleted = 1, sync_status = 'SYNCED', deleted_at = " + deletedAtExpr + " WHERE uuid = ?")) {
 														updPs.setString(1, lUuid);
 														updPs.executeUpdate();
 													}
 													deleted++;
-													System.out.println("[RemoteToLocalSync] Reconciled remote soft-deletion for table=" + table + ", uuid=" + lUuid);
+													System.out.println("[RemoteToLocalSync] Reconciled remote soft-deletion for table=" + table + ", uuid=" + lUuid + ", deleted_at=" + deletedAtExpr);
 												}
 											} else if (!activeRemoteUuids.contains(lUuid)) {
 												// Record was hard-deleted (physically deleted) from remote Supabase!

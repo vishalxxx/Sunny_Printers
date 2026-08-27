@@ -28,6 +28,7 @@ import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.HBox;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.skin.ComboBoxListViewSkin;
 import javafx.stage.Stage;
@@ -110,6 +111,15 @@ public class ClientLedgerController implements Initializable {
     @FXML
     private Label footerClosingBalance;
 
+    @FXML private Label paginationInfoLabel;
+    @FXML private HBox paginationPagesBox;
+    @FXML private ComboBox<String> pageSizeCombo;
+    @FXML private TextField goToPageField;
+
+    private int pageSize = 10;
+    private int currentPageIndex = 0;
+    private ObservableList<LedgerEntry> tablePageItems = FXCollections.observableArrayList();
+
     private ObservableList<LedgerEntry> ledgerData = FXCollections.observableArrayList();
     private javafx.collections.transformation.FilteredList<LedgerEntry> filteredData;
 
@@ -132,6 +142,18 @@ public class ClientLedgerController implements Initializable {
 
         if (typeGroup != null) {
             typeGroup.selectedToggleProperty().addListener((obs, oldVal, newVal) -> loadLedgerData());
+        }
+
+        if (pageSizeCombo != null) {
+            pageSizeCombo.getItems().setAll("10", "20", "50", "100");
+            pageSizeCombo.setValue("10");
+            pageSizeCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal != null) {
+                    pageSize = Integer.parseInt(newVal);
+                    currentPageIndex = 0;
+                    updatePagination();
+                }
+            });
         }
 
         setupClientComboPopupWidthMatch();
@@ -189,13 +211,17 @@ public class ClientLedgerController implements Initializable {
         dateTo.setValue(null);
         searchField.clear();
         clientCombo.setValue(null);
+        onClientCleared();
+    }
+
+    public void onClientCleared() {
         clearClientDetails();
         ledgerData.clear();
         if (rbAll != null)
             rbAll.setSelected(true);
         updateFooterTotals(0, 0);
-        updateRecordCount();
-        updateTableHeight();
+        currentPageIndex = 0;
+        updatePagination();
     }
 
     private void clearClientDetails() {
@@ -273,12 +299,7 @@ public class ClientLedgerController implements Initializable {
         colBalance.setCellFactory(c -> new CurrencyCell(false));
 
         filteredData = new javafx.collections.transformation.FilteredList<>(ledgerData, p -> true);
-        ledgerTable.setItems(filteredData);
-
-        ledgerData.addListener((javafx.collections.ListChangeListener.Change<? extends LedgerEntry> c) -> {
-            updateTableHeight();
-            updateRecordCount();
-        });
+        ledgerTable.setItems(tablePageItems);
     }
 
     private void setupTableDoubleClickHandler() {
@@ -379,15 +400,15 @@ public class ClientLedgerController implements Initializable {
     }
 
     private void updateTableHeight() {
-        int rowCount = filteredData != null ? filteredData.size() : ledgerData.size();
+        int rowCount = tablePageItems != null ? tablePageItems.size() : (filteredData != null ? filteredData.size() : ledgerData.size());
 
         double targetHeight;
         if (rowCount == 0) {
             targetHeight = LEDGER_TABLE_HEADER_PX + (LEDGER_TABLE_EMPTY_VISIBLE_ROWS * LEDGER_TABLE_ROW_PX)
                     + LEDGER_TABLE_HEIGHT_FUDGE;
         } else {
-            // Expand naturally so wrapped text and all rows display fully without bottom clipping
-            targetHeight = LEDGER_TABLE_HEADER_PX + (rowCount * 50.0) + 28.0;
+            // Expand naturally using the exact layout row height and fudge settings to prevent internal scrolling
+            targetHeight = LEDGER_TABLE_HEADER_PX + (rowCount * LEDGER_TABLE_ROW_PX) + LEDGER_TABLE_HEIGHT_FUDGE;
         }
 
         ledgerTable.setMinHeight(targetHeight);
@@ -661,8 +682,26 @@ public class ClientLedgerController implements Initializable {
         // Invoices — no receipt_no, use NULL placeholder
         sql.append("SELECT uuid as txn_id, invoice_date as txn_date, created_at as created_ts, invoice_no as ref, 'INVOICE' as type, ");
         sql.append("'-' as mode, ");
-        sql.append("0 as debit, amount as credit, status, payment_status, NULL as receipt_no ");
-        sql.append("FROM invoice_master WHERE client_uuid = ? AND IFNULL(is_deleted, 0) = 0 AND IFNULL(is_void, 0) = 0 ");
+        sql.append("0 as debit, amount as credit, status, payment_status, NULL as receipt_no, ");
+        sql.append("1 as type_priority ");
+        sql.append("FROM invoice_master WHERE client_uuid = ? AND IFNULL(is_deleted, 0) = 0 AND IFNULL(is_void, 0) = 0 AND UPPER(status) != 'DRAFT' ");
+        if (from != null)
+            sql.append("AND invoice_date >= ? ");
+        if (to != null)
+            sql.append("AND invoice_date <= ? ");
+
+        sql.append("UNION ALL ");
+
+        // Cancelled Invoices Entries
+        sql.append("SELECT uuid || '-cancel' as txn_id, invoice_date as txn_date, updated_at as created_ts, ");
+        sql.append("CASE WHEN payment_status = 'KEPT_AS_ADVANCE' THEN invoice_no || ' Invoice Cancelled Payment Kept' ");
+        sql.append("     WHEN payment_status = 'REFUNDED' THEN invoice_no || ' Invoice Cancelled Payment Refunded' ");
+        sql.append("     ELSE invoice_no || ' Invoice Cancelled' END as ref, ");
+        sql.append("'INVOICE CANCEL' as type, ");
+        sql.append("'-' as mode, ");
+        sql.append("amount as debit, 0 as credit, status, payment_status, NULL as receipt_no, ");
+        sql.append("5 as type_priority ");
+        sql.append("FROM invoice_master WHERE client_uuid = ? AND UPPER(status) = 'CANCELLED' AND IFNULL(is_deleted, 0) = 0 AND IFNULL(is_void, 0) = 0 ");
         if (from != null)
             sql.append("AND invoice_date >= ? ");
         if (to != null)
@@ -672,14 +711,37 @@ public class ClientLedgerController implements Initializable {
 
         // Payments
         sql.append("SELECT p.uuid as txn_id, p.payment_date as txn_date, p.created_at as created_ts, ");
-        sql.append("COALESCE(");
-        sql.append("  (SELECT GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid AND COALESCE(a.is_deleted, 0) = 0), ");
-        sql.append("  CASE WHEN p.type = 'Refund' THEN 'Advance Refund' ELSE 'Advance' END");
-        sql.append(") as ref, ");
+        sql.append("CASE WHEN UPPER(p.type) = 'REFUND' THEN ");
+        sql.append("  COALESCE( ");
+        sql.append("    (SELECT 'Refund against ' || GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid AND COALESCE(a.is_deleted, 0) = 0 AND COALESCE(i.is_deleted, 0) = 0), ");
+        sql.append("    (SELECT 'Refund against ' || GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid), ");
+        sql.append("    (SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'remarks'), ");
+        sql.append("    'Advance Refund' ");
+        sql.append("  ) ");
+        sql.append("ELSE ");
+        sql.append("  COALESCE( ");
+        sql.append("    (SELECT 'Payment for invoice ' || GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid AND COALESCE(a.is_deleted, 0) = 0 AND COALESCE(i.is_deleted, 0) = 0), ");
+        sql.append("    (SELECT 'Payment for invoice ' || GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid), ");
+        sql.append("    (SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'remarks'), ");
+        sql.append("    CASE WHEN p.type = 'Opening Balance' THEN 'Opening Balance' ELSE 'Advance' END ");
+        sql.append("  ) ");
+        sql.append("END as ref, ");
         sql.append("UPPER(p.type) as type, ");
-        sql.append("p.method as mode, ");
-        sql.append("p.amount as debit, 0 as credit, 'SUCCESS' as status, '' as payment_status, ");
-        sql.append("(SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'receipt_no') as receipt_no ");
+        sql.append("p.method || ");
+        sql.append("COALESCE(");
+        sql.append("  CASE ");
+        sql.append("    WHEN LOWER(p.method) = 'cheque' THEN ");
+        sql.append("      (SELECT ' (No: ' || field_value || ')' FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'cheque_number' AND NULLIF(field_value, '') IS NOT NULL) ");
+        sql.append("    WHEN LOWER(p.method) = 'upi' THEN ");
+        sql.append("      (SELECT ' (ID: ' || field_value || ')' FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'upi_id' AND NULLIF(field_value, '') IS NOT NULL) ");
+        sql.append("    ELSE NULL ");
+        sql.append("  END, ");
+        sql.append("  ''");
+        sql.append(") as mode, ");
+        sql.append("CASE WHEN p.type = 'Opening Balance' THEN 0 ELSE p.amount END as debit, ");
+        sql.append("CASE WHEN p.type = 'Opening Balance' THEN p.amount ELSE 0 END as credit, 'SUCCESS' as status, '' as payment_status, ");
+        sql.append("(SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'receipt_no') as receipt_no, ");
+        sql.append("CASE WHEN p.type = 'Refund' THEN 3 WHEN p.type = 'Advance' THEN 4 ELSE 2 END as type_priority ");
         sql.append("FROM payments p WHERE p.client_uuid = ? AND IFNULL(p.is_deleted, 0) = 0 ");
         if (from != null)
             sql.append("AND p.payment_date >= ? ");
@@ -695,10 +757,11 @@ public class ClientLedgerController implements Initializable {
         sql.append("'-' as mode, ");
         sql.append("CASE WHEN adj.type = 'Credit Note' THEN adj.amount ELSE 0 END as debit, ");
         sql.append("CASE WHEN adj.type = 'Debit Note' THEN adj.amount ELSE 0 END as credit, ");
-        sql.append("'SUCCESS' as status, '' as payment_status, adj.note_no as receipt_no ");
+        sql.append("'SUCCESS' as status, '' as payment_status, adj.note_no as receipt_no, ");
+        sql.append("2 as type_priority ");
         sql.append("FROM invoice_adjustments adj ");
         sql.append("JOIN invoice_master inv ON adj.invoice_uuid = inv.uuid ");
-        sql.append("WHERE inv.client_uuid = ? AND IFNULL(adj.is_deleted, 0) = 0 AND IFNULL(inv.is_deleted, 0) = 0 AND IFNULL(inv.is_void, 0) = 0 ");
+        sql.append("WHERE inv.client_uuid = ? AND IFNULL(adj.is_deleted, 0) = 0 AND IFNULL(inv.is_deleted, 0) = 0 AND IFNULL(inv.is_void, 0) = 0 AND UPPER(inv.status) != 'DRAFT' ");
         if (from != null)
             sql.append("AND adj.date >= ? ");
         if (to != null)
@@ -707,12 +770,12 @@ public class ClientLedgerController implements Initializable {
         sql.append(") AS ledger_view ");
 
         if (rbInvoice != null && rbInvoice.isSelected()) {
-            sql.append("WHERE type IN ('INVOICE', 'DEBIT NOTE') ");
+            sql.append("WHERE type IN ('INVOICE', 'DEBIT NOTE', 'OPENING BALANCE', 'INVOICE CANCEL') ");
         } else if (rbPayment != null && rbPayment.isSelected()) {
             sql.append("WHERE type IN ('PAYMENT', 'REFUND', 'CREDIT NOTE') ");
         }
 
-        sql.append("ORDER BY substr(txn_date, 1, 10) ASC, CASE WHEN type = 'INVOICE' THEN 1 WHEN type = 'DEBIT NOTE' THEN 2 WHEN type = 'PAYMENT' THEN 3 ELSE 4 END ASC, created_ts ASC, txn_id ASC");
+        sql.append("ORDER BY datetime(txn_date) ASC, datetime(created_ts) ASC, type_priority ASC, txn_id ASC");
 
         double totalDebit = 0.0;
         double totalCredit = 0.0;
@@ -724,6 +787,13 @@ public class ClientLedgerController implements Initializable {
             int idx = 1;
 
             // Invoices params
+            ps.setString(idx++, clientUuid);
+            if (from != null)
+                ps.setString(idx++, from.toString());
+            if (to != null)
+                ps.setString(idx++, to.toString());
+
+            // Cancelled Invoices params
             ps.setString(idx++, clientUuid);
             if (from != null)
                 ps.setString(idx++, from.toString());
@@ -803,11 +873,8 @@ public class ClientLedgerController implements Initializable {
         }
 
         updateFooterTotals(totalDebit, totalCredit);
-        updateRecordCount();
-        updateTableHeight();
-        if (ledgerTable != null) {
-            ledgerTable.refresh();
-        }
+        currentPageIndex = 0;
+        updatePagination();
     }
 
     private void updateFooterTotals(double debit, double credit) {
@@ -852,8 +919,8 @@ public class ClientLedgerController implements Initializable {
                 return false;
             });
         }
-        updateTableHeight();
-        updateRecordCount();
+        currentPageIndex = 0;
+        updatePagination();
     }
 
     // --- Inner Classes ---
@@ -997,6 +1064,116 @@ public class ClientLedgerController implements Initializable {
                 setGraphic(label);
                 setText(null);
             }
+        }
+    }
+
+    private void pageChange(int newIndex) {
+        java.util.List<LedgerEntry> source = filteredData != null ? filteredData : ledgerData;
+        int total = source.size();
+        int pages = Math.max(1, (int) Math.ceil(total / (double) pageSize));
+        if (newIndex < 0 || newIndex >= pages) {
+            return;
+        }
+        currentPageIndex = newIndex;
+        updatePagination();
+    }
+
+    private void updatePagination() {
+        if (tablePageItems == null) return;
+        tablePageItems.clear();
+
+        java.util.List<LedgerEntry> source = filteredData != null ? filteredData : ledgerData;
+        int total = source.size();
+
+        int pages = Math.max(1, (int) Math.ceil(total / (double) pageSize));
+        if (currentPageIndex >= pages) {
+            currentPageIndex = Math.max(0, pages - 1);
+        }
+
+        int from = currentPageIndex * pageSize;
+        int to = Math.min(from + pageSize, total);
+        if (from < to) {
+            tablePageItems.addAll(source.subList(from, to));
+        }
+
+        if (ledgerTable != null) {
+            ledgerTable.scrollTo(0);
+        }
+
+
+        if (paginationInfoLabel != null) {
+            int fromDisplay = total == 0 ? 0 : from + 1;
+            paginationInfoLabel.setText(String.format("Showing %d to %d of %d records", fromDisplay, to, total));
+        }
+
+        rebuildPaginationControls(pages);
+        updateTableHeight();
+        updateRecordCount();
+    }
+
+    private void rebuildPaginationControls(int pages) {
+        if (paginationPagesBox == null) return;
+        paginationPagesBox.getChildren().clear();
+
+        if (pages <= 1) return;
+
+        javafx.scene.control.Button prev = new javafx.scene.control.Button("<");
+        prev.getStyleClass().add("vi-page-btn");
+        prev.setDisable(currentPageIndex <= 0);
+        prev.setOnAction(e -> pageChange(currentPageIndex - 1));
+
+        javafx.scene.control.Button next = new javafx.scene.control.Button(">");
+        next.getStyleClass().add("vi-page-btn");
+        next.setDisable(currentPageIndex >= pages - 1);
+        next.setOnAction(e -> pageChange(currentPageIndex + 1));
+
+        paginationPagesBox.getChildren().add(prev);
+
+        int start = Math.max(0, currentPageIndex - 1);
+        int end = Math.min(pages, start + 3);
+        if (end - start < 3 && start > 0) {
+            start = Math.max(0, end - 3);
+        }
+
+        for (int p = start; p < end; p++) {
+            final int pi = p;
+            javafx.scene.control.Button b = new javafx.scene.control.Button(String.valueOf(p + 1));
+            b.getStyleClass().add("vi-page-btn");
+            if (p == currentPageIndex) {
+                b.getStyleClass().add("vi-page-btn-active");
+            }
+            b.setOnAction(e -> pageChange(pi));
+            paginationPagesBox.getChildren().add(b);
+        }
+
+        paginationPagesBox.getChildren().add(next);
+    }
+
+    @FXML
+    private void handleGoToPage() {
+        if (goToPageField == null || goToPageField.getText().isEmpty()) return;
+        try {
+            int target = Integer.parseInt(goToPageField.getText().trim());
+            java.util.List<LedgerEntry> source = filteredData != null ? filteredData : ledgerData;
+            int total = source.size();
+            int pages = Math.max(1, (int) Math.ceil(total / (double) pageSize));
+
+            if (target >= 1 && target <= pages) {
+                currentPageIndex = target - 1;
+                updatePagination();
+                goToPageField.clear();
+            } else {
+                toast("Invalid page number ❌");
+            }
+        } catch (NumberFormatException e) {
+            toast("Please enter a valid number ❌");
+        }
+    }
+
+    private void toast(String msg) {
+        var w = ledgerTable.getScene() != null ? ledgerTable.getScene().getWindow() : null;
+        if (w instanceof javafx.stage.Stage stage) {
+            utils.Toast.show(stage, msg);
         }
     }
 }

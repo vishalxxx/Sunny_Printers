@@ -78,6 +78,17 @@ public class MainController implements Initializable {
 	@FXML
 	private Label lblOverdue;
 
+	@FXML private Label lblRevenuePercent;
+	@FXML private Label lblOutstandingPercent;
+	@FXML private Label lblCollectedPercent;
+	@FXML private Label lblOverduePercent;
+
+	@FXML private javafx.scene.layout.Region barRevenueProgress;
+	@FXML private javafx.scene.layout.Region barOutstandingProgress;
+	@FXML private javafx.scene.layout.Region barCollectedProgress;
+	@FXML private javafx.scene.layout.Region barOverdueProgress;
+
+
 	// Analysis Bars
 	@FXML
 	private javafx.scene.layout.Region cashFlow_M1_total;
@@ -137,6 +148,36 @@ public class MainController implements Initializable {
 	private PieChart jobDistributionChart;
 	@FXML
 	private Label lblActiveJobsCount;
+	@FXML
+	private Label lblPrePressCount;
+	@FXML
+	private Label lblPrePressPercent;
+	@FXML
+	private Label lblPrintingCount;
+	@FXML
+	private Label lblPrintingPercent;
+	@FXML
+	private Label lblFinishingCount;
+	@FXML
+	private Label lblFinishingPercent;
+	@FXML
+	private Label lblReadyCount;
+	@FXML
+	private Label lblReadyPercent;
+	@FXML
+	private javafx.scene.layout.VBox vboxRecentActivity;
+	@FXML
+	private Label lblAging0_30;
+	@FXML
+	private javafx.scene.layout.Region barAging0_30;
+	@FXML
+	private Label lblAging30_60;
+	@FXML
+	private javafx.scene.layout.Region barAging30_60;
+	@FXML
+	private Label lblAging60Plus;
+	@FXML
+	private javafx.scene.layout.Region barAging60Plus;
 	@FXML
 	private TableView<DashboardJobDTO> recentJobsTable;
 	@FXML
@@ -235,6 +276,10 @@ public class MainController implements Initializable {
 	private javafx.stage.Popup downloadsPopup;
 	private DownloadsPopupController popupController;
 
+	@FXML
+	private StackPane btnNotifications;
+	private javafx.stage.Popup notificationsPopup;
+
 	public void addDownload(String fileName, String type, String size, String path) {
 		model.DownloadItem item = new model.DownloadItem(fileName, type, size, java.time.LocalDateTime.now(), path);
 		recentDownloads.add(0, item); // Add to top
@@ -260,6 +305,74 @@ public class MainController implements Initializable {
 
 		if (popupController != null) {
 			popupController.setDownloads(recentDownloads);
+		}
+	}
+
+	@FXML
+	private void toggleNotificationsPopup(MouseEvent event) {
+		if (notificationsPopup == null) {
+			notificationsPopup = new javafx.stage.Popup();
+			notificationsPopup.setAutoHide(true);
+
+			VBox popupRoot = new VBox();
+			popupRoot.setPadding(new javafx.geometry.Insets(16));
+			popupRoot.setSpacing(12);
+			popupRoot.setStyle("-fx-background-color: white; -fx-border-color: #EFE9DB; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 4);");
+			popupRoot.setMinWidth(260);
+			popupRoot.setPrefWidth(260);
+
+			Label titleLabel = new Label("Notifications");
+			titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1C1917;");
+			
+			javafx.scene.control.Separator sep = new javafx.scene.control.Separator();
+			sep.setStyle("-fx-opacity: 0.1;");
+
+			VBox contentBox = new VBox();
+			contentBox.setAlignment(javafx.geometry.Pos.CENTER);
+			contentBox.setPadding(new javafx.geometry.Insets(20, 0, 20, 0));
+			
+			Label noNotifLabel = new Label("No notifications");
+			noNotifLabel.setStyle("-fx-text-fill: #716D68; -fx-font-size: 12px;");
+			contentBox.getChildren().add(noNotifLabel);
+
+			popupRoot.getChildren().addAll(titleLabel, sep, contentBox);
+			notificationsPopup.getContent().add(popupRoot);
+		}
+
+		if (notificationsPopup.isShowing()) {
+			notificationsPopup.hide();
+		} else {
+			Parent root = (Parent) notificationsPopup.getContent().get(0);
+			root.applyCss();
+			root.layout();
+			double popupW = 260;
+			double gap = 6;
+
+			javafx.geometry.Bounds iconBounds = btnNotifications.localToScreen(btnNotifications.getBoundsInLocal());
+			javafx.stage.Window hostWindow = btnNotifications.getScene() != null ? btnNotifications.getScene().getWindow() : null;
+
+			double screenX = iconBounds.getMaxX() - popupW;
+			double screenY = iconBounds.getMaxY() + gap;
+
+			if (hostWindow != null) {
+				double wx = hostWindow.getX();
+				double ww = hostWindow.getWidth();
+				double pad = 8;
+				if (screenX < wx + pad) {
+					screenX = wx + pad;
+				}
+				if (screenX + popupW > wx + ww - pad) {
+					screenX = wx + ww - popupW - pad;
+				}
+			}
+
+			if (hostWindow != null) {
+				notificationsPopup.show(hostWindow, screenX, screenY);
+			} else {
+				double localX = btnNotifications.getWidth() - popupW;
+				double localY = btnNotifications.getHeight() + gap;
+				notificationsPopup.show(btnNotifications, localX, localY);
+			}
 		}
 	}
 
@@ -448,10 +561,25 @@ public class MainController implements Initializable {
 
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
-		setPageTitle("Dashboard");
-		openCenterDashboard();
-		// Set initial state so first push creates history
-		utils.NavigationManager.getInstance().push(null, "Dashboard", "Overview", null);
+		boolean companyExists = checkCompanyExists();
+		if (!companyExists) {
+			loadGeneralSettings();
+			refreshNavigationLocks();
+			Platform.runLater(() -> {
+				javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
+				alert.setTitle("Warning");
+				alert.setHeaderText("Company Details Required");
+				alert.setContentText("No company registered. Please configure a company under General Settings to enable all features.");
+				alert.getDialogPane().getStyleClass().add("settings-warm-dialog");
+				alert.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+				alert.show();
+			});
+		} else {
+			setPageTitle("Dashboard");
+			openCenterDashboard();
+			// Set initial state so first push creates history
+			utils.NavigationManager.getInstance().push(null, "Dashboard", "Overview", null);
+		}
 
 		// Initialize Filter Dropdown
 		if (comboTimeRange != null) {
@@ -806,6 +934,7 @@ public class MainController implements Initializable {
 			if (centerContentHost != null && !centerContentHost.getChildren().contains(dashboardView)) {
 				centerContentHost.getChildren().setAll(dashboardView);
 			}
+			this.currentController = this;
 
 			loadDashboardData();
 			setPageTitle("");
@@ -814,6 +943,10 @@ public class MainController implements Initializable {
 				appRoot.requestFocus();
 			}
 		}
+	}
+
+	public void refresh() {
+		loadDashboardData();
 	}
 
 	private int activeChartRange = 6; // months
@@ -864,35 +997,328 @@ public class MainController implements Initializable {
 		}
 	}
 
+	private String getPaymentTimeFilterSQL() {
+		switch (selectedTimeRange) {
+			case "Last 7 Days":
+				return " AND date(payment_date) >= date('now', '-7 days')";
+			case "Last 30 Days":
+				return " AND date(payment_date) >= date('now', '-30 days')";
+			case "Last 3 Months":
+				return " AND date(payment_date) >= date('now', '-90 days')";
+			default:
+				return ""; // All Time
+		}
+	}
+
 	private void loadDashboardData() {
 		loadSummaryData();
 		loadChartData();
 		loadPieChartData();
 		loadTableData();
+		loadRecentActivities();
+	}
+
+	private static class ActivityItem implements Comparable<ActivityItem> {
+		String type; // "Invoice", "Payment", "Job"
+		String title;
+		String detail;
+		String timestampStr;
+		java.time.Instant instant;
+
+		@Override
+		public int compareTo(ActivityItem other) {
+			if (this.instant == null && other.instant == null) return 0;
+			if (this.instant == null) return 1;
+			if (other.instant == null) return -1;
+			return other.instant.compareTo(this.instant); // descending
+		}
+	}
+
+	private String formatTimeAgo(String utcTimestampStr) {
+		if (utcTimestampStr == null || utcTimestampStr.isBlank()) {
+			return "";
+		}
+		try {
+			java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+					.withZone(java.time.ZoneOffset.UTC);
+			java.time.Instant instant = java.time.Instant.from(formatter.parse(utcTimestampStr.trim()));
+			java.time.Instant now = java.time.Instant.now();
+			long durationSeconds = java.time.Duration.between(instant, now).getSeconds();
+			if (durationSeconds < 60) {
+				return "JUST NOW";
+			}
+			long mins = durationSeconds / 60;
+			if (mins < 60) {
+				return mins + (mins == 1 ? " MIN AGO" : " MINS AGO");
+			}
+			long hours = mins / 60;
+			if (hours < 24) {
+				return hours + (hours == 1 ? " HOUR AGO" : " HOURS AGO");
+			}
+			long days = hours / 24;
+			return days + (days == 1 ? " DAY AGO" : " DAYS AGO");
+		} catch (Exception e) {
+			return utcTimestampStr;
+		}
+	}
+
+	private void loadRecentActivities() {
+		if (vboxRecentActivity == null) {
+			return;
+		}
+		java.util.List<ActivityItem> items = new java.util.ArrayList<>();
+		try (Connection con = DBConnection.getConnection()) {
+			java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+					.withZone(java.time.ZoneOffset.UTC);
+
+			// 1. Fetch Invoices
+			String sqlInvoices = """
+				SELECT im.invoice_no, im.amount, im.created_at, c.client_name 
+				FROM invoice_master im 
+				LEFT JOIN clients c ON im.client_uuid = c.uuid 
+				WHERE im.is_void = 0 AND COALESCE(im.is_deleted, 0) = 0 
+				ORDER BY im.created_at DESC LIMIT 5
+			""";
+			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sqlInvoices)) {
+				while (rs.next()) {
+					ActivityItem item = new ActivityItem();
+					item.type = "Invoice";
+					String client = rs.getString(4);
+					item.title = "New Invoice Created for " + (client != null ? client : "Unknown Client");
+					item.detail = "Invoice " + rs.getString(1) + " • ₹" + String.format("%,.2f", rs.getDouble(2));
+					item.timestampStr = rs.getString(3);
+					try {
+						if (item.timestampStr != null) {
+							item.instant = java.time.Instant.from(formatter.parse(item.timestampStr.trim()));
+							items.add(item);
+						}
+					} catch (Exception ignored) {}
+				}
+			}
+
+			// 2. Fetch Payments
+			String sqlPayments = """
+				SELECT p.amount, p.created_at, c.client_name, p.method 
+				FROM payments p 
+				LEFT JOIN clients c ON p.client_uuid = c.uuid 
+				WHERE COALESCE(p.is_deleted, 0) = 0 AND p.type != 'Opening Balance'
+				ORDER BY p.created_at DESC LIMIT 5
+			""";
+			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sqlPayments)) {
+				while (rs.next()) {
+					ActivityItem item = new ActivityItem();
+					item.type = "Payment";
+					String client = rs.getString(3);
+					item.title = "Payment Received from " + (client != null ? client : "Unknown Client");
+					item.detail = "Received ₹" + String.format("%,.2f", rs.getDouble(1)) + " via " + rs.getString(4);
+					item.timestampStr = rs.getString(2);
+					try {
+						if (item.timestampStr != null) {
+							item.instant = java.time.Instant.from(formatter.parse(item.timestampStr.trim()));
+							items.add(item);
+						}
+					} catch (Exception ignored) {}
+				}
+			}
+
+			// 3. Fetch Jobs
+			String sqlJobs = """
+				SELECT j.job_code, j.status, j.created_at, c.client_name, j.job_title 
+				FROM jobs j 
+				LEFT JOIN clients c ON j.client_uuid = c.uuid 
+				WHERE COALESCE(j.is_deleted, 0) = 0 
+				ORDER BY j.created_at DESC LIMIT 5
+			""";
+			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sqlJobs)) {
+				while (rs.next()) {
+					ActivityItem item = new ActivityItem();
+					item.type = "Job";
+					String client = rs.getString(4);
+					String jobCode = rs.getString(1);
+					String status = rs.getString(2);
+					String jobTitle = rs.getString(5);
+					item.title = "Job " + jobCode + " is in '" + status + "'";
+					item.detail = "Client: " + (client != null ? client : "Unknown Client") + " • " + (jobTitle != null ? jobTitle : "");
+					item.timestampStr = rs.getString(3);
+					try {
+						if (item.timestampStr != null) {
+							item.instant = java.time.Instant.from(formatter.parse(item.timestampStr.trim()));
+							items.add(item);
+						}
+					} catch (Exception ignored) {}
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		java.util.Collections.sort(items);
+		java.util.List<ActivityItem> displayItems = items.size() > 5 ? items.subList(0, 5) : items;
+
+		Platform.runLater(() -> {
+			vboxRecentActivity.getChildren().clear();
+			if (displayItems.isEmpty()) {
+				Label lblNoActivity = new Label("No recent activity recorded.");
+				lblNoActivity.setStyle("-fx-text-fill: -fx-text-muted; -fx-font-style: italic; -fx-font-size: 13;");
+				vboxRecentActivity.getChildren().add(lblNoActivity);
+				return;
+			}
+			for (ActivityItem item : displayItems) {
+				javafx.scene.layout.HBox hbox = new javafx.scene.layout.HBox();
+				hbox.setSpacing(15);
+				hbox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+				javafx.scene.layout.StackPane iconContainer = new javafx.scene.layout.StackPane();
+				iconContainer.getStyleClass().add("activity-icon-container");
+				
+				javafx.scene.layout.Region icon = new javafx.scene.layout.Region();
+				icon.getStyleClass().add("sidebar-icon");
+				icon.setMinWidth(18);
+				icon.setMinHeight(18);
+
+				if ("Payment".equals(item.type)) {
+					iconContainer.getStyleClass().add("icon-bg-cream");
+					icon.setStyle("-fx-shape: 'M21 18H3V6h18v12zm-2-10H5v8h14V8zm-2 2h-4v4h4v-4z'; -fx-background-color: #716D68;");
+				} else if ("Job".equals(item.type)) {
+					iconContainer.getStyleClass().add("icon-bg-rose");
+					icon.setStyle("-fx-shape: 'M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z'; -fx-background-color: #C87941;");
+				} else {
+					iconContainer.getStyleClass().add("icon-bg-cream");
+					icon.setStyle("-fx-shape: 'M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z'; -fx-background-color: #716D68;");
+				}
+				iconContainer.getChildren().add(icon);
+
+				javafx.scene.layout.VBox texts = new javafx.scene.layout.VBox();
+				texts.setSpacing(2);
+
+				javafx.scene.layout.HBox titleHBox = new javafx.scene.layout.HBox();
+				titleHBox.setSpacing(4);
+				titleHBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+				String[] titleParts = item.title.split(" (?=(?:Mahindra Infotech|Vikram Batra|Unknown Client|System Draft Client|Artisanal Breads Co.|Luxury Esthetics|Metro Gallery))", 2);
+				if (titleParts.length == 2) {
+					Label lblAct = new Label(titleParts[0] + " ");
+					lblAct.setStyle("-fx-font-weight: 700; -fx-text-fill: -fx-text-dark;");
+					Label lblCli = new Label(titleParts[1]);
+					lblCli.setStyle("-fx-font-weight: 800; -fx-text-fill: #A66E4E;");
+					titleHBox.getChildren().addAll(lblAct, lblCli);
+				} else {
+					Label lblTitle = new Label(item.title);
+					lblTitle.setStyle("-fx-font-weight: 700; -fx-text-fill: -fx-text-dark;");
+					titleHBox.getChildren().add(lblTitle);
+				}
+
+				Label lblDetail = new Label(item.detail);
+				lblDetail.setStyle("-fx-text-fill: -fx-text-muted; -fx-font-size: 12;");
+
+				texts.getChildren().addAll(titleHBox, lblDetail);
+
+				javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+				javafx.scene.layout.HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
+
+				Label lblTimeAgo = new Label(formatTimeAgo(item.timestampStr));
+				lblTimeAgo.setStyle("-fx-font-size: 10; -fx-font-weight: 900; -fx-text-fill: #B0ADA1;");
+
+				hbox.getChildren().addAll(iconContainer, texts, spacer, lblTimeAgo);
+				vboxRecentActivity.getChildren().add(hbox);
+			}
+		});
+	}
+
+	private void setKPIProgress(javafx.scene.layout.Region bar, double fraction) {
+		if (bar == null) return;
+		double f = Math.max(0.0, Math.min(1.0, fraction));
+		Platform.runLater(() -> {
+			if (bar.getParent() instanceof javafx.scene.layout.Region) {
+				bar.prefWidthProperty().bind(((javafx.scene.layout.Region) bar.getParent()).widthProperty().multiply(f));
+				bar.setMaxWidth(Double.MAX_VALUE);
+			} else {
+				bar.setPrefWidth(120 * f);
+			}
+		});
+	}
+
+	private void setAgingProgress(javafx.scene.layout.Region bar, double fraction) {
+		if (bar == null) return;
+		double f = Math.max(0.0, Math.min(1.0, fraction));
+		Platform.runLater(() -> {
+			if (bar.getParent() instanceof javafx.scene.layout.Region) {
+				bar.prefWidthProperty().bind(((javafx.scene.layout.Region) bar.getParent()).widthProperty().multiply(f));
+				bar.setMaxWidth(Double.MAX_VALUE);
+			} else {
+				bar.setPrefWidth(180 * f);
+			}
+		});
+	}
+
+	private void updateKPIPercent(Label lbl, double current, double previous) {
+		if (lbl == null) return;
+		Platform.runLater(() -> {
+			if (previous <= 0) {
+				if (current > 0) {
+					lbl.setText("+100%");
+					lbl.setStyle("-fx-text-fill: #68765A; -fx-font-weight: 800;");
+				} else {
+					lbl.setText("0%");
+					lbl.setStyle("-fx-text-fill: #758385; -fx-font-weight: 800;");
+				}
+			} else {
+				double change = ((current - previous) / previous) * 100;
+				if (change > 0) {
+					lbl.setText(String.format("+%.0f%%", change));
+					lbl.setStyle("-fx-text-fill: #68765A; -fx-font-weight: 800;");
+				} else if (change < 0) {
+					lbl.setText(String.format("%.0f%%", change));
+					lbl.setStyle("-fx-text-fill: #D27357; -fx-font-weight: 800;");
+				} else {
+					lbl.setText("0%");
+					lbl.setStyle("-fx-text-fill: #758385; -fx-font-weight: 800;");
+				}
+			}
+		});
 	}
 
 	private void loadSummaryData() {
 		try (Connection con = DBConnection.getConnection()) {
 			String filter = getTimeFilterSQL();
+			String payFilter = getPaymentTimeFilterSQL();
 			double totalBilled = 0, totalPaid = 0, totalDue = 0;
 
 			if (lblCollectionPeriod != null)
 				lblCollectionPeriod.setText("COLLECTED (" + selectedTimeRange.toUpperCase() + ")");
 
 			// 1. DYNAMIC TOTALS based on Range (Revenue, Collected, Outstanding)
-			String sql = "SELECT SUM(amount), SUM(paid_amount), SUM(due_amount) FROM invoice_master WHERE is_void = 0"
+			String sql = "SELECT SUM(amount), SUM(paid_amount), SUM(due_amount) FROM invoice_master WHERE is_void = 0 AND COALESCE(is_deleted, 0) = 0 AND status != 'DRAFT' AND status != 'CANCELLED' AND client_uuid IN (SELECT uuid FROM clients WHERE COALESCE(is_deleted, 0) = 0)"
 					+ filter;
 			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
 				if (rs.next()) {
 					totalBilled = rs.getDouble(1);
-					totalPaid = rs.getDouble(2);
 					totalDue = rs.getDouble(3);
+				}
+			}
+
+			// Query actual collected payments from payments table to include all collected amounts (advances, opening balances)
+			String sqlAllPayments = "SELECT SUM(amount) FROM payments WHERE COALESCE(is_deleted, 0) = 0 AND type != 'Opening Balance' AND client_uuid IN (SELECT uuid FROM clients WHERE COALESCE(is_deleted, 0) = 0)"
+					+ payFilter;
+			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sqlAllPayments)) {
+				if (rs.next()) {
+					totalPaid = rs.getDouble(1);
+				}
+			}
+
+			// Query total opening balances of clients within range from payments table
+			double openingBalance = 0;
+			String sqlOB = "SELECT SUM(amount) FROM payments WHERE COALESCE(is_deleted, 0) = 0 AND type = 'Opening Balance' AND client_uuid IN (SELECT uuid FROM clients WHERE COALESCE(is_deleted, 0) = 0)"
+					+ payFilter;
+			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sqlOB)) {
+				if (rs.next()) {
+					openingBalance = rs.getDouble(1);
 				}
 			}
 
 			// Adjust for Credit and Debit Notes
 			double totalDN = 0, totalCN = 0;
-			String sqlAdj = "SELECT type, SUM(amount) FROM invoice_adjustments WHERE 1=1 " +
+			String sqlAdj = "SELECT type, SUM(amount) FROM invoice_adjustments WHERE COALESCE(is_deleted, 0) = 0 AND invoice_uuid IN (SELECT uuid FROM invoice_master WHERE client_uuid IN (SELECT uuid FROM clients WHERE COALESCE(is_deleted, 0) = 0) AND status != 'DRAFT' AND status != 'CANCELLED') " +
 					filter.replace("invoice_date", "date") + " GROUP BY type";
 			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sqlAdj)) {
 				while (rs.next()) {
@@ -904,9 +1330,8 @@ public class MainController implements Initializable {
 						totalCN = amt;
 				}
 			}
-			totalBilled = totalBilled + totalDN - totalCN;
-			// Note: totalDue also needs adjustment if CN/DN affect balance
-			totalDue = totalDue + totalDN - totalCN;
+			totalBilled = totalBilled + totalDN - totalCN + openingBalance;
+			totalDue = Math.max(0.0, totalBilled - totalPaid);
 
 			if (lblTotalRevenue != null) {
 				lblTotalRevenue.setText(String.format("₹%,.0f", totalBilled));
@@ -917,19 +1342,15 @@ public class MainController implements Initializable {
 				lblOutstanding.setText(String.format("₹%,.0f", totalDue));
 			if (lblDonutTotal != null)
 				lblDonutTotal.setText(String.format("₹%,.0f", totalBilled));
-			if (lblOverdue != null)
-				lblOverdue.setText(String.format("₹%,.0f", totalDue - totalPaid)); // Default logic for "Overdue" kpi
-																					// card often means dynamic
-																					// outstanding
 
 			// 2. Collection Ratio / Health Score (Within Range)
 			double collectionRatio = totalBilled > 0 ? (totalPaid / totalBilled) : 0;
 			if (lblHealthyPercent != null)
-				lblHealthyPercent.setText(String.format("%.0f%%", collectionRatio * 100));
+				lblHealthyPercent.setText(String.format("%.2f%%", collectionRatio * 100));
 
 			// 3. Overdue (Filtered by Range + 30 day aging)
 			double overdueAmt = 0;
-			String sqlOverdue = "SELECT SUM(due_amount) FROM invoice_master WHERE is_void = 0 AND due_amount > 0 AND date(invoice_date) < date('now', '-30 days')"
+			String sqlOverdue = "SELECT SUM(due_amount) FROM invoice_master WHERE is_void = 0 AND COALESCE(is_deleted, 0) = 0 AND status != 'DRAFT' AND status != 'CANCELLED' AND client_uuid IN (SELECT uuid FROM clients WHERE COALESCE(is_deleted, 0) = 0) AND due_amount > 0 AND date(invoice_date) < date('now', '-30 days')"
 					+ filter;
 			try (java.sql.Statement stO = con.createStatement(); ResultSet rsO = stO.executeQuery(sqlOverdue)) {
 				if (rsO.next())
@@ -950,7 +1371,7 @@ public class MainController implements Initializable {
 			// 4. Efficiency Indicator (Tied to Selection)
 			if (lblDonutEfficiency != null) {
 				double effPct = collectionRatio * 100;
-				lblDonutEfficiency.setText(String.format("%.0f%%", effPct));
+				lblDonutEfficiency.setText(String.format("%.2f%%", effPct));
 				if (effPct < 50)
 					lblDonutEfficiency.setStyle("-fx-text-fill: #D27357;");
 				else if (effPct < 80)
@@ -963,9 +1384,9 @@ public class MainController implements Initializable {
 			if (lblDonutInsight != null) {
 				if (totalDue > 0) {
 					double insightPct = (overdueAmt / totalDue) * 100;
-					lblDonutInsight.setText(String.format("⚠️ %.0f%% of range AR is overdue", insightPct));
+					lblDonutInsight.setText(String.format("[!] %.0f%% of range AR is overdue", insightPct));
 				} else if (totalBilled > 0) {
-					lblDonutInsight.setText("✅ All range payments are clear");
+					lblDonutInsight.setText("[OK] All range payments are clear");
 				} else {
 					lblDonutInsight.setText("No data for selected period");
 				}
@@ -979,8 +1400,142 @@ public class MainController implements Initializable {
 				donut_ring_orange.setLength(orangePercent * 360);
 			}
 
-			if (lblOverdue != null)
-				lblOverdue.setText(String.format("₹%,.0f", overdueAmt));
+			// 7. DYNAMIC KPI PERCENTAGES AND PROGRESS BARS
+			double revThisMonth = 0, revLastMonth = 0;
+			double collThisMonth = 0, collLastMonth = 0;
+			double outToday = totalDue, outLastMonth = 0;
+			double overdueToday = overdueAmt, overdueLastMonth = 0;
+
+			// Query Revenue and Paid for This Month and Last Month
+			String sqlMonths = """
+				SELECT 
+					SUM(CASE WHEN strftime('%Y-%m', invoice_date) = strftime('%Y-%m', 'now') THEN amount ELSE 0 END) as rev_curr,
+					SUM(CASE WHEN strftime('%Y-%m', invoice_date) = strftime('%Y-%m', 'now', '-1 month') THEN amount ELSE 0 END) as rev_prev
+				FROM invoice_master WHERE is_void = 0 AND COALESCE(is_deleted, 0) = 0 AND status != 'DRAFT' AND status != 'CANCELLED' AND client_uuid IN (SELECT uuid FROM clients WHERE COALESCE(is_deleted, 0) = 0)
+				""";
+			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sqlMonths)) {
+				if (rs.next()) {
+					revThisMonth = rs.getDouble(1);
+					revLastMonth = rs.getDouble(2);
+				}
+			}
+
+			// Adjust Revenue with CN/DN for this month and last month
+			String sqlCN_DN = """
+				SELECT 
+					type,
+					SUM(CASE WHEN strftime('%Y-%m', date) = strftime('%Y-%m', 'now') THEN amount ELSE 0 END) as adj_curr,
+					SUM(CASE WHEN strftime('%Y-%m', date) = strftime('%Y-%m', 'now', '-1 month') THEN amount ELSE 0 END) as adj_prev
+				FROM invoice_adjustments
+				WHERE COALESCE(is_deleted, 0) = 0 AND invoice_uuid IN (SELECT uuid FROM invoice_master WHERE client_uuid IN (SELECT uuid FROM clients WHERE COALESCE(is_deleted, 0) = 0) AND status != 'DRAFT' AND status != 'CANCELLED')
+				GROUP BY type
+				""";
+			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sqlCN_DN)) {
+				while (rs.next()) {
+					String type = rs.getString(1);
+					double curr = rs.getDouble(2);
+					double prev = rs.getDouble(3);
+					if ("Debit Note".equalsIgnoreCase(type)) {
+						revThisMonth += curr;
+						revLastMonth += prev;
+					} else if ("Credit Note".equalsIgnoreCase(type)) {
+						revThisMonth -= curr;
+						revLastMonth -= prev;
+					}
+				}
+			}
+
+			// Query payments this month vs same period last month (collections)
+			String currentDayStr = java.time.LocalDate.now().toString().substring(8, 10);
+			String sqlPayments = """
+				SELECT 
+					SUM(CASE WHEN strftime('%Y-%m', payment_date) = strftime('%Y-%m', 'now') THEN amount ELSE 0 END) as pay_curr,
+					SUM(CASE WHEN strftime('%Y-%m', payment_date) = strftime('%Y-%m', 'now', '-1 month') AND strftime('%d', payment_date) <= ? THEN amount ELSE 0 END) as pay_prev
+				FROM payments
+				WHERE COALESCE(is_deleted, 0) = 0 AND type != 'Opening Balance' AND client_uuid IN (SELECT uuid FROM clients WHERE COALESCE(is_deleted, 0) = 0)
+				""";
+			try (java.sql.PreparedStatement ps = con.prepareStatement(sqlPayments)) {
+				ps.setString(1, currentDayStr);
+				try (ResultSet rs = ps.executeQuery()) {
+					if (rs.next()) {
+						collThisMonth = rs.getDouble(1);
+						collLastMonth = rs.getDouble(2);
+					}
+				}
+			}
+
+			// Outstanding at end of last month
+			outLastMonth = outToday - (revThisMonth - collThisMonth);
+
+			// Overdue last month (unpaid invoices older than 30 days from the start of this month)
+			String sqlOverduePrev = "SELECT SUM(due_amount) FROM invoice_master WHERE is_void = 0 AND COALESCE(is_deleted, 0) = 0 AND status != 'DRAFT' AND status != 'CANCELLED' AND client_uuid IN (SELECT uuid FROM clients WHERE COALESCE(is_deleted, 0) = 0) AND due_amount > 0 AND date(invoice_date) < date('now', 'start of month', '-30 days')";
+			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sqlOverduePrev)) {
+				if (rs.next()) {
+					overdueLastMonth = rs.getDouble(1);
+				}
+			}
+
+			// Update percentage labels
+			updateKPIPercent(lblRevenuePercent, revThisMonth, revLastMonth);
+			updateKPIPercent(lblOutstandingPercent, outToday, outLastMonth);
+			updateKPIPercent(lblCollectedPercent, collThisMonth, collLastMonth);
+			updateKPIPercent(lblOverduePercent, overdueToday, overdueLastMonth);
+
+			// Update progress bar lines
+			setKPIProgress(barRevenueProgress, revThisMonth > 0 ? (collThisMonth / revThisMonth) : 0);
+			setKPIProgress(barOutstandingProgress, totalBilled > 0 ? (totalDue / totalBilled) : 0);
+			setKPIProgress(barCollectedProgress, collLastMonth > 0 ? (collThisMonth / collLastMonth) : 0);
+			setKPIProgress(barOverdueProgress, totalDue > 0 ? (overdueAmt / totalDue) : 0);
+
+			// 8. DYNAMIC OUTSTANDING AGING
+			double aging_0_30 = 0;
+			double aging_30_60 = 0;
+			double aging_60_plus = 0;
+
+			String sqlAging = """
+				SELECT 
+					SUM(CASE WHEN date(invoice_date) >= date('now', '-30 days') THEN due_amount ELSE 0 END) as aging_0_30,
+					SUM(CASE WHEN date(invoice_date) >= date('now', '-60 days') AND date(invoice_date) < date('now', '-30 days') THEN due_amount ELSE 0 END) as aging_30_60,
+					SUM(CASE WHEN date(invoice_date) < date('now', '-60 days') THEN due_amount ELSE 0 END) as aging_60_plus
+				FROM invoice_master 
+				WHERE is_void = 0 
+				  AND COALESCE(is_deleted, 0) = 0 
+				  AND status != 'DRAFT' 
+				  AND status != 'CANCELLED' 
+				  AND client_uuid IN (SELECT uuid FROM clients WHERE COALESCE(is_deleted, 0) = 0)
+			""";
+			try (java.sql.Statement stAging = con.createStatement(); ResultSet rsAging = stAging.executeQuery(sqlAging)) {
+				if (rsAging.next()) {
+					aging_0_30 = rsAging.getDouble(1);
+					aging_30_60 = rsAging.getDouble(2);
+					aging_60_plus = rsAging.getDouble(3);
+				}
+			}
+
+			final double finalAging_0_30 = aging_0_30;
+			final double finalAging_30_60 = aging_30_60;
+			final double finalAging_60_plus = aging_60_plus;
+			double agingTotal = aging_0_30 + aging_30_60 + aging_60_plus;
+
+			double frac_0_30 = agingTotal > 0 ? (aging_0_30 / agingTotal) : 0;
+			double frac_30_60 = agingTotal > 0 ? (aging_30_60 / agingTotal) : 0;
+			double frac_60_plus = agingTotal > 0 ? (aging_60_plus / agingTotal) : 0;
+
+			Platform.runLater(() -> {
+				if (lblAging0_30 != null) {
+					lblAging0_30.setText("₹" + String.format("%,.0f", finalAging_0_30));
+				}
+				if (lblAging30_60 != null) {
+					lblAging30_60.setText("₹" + String.format("%,.0f", finalAging_30_60));
+				}
+				if (lblAging60Plus != null) {
+					lblAging60Plus.setText("₹" + String.format("%,.0f", finalAging_60_plus));
+				}
+				
+				setAgingProgress(barAging0_30, frac_0_30);
+				setAgingProgress(barAging30_60, frac_30_60);
+				setAgingProgress(barAging60Plus, frac_60_plus);
+			});
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -1011,7 +1566,7 @@ public class MainController implements Initializable {
 		try (Connection con = DBConnection.getConnection()) {
 			String globalFilter = getTimeFilterSQL();
 			String sql = "SELECT strftime('%m', invoice_date) as month, SUM(amount), SUM(paid_amount) " +
-					"FROM invoice_master WHERE is_void = 0 " + globalFilter +
+					"FROM invoice_master WHERE is_void = 0 AND COALESCE(is_deleted, 0) = 0 AND status != 'DRAFT' AND status != 'CANCELLED' AND client_uuid IN (SELECT uuid FROM clients WHERE COALESCE(is_deleted, 0) = 0) " + globalFilter +
 					" AND date(invoice_date) >= date('now', 'start of month', '-" + (activeChartRange - 1)
 					+ " months') " +
 					"GROUP BY month ORDER BY month DESC LIMIT 6";
@@ -1096,24 +1651,81 @@ public class MainController implements Initializable {
 	}
 
 	private void loadPieChartData() {
-		if (jobDistributionChart == null)
-			return;
 		try (Connection con = DBConnection.getConnection()) {
 			String filter = getTimeFilterSQL();
-			String sql = "SELECT status, COUNT(*) FROM job WHERE 1=1 " + filter.replace("invoice_date", "order_date")
+			String sql = "SELECT status, COUNT(*) FROM jobs WHERE COALESCE(is_deleted, 0) = 0 AND client_uuid IN (SELECT uuid FROM clients WHERE COALESCE(is_deleted, 0) = 0) " + filter.replace("invoice_date", "order_date")
 					+ " AND status IS NOT NULL GROUP BY status";
 			ObservableList<PieChart.Data> pieData = FXCollections.observableArrayList();
-			int total = 0;
+			
+			int prePress = 0;
+			int printing = 0;
+			int finishing = 0;
+			int ready = 0;
+			int totalActive = 0;
+
 			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
 				while (rs.next()) {
+					String status = rs.getString(1);
 					int count = rs.getInt(2);
-					pieData.add(new PieChart.Data(rs.getString(1), count));
-					total += count;
+					pieData.add(new PieChart.Data(status, count));
+					
+					utils.JobWorkflow.Major major = utils.JobWorkflow.majorFromJobStatus(status);
+					if (major == utils.JobWorkflow.Major.CANCELLED) {
+						continue;
+					}
+					totalActive += count;
+					switch (major) {
+						case DRAFT -> prePress += count;
+						case PROCESSING -> printing += count;
+						case COMPLETED -> finishing += count;
+						case INVOICE -> ready += count;
+					}
 				}
 			}
-			jobDistributionChart.setData(pieData);
-			if (lblActiveJobsCount != null)
-				lblActiveJobsCount.setText(String.valueOf(total));
+			if (jobDistributionChart != null) {
+				jobDistributionChart.setData(pieData);
+			}
+
+			final int finalPrePress = prePress;
+			final int finalPrinting = printing;
+			final int finalFinishing = finishing;
+			final int finalReady = ready;
+			final int finalTotalActive = totalActive;
+
+			double pctPrePress = totalActive > 0 ? (prePress * 100.0 / totalActive) : 0.0;
+			double pctPrinting = totalActive > 0 ? (printing * 100.0 / totalActive) : 0.0;
+			double pctFinishing = totalActive > 0 ? (finishing * 100.0 / totalActive) : 0.0;
+			double pctReady = totalActive > 0 ? (ready * 100.0 / totalActive) : 0.0;
+
+			Platform.runLater(() -> {
+				if (lblActiveJobsCount != null) {
+					lblActiveJobsCount.setText(finalTotalActive + " Active Jobs");
+				}
+				if (lblPrePressCount != null) {
+					lblPrePressCount.setText(String.valueOf(finalPrePress));
+				}
+				if (lblPrePressPercent != null) {
+					lblPrePressPercent.setText(String.format("(%.0f%%)", pctPrePress));
+				}
+				if (lblPrintingCount != null) {
+					lblPrintingCount.setText(String.valueOf(finalPrinting));
+				}
+				if (lblPrintingPercent != null) {
+					lblPrintingPercent.setText(String.format("(%.0f%%)", pctPrinting));
+				}
+				if (lblFinishingCount != null) {
+					lblFinishingCount.setText(String.valueOf(finalFinishing));
+				}
+				if (lblFinishingPercent != null) {
+					lblFinishingPercent.setText(String.format("(%.0f%%)", pctFinishing));
+				}
+				if (lblReadyCount != null) {
+					lblReadyCount.setText(String.valueOf(finalReady));
+				}
+				if (lblReadyPercent != null) {
+					lblReadyPercent.setText(String.format("(%.0f%%)", pctReady));
+				}
+			});
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -1140,7 +1752,7 @@ public class MainController implements Initializable {
 			String filter = getTimeFilterSQL();
 			String sql = "SELECT j.job_title, c.business_name, j.created_at, j.status " +
 					"FROM jobs j JOIN clients c ON j.client_uuid = c.uuid " +
-					"WHERE 1=1 " + filter.replace("invoice_date", "j.created_at") +
+					"WHERE COALESCE(j.is_deleted, 0) = 0 AND COALESCE(c.is_deleted, 0) = 0 " + filter.replace("invoice_date", "j.created_at") +
 					" ORDER BY j.created_at DESC LIMIT 5";
 			try (java.sql.Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
 				while (rs.next()) {
@@ -1269,6 +1881,11 @@ public class MainController implements Initializable {
 
 					if (controller instanceof GenerateInvoiceController genInv) {
 						genInv.onShownAfterNavigation();
+						if (pendingInvoicingClientUuid != null && pendingInvoicingJobUuid != null) {
+							genInv.preSelectJob(pendingInvoicingClientUuid, pendingInvoicingJobUuid);
+							pendingInvoicingClientUuid = null;
+							pendingInvoicingJobUuid = null;
+						}
 					}
 
 					if (controller instanceof AddJobController addJobController) {
@@ -1793,6 +2410,7 @@ public class MainController implements Initializable {
 					this.currentController = prevState.getController(); // ⚡ RESTORE CONTROLLER
 					centerContentHost.getChildren().setAll(prevState.getView());
 					updateCenterHeaderTitle(prevState.getFxmlPath());
+					refreshActiveScreen();
 				} else if (prevState.getFxmlPath() == null) {
 					// 🏠 Back to Dashboard
 					collapseAllSubmenus(true);
@@ -1929,6 +2547,35 @@ public class MainController implements Initializable {
 		loadCenterScreen("/fxml/view_job.fxml",
 				"Loading Dashboard...",
 				"Please wait");
+	}
+
+	public void loadViewJobWithStatus(String status) {
+		ViewJobsController.pendingFilterStatus = status;
+		highlightActiveMenu(jobsBtn);
+		highlightSubmenu(viewJobsSubBtn);
+		loadCenterScreen("/fxml/view_job.fxml",
+				"Loading Dashboard...",
+				"Please wait");
+	}
+
+	@FXML
+	private void handlePrePressClick() {
+		loadViewJobWithStatus("Draft");
+	}
+
+	@FXML
+	private void handlePrintingClick() {
+		loadViewJobWithStatus("In Progress");
+	}
+
+	@FXML
+	private void handleFinishingClick() {
+		loadViewJobWithStatus("Completed");
+	}
+
+	@FXML
+	private void handleReadyClick() {
+		loadViewJobWithStatus("Invoiced");
 	}
 
 	@FXML
@@ -2351,6 +2998,7 @@ public class MainController implements Initializable {
 		
 		syncManager.syncingProperty().addListener((obs, oldVal, syncing) -> updateSyncStatusUI());
 		syncManager.onlineProperty().addListener((obs, oldVal, online) -> updateSyncStatusUI());
+		syncManager.syncQueuedProperty().addListener((obs, oldVal, queued) -> updateSyncStatusUI());
 		updateSyncStatusUI();
 
 		if (lblPendingSync != null) {
@@ -2385,7 +3033,10 @@ public class MainController implements Initializable {
 		Platform.runLater(() -> {
 			service.sync.SyncStatusManager syncManager = service.sync.SyncStatusManager.getInstance();
 			if (lblSyncStatus != null) {
-				if (syncManager.isSyncing()) {
+				if (syncManager.isSyncQueued()) {
+					lblSyncStatus.setText("🟡 Sync Queued...");
+					lblSyncStatus.setStyle("-fx-text-fill: #FFA500; -fx-font-weight: bold; -fx-font-size: 11px;");
+				} else if (syncManager.isSyncing()) {
 					lblSyncStatus.setText("🟡 Syncing...");
 					lblSyncStatus.setStyle("-fx-text-fill: #D4AF37; -fx-font-weight: bold; -fx-font-size: 11px;");
 				} else if (syncManager.isOnline()) {
@@ -2464,6 +3115,30 @@ public class MainController implements Initializable {
 			javafx.animation.TranslateTransition transition = new javafx.animation.TranslateTransition(Duration.millis(300), banner);
 			transition.setToY(0);
 			transition.play();
+		});
+	}
+
+	public boolean checkCompanyExists() {
+		try (Connection conn = utils.DBConnection.getConnection()) {
+			return !new repository.CompanyDetailsRepository().listAll(conn, false).isEmpty();
+		} catch (Exception e) {
+			service.LoggerService.error("Failed to check company existence: " + e.getMessage(), MainController.class, e);
+			return false;
+		}
+	}
+
+	public void refreshNavigationLocks() {
+		Platform.runLater(() -> {
+			boolean companyExists = checkCompanyExists();
+			boolean disableNav = !companyExists;
+
+			if (dashboardBtn != null) dashboardBtn.setDisable(disableNav);
+			if (jobsBtn != null) jobsBtn.setDisable(disableNav);
+			if (clientsBtn != null) clientsBtn.setDisable(disableNav);
+			if (suppliersBtn != null) suppliersBtn.setDisable(disableNav);
+			if (billingBtn != null) billingBtn.setDisable(disableNav);
+			if (paymentBtn != null) paymentBtn.setDisable(disableNav);
+			if (ledgerBtn != null) ledgerBtn.setDisable(disableNav);
 		});
 	}
 }

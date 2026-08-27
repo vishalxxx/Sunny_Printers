@@ -97,10 +97,10 @@
         <HBox spacing="20">
             <!-- LEFT CONTENT -->
             <VBox spacing="20" HBox.hgrow="ALWAYS">
-                <!-- ACTIVE PIPELINE -->
+                <!-- JOB PIPELINE -->
                 <VBox spacing="10">
                     <HBox alignment="CENTER_LEFT" spacing="10">
-                        <Label text="Active Pipeline" styleClass="section-title"/>
+                        <Label text="Job Pipeline" styleClass="section-title"/>
                         <Label fx:id="lblPipelineMore" text="" styleClass="pipeline-more-tag" visible="false" managed="false"/>
                         <Region HBox.hgrow="ALWAYS"/>
                         <Button text="View All Jobs" styleClass="btn-text-link" onAction="#handleViewAllJobs"/>

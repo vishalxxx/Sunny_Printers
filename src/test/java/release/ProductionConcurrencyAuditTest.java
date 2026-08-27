@@ -5,6 +5,7 @@ import service.sync.UniversalSyncEngine;
 import org.junit.jupiter.api.Tag;
 import utils.FakeSupabaseRestClient;
 import utils.TestDatabaseHelper;
+import utils.TestEnvironment;
 import utils.CleanupUtility;
 import utils.ClearAllExceptSettings;
 import utils.ClearRemoteDatabase;
@@ -51,9 +52,8 @@ import utils.DBConnection;
 @Tag("release")
 public class ProductionConcurrencyAuditTest {
 
-    private static String originalDbUrl;
     private static String testDbUrl;
-    private static final String REPORT_PATH = "C:/Users/VishalGoswami/.gemini/antigravity-ide/brain/0d167df4-6f31-47e6-8eb9-505a37fc5c0f/production_concurrency_audit_results.md";
+    private static final String REPORT_PATH = "C:/Users/VishalGoswami/.gemini/antigravity-ide/brain/045c18cd-c274-4585-ae5b-01868379d4eb/production_concurrency_audit_results.md";
 
     private InvoiceMasterService invoiceService = new InvoiceMasterService();
     private InvoiceMasterRepository invoiceRepo = new InvoiceMasterRepository();
@@ -66,22 +66,46 @@ public class ProductionConcurrencyAuditTest {
 
     private AtomicInteger totalInvoicesGenerated = new AtomicInteger(0);
 
+    private static FakeSupabaseRestClient fakeSupabase;
+
     @BeforeAll
     public static void setup() throws Exception {
-        originalDbUrl = DBConnection.getUrl();
         testDbUrl = TestDatabaseHelper.createIsolatedDb("ConcurrencyAuditTest");
-        DBConnection.setUrl(testDbUrl);
-        
+        DBConnection.setTestDatabaseUrl(testDbUrl);
+        DBConnection.setGlobalTestDatabaseUrl(testDbUrl);
+
+        fakeSupabase = new FakeSupabaseRestClient();
+
+        com.google.gson.JsonObject proformaSeq = new com.google.gson.JsonObject();
+        proformaSeq.addProperty("uuid", java.util.UUID.randomUUID().toString());
+        proformaSeq.addProperty("sequence_key", "proforma_invoice");
+        proformaSeq.addProperty("current_value", 100);
+        fakeSupabase.getTableData(api.supabase.SupabaseEndpoints.NUMBER_SEQUENCES).add(proformaSeq);
+
+        com.google.gson.JsonObject gstSeq = new com.google.gson.JsonObject();
+        gstSeq.addProperty("uuid", java.util.UUID.randomUUID().toString());
+        gstSeq.addProperty("sequence_key", "gst_invoice");
+        gstSeq.addProperty("current_value", 100);
+        fakeSupabase.getTableData(api.supabase.SupabaseEndpoints.NUMBER_SEQUENCES).add(gstSeq);
+
+        api.supabase.SupabaseGate.setOverrideClient(fakeSupabase);
+
         CompanyProfile.setName("Sunny Printers");
         CompanyProfile.setAddress("Delhi, India");
         CompanyProfile.setGst("07BPPPS3532E2ZO");
         CompanyProfile.setEmail("test@example.com");
+
+        // Log test environment context
+        TestEnvironment.load();
+        TestEnvironment.logContext();
     }
 
     @AfterAll
     public static void tearDown() {
-        DBConnection.setUrl(originalDbUrl);
-        // TestDatabaseHelper.cleanupTestDir(); // Keep it for inspection if needed
+        DBConnection.clearTestDatabaseUrl();
+        DBConnection.clearGlobalTestDatabaseUrl();
+        api.supabase.SupabaseGate.setOverrideClient(null);
+        // TestDatabaseHelper.cleanupTestDir(); // Keep for inspection if needed
     }
 
     @BeforeEach
@@ -93,7 +117,7 @@ public class ProductionConcurrencyAuditTest {
                 "printing_items", "paper_items", "binding_items", "lamination_items", "ctp_items", 
                 "job_items", "jobs", "payment_allocations", "payment_details", "payments", 
                 "invoice_job_mapping", "invoice_master", "invoice_adjustments", 
-                "invoice_additional_charges", "document_number_mappings", "billing", 
+                "invoice_additional_charges", "document_number_mappings", 
                 "suppliers", "clients", "sync_conflicts"
             };
             for (String table : tables) {
@@ -115,14 +139,35 @@ public class ProductionConcurrencyAuditTest {
 
         // 1. Start Custom Sync Engine Loop
         Thread syncThread = new Thread(() -> {
-            while (!Thread.currentThread().isInterrupted()) {
-                try {
-                    UniversalSyncEngine.syncAllPending();
-                    Thread.sleep(5000); // 5 seconds polling
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
+            api.supabase.SupabaseGate.setOverrideClient(fakeSupabase);
+            try {
+                while (!Thread.currentThread().isInterrupted()) {
+                    try {
+                        utils.SQLiteWriteCoordinator.runAsBackground(() -> {
+                            try {
+                                UniversalSyncEngine.syncAllPending();
+                            } catch (Exception ex) {
+                                if (Thread.currentThread().isInterrupted() || ex.getMessage() != null && ex.getMessage().contains("Interrupted")) {
+                                    Thread.currentThread().interrupt();
+                                } else {
+                                    ex.printStackTrace();
+                                }
+                            }
+                        });
+                        Thread.sleep(5000); // 5 seconds polling
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    } catch (Exception e) {
+                        if (Thread.currentThread().isInterrupted() || e.getMessage() != null && e.getMessage().contains("Interrupted")) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                        e.printStackTrace();
+                    }
                 }
+            } finally {
+                api.supabase.SupabaseGate.setOverrideClient(null);
             }
         });
         syncThread.setDaemon(true);
@@ -137,6 +182,7 @@ public class ProductionConcurrencyAuditTest {
         for (int i = 0; i < 100; i++) {
             final int clientIndex = i;
             tasks.add(() -> {
+                api.supabase.SupabaseGate.setOverrideClient(fakeSupabase);
                 try {
                     String clientUuid = ClientIdentifiers.newUuidV7String();
                     String name = "ProdAudit Client " + clientIndex;
@@ -169,6 +215,8 @@ public class ProductionConcurrencyAuditTest {
                     }
                 } catch (Exception e) {
                     caughtExceptions.add(e);
+                } finally {
+                    api.supabase.SupabaseGate.setOverrideClient(null);
                 }
                 return null;
             });
@@ -179,6 +227,7 @@ public class ProductionConcurrencyAuditTest {
         for (int i = 0; i < 90; i++) {
             final int invoiceIndex = i;
             tasks.add(() -> {
+                api.supabase.SupabaseGate.setOverrideClient(fakeSupabase);
                 try {
                     // Wait for some clients/jobs to exist
                     while (clientUuids.isEmpty() || jobUuids.isEmpty()) {
@@ -258,6 +307,8 @@ public class ProductionConcurrencyAuditTest {
 
                 } catch (Exception e) {
                     caughtExceptions.add(e);
+                } finally {
+                    api.supabase.SupabaseGate.setOverrideClient(null);
                 }
                 return null;
             });
@@ -266,6 +317,7 @@ public class ProductionConcurrencyAuditTest {
         // Phase 3: Background View Invoices Searches (Simulate aggressive reads)
         for (int i = 0; i < 50; i++) {
             tasks.add(() -> {
+                api.supabase.SupabaseGate.setOverrideClient(fakeSupabase);
                 try {
                     for(int attempt=0; attempt<5; attempt++) {
                         Thread.sleep(200);
@@ -273,6 +325,8 @@ public class ProductionConcurrencyAuditTest {
                     }
                 } catch (Exception e) {
                     caughtExceptions.add(e);
+                } finally {
+                    api.supabase.SupabaseGate.setOverrideClient(null);
                 }
                 return null;
             });

@@ -97,7 +97,7 @@ public final class UniversalSyncEngine {
 		if (SupabaseGate.restClientIfConfigured().isEmpty()) {
 			return;
 		}
-		CompletableFuture.runAsync(() -> {
+		Runnable task = () -> {
 			if (!SupabaseReachability.isReachable()) {
 				return;
 			}
@@ -115,12 +115,17 @@ public final class UniversalSyncEngine {
 					System.err.println("[UniversalSyncEngine] Failed to trigger UI refresh: " + e.getMessage());
 				}
 			}
-		});
+		};
+		if (SupabaseGate.isOverrideActive()) {
+			utils.SQLiteWriteCoordinator.runAsBackground(task);
+		} else {
+			CompletableFuture.runAsync(() -> utils.SQLiteWriteCoordinator.runAsBackground(task));
+		}
 	}
 
 	public static void schedulePullAsync() {
 		SupabaseGate.restClientIfConfigured().ifPresent(http -> {
-			CompletableFuture.runAsync(() -> {
+			Runnable task = () -> {
 				if (!SupabaseReachability.isReachable()) {
 					return;
 				}
@@ -135,7 +140,12 @@ public final class UniversalSyncEngine {
 						System.err.println("[UniversalSyncEngine] Failed to trigger UI refresh after pull: " + e.getMessage());
 					}
 				}
-			});
+			};
+			if (SupabaseGate.isOverrideActive()) {
+				utils.SQLiteWriteCoordinator.runAsBackground(task);
+			} else {
+				CompletableFuture.runAsync(() -> utils.SQLiteWriteCoordinator.runAsBackground(task));
+			}
 		});
 	}
 
@@ -156,17 +166,21 @@ public final class UniversalSyncEngine {
 
 
 	public static SyncReport syncAllPending() {
+		service.LoggerService.beginOperation("SYNC");
 		SyncReport report = new SyncReport();
 		var httpOpt = SupabaseGate.restClientIfConfigured();
 		if (httpOpt.isEmpty()) {
+			service.LoggerService.endOperation("SYNC", false, "Supabase client not configured");
 			return report;
 		}
 		if (!SupabaseReachability.isReachable()) {
+			service.LoggerService.endOperation("SYNC", false, "Supabase remote not reachable");
 			return report;
 		}
 		SupabaseRestClient http = httpOpt.get();
 
 		try {
+			service.LoggerService.sync("[SYNC-START] Starting sync process");
 			report.tempCodesPromoted = TemporaryDocumentReconciliation.reconcileAll();
 
 			// Perform up to 5 passes to resolve foreign key dependency chains (e.g. jobs -> job_items -> printing_items)
@@ -284,15 +298,18 @@ public final class UniversalSyncEngine {
 
 				if (syncedThisPass > 0) {
 					progress = true;
-					System.out.println("[UniversalSyncEngine] Sync pass " + pass + " successfully processed " + syncedThisPass + " rows.");
+					service.LoggerService.sync("[UniversalSyncEngine] Sync pass " + pass + " successfully processed " + syncedThisPass + " rows.");
 				}
 				pass++;
 			}
 
 			report.pendingRemaining = countStillPending();
+			service.LoggerService.sync("[SYNC-COMPLETE] Sync completed. Total synced: " + report.totalSynced() + ", Remaining pending: " + report.pendingRemaining);
+			service.LoggerService.endOperation("SYNC", true, "Total synced: " + report.totalSynced());
 		} catch (Exception e) {
 			report.failures++;
-			System.err.println("[UniversalSyncEngine] sync failed: " + e.getMessage());
+			service.LoggerService.syncError("[SYNC-FAIL] Sync failed: " + e.getMessage(), e);
+			service.LoggerService.endOperation("SYNC", false, "Exception: " + e.getMessage());
 			SupabaseReachability.invalidateCache();
 		}
 		return report;
@@ -514,7 +531,7 @@ public final class UniversalSyncEngine {
 						synced++;
 						continue;
 					}
-				} catch (Exception ignored) {}
+				} catch (Exception e) { service.LoggerService.dbWarn("[SYNC] Conflict-check skipped for job " + job.getUuid() + ": " + e.getMessage()); }
 
 				JobSupabaseSync.upsertToRemote(http, job);
 				markTableSynced("jobs", job.getUuid());
@@ -525,6 +542,7 @@ public final class UniversalSyncEngine {
 			} catch (Exception e) {
 				if (isForeignKeyFailure(e)) {
 					markTableWaitingDependency("jobs", "uuid", job.getUuid());
+					resetParentToPendingIfMissingOnRemote("clients", job.getClientUuid());
 				} else {
 					report.failures++;
 				}
@@ -561,7 +579,7 @@ public final class UniversalSyncEngine {
 						synced++;
 						continue;
 					}
-				} catch (Exception ignored) {}
+				} catch (Exception e) { service.LoggerService.dbWarn("[SYNC] Conflict-check skipped for invoice " + inv.getUuid() + ": " + e.getMessage()); }
 
 				api.upsert(inv);
 				markTableSynced("invoice_master", inv.getUuid());
@@ -572,6 +590,7 @@ public final class UniversalSyncEngine {
 			} catch (Exception e) {
 				if (isForeignKeyFailure(e)) {
 					markTableWaitingDependency("invoice_master", "uuid", inv.getUuid());
+					resetParentToPendingIfMissingOnRemote("clients", inv.getClientUuid());
 				} else {
 					report.failures++;
 				}
@@ -605,7 +624,7 @@ public final class UniversalSyncEngine {
 						synced++;
 						continue;
 					}
-				} catch (Exception ignored) {}
+				} catch (Exception e) { service.LoggerService.dbWarn("[SYNC] Conflict-check skipped for payment " + payment.getUuid() + ": " + e.getMessage()); }
 
 				api.upsert(payment);
 				markTableSynced("payments", payment.getUuid());
@@ -616,6 +635,7 @@ public final class UniversalSyncEngine {
 			} catch (Exception e) {
 				if (isForeignKeyFailure(e)) {
 					markTableWaitingDependency("payments", "uuid", payment.getUuid());
+					resetParentToPendingIfMissingOnRemote("clients", payment.getClientUuid());
 				} else {
 					report.failures++;
 				}
@@ -695,5 +715,29 @@ public final class UniversalSyncEngine {
 			System.err.println("[UniversalSyncEngine] Failed to verify parent status for " + table + " " + uuidVal + ": " + e.getMessage());
 		}
 		return false;
+	}
+
+	public static void resetParentToPendingIfMissingOnRemote(String parentTable, String parentUuid) {
+		if (parentUuid == null || parentUuid.isBlank()) return;
+		try (Connection conn = utils.DBConnection.getConnection();
+				PreparedStatement ps = conn.prepareStatement(
+						"SELECT sync_status FROM " + parentTable + " WHERE uuid = ?")) {
+			ps.setString(1, parentUuid);
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) {
+					String status = rs.getString(1);
+					if ("SYNCED".equalsIgnoreCase(status)) {
+						try (PreparedStatement updPs = conn.prepareStatement(
+								"UPDATE " + parentTable + " SET sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?")) {
+							updPs.setString(1, parentUuid);
+							updPs.executeUpdate();
+							System.out.println("[UniversalSyncEngine] Reset parent " + parentTable + " " + parentUuid + " to PENDING due to child foreign-key failure.");
+						}
+					}
+				}
+			}
+		} catch (Exception e) {
+			System.err.println("[UniversalSyncEngine] Failed to reset parent to PENDING: " + e.getMessage());
+		}
 	}
 }

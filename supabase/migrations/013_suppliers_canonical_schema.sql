@@ -26,3 +26,5 @@ CREATE TABLE public.suppliers (
 
 CREATE INDEX IF NOT EXISTS idx_suppliers_sync_status ON public.suppliers(sync_status);
 CREATE INDEX IF NOT EXISTS idx_suppliers_type ON public.suppliers(type);
+
+NOTIFY pgrst, 'reload schema';

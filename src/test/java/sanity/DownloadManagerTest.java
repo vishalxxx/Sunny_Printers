@@ -33,7 +33,7 @@ public class DownloadManagerTest {
     @BeforeAll
     public static void setup() throws Exception {
         dbUrl = TestDatabaseHelper.createIsolatedDb("DownloadManagerTest");
-        DBConnection.setUrl(dbUrl);
+        DBConnection.setTestDatabaseUrl(dbUrl);
     }
 
     @AfterAll

@@ -80,3 +80,5 @@ CREATE TABLE IF NOT EXISTS hsn_sac_master (
     updated_by_user_uuid uuid,
     CONSTRAINT hsn_sac_master_type_keyword_unique UNIQUE(item_type, keyword)
 );
+
+NOTIFY pgrst, 'reload schema';
