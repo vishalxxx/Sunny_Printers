@@ -149,6 +149,9 @@ public class RecordPaymentController implements Initializable {
     private final ClientService clientService = new ClientService();
 
     public static InvoiceMaster pendingPrefillInvoice = null;
+    public static String editingPaymentUuid = null;
+    private String currentEditingPaymentUuid = null;
+    @FXML private Button savePaymentBtn;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -173,6 +176,12 @@ public class RecordPaymentController implements Initializable {
         if (pendingPrefillInvoice != null) {
             prefillForInvoice(pendingPrefillInvoice);
             pendingPrefillInvoice = null;
+        }
+
+        if (editingPaymentUuid != null) {
+            String uuidToEdit = editingPaymentUuid;
+            editingPaymentUuid = null;
+            javafx.application.Platform.runLater(() -> loadPaymentForEditing(uuidToEdit));
         }
     }
 
@@ -774,24 +783,77 @@ public class RecordPaymentController implements Initializable {
                 if (mode == null)
                     mode = "Cash";
 
-                // 1) Insert into payments
-                String paymentUuid = utils.ClientIdentifiers.newUuidString();
-                try (PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO payments (uuid, client_uuid, amount, payment_date, method, type, sync_status, created_at, updated_at) VALUES (?,?,?,?,?,?,'PENDING',datetime('now'),datetime('now'))")) {
-                    ps.setString(1, paymentUuid);
-                    ps.setString(2, clientId);
-                    ps.setDouble(3, totalAmount.doubleValue());
-                    ps.setString(4,
-                            paymentDatePicker.getValue() == null ? null : paymentDatePicker.getValue().toString());
-                    ps.setString(5, mode);
-                    ps.setString(6, paymentType);
-                    ps.executeUpdate();
+                String paymentUuid;
+                boolean isEditing = (currentEditingPaymentUuid != null && !currentEditingPaymentUuid.isBlank());
+                if (isEditing) {
+                    paymentUuid = currentEditingPaymentUuid;
+                    
+                    // Revert old allocations from invoices
+                    String oldAllocSql = "SELECT invoice_uuid, allocated_amount FROM payment_allocations WHERE payment_uuid = ? AND COALESCE(is_deleted, 0) = 0";
+                    try (PreparedStatement ps = con.prepareStatement(oldAllocSql)) {
+                        ps.setString(1, paymentUuid);
+                        try (ResultSet rs = ps.executeQuery()) {
+                            while (rs.next()) {
+                                String invUuid = rs.getString("invoice_uuid");
+                                double oldAlloc = rs.getDouble("allocated_amount");
+                                InvoiceMaster inv = repo.findByUuid(con, invUuid);
+                                if (inv != null) {
+                                    double revertedPaid = inv.getPaidAmount() - oldAlloc;
+                                    double revertedDue = inv.getNetAmount() - revertedPaid;
+                                    String status;
+                                    if (revertedDue <= 0.0001) {
+                                        status = "PAID";
+                                        revertedDue = 0.0;
+                                    } else if (revertedPaid > 0) {
+                                        status = "PARTIAL PAID";
+                                    } else {
+                                        status = "UNPAID";
+                                    }
+                                    repo.updatePayment(con, invUuid, revertedPaid, revertedDue, status, paymentDatePicker.getValue());
+                                }
+                            }
+                        }
+                    }
+
+                    // Delete old allocations
+                    try (PreparedStatement ps = con.prepareStatement("DELETE FROM payment_allocations WHERE payment_uuid = ?")) {
+                        ps.setString(1, paymentUuid);
+                        ps.executeUpdate();
+                    }
+
+                    // Update payments record
+                    try (PreparedStatement ps = con.prepareStatement(
+                            "UPDATE payments SET client_uuid = ?, amount = ?, payment_date = ?, method = ?, type = ?, sync_status = 'PENDING', updated_at = datetime('now') WHERE uuid = ?")) {
+                        ps.setString(1, clientId);
+                        ps.setDouble(2, totalAmount.doubleValue());
+                        ps.setString(3, paymentDatePicker.getValue() == null ? null : paymentDatePicker.getValue().toString());
+                        ps.setString(4, mode);
+                        ps.setString(5, paymentType);
+                        ps.setString(6, paymentUuid);
+                        ps.executeUpdate();
+                    }
+                } else {
+                    // 1) Insert into payments
+                    paymentUuid = utils.ClientIdentifiers.newUuidString();
+                    try (PreparedStatement ps = con.prepareStatement(
+                            "INSERT INTO payments (uuid, client_uuid, amount, payment_date, method, type, sync_status, created_at, updated_at) VALUES (?,?,?,?,?,?,'PENDING',datetime('now'),datetime('now'))")) {
+                        ps.setString(1, paymentUuid);
+                        ps.setString(2, clientId);
+                        ps.setDouble(3, totalAmount.doubleValue());
+                        ps.setString(4,
+                                paymentDatePicker.getValue() == null ? null : paymentDatePicker.getValue().toString());
+                        ps.setString(5, mode);
+                        ps.setString(6, paymentType);
+                        ps.executeUpdate();
+                    }
+
+                    LocalDate payDate = paymentDatePicker.getValue() != null ? paymentDatePicker.getValue() : LocalDate.now();
+                    service.NumberSequenceAllocationService seqAlloc = new service.NumberSequenceAllocationService();
+                    String receiptNo = seqAlloc.allocatePaymentReceiptNo(con, payDate);
+                    seqAlloc.persistReceiptNo(con, paymentUuid, receiptNo);
                 }
 
-                LocalDate payDate = paymentDatePicker.getValue() != null ? paymentDatePicker.getValue() : LocalDate.now();
-                service.NumberSequenceAllocationService seqAlloc = new service.NumberSequenceAllocationService();
-                String receiptNo = seqAlloc.allocatePaymentReceiptNo(con, payDate);
-                seqAlloc.persistReceiptNo(con, paymentUuid, receiptNo);
+                final String createdOrUpdatedUuid = paymentUuid;
 
                 // 2) Allocate amounts
                 
@@ -833,7 +895,7 @@ public class RecordPaymentController implements Initializable {
                     try (PreparedStatement ps = con.prepareStatement(
                             "INSERT INTO payment_allocations (uuid, payment_uuid, invoice_uuid, allocated_amount, sync_status, created_at, updated_at) VALUES (?,?,?,?,'PENDING',datetime('now'),datetime('now'))")) {
                         ps.setString(1, allocationUuid);
-                        ps.setString(2, paymentUuid);
+                        ps.setString(2, createdOrUpdatedUuid);
                         ps.setString(3, invoiceUuid);
                         ps.setDouble(4, alloc.doubleValue());
                         ps.executeUpdate();
@@ -861,19 +923,156 @@ public class RecordPaymentController implements Initializable {
                 }
 
                 // 3) Payment details
-                savePaymentDetails(con, paymentUuid, mode, finalRemarks);
+                savePaymentDetails(con, createdOrUpdatedUuid, mode, finalRemarks);
+
+                if (isEditing) {
+                    currentEditingPaymentUuid = null;
+                    if (savePaymentBtn != null) {
+                        savePaymentBtn.setText("Add payment");
+                    }
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Payment updated successfully!", ButtonType.OK);
+                    alert.setHeaderText("Payment Updated");
+                    alert.showAndWait();
+                    onReset(false);
+                } else {
+                    ButtonType editOpt = new ButtonType("Edit Payment ✏️", ButtonBar.ButtonData.LEFT);
+                    ButtonType okOpt = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Payment recorded successfully!", editOpt, okOpt);
+                    alert.setHeaderText("Success");
+                    Optional<ButtonType> result = alert.showAndWait();
+                    if (result.isPresent() && result.get() == editOpt) {
+                        String pUuid = createdOrUpdatedUuid;
+                        javafx.application.Platform.runLater(() -> loadPaymentForEditing(pUuid));
+                    } else {
+                        onReset(false);
+                    }
+                }
             });
-
-            // Show success message
-            new Alert(Alert.AlertType.INFORMATION, "Payment recorded successfully!", ButtonType.OK).showAndWait();
-
-            // Reset form but KEEP client selected (better UX)
-            onReset(false);
 
         } catch (Exception e) {
             e.printStackTrace();
-            new Alert(Alert.AlertType.ERROR, "Failed to record payment: " + e.getMessage(), ButtonType.OK)
+            new Alert(Alert.AlertType.ERROR, "Failed to record/update payment: " + e.getMessage(), ButtonType.OK)
                     .showAndWait();
+        }
+    }
+
+    public void loadPaymentForEditing(String paymentUuid) {
+        if (paymentUuid == null || paymentUuid.isBlank()) return;
+        
+        try (Connection con = DBConnection.getConnection()) {
+            String sql = "SELECT * FROM payments WHERE uuid = ? AND IFNULL(is_deleted, 0) = 0";
+            String clientUuid = null;
+            String payDateStr = null;
+            String method = null;
+            String type = null;
+            double amount = 0;
+
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, paymentUuid);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        clientUuid = rs.getString("client_uuid");
+                        payDateStr = rs.getString("payment_date");
+                        method = rs.getString("method");
+                        type = rs.getString("type");
+                        amount = rs.getDouble("amount");
+                    }
+                }
+            }
+
+            if (clientUuid == null) return;
+            currentEditingPaymentUuid = paymentUuid;
+
+            // Select client
+            for (Client c : clientCombo.getItems()) {
+                if (clientUuid.equals(c.getClientUuid())) {
+                    clientCombo.getSelectionModel().select(c);
+                    break;
+                }
+            }
+
+            // Load client invoices
+            onClientSelected();
+
+            // Set date, type, amount, mode
+            if (payDateStr != null && !payDateStr.isBlank()) {
+                try {
+                    String d = payDateStr.contains(" ") ? payDateStr.split(" ")[0] : payDateStr;
+                    paymentDatePicker.setValue(LocalDate.parse(d));
+                } catch (Exception ignored) {}
+            }
+            if (type != null) {
+                paymentTypeCombo.getSelectionModel().select(type);
+            }
+            amountField.setText(String.format(java.util.Locale.US, "%.2f", Math.abs(amount)));
+            if (method != null) {
+                paymentModeCombo.getSelectionModel().select(method);
+            }
+
+            // Load payment details
+            String detailSql = "SELECT field_key, field_value FROM payment_details WHERE payment_uuid = ?";
+            java.util.Map<String, String> detailsMap = new java.util.HashMap<>();
+            try (PreparedStatement ps = con.prepareStatement(detailSql)) {
+                ps.setString(1, paymentUuid);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        detailsMap.put(rs.getString("field_key"), rs.getString("field_value"));
+                    }
+                }
+            }
+
+            if (detailsMap.containsKey("notes")) notesField.setText(detailsMap.get("notes"));
+            if (detailsMap.containsKey("cheque_number")) chequeNumberField.setText(detailsMap.get("cheque_number"));
+            if (detailsMap.containsKey("bank_name") && bankNameCombo != null) bankNameCombo.setValue(detailsMap.get("bank_name"));
+            if (detailsMap.containsKey("cheque_date") && chequeDatePicker != null && detailsMap.get("cheque_date") != null) {
+                try { chequeDatePicker.setValue(LocalDate.parse(detailsMap.get("cheque_date"))); } catch (Exception ignored) {}
+            }
+            if (detailsMap.containsKey("clearance_date") && clearanceDatePicker != null && detailsMap.get("clearance_date") != null) {
+                try { clearanceDatePicker.setValue(LocalDate.parse(detailsMap.get("clearance_date"))); } catch (Exception ignored) {}
+            }
+            if (detailsMap.containsKey("receiver_bank") && chequeReceiverBankCombo != null) chequeReceiverBankCombo.setValue(detailsMap.get("receiver_bank"));
+            if (detailsMap.containsKey("status") && chequeStatusCombo != null) chequeStatusCombo.setValue(detailsMap.get("status"));
+
+            if (detailsMap.containsKey("upi_id")) upiIdField.setText(detailsMap.get("upi_id"));
+            if (detailsMap.containsKey("utr")) upiUtrField.setText(detailsMap.get("utr"));
+            if (detailsMap.containsKey("receiver_upi_id") && receiverUpiIdField != null) receiverUpiIdField.setText(detailsMap.get("receiver_upi_id"));
+            if (detailsMap.containsKey("receiver_bank") && upiReceiverBankCombo != null) upiReceiverBankCombo.setValue(detailsMap.get("receiver_bank"));
+            if (detailsMap.containsKey("status") && upiStatusCombo != null) upiStatusCombo.setValue(detailsMap.get("status"));
+
+            if (detailsMap.containsKey("sender_name") && senderNameField != null) senderNameField.setText(detailsMap.get("sender_name"));
+            if (detailsMap.containsKey("sender_account") && senderAccountField != null) senderAccountField.setText(detailsMap.get("sender_account"));
+            if (detailsMap.containsKey("utr") && bankTransferUtrField != null) bankTransferUtrField.setText(detailsMap.get("utr"));
+            if (detailsMap.containsKey("receiver_bank") && receiverBankCombo != null) receiverBankCombo.setValue(detailsMap.get("receiver_bank"));
+            if (detailsMap.containsKey("status") && bankTransferStatusCombo != null) bankTransferStatusCombo.setValue(detailsMap.get("status"));
+
+            // Load Allocations
+            String allocSql = "SELECT invoice_uuid, allocated_amount FROM payment_allocations WHERE payment_uuid = ? AND COALESCE(is_deleted, 0) = 0";
+            java.util.Map<String, Double> allocMap = new java.util.HashMap<>();
+            try (PreparedStatement ps = con.prepareStatement(allocSql)) {
+                ps.setString(1, paymentUuid);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        allocMap.put(rs.getString("invoice_uuid"), rs.getDouble("allocated_amount"));
+                    }
+                }
+            }
+
+            for (InvoiceRow row : invoiceItems) {
+                if (allocMap.containsKey(row.getInvoiceUuid())) {
+                    row.setSelected(true);
+                    row.setAllocateAmount(BigDecimal.valueOf(Math.abs(allocMap.get(row.getInvoiceUuid()))));
+                } else {
+                    row.setSelected(false);
+                }
+            }
+
+            if (savePaymentBtn != null) {
+                savePaymentBtn.setText("Update payment");
+            }
+            refreshFooterTotals();
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

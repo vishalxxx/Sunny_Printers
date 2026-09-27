@@ -36,6 +36,9 @@ import jakarta.mail.Session;
 import jakarta.mail.Transport;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMultipart;
+import javafx.stage.FileChooser;
 import model.EmailSettings;
 import repository.EmailSettingsRepository;
 import model.Supplier;
@@ -1246,6 +1249,24 @@ public class ViewJobsController {
         public String getPhone() { return phone; }
     }
 
+    public static class MailAttachment {
+        private final File file;
+        private final boolean originalJobAttachment;
+        private final javafx.beans.property.BooleanProperty attached;
+
+        public MailAttachment(File file, boolean originalJobAttachment, boolean defaultAttached) {
+            this.file = file;
+            this.originalJobAttachment = originalJobAttachment;
+            this.attached = new javafx.beans.property.SimpleBooleanProperty(defaultAttached);
+        }
+
+        public File getFile() { return file; }
+        public boolean isOriginalJobAttachment() { return originalJobAttachment; }
+        public boolean isAttached() { return attached.get(); }
+        public void setAttached(boolean val) { attached.set(val); }
+        public javafx.beans.property.BooleanProperty attachedProperty() { return attached; }
+    }
+
     private void handleSendMailPopup(Job job) {
         if (job == null) return;
         
@@ -1305,8 +1326,9 @@ public class ViewJobsController {
         
         VBox root = new VBox(15);
         root.getStyleClass().add("mail-popup-root");
-        root.setMinWidth(600);
-        root.setMaxWidth(700);
+        root.setMinWidth(920);
+        root.setMaxWidth(960);
+        root.setPrefWidth(940);
         
         // Header
         HBox header = new HBox();
@@ -1327,14 +1349,17 @@ public class ViewJobsController {
         closeBtn.setOnAction(e -> stage.close());
         header.getChildren().addAll(titleBox, spacer, closeBtn);
         
-        // Table label
+        // Left Column (Recipients & Attachments)
+        VBox leftBox = new VBox(12);
+        HBox.setHgrow(leftBox, Priority.ALWAYS);
+        leftBox.setPrefWidth(440);
+
         Label tableLabel = new Label("Select Recipient (Client or Supplier):");
         tableLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700; -fx-font-size: 12px;");
         
-        // TableView for recipients
         TableView<MailRecipient> table = new TableView<>();
         table.getStyleClass().add("mail-popup-table");
-        table.setPrefHeight(100);
+        table.setPrefHeight(150);
         
         TableColumn<MailRecipient, String> typeCol = new TableColumn<>("Role / Type");
         typeCol.setCellValueFactory(new PropertyValueFactory<>("type"));
@@ -1342,11 +1367,11 @@ public class ViewJobsController {
         
         TableColumn<MailRecipient, String> bNameCol = new TableColumn<>("Business Name");
         bNameCol.setCellValueFactory(new PropertyValueFactory<>("businessName"));
-        bNameCol.setPrefWidth(150);
+        bNameCol.setPrefWidth(130);
         
         TableColumn<MailRecipient, String> nameCol = new TableColumn<>("Contact Name");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
-        nameCol.setPrefWidth(120);
+        nameCol.setPrefWidth(100);
         
         TableColumn<MailRecipient, String> emailCol = new TableColumn<>("Email Address");
         emailCol.setCellValueFactory(new PropertyValueFactory<>("email"));
@@ -1355,8 +1380,154 @@ public class ViewJobsController {
         table.getColumns().addAll(typeCol, bNameCol, nameCol, emailCol);
         table.setItems(recipients);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        
-        // Form Fields
+
+        // Attachments Logic & UI
+        ObservableList<MailAttachment> attachmentList = FXCollections.observableArrayList();
+        if (job.getImagePath() != null && !job.getImagePath().isBlank()) {
+            String[] parts = job.getImagePath().split(",");
+            for (String p : parts) {
+                String trimmed = p.trim();
+                if (!trimmed.isEmpty()) {
+                    File f = utils.ImageStorage.resolveImageFile(trimmed);
+                    if (f != null && f.exists()) {
+                        boolean existsInList = attachmentList.stream()
+                            .anyMatch(a -> a.getFile().getAbsolutePath().equalsIgnoreCase(f.getAbsolutePath()));
+                        if (!existsInList) {
+                            attachmentList.add(new MailAttachment(f, true, true));
+                        }
+                    }
+                }
+            }
+        }
+
+        Label attachLabel = new Label("Attachments:");
+        attachLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700;");
+
+        Label attachCountBadge = new Label();
+        attachCountBadge.setStyle("-fx-text-fill: #8C8C8C; -fx-font-size: 11px; -fx-font-weight: 600;");
+
+        Button addAttachBtn = new Button("+ Add File");
+        addAttachBtn.setStyle("-fx-background-color: #FFF2E8; -fx-text-fill: #CD7B4E; -fx-border-color: #FFD596; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-font-size: 11px; -fx-font-weight: 700; -fx-padding: 3px 8px; -fx-cursor: hand;");
+
+        HBox attachHeader = new HBox(8);
+        attachHeader.setAlignment(Pos.CENTER_LEFT);
+        Region attachSpacer = new Region();
+        HBox.setHgrow(attachSpacer, Priority.ALWAYS);
+        attachHeader.getChildren().addAll(attachLabel, attachCountBadge, attachSpacer, addAttachBtn);
+
+        VBox attachContainer = new VBox(6);
+        attachContainer.setStyle("-fx-background-color: white; -fx-border-color: #EADFD4; -fx-border-width: 1.5px; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8px 10px;");
+
+        ScrollPane attachScroll = new ScrollPane(attachContainer);
+        attachScroll.setFitToWidth(true);
+        attachScroll.setPrefHeight(170);
+        attachScroll.setMaxHeight(200);
+        attachScroll.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-viewport-background: transparent; -fx-padding: 0;");
+
+        Runnable renderAttachments = new Runnable() {
+            @Override
+            public void run() {
+                attachContainer.getChildren().clear();
+                long selectedCount = attachmentList.stream().filter(MailAttachment::isAttached).count();
+                attachCountBadge.setText("(" + selectedCount + " of " + attachmentList.size() + " selected)");
+
+                if (attachmentList.isEmpty()) {
+                    Label emptyLbl = new Label("No files attached. Click '+ Add File' to attach files to this email.");
+                    emptyLbl.setStyle("-fx-text-fill: #A09893; -fx-font-style: italic; -fx-font-size: 12px;");
+                    attachContainer.getChildren().add(emptyLbl);
+                    return;
+                }
+
+                for (MailAttachment item : attachmentList) {
+                    HBox row = new HBox(8);
+                    row.setAlignment(Pos.CENTER_LEFT);
+                    row.setStyle("-fx-background-color: #FAF9F6; -fx-padding: 5px 8px; -fx-background-radius: 6px; -fx-border-color: #F1ECE6; -fx-border-radius: 6px;");
+
+                    CheckBox cb = new CheckBox();
+                    cb.setSelected(item.isAttached());
+                    cb.selectedProperty().addListener((obs, oldV, newV) -> {
+                        item.setAttached(newV);
+                        long sel = attachmentList.stream().filter(MailAttachment::isAttached).count();
+                        attachCountBadge.setText("(" + sel + " of " + attachmentList.size() + " selected)");
+                    });
+
+                    Label nameLbl = new Label(item.getFile().getName());
+                    nameLbl.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 600; -fx-font-size: 12px;");
+                    nameLbl.setMaxWidth(170);
+                    nameLbl.setTextOverrun(OverrunStyle.ELLIPSIS);
+                    nameLbl.setTooltip(new Tooltip(item.getFile().getName()));
+
+                    long bytes = item.getFile().length();
+                    String sizeStr = bytes < 1024 ? bytes + " B" : (bytes < 1024 * 1024 ? (bytes / 1024) + " KB" : String.format("%.1f MB", bytes / (1024.0 * 1024.0)));
+                    Label sizeLbl = new Label("(" + sizeStr + ")");
+                    sizeLbl.setStyle("-fx-text-fill: #8C8C8C; -fx-font-size: 11px;");
+
+                    Label tag = new Label(item.isOriginalJobAttachment() ? "Job File" : "Custom");
+                    tag.setStyle(item.isOriginalJobAttachment()
+                        ? "-fx-background-color: #E6F7FF; -fx-text-fill: #1890FF; -fx-font-size: 10px; -fx-font-weight: 700; -fx-padding: 1px 5px; -fx-background-radius: 4px;"
+                        : "-fx-background-color: #F6FFED; -fx-text-fill: #52C41A; -fx-font-size: 10px; -fx-font-weight: 700; -fx-padding: 1px 5px; -fx-background-radius: 4px;");
+
+                    Region rSpacer = new Region();
+                    HBox.setHgrow(rSpacer, Priority.ALWAYS);
+
+                    Button viewBtn = new Button("👁 View");
+                    viewBtn.setStyle("-fx-background-color: #F5F5F5; -fx-text-fill: #3E312D; -fx-border-color: #D9D9D9; -fx-border-radius: 4px; -fx-background-radius: 4px; -fx-font-size: 11px; -fx-font-weight: 600; -fx-padding: 2px 6px; -fx-cursor: hand;");
+                    viewBtn.setTooltip(new Tooltip("Open / View file"));
+                    viewBtn.setOnAction(e -> {
+                        File fileToOpen = item.getFile();
+                        if (fileToOpen != null && fileToOpen.exists()) {
+                            try {
+                                if (java.awt.Desktop.isDesktopSupported()) {
+                                    java.awt.Desktop.getDesktop().open(fileToOpen);
+                                } else {
+                                    toast("Desktop is not supported ❌");
+                                }
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                                toast("Failed to open file: " + ex.getMessage());
+                            }
+                        } else {
+                            toast("File not found on disk ❌");
+                        }
+                    });
+
+                    Button removeBtn = new Button("✕");
+                    removeBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #FF4D4F; -fx-font-size: 11px; -fx-padding: 0 4px; -fx-cursor: hand; -fx-font-weight: 700;");
+                    removeBtn.setTooltip(new Tooltip("Remove from email attachments"));
+                    removeBtn.setOnAction(e -> {
+                        attachmentList.remove(item);
+                        this.run();
+                    });
+
+                    row.getChildren().addAll(cb, nameLbl, sizeLbl, tag, rSpacer, viewBtn, removeBtn);
+                    attachContainer.getChildren().add(row);
+                }
+            }
+        };
+
+        addAttachBtn.setOnAction(e -> {
+            FileChooser fc = new FileChooser();
+            fc.setTitle("Select Attachment Files for Email");
+            List<File> chosen = fc.showOpenMultipleDialog(stage);
+            if (chosen != null) {
+                for (File f : chosen) {
+                    if (f.exists() && attachmentList.stream().noneMatch(a -> a.getFile().getAbsolutePath().equalsIgnoreCase(f.getAbsolutePath()))) {
+                        attachmentList.add(new MailAttachment(f, false, true));
+                    }
+                }
+                renderAttachments.run();
+            }
+        });
+
+        renderAttachments.run();
+
+        leftBox.getChildren().addAll(tableLabel, table, attachHeader, attachScroll);
+
+        // Right Column (Email Form Fields)
+        VBox rightBox = new VBox(8);
+        HBox.setHgrow(rightBox, Priority.ALWAYS);
+        rightBox.setPrefWidth(440);
+
         Label toLabel = new Label("To Email:");
         toLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700;");
         TextField toEmailField = new TextField();
@@ -1372,9 +1543,19 @@ public class ViewJobsController {
         messageLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700;");
         TextArea messageArea = new TextArea();
         messageArea.setPrefRowCount(10);
-        messageArea.setPrefHeight(200);
+        messageArea.setPrefHeight(230);
         messageArea.setWrapText(true);
         messageArea.getStyleClass().add("mail-area");
+
+        rightBox.getChildren().addAll(
+            toLabel, toEmailField,
+            subjectLabel, subjectField,
+            messageLabel, messageArea
+        );
+
+        // 2-Column Body Row
+        HBox bodyBox = new HBox(20);
+        bodyBox.getChildren().addAll(leftBox, rightBox);
         
         // Add listener to table
         table.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
@@ -1440,6 +1621,12 @@ public class ViewJobsController {
                 toast("❌ Please enter a valid email address!");
                 return;
             }
+
+            List<File> filesToSend = attachmentList.stream()
+                .filter(MailAttachment::isAttached)
+                .map(MailAttachment::getFile)
+                .filter(f -> f != null && f.exists())
+                .collect(Collectors.toList());
             
             sendBtn.setDisable(true);
             sendBtn.setText("Sending...");
@@ -1471,7 +1658,25 @@ public class ViewJobsController {
                     message.setFrom(new InternetAddress(senderEmail, "Sunny Printers"));
                     message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
                     message.setSubject(subject);
-                    message.setContent(messageBody.replace("\n", "<br>"), "text/html; charset=utf-8");
+
+                    if (filesToSend.isEmpty()) {
+                        message.setContent(messageBody.replace("\n", "<br>"), "text/html; charset=utf-8");
+                    } else {
+                        MimeMultipart multipart = new MimeMultipart("mixed");
+                        
+                        MimeBodyPart textPart = new MimeBodyPart();
+                        textPart.setContent(messageBody.replace("\n", "<br>"), "text/html; charset=utf-8");
+                        multipart.addBodyPart(textPart);
+                        
+                        for (File f : filesToSend) {
+                            MimeBodyPart attachPart = new MimeBodyPart();
+                            attachPart.attachFile(f);
+                            attachPart.setFileName(f.getName());
+                            multipart.addBodyPart(attachPart);
+                        }
+                        
+                        message.setContent(multipart);
+                    }
                     
                     Transport.send(message);
                     
@@ -1498,14 +1703,7 @@ public class ViewJobsController {
         actionRow.setAlignment(Pos.CENTER_RIGHT);
         actionRow.getChildren().addAll(statusInfoLabel, cancelBtn, sendBtn);
         
-        VBox formBox = new VBox(8);
-        formBox.getChildren().addAll(
-            toLabel, toEmailField,
-            subjectLabel, subjectField,
-            messageLabel, messageArea
-        );
-        
-        root.getChildren().addAll(header, tableLabel, table, formBox, actionRow);
+        root.getChildren().addAll(header, bodyBox, actionRow);
         
         Scene scene = new Scene(root);
         scene.setFill(Color.TRANSPARENT);

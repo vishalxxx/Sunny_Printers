@@ -289,7 +289,8 @@ public final class RemoteToLocalSync {
 								sb.append(",");
 							}
 						}
-						sb.append(") ON CONFLICT(uuid) DO UPDATE SET ");
+						String conflictTarget = "payment_details".equalsIgnoreCase(table) ? "(payment_uuid, field_key)" : "(uuid)";
+						sb.append(") ON CONFLICT").append(conflictTarget).append(" DO UPDATE SET ");
 						boolean first = true;
 						for (String col : insertCols) {
 							if ("uuid".equalsIgnoreCase(col) || "id".equalsIgnoreCase(col)) {

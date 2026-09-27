@@ -282,7 +282,7 @@
                 <Button text="Cancel" onAction="#onCancel" styleClass="rp-btn, rp-btn-ghost"/>
                 <Button text="Reset" onAction="#onReset" styleClass="rp-btn, rp-btn-outline"/>
                 <Button text="Print receipt" onAction="#onPrintReceipt" styleClass="rp-btn, rp-btn-soft"/>
-                <Button text="Add payment" onAction="#onAddPayment" styleClass="rp-btn, rp-btn-primary"/>
+                <Button fx:id="savePaymentBtn" text="Add payment" onAction="#onAddPayment" styleClass="rp-btn, rp-btn-primary"/>
             </HBox>
         </HBox>
     </bottom>

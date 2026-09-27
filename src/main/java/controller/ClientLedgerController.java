@@ -17,9 +17,11 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TableCell;
@@ -319,12 +321,36 @@ public class ClientLedgerController implements Initializable {
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && (!row.isEmpty())) {
                     LedgerEntry entry = row.getItem();
-                    // Show details only if it's a payment/refund
-                    if (entry != null && (entry.getType().contains("PAYMENT") || entry.getType().contains("REFUND"))) {
+                    // Show details only if it's a payment/refund/opening balance
+                    if (entry != null && (entry.getType().contains("PAYMENT") || entry.getType().contains("REFUND") || entry.getType().contains("OPENING BALANCE"))) {
                         utils.PaymentDetailsDialogUtil.showByUuid(ledgerTable.getScene().getWindow(), entry.getTxnUuid());
                     }
                 }
             });
+
+            row.itemProperty().addListener((obs, oldEntry, entry) -> {
+                if (entry == null || (!entry.getType().contains("PAYMENT") && !entry.getType().contains("REFUND") && !entry.getType().contains("OPENING BALANCE"))) {
+                    row.setContextMenu(null);
+                } else {
+                    ContextMenu contextMenu = new ContextMenu();
+                    MenuItem viewItem = new MenuItem("👁 View Payment Details");
+                    viewItem.setOnAction(e -> {
+                        utils.PaymentDetailsDialogUtil.showByUuid(ledgerTable.getScene().getWindow(), entry.getTxnUuid());
+                    });
+
+                    MenuItem editItem = new MenuItem("✏ Edit Payment");
+                    editItem.setOnAction(e -> {
+                        RecordPaymentController.editingPaymentUuid = entry.getTxnUuid();
+                        if (MainController.getInstance() != null) {
+                            MainController.getInstance().loadRecordPayment();
+                        }
+                    });
+
+                    contextMenu.getItems().addAll(viewItem, editItem);
+                    row.setContextMenu(contextMenu);
+                }
+            });
+
             return row;
         });
     }

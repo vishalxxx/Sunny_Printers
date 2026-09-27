@@ -27,3 +27,16 @@ All notable changes to this project will be documented in this file.
 ## [5.0.5] - 2026-07-04
 ### Features
 - Release of version 5.0.5
+
+
+## [6.0.6] - 2026-08-27
+### Features
+- Release of version 6.0.6
+
+## [6.0.7] - 2026-09-27
+### Features
+- Email job files with attachments & preview functionality in View Jobs.
+- Payment edit capability from payment details popup, payment history, and ledger view.
+- Added HSN selection validation popup for job items without HSN.
+- Improved payment details sync constraints and sync diagnostic tracking.
+
