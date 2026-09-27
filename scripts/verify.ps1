@@ -62,6 +62,7 @@ $dbUrl = "$SupabaseUrl/rest/v1/app_updates?version=eq.$Version&release_channel=e
 $headers = @{
     "Authorization" = "Bearer $SupabaseKey"
     "apikey"        = $SupabaseKey
+    "User-Agent"    = "SunnyPrinters-Release-Manager"
 }
 
 $records = Invoke-RestMethod -Uri $dbUrl -Method Get -Headers $headers
@@ -74,13 +75,18 @@ Log-Message "Database row exists. Verified Fields:"
 Log-Message " - Version: $($record.version)"
 Log-Message " - Release Channel: $($record.release_channel)"
 Log-Message " - Published: $($record.published)"
-Log-Message " - Download URL (GitHub): $($record.download_url)"
-Log-Message " - GitHub Release Tag: $($record.github_release_tag)"
-Log-Message " - GitHub Release URL: $($record.github_release_url)"
+Log-Message " - storage_path:       $($record.storage_path)"
+Log-Message " - download_url:       $($record.download_url)"
+Log-Message " - github_release_tag: $($record.github_release_tag)"
+Log-Message " - github_release_url: $($record.github_release_url)"
 
 $downloadUrl = $record.download_url
 if (-not $downloadUrl) {
-    throw "Verification FAILED: download_url in database row is empty."
+    Log-Message "Warning: download_url in database row is empty. Falling back to storage_path..."
+    $downloadUrl = $record.storage_path
+}
+if (-not $downloadUrl) {
+    throw "Verification FAILED: both download_url and storage_path in database row are empty."
 }
 
 # Check database fields match expected local values

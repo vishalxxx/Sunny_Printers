@@ -170,8 +170,8 @@ public class EditJobController implements utils.DirtySupport {
         // General Tab
         if (currentJob.getRemarks() != null) jobRemarksArea.setText(currentJob.getRemarks());
         if (currentJob.getImagePath() != null && !currentJob.getImagePath().isBlank()) {
-            File f = new File(currentJob.getImagePath());
-            if (f.exists()) {
+            File f = utils.ImageStorage.resolveImageFile(currentJob.getImagePath());
+            if (f != null && f.exists()) {
                 jobImagePreview.setImage(new Image(f.toURI().toString()));
                 jobImagePreview.setVisible(true); jobImagePreview.setManaged(true);
                 filePlaceholder.setVisible(false); filePlaceholder.setManaged(false);
@@ -389,16 +389,7 @@ public class EditJobController implements utils.DirtySupport {
             }
 
             if (selectedImageFile != null) {
-                File dir = new File("Images");
-                if (!dir.exists()) dir.mkdirs();
-                String ext = "";
-                String name = selectedImageFile.getName();
-                int dotIndex = name.lastIndexOf('.');
-                if (dotIndex > 0) ext = name.substring(dotIndex);
-                String newFileName = "job_" + currentJob.getUuid().replace("-", "") + "_" + System.currentTimeMillis() + ext;
-                File targetFile = new File(dir, newFileName);
-                Files.copy(selectedImageFile.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                String relativePath = "Images/" + newFileName;
+                String relativePath = utils.ImageStorage.saveImage(selectedImageFile, currentJob.getUuid());
                 
                 String userUuid = null;
                 if (utils.SessionManager.getInstance().getCurrentUser() != null) {
@@ -463,7 +454,7 @@ public class EditJobController implements utils.DirtySupport {
         } catch (Exception e) {
         	try {
         		con.rollback();
-            } catch (Exception ignored) {}
+            } catch (Exception e2) { service.LoggerService.dbWarn("Failed to rollback EditJobController: " + e2.getMessage()); }
             e.printStackTrace();
             Toast.show(
                 (Stage) jobNumberLabel.getScene().getWindow(),
@@ -474,7 +465,7 @@ public class EditJobController implements utils.DirtySupport {
             if (con != null) {
                 try {
                     con.close();
-                } catch (Exception ignored) {}
+                } catch (Exception e2) { service.LoggerService.dbWarn("Failed to close connection in EditJobController: " + e2.getMessage()); }
             }
         }
     }
@@ -509,7 +500,7 @@ public class EditJobController implements utils.DirtySupport {
             if (p.isUpdated()) {
                 if (!p.isSameAsOriginal()) {
                     repo.update(con, p);
-                    jobItemRepo.updateBaseItem(con, p.getJobItemUuid(), service.buildPaperDescription(p), p.getAmount());
+                    jobItemRepo.updateBaseItem(con, p.getJobItemUuid(), service.buildPaperDescription(p), p.getAmount(), p.isIncludeNotesInInvoice() ? 1 : 0);
                     changed = true;
                 }
                 p.captureOriginal();
@@ -547,7 +538,7 @@ public class EditJobController implements utils.DirtySupport {
             if (p.isUpdated()) {
                 if (!p.isSameAsOriginal()) {
                     repo.update(con, p);
-                    jobItemRepo.updateBaseItem(con, p.getJobItemUuid(), service.buildPrintingDescription(p), p.getAmount());
+                    jobItemRepo.updateBaseItem(con, p.getJobItemUuid(), service.buildPrintingDescription(p), p.getAmount(), p.isIncludeNotesInInvoice() ? 1 : 0);
                     changed = true;
                 }
                 p.captureOriginal();
@@ -584,7 +575,7 @@ public class EditJobController implements utils.DirtySupport {
             if (b.isUpdated()) {
                 if (!b.isSameAsOriginal()) {
                     repo.update(con, b);
-                    jobItemRepo.updateBaseItem(con, b.getJobItemUuid(), service.buildBindingDescription(b), b.getAmount());
+                    jobItemRepo.updateBaseItem(con, b.getJobItemUuid(), service.buildBindingDescription(b), b.getAmount(), b.isIncludeNotesInInvoice() ? 1 : 0);
                     changed = true;
                 }
                 b.captureOriginal();
@@ -621,7 +612,7 @@ public class EditJobController implements utils.DirtySupport {
             if (l.isUpdated()) {
                 if (!l.isSameAsOriginal()) {
                     repo.update(con, l);
-                    jobItemRepo.updateBaseItem(con, l.getJobItemUuid(), service.buildLaminationDescription(l), l.getAmount());
+                    jobItemRepo.updateBaseItem(con, l.getJobItemUuid(), service.buildLaminationDescription(l), l.getAmount(), l.isIncludeNotesInInvoice() ? 1 : 0);
                     changed = true;
                 }
                 l.captureOriginal();
@@ -658,7 +649,7 @@ public class EditJobController implements utils.DirtySupport {
             if (c.isUpdated()) {
                 if (!c.isSameAsOriginal()) {
                     repo.update(con, c);
-                    jobItemRepo.updateBaseItem(con, c.getJobItemUuid(), service.buildCtpDescription(c), c.getAmount());
+                    jobItemRepo.updateBaseItem(con, c.getJobItemUuid(), service.buildCtpDescription(c), c.getAmount(), c.isIncludeNotesInInvoice() ? 1 : 0);
                     changed = true;
                 }
                 c.captureOriginal();

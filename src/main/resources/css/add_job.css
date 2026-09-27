@@ -548,3 +548,26 @@
 .notes-toggle-checkbox:selected > .box > .mark {
     -fx-background-color: white;
 }
+
+/* --- CARD HEADER INVOICE TOGGLE --- */
+.card-header-toggle {
+    -fx-cursor: hand;
+}
+.card-header-toggle > .box {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 3;
+}
+.card-header-toggle:hover > .box {
+    -fx-border-color: #CD7B4E;
+}
+.card-header-toggle:selected > .box {
+    -fx-background-color: #CD7B4E;
+    -fx-border-color: #CD7B4E;
+}
+.card-header-toggle:selected > .box > .mark {
+    -fx-background-color: white;
+}

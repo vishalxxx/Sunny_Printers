@@ -20,14 +20,15 @@ public class JobItemRepository {
 		item.setUuid(uuid);
 
 		String sql = """
-				    INSERT INTO job_items (uuid, job_uuid, type, description, amount, sort_order, sync_status, created_at, updated_at)
-				    VALUES (?, ?, ?, ?, ?, ?, 'PENDING', datetime('now'), datetime('now'))
+				    INSERT INTO job_items (uuid, job_uuid, type, description, amount, sort_order, include_in_invoice, sync_status, created_at, updated_at)
+				    VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', datetime('now'), datetime('now'))
 				    ON CONFLICT(uuid) DO UPDATE SET
 				        job_uuid = excluded.job_uuid,
 				        type = excluded.type,
 				        description = excluded.description,
 				        amount = excluded.amount,
 				        sort_order = excluded.sort_order,
+				        include_in_invoice = excluded.include_in_invoice,
 				        sync_status = 'PENDING',
 				        updated_at = datetime('now')
 				""";
@@ -38,6 +39,7 @@ public class JobItemRepository {
 			ps.setString(4, item.getDescription());
 			ps.setDouble(5, item.getAmount());
 			ps.setInt(6, item.getSortOrder());
+			ps.setInt(7, item.getIncludeInInvoice());
 			ps.executeUpdate();
 			JobRepository.syncAmountFromJobItems(con, item.getJobUuid());
 			return item;
@@ -48,7 +50,7 @@ public class JobItemRepository {
 
 	public List<JobItem> findByJobUuid(String jobUuid) throws Exception {
 		String sql = """
-				    SELECT uuid, job_uuid, type, description, amount, sort_order, sync_status, sync_version, created_at, updated_at
+				    SELECT uuid, job_uuid, type, description, amount, sort_order, include_in_invoice, sync_status, sync_version, created_at, updated_at
 				    FROM job_items
 				    WHERE job_uuid = ? AND COALESCE(is_deleted, 0) = 0
 				    ORDER BY sort_order, uuid
@@ -65,6 +67,7 @@ public class JobItemRepository {
 					item.setDescription(rs.getString("description"));
 					item.setAmount(rs.getDouble("amount"));
 					item.setSortOrder(rs.getInt("sort_order"));
+					item.setIncludeInInvoice(rs.getInt("include_in_invoice"));
 					item.setSyncStatus(rs.getString("sync_status"));
 					item.setSyncVersion(rs.getInt("sync_version"));
 					item.setCreatedAt(rs.getString("created_at"));
@@ -78,12 +81,13 @@ public class JobItemRepository {
 		return list;
 	}
 
-	public void updateBaseItem(Connection con, String uuid, String description, double amount) {
-		String sql = "UPDATE job_items SET description = ?, amount = ?, updated_at = datetime('now'), sync_status = 'PENDING' WHERE uuid = ?";
+	public void updateBaseItem(Connection con, String uuid, String description, double amount, int includeInInvoice) {
+		String sql = "UPDATE job_items SET description = ?, amount = ?, include_in_invoice = ?, updated_at = datetime('now'), sync_status = 'PENDING' WHERE uuid = ?";
 		try (PreparedStatement ps = con.prepareStatement(sql)) {
 			ps.setString(1, description);
 			ps.setDouble(2, amount);
-			ps.setString(3, uuid);
+			ps.setInt(3, includeInInvoice);
+			ps.setString(4, uuid);
 			ps.executeUpdate();
 			String jobUuid = resolveJobUuid(con, uuid);
 			if (jobUuid != null) {

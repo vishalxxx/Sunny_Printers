@@ -359,3 +359,29 @@
     -fx-background-color: #CD7B4E;
     -fx-shape: "M7 10l5 5 5-5z";
 }
+
+/* Premium CheckBox styling */
+.settings-check {
+    -fx-cursor: hand;
+    -fx-text-fill: #3E312D;
+    -fx-font-weight: 800;
+    -fx-font-size: 11px;
+}
+.settings-check .box {
+    -fx-background-color: #FAF6F0;
+    -fx-border-color: #EADFD4;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+.settings-check:hover .box {
+    -fx-border-color: #CD7B4E;
+}
+.settings-check:selected .box {
+    -fx-background-color: #CD7B4E;
+    -fx-border-color: #CD7B4E;
+}
+.settings-check:selected .mark {
+    -fx-background-color: #FFFFFF;
+}
+

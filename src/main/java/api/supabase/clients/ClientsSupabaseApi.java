@@ -354,7 +354,7 @@ public final class ClientsSupabaseApi {
 					return "true".equalsIgnoreCase(s) || "1".equals(s);
 				}
 			}
-		} catch (Exception ignored) {}
+		} catch (Exception e) { service.LoggerService.debug("Failed to parse boolean: " + e.getMessage()); }
 		return false;
 	}
 }

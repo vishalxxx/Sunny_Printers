@@ -41,7 +41,7 @@ public class IncrementalPullTest {
         dbPath = TestDatabaseHelper.createIsolatedDb("IncrementalPullTest");
         fakeSupabase = new FakeSupabaseRestClient();
         SupabaseGate.setOverrideClient(fakeSupabase);
-        DBConnection.setUrl(dbPath);
+        DBConnection.setTestDatabaseUrl(dbPath);
     }
 
     @AfterAll

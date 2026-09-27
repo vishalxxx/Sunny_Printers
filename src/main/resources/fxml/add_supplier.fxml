@@ -38,18 +38,18 @@
                         </columnConstraints>
                         
                         <VBox styleClass="supplier-field-container" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                            <Label text="Business Name" styleClass="supplier-field-label" />
+                            <TextField fx:id="businessNameField" styleClass="supplier-input-field" promptText="Enter company or trade name" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="1" GridPane.rowIndex="0">
                             <Label text="Supplier Name *" styleClass="supplier-field-label" />
                             <TextField fx:id="supplierNameField" styleClass="supplier-input-field" promptText="Enter supplier name" maxWidth="Infinity" />
                         </VBox>
                         
-                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="0" GridPane.rowIndex="1">
                             <Label text="Supplier Code (Auto)" styleClass="supplier-field-label" />
                             <TextField fx:id="supplierCodeField" styleClass="supplier-input-field" disable="true" text="SUP-0042" maxWidth="Infinity" />
-                        </VBox>
-                        
-                        <VBox styleClass="supplier-field-container" GridPane.columnIndex="0" GridPane.rowIndex="1">
-                            <Label text="Business Name" styleClass="supplier-field-label" />
-                            <TextField fx:id="businessNameField" styleClass="supplier-input-field" promptText="Enter company or trade name" maxWidth="Infinity" />
                         </VBox>
                         
                         <VBox styleClass="supplier-field-container" GridPane.columnIndex="1" GridPane.rowIndex="1">

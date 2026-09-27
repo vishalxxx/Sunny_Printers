@@ -160,7 +160,52 @@ public class GenerateInvoiceController {
         applyTabContent();
         refreshInvoiceNoPreview();
     }
-
+    public void preSelectJob(String clientUuid, String jobUuid) {
+        if (clientUuid == null) return;
+        
+        Client match = null;
+        for (Client c : clientComboBox.getItems()) {
+            if (clientUuid.equals(c.getClientUuid())) {
+                match = c;
+                break;
+            }
+        }
+        
+        if (match == null) {
+            try {
+                Client c = clientService.getClientByUuid(clientUuid);
+                if (c != null) {
+                    masterClients.add(c);
+                    match = c;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        
+        if (match != null) {
+            clientComboBox.setValue(match);
+            lastClientSelectionForMonthly = match;
+            
+            loadJobsForClient(match);
+            
+            if (jobUuid != null) {
+                boolean found = false;
+                for (JobItem item : masterJobs) {
+                    if (jobUuid.equals(item.getJobUuid())) {
+                        item.setSelected(true);
+                        found = true;
+                    } else {
+                        item.setSelected(false);
+                    }
+                }
+                if (found) {
+                    jobsTable.refresh();
+                    updateSummary();
+                }
+            }
+        }
+    }
     @FXML
     public void initialize() {
         filteredMonthlyJobs = new FilteredList<>(monthlyMasterJobs, j -> true);

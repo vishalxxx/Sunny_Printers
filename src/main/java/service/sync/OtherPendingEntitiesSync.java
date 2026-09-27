@@ -108,7 +108,7 @@ public final class OtherPendingEntitiesSync {
 						String originalSyncStatus = null;
 						try {
 							originalSyncStatus = rs.getString("sync_status");
-						} catch (Exception ignored) {}
+						} catch (Exception e) { service.LoggerService.dbWarn("[SYNC] Could not read sync_status for " + def.sqliteTable() + " " + uuid + ": " + e.getMessage()); }
 						boolean wasWaiting = "WAITING_DEPENDENCY".equalsIgnoreCase(originalSyncStatus);
 
 						JsonObject row = rowToJson(rs);
@@ -151,7 +151,7 @@ public final class OtherPendingEntitiesSync {
 											row.addProperty(boolCol, "true".equalsIgnoreCase(val) || "1".equals(val) || "yes".equalsIgnoreCase(val));
 										}
 									}
-								} catch (Exception ignored) {}
+								} catch (Exception e) { service.LoggerService.dbWarn("[SYNC] Could not convert boolean for " + def.sqliteTable() + " " + uuid + ": " + e.getMessage()); }
 							}
 						}
 
@@ -159,7 +159,7 @@ public final class OtherPendingEntitiesSync {
 						String localUpdatedAt = null;
 						try {
 							localUpdatedAt = rs.getString("updated_at");
-						} catch (Exception ignored) {}
+						} catch (Exception e) { service.LoggerService.dbWarn("[SYNC] Could not read updated_at for " + def.sqliteTable() + " " + uuid + ": " + e.getMessage()); }
 
 						List<String> colsList = SyncConflictResolver.getColumns(conn, def.sqliteTable());
 						if (SyncConflictResolver.checkPushConflictAndResolve(conn, http, def.sqliteTable(), def.endpoint(), uuid, localUpdatedAt, colsList)) {
@@ -189,6 +189,25 @@ public final class OtherPendingEntitiesSync {
 						}
 						if (UniversalSyncEngine.isForeignKeyFailure(e)) {
 							UniversalSyncEngine.markTableWaitingDependency(def.sqliteTable(), def.uuidColumn(), uuid);
+							
+							// Auto-reset parent dependencies
+							if ("job_items".equals(def.sqliteTable())) {
+								UniversalSyncEngine.resetParentToPendingIfMissingOnRemote("jobs", rs.getString("job_uuid"));
+							} else if (isJobItemDetailTable(def.sqliteTable())) {
+								UniversalSyncEngine.resetParentToPendingIfMissingOnRemote("job_items", rs.getString("job_item_uuid"));
+							} else if ("invoice_job_mapping".equals(def.sqliteTable())) {
+								UniversalSyncEngine.resetParentToPendingIfMissingOnRemote("invoice_master", rs.getString("invoice_uuid"));
+								UniversalSyncEngine.resetParentToPendingIfMissingOnRemote("jobs", rs.getString("job_uuid"));
+							} else if ("invoice_additional_charges".equals(def.sqliteTable())) {
+								UniversalSyncEngine.resetParentToPendingIfMissingOnRemote("invoice_master", rs.getString("invoice_uuid"));
+							} else if ("invoice_adjustments".equals(def.sqliteTable())) {
+								UniversalSyncEngine.resetParentToPendingIfMissingOnRemote("invoice_master", rs.getString("invoice_uuid"));
+							} else if ("payment_allocations".equals(def.sqliteTable())) {
+								UniversalSyncEngine.resetParentToPendingIfMissingOnRemote("payments", rs.getString("payment_uuid"));
+								UniversalSyncEngine.resetParentToPendingIfMissingOnRemote("invoice_master", rs.getString("invoice_uuid"));
+							} else if ("payment_details".equals(def.sqliteTable())) {
+								UniversalSyncEngine.resetParentToPendingIfMissingOnRemote("payments", rs.getString("payment_uuid"));
+							}
 						} else {
 							report.failures++;
 						}
@@ -329,7 +348,8 @@ public final class OtherPendingEntitiesSync {
 								+ uuidColumn + "=?")) {
 			ps.setString(1, uuid.trim());
 			ps.executeUpdate();
-		} catch (Exception ignored) {
+		} catch (Exception e) {
+			service.LoggerService.dbError("[SYNC] Failed to mark " + table + " row as SYNCED: " + uuid, e);
 		}
 	}
 

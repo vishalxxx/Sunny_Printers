@@ -37,7 +37,6 @@ public class BankSettingsController implements Initializable {
 
 	@FXML private Button newBtn;
 	@FXML private Button saveBtn;
-	@FXML private Button editRowBtn;
 	@FXML private Button deleteBtn;
 
 	private final BankDetailsService bankService = new BankDetailsService();
@@ -78,16 +77,11 @@ public class BankSettingsController implements Initializable {
 	}
 
 	private void wireActions() {
-		if (newBtn != null) newBtn.setOnAction(e -> beginEdit(newBlank()));
+		if (newBtn != null) newBtn.setOnAction(e -> {
+			if (bankTable != null) bankTable.getSelectionModel().clearSelection();
+			beginEdit(newBlank());
+		});
 		if (saveBtn != null) saveBtn.setOnAction(e -> save());
-		if (editRowBtn != null) {
-			editRowBtn.setOnAction(e -> {
-				BankDetails sel = bankTable != null ? bankTable.getSelectionModel().getSelectedItem() : null;
-				if (sel != null) {
-					beginEdit(copyOf(sel));
-				}
-			});
-		}
 		if (deleteBtn != null) deleteBtn.setOnAction(e -> deleteSelected());
 	}
 
@@ -110,6 +104,25 @@ public class BankSettingsController implements Initializable {
 	private void beginEdit(BankDetails b) {
 		editing = b;
 		applyToForm(b);
+		if (defaultCheck != null) {
+			boolean isOnlyOne = (rows.size() == 1 && b.getUuid() != null) || rows.isEmpty();
+			boolean isCurrentDefault = b.isDefault();
+			if (isOnlyOne || isCurrentDefault) {
+				defaultCheck.setSelected(true);
+				defaultCheck.setDisable(true);
+			} else {
+				defaultCheck.setDisable(false);
+			}
+		}
+		if (activeCheck != null) {
+			boolean isDefault = b.isDefault();
+			if (isDefault) {
+				activeCheck.setSelected(true);
+				activeCheck.setDisable(true);
+			} else {
+				activeCheck.setDisable(false);
+			}
+		}
 		updateRowActionButtonsState();
 	}
 
@@ -121,9 +134,6 @@ public class BankSettingsController implements Initializable {
 		BankDetails sel = bankTable.getSelectionModel().getSelectedItem();
 		boolean hasSelection = sel != null;
 		boolean canDelete = hasSelection && sel.getUuid() != null && !sel.getUuid().isBlank();
-		if (editRowBtn != null) {
-			editRowBtn.setDisable(!hasSelection);
-		}
 		if (deleteBtn != null) {
 			deleteBtn.setDisable(!canDelete);
 		}
@@ -146,8 +156,13 @@ public class BankSettingsController implements Initializable {
 		b.setAccountNo(text(accountNoField));
 		b.setBranchName(text(branchField));
 		b.setIfscCode(text(ifscCodeField));
-		b.setDefault(defaultCheck != null && defaultCheck.isSelected());
-		b.setActive(activeCheck == null || activeCheck.isSelected());
+		boolean isDef = defaultCheck != null && defaultCheck.isSelected();
+		b.setDefault(isDef);
+		if (isDef) {
+			b.setActive(true);
+		} else {
+			b.setActive(activeCheck == null || activeCheck.isSelected());
+		}
 	}
 
 	private void save() {
@@ -161,13 +176,24 @@ public class BankSettingsController implements Initializable {
 			return;
 		}
 
+		// Prevent duplicates
+		for (BankDetails row : rows) {
+			if (row.getBankName() != null && row.getBankName().equalsIgnoreCase(editing.getBankName())
+					&& row.getAccountNo() != null && row.getAccountNo().equals(editing.getAccountNo())) {
+				if (editing.getUuid() == null || !row.getUuid().equalsIgnoreCase(editing.getUuid())) {
+					showWarn("A bank with this name and account number already exists.");
+					return;
+				}
+			}
+		}
+
 		BankDetails saved = bankService.save(editing);
 		loadData();
 
 		// reselect saved row
 		if (bankTable != null) {
 			for (int i = 0; i < rows.size(); i++) {
-				if (rows.get(i).getUuid() != null && rows.get(i).getUuid().equals(saved.getUuid())) {
+				if (rows.get(i).getUuid() != null && rows.get(i).getUuid().equalsIgnoreCase(saved.getUuid())) {
 					bankTable.getSelectionModel().select(i);
 					break;
 				}
@@ -244,6 +270,11 @@ public class BankSettingsController implements Initializable {
 		alert.getDialogPane().getStyleClass().add("settings-warm-dialog");
 		alert.getDialogPane().getStylesheets().add(BankSettingsController.class.getResource("/css/theme.css").toExternalForm());
 		alert.getDialogPane().getStylesheets().add(BankSettingsController.class.getResource("/css/settings_screens.css").toExternalForm());
+	}
+
+	public void refresh() {
+		loadData();
+		selectFirstRow();
 	}
 }
 

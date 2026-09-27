@@ -120,21 +120,28 @@ public class BankDetailsRepository {
 		service.sync.UniversalSyncEngine.scheduleSyncAsync();
 
 		final String finalUuid = uuid.trim();
-		api.supabase.SupabaseGate.restClientIfConfigured().ifPresent(http -> java.util.concurrent.CompletableFuture.runAsync(() -> {
-			try {
-				String v = java.net.URLEncoder.encode(finalUuid, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
-				com.google.gson.JsonObject body = new com.google.gson.JsonObject();
-				body.addProperty("uuid", finalUuid);
-				body.addProperty("is_deleted", 1);
-				body.addProperty("is_active", 0);
-				body.addProperty("sync_status", "SYNCED");
-				body.addProperty("synced_at", java.time.Instant.now().toString());
-				body.addProperty("deleted_at", java.time.Instant.now().toString());
-				http.patchJson(api.supabase.SupabaseEndpoints.BANK_DETAILS, "uuid=eq." + v, body.toString(), "return=minimal");
-			} catch (Exception ex) {
-				System.err.println("[Supabase bank_details] remote soft-delete failed for uuid=" + finalUuid + ": " + ex.getMessage());
+		api.supabase.SupabaseGate.restClientIfConfigured().ifPresent(http -> {
+			Runnable task = () -> {
+				try {
+					String v = java.net.URLEncoder.encode(finalUuid, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
+					com.google.gson.JsonObject body = new com.google.gson.JsonObject();
+					body.addProperty("uuid", finalUuid);
+					body.addProperty("is_deleted", 1);
+					body.addProperty("is_active", 0);
+					body.addProperty("sync_status", "SYNCED");
+					body.addProperty("synced_at", java.time.Instant.now().toString());
+					body.addProperty("deleted_at", java.time.Instant.now().toString());
+					http.patchJson(api.supabase.SupabaseEndpoints.BANK_DETAILS, "uuid=eq." + v, body.toString(), "return=minimal");
+				} catch (Exception ex) {
+					System.err.println("[Supabase bank_details] remote soft-delete failed for uuid=" + finalUuid + ": " + ex.getMessage());
+				}
+			};
+			if (api.supabase.SupabaseGate.isOverrideActive()) {
+				task.run();
+			} else {
+				java.util.concurrent.CompletableFuture.runAsync(task);
 			}
-		}));
+		});
 	}
 
 	public void clearDefault(Connection con) throws Exception {

@@ -43,6 +43,7 @@ public class PaymentHistoryController implements Initializable {
     @FXML private TableColumn<PaymentRow, String> colMethod;
     @FXML private TableColumn<PaymentRow, String> colAmount;
     @FXML private TableColumn<PaymentRow, String> colReference;
+    @FXML private TableColumn<PaymentRow, String> colAction;
     @FXML private HBox breadcrumbContainer;
 
     private ObservableList<PaymentRow> masterPaymentList = FXCollections.observableArrayList();
@@ -86,6 +87,32 @@ public class PaymentHistoryController implements Initializable {
         colMethod.setCellValueFactory(cell -> cell.getValue().methodProperty());
         colAmount.setCellValueFactory(cell -> cell.getValue().amountProperty());
         colReference.setCellValueFactory(cell -> cell.getValue().referenceProperty());
+
+        if (colAction != null) {
+            colAction.setCellFactory(col -> new TableCell<>() {
+                private final Button editBtn = new Button("✏ Edit");
+                {
+                    editBtn.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 4 10; -fx-background-radius: 4; -fx-cursor: hand;");
+                    editBtn.setOnAction(event -> {
+                        PaymentRow row = getTableView().getItems().get(getIndex());
+                        if (row != null) {
+                            RecordPaymentController.editingPaymentUuid = row.getId();
+                            MainController.getInstance().loadRecordPayment();
+                        }
+                    });
+                }
+
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty) {
+                        setGraphic(null);
+                    } else {
+                        setGraphic(editBtn);
+                    }
+                }
+            });
+        }
     }
 
     private void setupAutoPopupDatePicker(DatePicker dp) {
@@ -204,6 +231,33 @@ public class PaymentHistoryController implements Initializable {
                     }
                 }
             });
+
+            ContextMenu contextMenu = new ContextMenu();
+            MenuItem viewItem = new MenuItem("👁 View Details");
+            viewItem.setOnAction(e -> {
+                PaymentRow rowData = row.getItem();
+                if (rowData != null) {
+                    utils.PaymentDetailsDialogUtil.showByUuid(paymentsTable.getScene().getWindow(), rowData.getId());
+                }
+            });
+
+            MenuItem editItem = new MenuItem("✏ Edit Payment");
+            editItem.setOnAction(e -> {
+                PaymentRow rowData = row.getItem();
+                if (rowData != null) {
+                    RecordPaymentController.editingPaymentUuid = rowData.getId();
+                    MainController.getInstance().loadRecordPayment();
+                }
+            });
+
+            contextMenu.getItems().addAll(viewItem, editItem);
+
+            row.contextMenuProperty().bind(
+                javafx.beans.binding.Bindings.when(row.emptyProperty())
+                    .then((ContextMenu) null)
+                    .otherwise(contextMenu)
+            );
+
             return row;
         });
     }
@@ -219,10 +273,19 @@ public class PaymentHistoryController implements Initializable {
                 c.business_name, 
                 c.client_name, 
                 p.type,
-                COALESCE(
-                    (SELECT GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid),
-                    CASE WHEN p.type = 'Refund' THEN 'Advance Refund' ELSE 'Advance' END
-                ) as invoice_ref,
+                CASE WHEN UPPER(p.type) = 'REFUND' THEN
+                    COALESCE(
+                        (SELECT 'Refund against ' || GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid AND COALESCE(a.is_deleted, 0) = 0 AND COALESCE(i.is_deleted, 0) = 0),
+                        (SELECT 'Refund against ' || GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid),
+                        'Advance Refund'
+                    )
+                ELSE
+                    COALESCE(
+                        (SELECT 'Payment for invoice ' || GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid AND COALESCE(a.is_deleted, 0) = 0 AND COALESCE(i.is_deleted, 0) = 0),
+                        (SELECT 'Payment for invoice ' || GROUP_CONCAT(i.invoice_no, ', ') FROM payment_allocations a JOIN invoice_master i ON a.invoice_uuid = i.uuid WHERE a.payment_uuid = p.uuid),
+                        'Advance'
+                    )
+                END as invoice_ref,
                 (SELECT field_value FROM payment_details WHERE payment_uuid = p.uuid AND field_key = 'receipt_no') as receipt_no,
                 p.method, 
                 p.amount,
@@ -266,7 +329,7 @@ public class PaymentHistoryController implements Initializable {
             sql.append(" AND p.payment_date <= '").append(to.toString()).append("'");
         }
 
-        sql.append(" ORDER BY p.payment_date DESC");
+        sql.append(" ORDER BY datetime(COALESCE(p.updated_at, p.created_at)) DESC, p.payment_date DESC");
 
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql.toString());

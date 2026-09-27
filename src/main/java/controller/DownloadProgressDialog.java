@@ -179,15 +179,29 @@ public class DownloadProgressDialog extends Stage {
 
     private void showSuccessAlert(String path, String version, String sha) {
         javafx.application.Platform.runLater(() -> {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Download Complete");
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("Update Ready");
             alert.setHeaderText("Installer Downloaded & Verified");
             alert.setContentText("The update installer has been successfully downloaded and verified.\n\n"
-                    + "Version: " + version + "\n"
-                    + "Path: " + path + "\n"
-                    + "SHA-256: " + sha + "\n\n"
-                    + "Ready For Installation. Note: Automatic execution will occur in Phase 3.");
-            alert.showAndWait();
+                    + "Version: " + version + "\n\n"
+                    + "The application must close to apply the update. Would you like to launch the installer and exit now?");
+            
+            javafx.scene.control.ButtonType buttonTypeYes = new javafx.scene.control.ButtonType("Install & Exit", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+            javafx.scene.control.ButtonType buttonTypeNo = new javafx.scene.control.ButtonType("Later", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
+            alert.getButtonTypes().setAll(buttonTypeYes, buttonTypeNo);
+
+            java.util.Optional<javafx.scene.control.ButtonType> result = alert.showAndWait();
+            if (result.isPresent() && result.get() == buttonTypeYes) {
+                try {
+                    LOGGER.info("[DownloadProgressDialog] Launching installer: " + path);
+                    ProcessBuilder pb = new ProcessBuilder("msiexec.exe", "/i", path);
+                    pb.start();
+                    System.exit(0);
+                } catch (Exception ex) {
+                    LOGGER.log(Level.SEVERE, "[DownloadProgressDialog] Failed to launch installer", ex);
+                    showErrorAlert("Failed to launch installer: " + ex.getMessage());
+                }
+            }
         });
     }
 

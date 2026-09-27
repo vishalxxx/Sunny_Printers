@@ -615,8 +615,7 @@ public class GstPdfInvoiceService {
         // DYNAMIC SPACER
         // =========================================================
 
-        // Reduced empty desert space
-        float spacerHeight = 120f - (descLinesCount * 9f);
+        float spacerHeight = 260f - (descLinesCount * 12f);
 
         if (spacerHeight < 40f) {
 
@@ -1692,10 +1691,34 @@ public class GstPdfInvoiceService {
         forCompany.setAlignment(
                 Element.ALIGN_RIGHT);
 
-        // Leave 30 points space for stamp / signature
-        forCompany.setSpacingAfter(30f);
+        String sigPath = utils.DigitalSignaturePath.get();
+        boolean hasSignature = false;
+        com.lowagie.text.Image sigImage = null;
+        if (sigPath != null && !sigPath.isBlank()) {
+            java.io.File f = new java.io.File(sigPath);
+            if (f.exists() && f.isFile()) {
+                try {
+                    sigImage = com.lowagie.text.Image.getInstance(sigPath);
+                    sigImage.scaleToFit(100f, 35f);
+                    sigImage.setAlignment(Element.ALIGN_RIGHT);
+                    hasSignature = true;
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
 
-        lowerRight.addElement(forCompany);
+        if (hasSignature && sigImage != null) {
+            forCompany.setSpacingAfter(4f);
+            lowerRight.addElement(forCompany);
+            lowerRight.addElement(sigImage);
+            Paragraph spacerSig = p("", fontNormal, 4f);
+            spacerSig.setSpacingBefore(4f);
+            lowerRight.addElement(spacerSig);
+        } else {
+            forCompany.setSpacingAfter(30f);
+            lowerRight.addElement(forCompany);
+        }
 
         Paragraph auth = p(
                 "Authorised Signatory",

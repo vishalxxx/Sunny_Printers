@@ -10,7 +10,10 @@ public enum MasterDocumentSeries {
 	JOB("Job", "JOB"),
 	JOB_TICKET("Job Ticket", "TK"),
 	DISPATCH_CHALLAN("Dispatch Challan", "DC"),
-	EWAY_BILL_REF("E-way bill ref", "WB");
+	EWAY_BILL_REF("E-way bill ref", "WB"),
+	PAYMENT_RECEIPT("Payment Receipt", "RCPT"),
+	CLIENT("Client", "CL"),
+	SUPPLIER("Supplier", "SUP");
 
 	private final String label;
 	private final String typeCode;

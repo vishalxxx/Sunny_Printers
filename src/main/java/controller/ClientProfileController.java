@@ -119,8 +119,60 @@ public class ClientProfileController implements Initializable {
         refreshProfile();
     }
 
+    private void calculateClientAnalytics(Client c) {
+        try (Connection con = DBConnection.getConnection()) {
+            String clientUuid = c.getClientUuid();
+            
+            // 1. LTV Logic: Invoices + Opening Balance
+            double ltv = 0;
+            String sqlLtv = "SELECT SUM(amount) FROM invoice_master WHERE client_uuid = ? AND is_void = 0 AND IFNULL(is_deleted, 0) = 0 AND UPPER(status) != 'DRAFT'";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(sqlLtv)) {
+                ps.setString(1, clientUuid);
+                java.sql.ResultSet rs = ps.executeQuery();
+                if (rs.next()) ltv = rs.getDouble(1);
+            }
+            
+            // Neutralize cancelled invoices with no payments from LTV/Balance
+            double cancelledNoPaymentSum = 0;
+            String sqlCancelled = "SELECT SUM(amount) FROM invoice_master WHERE client_uuid = ? AND status = 'CANCELLED' AND IFNULL(is_deleted, 0) = 0 " +
+                                  "AND NOT EXISTS (SELECT 1 FROM payment_allocations a WHERE a.invoice_uuid = invoice_master.uuid AND COALESCE(a.is_deleted, 0) = 0)";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(sqlCancelled)) {
+                ps.setString(1, clientUuid);
+                java.sql.ResultSet rs = ps.executeQuery();
+                if (rs.next()) cancelledNoPaymentSum = rs.getDouble(1);
+            }
+            ltv = ltv - cancelledNoPaymentSum;
+            
+            ltv += c.getOpeningBalance();
+            c.setLtv(ltv);
+            
+            // 2. Balance Logic: Total outstanding - Payments
+            double totalPaid = 0;
+            String sqlPaid = "SELECT SUM(amount) FROM payments WHERE client_uuid = ? AND IFNULL(is_deleted, 0) = 0 AND type <> 'Opening Balance'";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(sqlPaid)) {
+                ps.setString(1, clientUuid);
+                java.sql.ResultSet rs = ps.executeQuery();
+                if (rs.next()) totalPaid = rs.getDouble(1);
+            }
+            
+            double adjustments = 0;
+            String sqlAdj = "SELECT SUM(CASE WHEN type='Debit Note' THEN amount ELSE -amount END) FROM invoice_adjustments WHERE invoice_uuid IN (SELECT uuid FROM invoice_master WHERE client_uuid = ? AND IFNULL(is_deleted, 0) = 0 AND is_void = 0 AND UPPER(status) != 'DRAFT') AND IFNULL(is_deleted, 0) = 0";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(sqlAdj)) {
+                ps.setString(1, clientUuid);
+                java.sql.ResultSet rs = ps.executeQuery();
+                if (rs.next()) adjustments = rs.getDouble(1);
+            }
+            
+            c.setBalance(ltv + adjustments - totalPaid);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public void refreshProfile() {
         if (currentClient == null) return;
+        
+        calculateClientAnalytics(currentClient);
         
         utils.BreadcrumbUtil.populateBreadcrumbs(breadcrumbContainer, currentClient.getBusinessName(), () -> handleBack(null));
         
@@ -184,7 +236,7 @@ public class ClientProfileController implements Initializable {
         List<Job> activeJobs = new ArrayList<>();
         int totalActive = 0;
         try (Connection con = DBConnection.getConnection()) {
-            String countSql = "SELECT COUNT(*) FROM jobs WHERE client_uuid = ? AND (status IS NULL OR LOWER(TRIM(status)) != 'completed')";
+            String countSql = "SELECT COUNT(*) FROM jobs WHERE client_uuid = ? AND COALESCE(is_deleted, 0) = 0";
             try (java.sql.PreparedStatement ps = con.prepareStatement(countSql)) {
                 ps.setString(1, currentClient.getClientUuid());
                 ResultSet rs = ps.executeQuery();
@@ -192,7 +244,7 @@ public class ClientProfileController implements Initializable {
                     totalActive = rs.getInt(1);
                 }
             }
-            String sql = "SELECT job_title, status, job_code FROM jobs WHERE client_uuid = ? AND (status IS NULL OR LOWER(TRIM(status)) != 'completed') ORDER BY created_at DESC LIMIT 2";
+            String sql = "SELECT job_title, status, job_code FROM jobs WHERE client_uuid = ? AND COALESCE(is_deleted, 0) = 0 ORDER BY created_at DESC LIMIT 2";
             try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
                 ps.setString(1, currentClient.getClientUuid());
                 ResultSet rs = ps.executeQuery();
@@ -254,10 +306,15 @@ public class ClientProfileController implements Initializable {
         specs.getStyleClass().add("job-card-specs");
         nameBox.getChildren().addAll(title, specs);
         
-        String statusText = job.getStatus() == null ? "START" : job.getStatus().toUpperCase();
-        boolean isCompleted = statusText.contains("COMPLETED") || statusText.contains("SHIPPED");
-        
-        Label statusTag = new Label(isCompleted ? "COMPLETED" : "IN PRODUCTION");
+        utils.JobWorkflow.Major major = utils.JobWorkflow.majorFromJobStatus(job.getStatus());
+        boolean isCompleted = major == utils.JobWorkflow.Major.COMPLETED || major == utils.JobWorkflow.Major.INVOICE;
+        String statusLabel;
+        if (major == utils.JobWorkflow.Major.CANCELLED) {
+            statusLabel = "CANCELLED";
+        } else {
+            statusLabel = isCompleted ? "COMPLETED" : "IN PRODUCTION";
+        }
+        Label statusTag = new Label(statusLabel);
         statusTag.getStyleClass().add(isCompleted ? "status-pill-green" : "status-pill-subtle");
         
         header.getChildren().addAll(nameBox, statusTag);
@@ -265,28 +322,40 @@ public class ClientProfileController implements Initializable {
         VBox progressSection = new VBox(4);
         progressSection.setStyle("-fx-padding: 8 0 0 0;");
         
-        double progress = 0.25;
+        double progress = 0.125;
         int activeStep = 0;
-        if (statusText.contains("START")) { progress = 0.3; activeStep = 1; }
-        else if (statusText.contains("PRINTING")) { progress = 0.6; activeStep = 2; }
-        else if (statusText.contains("FINISHING")) { progress = 0.85; activeStep = 3; }
-        else if (statusText.contains("PAID") || statusText.contains("SHIPPED")) { progress = 1.0; activeStep = 4; }
+        if (major == utils.JobWorkflow.Major.PROCESSING) {
+            progress = 0.375;
+            activeStep = 1;
+        } else if (major == utils.JobWorkflow.Major.COMPLETED) {
+            progress = 0.625;
+            activeStep = 2;
+        } else if (major == utils.JobWorkflow.Major.INVOICE) {
+            progress = 1.0;
+            activeStep = 3;
+        } else if (major == utils.JobWorkflow.Major.CANCELLED) {
+            progress = 0.0;
+            activeStep = -1;
+        }
         
         ProgressBar bar = new ProgressBar(progress);
         bar.setMaxWidth(Double.MAX_VALUE);
-        bar.getStyleClass().add(progress >= 1.0 ? "pipeline-progress-green" : "pipeline-progress");
+        bar.getStyleClass().add("pipeline-progress");
+        if (progress >= 1.0) {
+            bar.getStyleClass().add("pipeline-progress-green");
+        }
         
         HBox steps = new HBox();
         steps.setAlignment(Pos.CENTER);
         
         steps.getChildren().addAll(
-            createStepLabel("PRE-PRESS", activeStep == 0),
+            createStepLabel("DRAFT", activeStep == 0),
             createSpacer(),
-            createStepLabel("PRINTING", activeStep == 1 || activeStep == 2),
+            createStepLabel("PROCESSING", activeStep == 1),
             createSpacer(),
-            createStepLabel("FINISHING", activeStep == 3),
+            createStepLabel("COMPLETE", activeStep == 2),
             createSpacer(),
-            createStepLabel(progress >= 1.0 ? "SHIPPED" : "SHIPPING", activeStep == 4)
+            createStepLabel("INVOICE", activeStep == 3)
         );
         
         progressSection.getChildren().addAll(bar, steps);
@@ -327,15 +396,15 @@ public class ClientProfileController implements Initializable {
         return "Unknown_Client";
     }
 
-    private void loadInvoiceHistory() {
+        private void loadInvoiceHistory() {
         if (historyContainer == null) return;
         
         List<Invoice> history = new ArrayList<>();
         NumberSequenceAllocationService receiptNumbers = new NumberSequenceAllocationService();
         try (Connection con = DBConnection.getConnection()) {
-            String sql = "SELECT invoice_no, invoice_date, amount, status, payment_status, 'INVOICE' as row_type, CAST(NULL AS TEXT) as payment_uuid FROM invoice_master WHERE client_uuid = ? AND is_void = 0 "
+            String sql = "SELECT invoice_no, invoice_date, amount, status, payment_status, 'INVOICE' as row_type, CAST(NULL AS TEXT) as payment_uuid FROM invoice_master WHERE client_uuid = ? AND is_void = 0 AND IFNULL(is_deleted, 0) = 0 AND UPPER(status) != 'DRAFT' "
                          + "UNION ALL "
-                         + "SELECT '', payment_date, amount, 'PAID', 'PAID', 'PAYMENT' as row_type, uuid as payment_uuid FROM payments WHERE client_uuid = ? "
+                         + "SELECT '', payment_date, amount, 'PAID', 'PAID', type as row_type, uuid as payment_uuid FROM payments WHERE client_uuid = ? AND IFNULL(is_deleted, 0) = 0 "
                          + "ORDER BY invoice_date DESC LIMIT 10";
                          
             try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
@@ -346,19 +415,22 @@ public class ClientProfileController implements Initializable {
                     Invoice inv = new Invoice();
                     String payUuid = rs.getString(7);
                     String dateStr = rs.getString(2);
+                    String rowType = rs.getString(6);
                     if (dateStr != null && !dateStr.isEmpty()) {
                         try { inv.setInvoiceDate(LocalDate.parse(dateStr.contains(" ") ? dateStr.split(" ")[0] : dateStr)); } catch (Exception e) {}
                     }
                     if (payUuid != null) {
                         inv.setStandalonePaymentUuid(payUuid);
-                        // Still need a numeric ID for some legacy logic or just use UUID
-                        inv.setInvoiceNo(receiptNumbers.resolvePaymentReceiptNo(con, payUuid, inv.getInvoiceDate(), false));
+                        if ("Opening Balance".equalsIgnoreCase(rowType)) {
+                            inv.setInvoiceNo("Opening Balance");
+                        } else {
+                            inv.setInvoiceNo(receiptNumbers.resolvePaymentReceiptNo(con, payUuid, inv.getInvoiceDate(), false));
+                        }
                     } else {
                         inv.setInvoiceNo(rs.getString(1));
                     }
                     inv.setGrandTotal(rs.getDouble(3));
                     
-                    String rowType = rs.getString(6);
                     if ("INVOICE".equals(rowType)) {
                         String invStatus = rs.getString(4) != null ? rs.getString(4).toUpperCase() : "";
                         String payStatus = rs.getString(5) != null ? rs.getString(5).toUpperCase() : "";
@@ -368,6 +440,8 @@ public class ClientProfileController implements Initializable {
                             finalStatus = payStatus;
                         }
                         inv.setStatus(finalStatus);
+                    } else if ("Opening Balance".equalsIgnoreCase(rowType)) {
+                        inv.setStatus("OPENING BALANCE");
                     } else {
                         inv.setStatus("PAID"); // Standalone Payment
                     }

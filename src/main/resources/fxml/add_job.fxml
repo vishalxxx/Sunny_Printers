@@ -121,8 +121,9 @@
         <StackPane VBox.vgrow="ALWAYS" styleClass="content-stack">
             <!-- STEP 1: PRINTING -->
             <VBox fx:id="printingCard" spacing="16" styleClass="content-card">
-                <HBox alignment="CENTER_LEFT" spacing="15">
+                <HBox alignment="CENTER_LEFT" spacing="12">
                     <Region styleClass="icon-print-brown"/>
+                    <CheckBox fx:id="includePrintingInInvoiceToggle" selected="true" styleClass="card-header-toggle"/>
                     <Label text="Printing Specifications" styleClass="card-content-title"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <Label text="STEP 1 OF 6" styleClass="step-indicator"/>
@@ -162,8 +163,9 @@
                     <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="2">
                         <Label text="SIDE" styleClass="field-heading-sm"/>
                         <HBox styleClass="segmented-control-bg">
-                            <ToggleButton fx:id="sideDoubleBtn" text="Double" styleClass="segmented-btn, segmented-left" selected="true" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-                            <ToggleButton fx:id="sideSingleBtn" text="Single" styleClass="segmented-btn, segmented-right" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                            <ToggleButton fx:id="sideDoubleBtn" text="Double" styleClass="segmented-btn, segmented-left" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                            <ToggleButton fx:id="sideSingleBtn" text="Single" styleClass="segmented-btn" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                            <ToggleButton fx:id="sideNaBtn" text="N/A" styleClass="segmented-btn, segmented-right" selected="true" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
                         </HBox>
                     </VBox>
 
@@ -205,8 +207,9 @@
 
              <!-- STEP 2: CTP PLATE -->
             <VBox fx:id="ctpCard" spacing="16" styleClass="content-card" visible="false" managed="false">
-                <HBox alignment="CENTER_LEFT" spacing="15">
+                <HBox alignment="CENTER_LEFT" spacing="12">
                     <Region styleClass="icon-plate-brown"/>
+                    <CheckBox fx:id="includeCtpInInvoiceToggle" selected="true" styleClass="card-header-toggle"/>
                     <Label text="CTP Plate Specifications" styleClass="card-content-title"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <Label text="STEP 2 OF 6" styleClass="step-indicator"/>
@@ -273,8 +276,9 @@
 
             <!-- STEP 3: PAPER -->
             <VBox fx:id="paperCard" spacing="16" styleClass="content-card" visible="false" managed="false">
-                <HBox alignment="CENTER_LEFT" spacing="15">
+                <HBox alignment="CENTER_LEFT" spacing="12">
                     <Region styleClass="icon-paper-brown"/>
+                    <CheckBox fx:id="includePaperInInvoiceToggle" selected="true" styleClass="card-header-toggle"/>
                     <Label text="Paper Specifications" styleClass="card-content-title"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <Label text="STEP 3 OF 6" styleClass="step-indicator"/>
@@ -341,8 +345,9 @@
 
             <!-- STEP 4: BINDING -->
             <VBox fx:id="bindingCard" spacing="16" styleClass="content-card" visible="false" managed="false">
-                <HBox alignment="CENTER_LEFT" spacing="15">
+                <HBox alignment="CENTER_LEFT" spacing="12">
                     <Region styleClass="icon-binding-brown"/>
+                    <CheckBox fx:id="includeBindingInInvoiceToggle" selected="true" styleClass="card-header-toggle"/>
                     <Label text="Binding Specifications" styleClass="card-content-title"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <Label text="STEP 4 OF 6" styleClass="step-indicator"/>
@@ -387,8 +392,9 @@
 
             <!-- STEP 5: LAMINATION -->
             <VBox fx:id="laminationCard" spacing="16" styleClass="content-card" visible="false" managed="false">
-                <HBox alignment="CENTER_LEFT" spacing="15">
+                <HBox alignment="CENTER_LEFT" spacing="12">
                     <Region styleClass="icon-lamination-brown"/>
+                    <CheckBox fx:id="includeLaminationInInvoiceToggle" selected="true" styleClass="card-header-toggle"/>
                     <Label text="Lamination Specifications" styleClass="card-content-title"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <Label text="STEP 5 OF 6" styleClass="step-indicator"/>
@@ -414,8 +420,9 @@
                     <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="1">
                         <Label text="SIDE" styleClass="field-heading-sm"/>
                         <HBox styleClass="segmented-control-bg">
-                            <ToggleButton fx:id="lamDoubleBtn" text="Double" styleClass="segmented-btn, segmented-left" selected="true" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-                            <ToggleButton fx:id="lamSingleBtn" text="Single" styleClass="segmented-btn, segmented-right" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                            <ToggleButton fx:id="lamDoubleBtn" text="Double" styleClass="segmented-btn, segmented-left" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                            <ToggleButton fx:id="lamSingleBtn" text="Single" styleClass="segmented-btn" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                            <ToggleButton fx:id="lamNaBtn" text="N/A" styleClass="segmented-btn, segmented-right" selected="true" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
                         </HBox>
                     </VBox>
 
@@ -476,6 +483,13 @@
                          <Region styleClass="icon-pdf-large"/>
                          <Label text="PDF Document Prepared" styleClass="pdf-ready-label"/>
                          <Button text="Change Artwork" onAction="#handleResetUpload" styleClass="change-file-btn"/>
+                    </VBox>
+
+                    <!-- Files List Container for Multiple Files -->
+                    <VBox fx:id="filesListContainer" alignment="CENTER" spacing="15" visible="false" managed="false">
+                         <Region styleClass="icon-pdf-large" style="-fx-min-width: 48; -fx-min-height: 48; -fx-background-color: #CD7B4E;"/>
+                         <Label fx:id="lblUploadedFiles" text="No files selected" styleClass="pdf-ready-label" wrapText="true" textAlignment="CENTER"/>
+                         <Button text="Change Files" onAction="#handleResetUpload" styleClass="change-file-btn"/>
                     </VBox>
                 </VBox>
             </VBox>

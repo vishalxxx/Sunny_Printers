@@ -257,7 +257,7 @@
                             <Separator orientation="VERTICAL" prefHeight="24" style="-fx-opacity: 0.1; -fx-padding: 0 5;"/>
 
                             <!-- Notification Icon -->
-                            <StackPane styleClass="header-icon-btn">
+                            <StackPane fx:id="btnNotifications" styleClass="header-icon-btn" onMouseClicked="#toggleNotificationsPopup">
                                 <Region styleClass="sidebar-icon, icon-notification" style="-fx-background-color: #716D68; -fx-min-width: 18; -fx-min-height: 18;"/>
                             </StackPane>
                             
@@ -318,50 +318,50 @@
                             <!-- NEW KPI CARDS ROW -->
                             <HBox spacing="16" alignment="CENTER">
                                 <!-- CARD 1 -->
-                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10">
+                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10" maxWidth="Infinity" prefWidth="100">
                                     <Label text="TOTAL REVENUE" styleClass="kpi-title"/>
                                     <HBox alignment="BASELINE_LEFT" spacing="8">
                                         <Label fx:id="lblTotalRevenue" text="₹0" styleClass="kpi-value"/>
-                                        <Label text="+12%" styleClass="kpi-percent" style="-fx-text-fill: #758385;"/>
+                                        <Label fx:id="lblRevenuePercent" text="+0%" styleClass="kpi-percent" style="-fx-text-fill: #758385;"/>
                                     </HBox>
                                     <StackPane styleClass="kpi-progress-bg" alignment="CENTER_LEFT">
-                                        <Region styleClass="kpi-progress-fill, kpi-fill-revenue" style="-fx-max-width: 120;"/>
+                                        <Region fx:id="barRevenueProgress" styleClass="kpi-progress-fill, kpi-fill-revenue" style="-fx-max-width: 0;"/>
                                     </StackPane>
                                 </VBox>
                                 
                                 <!-- CARD 2 -->
-                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10">
+                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10" maxWidth="Infinity" prefWidth="100">
                                     <Label text="OUTSTANDING AMOUNT" styleClass="kpi-title"/>
                                     <HBox alignment="BASELINE_LEFT" spacing="8">
                                         <Label fx:id="lblOutstanding" text="₹0" styleClass="kpi-value"/>
-                                        <Label text="+4%" styleClass="kpi-percent" style="-fx-text-fill: #C06138;"/>
+                                        <Label fx:id="lblOutstandingPercent" text="+0%" styleClass="kpi-percent" style="-fx-text-fill: #C06138;"/>
                                     </HBox>
                                     <StackPane styleClass="kpi-progress-bg" alignment="CENTER_LEFT">
-                                        <Region styleClass="kpi-progress-fill, kpi-fill-revenue" style="-fx-max-width: 60;"/>
+                                        <Region fx:id="barOutstandingProgress" styleClass="kpi-progress-fill, kpi-fill-revenue" style="-fx-max-width: 0;"/>
                                     </StackPane>
                                 </VBox>
 
                                 <!-- CARD 3 -->
-                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10">
+                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10" maxWidth="Infinity" prefWidth="100">
                                     <Label text="COLLECTED THIS MONTH" styleClass="kpi-title"/>
                                     <HBox alignment="BASELINE_LEFT" spacing="8">
                                         <Label fx:id="lblCollected" text="₹0" styleClass="kpi-value"/>
-                                        <Label text="+8%" styleClass="kpi-percent" style="-fx-text-fill: #758385;"/>
+                                        <Label fx:id="lblCollectedPercent" text="+0%" styleClass="kpi-percent" style="-fx-text-fill: #758385;"/>
                                     </HBox>
                                     <StackPane styleClass="kpi-progress-bg" alignment="CENTER_LEFT">
-                                        <Region styleClass="kpi-progress-fill, kpi-fill-collected" style="-fx-max-width: 80;"/>
+                                        <Region fx:id="barCollectedProgress" styleClass="kpi-progress-fill, kpi-fill-collected" style="-fx-max-width: 0;"/>
                                     </StackPane>
                                 </VBox>
 
                                 <!-- CARD 4 -->
-                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10">
+                                <VBox styleClass="dashboard-kpi-card" HBox.hgrow="ALWAYS" spacing="10" maxWidth="Infinity" prefWidth="100">
                                     <Label text="OVERDUE AMOUNT" styleClass="kpi-title"/>
                                     <HBox alignment="BASELINE_LEFT" spacing="8">
                                         <Label fx:id="lblOverdue" text="₹0" styleClass="kpi-value" style="-fx-text-fill: #D27357;"/>
-                                        <Label text="-2%" styleClass="kpi-percent" style="-fx-text-fill: #758385;"/>
+                                        <Label fx:id="lblOverduePercent" text="+0%" styleClass="kpi-percent" style="-fx-text-fill: #758385;"/>
                                     </HBox>
                                     <StackPane styleClass="kpi-progress-bg" alignment="CENTER_LEFT">
-                                        <Region styleClass="kpi-progress-fill, kpi-fill-overdue" style="-fx-max-width: 40;"/>
+                                        <Region fx:id="barOverdueProgress" styleClass="kpi-progress-fill, kpi-fill-overdue" style="-fx-max-width: 0;"/>
                                     </StackPane>
                                 </VBox>
                             </HBox>
@@ -375,59 +375,59 @@
                                     </VBox>
                                     <Region HBox.hgrow="ALWAYS"/>
                                     <HBox spacing="15" alignment="CENTER">
-                                        <Label text="42 Active Jobs" style="-fx-background-color: #E2DFCE; -fx-border-color: #D3CEBA; -fx-border-radius: 20; -fx-background-radius: 20; -fx-padding: 6 14; -fx-font-weight: 800; -fx-font-size: 11; -fx-text-fill: #727B75;"/>
-                                        <Button text="Add Job" style="-fx-background-color: #C06B44; -fx-text-fill: white; -fx-padding: 6 16; -fx-font-size: 11; -fx-font-weight: 800; -fx-background-radius: 20; -fx-effect: dropshadow(three-pass-box, rgba(160, 140, 120, 0.4), 10, 0, 0, 4); -fx-cursor: hand;">
+                                        <Label fx:id="lblActiveJobsCount" text="0 Active Jobs" style="-fx-background-color: #E2DFCE; -fx-border-color: #D3CEBA; -fx-border-radius: 20; -fx-background-radius: 20; -fx-padding: 6 14; -fx-font-weight: 800; -fx-font-size: 11; -fx-text-fill: #727B75;"/>
+                                        <Button onAction="#loadAddJob" text="Add Job" style="-fx-background-color: #C06B44; -fx-text-fill: white; -fx-padding: 6 16; -fx-font-size: 11; -fx-font-weight: 800; -fx-background-radius: 20; -fx-effect: dropshadow(three-pass-box, rgba(160, 140, 120, 0.4), 10, 0, 0, 4); -fx-cursor: hand;">
                                             <graphic><Region styleClass="sidebar-icon" style="-fx-shape: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z'; -fx-background-color: white; -fx-min-width: 12; -fx-min-height: 12;"/></graphic>
                                         </Button>
                                     </HBox>
                                 </HBox>
                                 <HBox alignment="CENTER" spacing="0">
-                                    <VBox alignment="CENTER" spacing="15" minWidth="120" prefWidth="180" HBox.hgrow="ALWAYS">
+                                    <VBox onMouseClicked="#handlePrePressClick" style="-fx-cursor: hand;" alignment="CENTER" spacing="15" minWidth="120" prefWidth="180" HBox.hgrow="ALWAYS">
                                         <StackPane styleClass="pipeline-icon-circle">
                                             <Region styleClass="icon-brush" style="-fx-background-color: #B25D3B; -fx-min-width: 42; -fx-min-height: 42; -fx-max-width: 42; -fx-max-height: 42;"/>
                                         </StackPane>
                                         <VBox alignment="CENTER" spacing="2">
                                             <Label text="Pre Press" styleClass="pipeline-label"/>
                                             <HBox alignment="CENTER" spacing="4">
-                                                <Label text="12" style="-fx-font-weight: 800; -fx-text-fill: #C06138; -fx-font-size: 22;"/>
-                                                <Label text="(28%)" style="-fx-text-fill: #A6B0A8; -fx-font-size: 13;"/>
+                                                <Label fx:id="lblPrePressCount" text="0" style="-fx-font-weight: 800; -fx-text-fill: #C06138; -fx-font-size: 22;"/>
+                                                <Label fx:id="lblPrePressPercent" text="(0%)" style="-fx-text-fill: #A6B0A8; -fx-font-size: 13;"/>
                                             </HBox>
                                         </VBox>
                                     </VBox>
                                     
                                     <Label text="›" style="-fx-font-size: 28; -fx-text-fill: #D9D0B8; -fx-padding: 0 15;"/>
                                     
-                                    <VBox alignment="CENTER" spacing="15" minWidth="120" prefWidth="180" HBox.hgrow="ALWAYS">
+                                    <VBox onMouseClicked="#handlePrintingClick" style="-fx-cursor: hand;" alignment="CENTER" spacing="15" minWidth="120" prefWidth="180" HBox.hgrow="ALWAYS">
                                         <StackPane styleClass="pipeline-icon-circle">
                                             <Region styleClass="icon-printer" style="-fx-background-color: #B25D3B; -fx-min-width: 42; -fx-min-height: 42; -fx-max-width: 42; -fx-max-height: 42;"/>
                                         </StackPane>
                                         <VBox alignment="CENTER" spacing="2">
                                             <Label text="Printing" styleClass="pipeline-label"/>
                                             <HBox alignment="CENTER" spacing="4">
-                                                <Label text="18" style="-fx-font-weight: 800; -fx-text-fill: #C06138; -fx-font-size: 22;"/>
-                                                <Label text="(43%)" style="-fx-text-fill: #A6B0A8; -fx-font-size: 13;"/>
+                                                <Label fx:id="lblPrintingCount" text="0" style="-fx-font-weight: 800; -fx-text-fill: #C06138; -fx-font-size: 22;"/>
+                                                <Label fx:id="lblPrintingPercent" text="(0%)" style="-fx-text-fill: #A6B0A8; -fx-font-size: 13;"/>
                                             </HBox>
                                         </VBox>
                                     </VBox>
  
                                     <Label text="›" style="-fx-font-size: 28; -fx-text-fill: #D9D0B8; -fx-padding: 0 15;"/>
  
-                                    <VBox alignment="CENTER" spacing="15" minWidth="120" prefWidth="180" HBox.hgrow="ALWAYS">
+                                    <VBox onMouseClicked="#handleFinishingClick" style="-fx-cursor: hand;" alignment="CENTER" spacing="15" minWidth="120" prefWidth="180" HBox.hgrow="ALWAYS">
                                         <StackPane styleClass="pipeline-icon-circle">
                                             <Region styleClass="icon-layers" style="-fx-background-color: #B25D3B; -fx-min-width: 40; -fx-min-height: 40; -fx-max-width: 40; -fx-max-height: 40;"/>
                                         </StackPane>
                                         <VBox alignment="CENTER" spacing="2">
                                             <Label text="Finishing" styleClass="pipeline-label"/>
                                             <HBox alignment="CENTER" spacing="4">
-                                                <Label text="8" style="-fx-font-weight: 800; -fx-text-fill: #C06138; -fx-font-size: 22;"/>
-                                                <Label text="(19%)" style="-fx-text-fill: #A6B0A8; -fx-font-size: 13;"/>
+                                                <Label fx:id="lblFinishingCount" text="0" style="-fx-font-weight: 800; -fx-text-fill: #C06138; -fx-font-size: 22;"/>
+                                                <Label fx:id="lblFinishingPercent" text="(0%)" style="-fx-text-fill: #A6B0A8; -fx-font-size: 13;"/>
                                             </HBox>
                                         </VBox>
                                     </VBox>
  
                                     <Label text="›" style="-fx-font-size: 28; -fx-text-fill: #D9D0B8; -fx-padding: 0 15;"/>
  
-                                    <VBox alignment="CENTER" spacing="15" minWidth="120" prefWidth="180" HBox.hgrow="ALWAYS">
+                                    <VBox onMouseClicked="#handleReadyClick" style="-fx-cursor: hand;" alignment="CENTER" spacing="15" minWidth="120" prefWidth="180" HBox.hgrow="ALWAYS">
                                         <StackPane styleClass="pipeline-icon-circle, pipeline-icon-ready">
                                             <StackPane style="-fx-background-color: white; -fx-background-radius: 100; -fx-min-width: 44; -fx-max-width: 44; -fx-min-height: 44; -fx-max-height: 44;">
                                                 <Region styleClass="icon-check" style="-fx-background-color: #646D5B; -fx-min-width: 24; -fx-min-height: 24; -fx-max-width: 24; -fx-max-height: 24;"/>
@@ -436,8 +436,8 @@
                                         <VBox alignment="CENTER" spacing="2">
                                             <Label text="Ready" styleClass="pipeline-label"/>
                                             <HBox alignment="CENTER" spacing="4">
-                                                <Label text="4" style="-fx-font-weight: 800; -fx-text-fill: #6C7662; -fx-font-size: 22;"/>
-                                                <Label text="(10%)" style="-fx-text-fill: #A6B0A8; -fx-font-size: 13;"/>
+                                                <Label fx:id="lblReadyCount" text="0" style="-fx-font-weight: 800; -fx-text-fill: #6C7662; -fx-font-size: 22;"/>
+                                                <Label fx:id="lblReadyPercent" text="(0%)" style="-fx-text-fill: #A6B0A8; -fx-font-size: 13;"/>
                                             </HBox>
                                         </VBox>
                                     </VBox>
@@ -530,7 +530,7 @@
                                             </HBox>
                                         </HBox>
                                         
-                                        <VBox spacing="20">
+                                        <VBox fx:id="vboxRecentActivity" spacing="20">
                                             <!-- Item 1: Payment -->
                                             <HBox spacing="15" alignment="CENTER_LEFT">
                                                 <StackPane styleClass="activity-icon-container, icon-bg-cream">
@@ -655,34 +655,34 @@
                                                 <HBox alignment="CENTER_LEFT">
                                                     <Label text="0-30 DAYS" style="-fx-font-size: 9; -fx-font-weight: 900; -fx-text-fill: -fx-text-muted; -fx-letter-spacing: 1;"/>
                                                     <Region HBox.hgrow="ALWAYS"/>
-                                                    <Label text="₹24,500" style="-fx-font-weight: 800; -fx-text-fill: -fx-text-dark;"/>
+                                                    <Label fx:id="lblAging0_30" text="₹0" style="-fx-font-weight: 800; -fx-text-fill: -fx-text-dark;"/>
                                                 </HBox>
                                                 <StackPane styleClass="aging-bar-bg">
-                                                    <Region styleClass="aging-bar-fill, fill-aging-0-30" maxWidth="180" StackPane.alignment="CENTER_LEFT"/>
+                                                    <Region fx:id="barAging0_30" styleClass="aging-bar-fill, fill-aging-0-30" maxWidth="180" StackPane.alignment="CENTER_LEFT"/>
                                                 </StackPane>
                                             </VBox>
                                             <VBox spacing="8">
                                                 <HBox alignment="CENTER_LEFT">
                                                     <Label text="30-60 DAYS" style="-fx-font-size: 9; -fx-font-weight: 900; -fx-text-fill: -fx-text-muted; -fx-letter-spacing: 1;"/>
                                                     <Region HBox.hgrow="ALWAYS"/>
-                                                    <Label text="₹12,400" style="-fx-font-weight: 800; -fx-text-fill: -fx-text-dark;"/>
+                                                    <Label fx:id="lblAging30_60" text="₹0" style="-fx-font-weight: 800; -fx-text-fill: -fx-text-dark;"/>
                                                 </HBox>
                                                 <StackPane styleClass="aging-bar-bg">
-                                                    <Region styleClass="aging-bar-fill, fill-aging-30-60" maxWidth="110" StackPane.alignment="CENTER_LEFT"/>
+                                                    <Region fx:id="barAging30_60" styleClass="aging-bar-fill, fill-aging-30-60" maxWidth="110" StackPane.alignment="CENTER_LEFT"/>
                                                 </StackPane>
                                             </VBox>
                                             <VBox spacing="8">
                                                 <HBox alignment="CENTER_LEFT">
                                                     <Label text="60+ DAYS" style="-fx-font-size: 9; -fx-font-weight: 900; -fx-text-fill: -fx-text-muted; -fx-letter-spacing: 1;"/>
                                                     <Region HBox.hgrow="ALWAYS"/>
-                                                    <Label text="₹8,100" style="-fx-font-weight: 800; -fx-text-fill: #D27357;"/>
+                                                    <Label fx:id="lblAging60Plus" text="₹0" style="-fx-font-weight: 800; -fx-text-fill: #D27357;"/>
                                                 </HBox>
                                                 <StackPane styleClass="aging-bar-bg">
-                                                    <Region styleClass="aging-bar-fill, fill-aging-60-plus" maxWidth="60" StackPane.alignment="CENTER_LEFT"/>
+                                                    <Region fx:id="barAging60Plus" styleClass="aging-bar-fill, fill-aging-60-plus" maxWidth="60" StackPane.alignment="CENTER_LEFT"/>
                                                 </StackPane>
                                             </VBox>
                                         </VBox>
-                                        <Button text="View Ledger" maxWidth="Infinity" styleClass="view-ledger-btn">
+                                        <Button onAction="#loadClientLedger" text="View Ledger" maxWidth="Infinity" styleClass="view-ledger-btn">
                                             <graphic><Region styleClass="sidebar-icon" style="-fx-shape: 'M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z'; -fx-background-color: white; -fx-min-width: 14; -fx-min-height: 14;"/></graphic>
                                         </Button>
                                     </VBox>

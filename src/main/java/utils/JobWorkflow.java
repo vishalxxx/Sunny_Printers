@@ -96,7 +96,7 @@ public final class JobWorkflow {
 				return "Partial Payment";
 			}
 			if (s.contains("invoiced") && !s.contains("draft")) {
-				return "Paid";
+				return "Invoice Sent";
 			}
 		}
 		if (major == Major.COMPLETED && s.contains("ready")) {

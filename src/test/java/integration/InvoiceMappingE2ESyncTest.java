@@ -42,7 +42,7 @@ public class InvoiceMappingE2ESyncTest {
     @BeforeEach
     public void setup() throws Exception {
         dbUrl = TestDatabaseHelper.createIsolatedDb("InvoiceMappingE2ESyncTest");
-        DBConnection.setUrl(dbUrl);
+        DBConnection.setTestDatabaseUrl(dbUrl);
         SupabaseGate.setOverrideClient(null);
         
         clientUuid = UUID.randomUUID().toString();

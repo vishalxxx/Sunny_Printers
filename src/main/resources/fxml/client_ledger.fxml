@@ -24,7 +24,7 @@
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="controller.ClientLedgerController"
             styleClass="client-ledger-root"
-            stylesheets="@../css/theme.css, @../css/client_ledger.css">
+            stylesheets="@../css/theme.css, @../css/client_ledger.css, @../css/view_invoices.css">
 
     <center>
         <ScrollPane fitToWidth="true" styleClass="cl-scroll" hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED">
@@ -156,7 +156,7 @@
                         </Button>
                     </HBox>
 
-                        <TableView fx:id="ledgerTable" styleClass="cl-ledger-table" VBox.vgrow="ALWAYS">
+                        <TableView fx:id="ledgerTable" styleClass="cl-ledger-table">
                         <columns>
                             <TableColumn fx:id="colDate" text="DATE" prefWidth="100"/>
                             <TableColumn fx:id="colRef" text="REFERENCE" prefWidth="280"/>
@@ -169,6 +169,17 @@
                             <TableColumn fx:id="colStatus" text="STATUS" prefWidth="100"/>
                         </columns>
                     </TableView>
+
+                    <!-- Pagination -->
+                    <HBox styleClass="vi-pagination-bar-premium" alignment="CENTER_LEFT" spacing="16" style="-fx-padding: 8 20; -fx-background-color: #FFFFFF; -fx-border-color: #E7E5E4; -fx-border-width: 0 0 1 0;">
+                        <Label fx:id="paginationInfoLabel" text="Showing 1-0 of 0 records" styleClass="vi-page-info-taste"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label text="Show:" style="-fx-text-fill: #57534E; -fx-font-size: 13px; -fx-font-family: 'Inter'; -fx-font-weight: 500;"/>
+                        <ComboBox fx:id="pageSizeCombo" prefWidth="80" style="-fx-font-size: 11px; -fx-background-color: #FFFFFF; -fx-border-color: #E2DDD8; -fx-border-radius: 6; -fx-background-radius: 6; -fx-font-family: 'Inter'; -fx-font-weight: 600;"/>
+                        <HBox fx:id="paginationPagesBox" spacing="8" alignment="CENTER_RIGHT" />
+                        <Label text="Go to:" style="-fx-text-fill: #A79F99; -fx-font-size: 11px;"/>
+                        <TextField fx:id="goToPageField" prefWidth="50" styleClass="goto-field" onAction="#handleGoToPage"/>
+                    </HBox>
 
                     <HBox alignment="CENTER_LEFT" spacing="12" styleClass="cl-ledger-footer">
                         <HBox spacing="12" alignment="CENTER_LEFT">

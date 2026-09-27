@@ -27,4 +27,8 @@ public class ClientService {
 		}
 		return repo.search(keyword);
 	}
+
+	public Client getClientByUuid(String uuid) {
+		return repo.findByUuid(uuid);
+	}
 }

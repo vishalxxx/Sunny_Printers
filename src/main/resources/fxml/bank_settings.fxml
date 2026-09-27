@@ -44,23 +44,8 @@
                     </columns>
                 </TableView>
 
-                <HBox spacing="8" alignment="CENTER_RIGHT" styleClass="bank-settings-row-actions">
-                    <Button fx:id="editRowBtn" contentDisplay="GRAPHIC_ONLY" focusTraversable="false"
-                            styleClass="row-action-btn, row-btn-orange"
-                            minWidth="32" minHeight="32" prefWidth="32" prefHeight="32">
-                        <tooltip><Tooltip text="Load selected bank into the form"/></tooltip>
-                        <graphic>
-                            <Region styleClass="row-action-pencil-graphic"/>
-                        </graphic>
-                    </Button>
-                    <Button fx:id="deleteBtn" contentDisplay="GRAPHIC_ONLY" focusTraversable="false"
-                            styleClass="bank-settings-icon-btn, bank-settings-icon-danger"
-                            minWidth="32" minHeight="32" prefWidth="32" prefHeight="32">
-                        <tooltip><Tooltip text="Delete selected bank"/></tooltip>
-                        <graphic>
-                            <Region styleClass="bank-settings-inline-trash"/>
-                        </graphic>
-                    </Button>
+                <HBox spacing="6" alignment="CENTER_RIGHT">
+                    <Button fx:id="deleteBtn" text="Delete" styleClass="button, btn-secondary"/>
                 </HBox>
             </VBox>
 

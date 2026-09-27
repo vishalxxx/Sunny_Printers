@@ -242,13 +242,13 @@
     -fx-effect: dropshadow(three-pass-box, rgba(62, 49, 45, 0.1), 15, 0, 0, 5);
 }
 
-.date-picker-popup>.month-year-pane {
+.date-picker-popup .month-year-pane {
     -fx-background-color: transparent;
     -fx-padding: 10 10 4 10;
 }
 
-.date-picker-popup>.month-year-pane>.label {
-    -fx-text-fill: #3E312D;
+.date-picker-popup .month-year-pane .label {
+    -fx-text-fill: #3E312D !important;
     -fx-font-family: 'Manrope';
     -fx-font-weight: 800;
     -fx-font-size: 11px;
@@ -261,11 +261,6 @@
 .date-picker-popup .calendar-grid {
     -fx-background-color: transparent;
     -fx-padding: 0 10 10 10;
-}
-
-.date-picker-popup .month-year-pane {
-    -fx-background-color: transparent;
-    -fx-padding: 10 10 4 10;
 }
 
 .date-picker-popup .spinner .button {
@@ -288,7 +283,7 @@
     -fx-font-family: 'Inter';
     -fx-font-size: 10px;
     -fx-font-weight: 700;
-    -fx-text-fill: #8E7A6B;
+    -fx-text-fill: #8E7A6B !important;
     -fx-background-color: transparent;
     -fx-padding: 4 2;
 }
@@ -297,19 +292,24 @@
     -fx-background-color: transparent;
     -fx-background-radius: 8;
     -fx-border-color: transparent;
-    -fx-text-fill: #3E312D;
+    -fx-text-fill: #3E312D !important;
     -fx-font-size: 11px;
     -fx-font-weight: 600;
     -fx-padding: 4;
 }
 
+.date-picker-popup .day-cell.weekend {
+    -fx-text-fill: #3E312D !important;
+}
+
 .date-picker-popup .day-cell:hover {
     -fx-background-color: #EADFD4;
+    -fx-text-fill: #3E312D !important;
 }
 
 .date-picker-popup .day-cell:selected {
     -fx-background-color: #CD7B4E;
-    -fx-text-fill: #FFFFFF;
+    -fx-text-fill: #FFFFFF !important;
     -fx-font-weight: 800;
 }
 
@@ -322,7 +322,7 @@
 
 .date-picker-popup .day-cell:disabled {
     -fx-opacity: 0.3;
-    -fx-text-fill: #B5ACA3;
+    -fx-text-fill: #B5ACA3 !important;
 }
 
 /* Future dates on job date picker: not selectable, but clearly readable */

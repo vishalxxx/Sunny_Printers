@@ -52,6 +52,7 @@ public class LoginController {
 		clearMessages();
 		String login = emailField.getText();
 		String password = passwordField.getText();
+		service.LoggerService.ui("[UI-LOGIN] Sign-in button clicked for username: " + (login == null ? "null" : login.trim()));
 		setBusy(true);
 
 		Thread worker = new Thread(() -> {

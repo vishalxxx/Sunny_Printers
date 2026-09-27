@@ -43,16 +43,20 @@ public class PushConflictResolutionTest {
         dbPath = TestDatabaseHelper.createIsolatedDb("PushConflictResolutionTest");
         fakeSupabase = new FakeSupabaseRestClient();
         SupabaseGate.setOverrideClient(fakeSupabase);
-        DBConnection.setUrl(dbPath);
+        DBConnection.setTestDatabaseUrl(dbPath);
+        DBConnection.setGlobalTestDatabaseUrl(dbPath);
     }
 
     @AfterAll
     public static void tearDown() {
+        DBConnection.clearTestDatabaseUrl();
+        DBConnection.clearGlobalTestDatabaseUrl();
         TestDatabaseHelper.cleanupTestDir();
     }
 
     @BeforeEach
     public void resetDbAndFake() throws Exception {
+        SupabaseGate.setOverrideClient(fakeSupabase);
         fakeSupabase.clear();
         SupabaseReachability.invalidateCache();
 

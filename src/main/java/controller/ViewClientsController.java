@@ -339,19 +339,20 @@ public class ViewClientsController implements Initializable {
             for (Client c : masterList) {
                 String clientUuid = c.getClientUuid();
                 
-                // 1. LTV Logic: Sum of all invoices (Paid + Unpaid)
+                // 1. LTV Logic: Sum of all invoices (Paid + Unpaid) + Opening Balance
                 double ltv = 0;
-                String sqlLtv = "SELECT SUM(amount) FROM invoice_master WHERE client_uuid = ? AND is_void = 0";
+                String sqlLtv = "SELECT SUM(amount) FROM invoice_master WHERE client_uuid = ? AND is_void = 0 AND IFNULL(is_deleted, 0) = 0";
                 try (java.sql.PreparedStatement ps = con.prepareStatement(sqlLtv)) {
                     ps.setString(1, clientUuid);
                     java.sql.ResultSet rs = ps.executeQuery();
                     if (rs.next()) ltv = rs.getDouble(1);
                 }
+                ltv += c.getOpeningBalance();
                 c.setLtv(ltv);
                 
                 // 2. Balance Logic: Total outstanding - Payments
                 double totalPaid = 0;
-                String sqlPaid = "SELECT SUM(amount) FROM payments WHERE client_uuid = ?";
+                String sqlPaid = "SELECT SUM(amount) FROM payments WHERE client_uuid = ? AND IFNULL(is_deleted, 0) = 0 AND type <> 'Opening Balance'";
                 try (java.sql.PreparedStatement ps = con.prepareStatement(sqlPaid)) {
                     ps.setString(1, clientUuid);
                     java.sql.ResultSet rs = ps.executeQuery();
@@ -360,7 +361,7 @@ public class ViewClientsController implements Initializable {
                 
                 // Adjust for CN/DN
                 double adjustments = 0;
-                String sqlAdj = "SELECT SUM(CASE WHEN type='Debit Note' THEN amount ELSE -amount END) FROM invoice_adjustments WHERE invoice_uuid IN (SELECT uuid FROM invoice_master WHERE client_uuid = ?)";
+                String sqlAdj = "SELECT SUM(CASE WHEN type='Debit Note' THEN amount ELSE -amount END) FROM invoice_adjustments WHERE invoice_uuid IN (SELECT uuid FROM invoice_master WHERE client_uuid = ? AND IFNULL(is_deleted, 0) = 0 AND is_void = 0) AND IFNULL(is_deleted, 0) = 0";
                 try (java.sql.PreparedStatement ps = con.prepareStatement(sqlAdj)) {
                     ps.setString(1, clientUuid);
                     java.sql.ResultSet rs = ps.executeQuery();

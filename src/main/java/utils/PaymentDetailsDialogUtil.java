@@ -37,7 +37,7 @@ public final class PaymentDetailsDialogUtil {
 			return;
 		}
 
-		Dialog<Void> dialog = new Dialog<>();
+		Dialog<ButtonType> dialog = new Dialog<>();
 		dialog.initOwner(owner);
 		dialog.setTitle("Payment Details - " + h.dateDisplay);
 		dialog.getDialogPane().getStyleClass().add("record-payment-root");
@@ -94,7 +94,8 @@ public final class PaymentDetailsDialogUtil {
 
 		content.getChildren().addAll(title, new Separator(), grid);
 		dialog.getDialogPane().setContent(content);
-		dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+		ButtonType editBtnType = new ButtonType("Edit Payment ✏️", javafx.scene.control.ButtonBar.ButtonData.LEFT);
+		dialog.getDialogPane().getButtonTypes().addAll(editBtnType, ButtonType.CLOSE);
 
 		try {
 			dialog.getDialogPane().getStylesheets()
@@ -104,7 +105,12 @@ public final class PaymentDetailsDialogUtil {
 		} catch (Exception ignored) {
 		}
 
-		dialog.showAndWait();
+		dialog.showAndWait().ifPresent(btn -> {
+			if (btn == editBtnType) {
+				controller.RecordPaymentController.editingPaymentUuid = paymentUuid;
+				controller.MainController.getInstance().loadRecordPayment();
+			}
+		});
 	}
 
 	private record PaymentHeader(String dateDisplay, String client, String type, String method, String amountDisplay) {

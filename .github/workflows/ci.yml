@@ -66,6 +66,8 @@ jobs:
       - name: Integration Tests
         env:
           TEST_DB_DIR: database_test
+          TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          TEST_SUPABASE_KEY: ${{ secrets.TEST_SUPABASE_KEY }}
         run: mvn verify -Pintegration
 
       #######################################
@@ -73,6 +75,9 @@ jobs:
       #######################################
 
       - name: Performance Tests
+        env:
+          TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          TEST_SUPABASE_KEY: ${{ secrets.TEST_SUPABASE_KEY }}
         run: mvn verify -Pperformance
 
       #######################################
@@ -80,6 +85,9 @@ jobs:
       #######################################
 
       - name: Chaos Tests
+        env:
+          TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          TEST_SUPABASE_KEY: ${{ secrets.TEST_SUPABASE_KEY }}
         run: mvn verify -Pchaos
 
       #######################################
@@ -87,6 +95,9 @@ jobs:
       #######################################
 
       - name: Release Verification Tests
+        env:
+          TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          TEST_SUPABASE_KEY: ${{ secrets.TEST_SUPABASE_KEY }}
         run: mvn verify -Prelease
 
       #######################################

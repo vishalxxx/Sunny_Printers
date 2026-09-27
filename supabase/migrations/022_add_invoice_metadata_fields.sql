@@ -8,3 +8,5 @@ ALTER TABLE public.invoice_master ADD COLUMN po_date TEXT DEFAULT NULL;
 ALTER TABLE public.invoice_master ADD COLUMN dispatch_through TEXT DEFAULT '';
 ALTER TABLE public.invoice_master ADD COLUMN lr_tracking_no TEXT DEFAULT '';
 ALTER TABLE public.invoice_master ADD COLUMN remarks TEXT DEFAULT '';
+
+NOTIFY pgrst, 'reload schema';

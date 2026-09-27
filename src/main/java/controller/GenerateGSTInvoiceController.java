@@ -783,6 +783,7 @@ public class GenerateGSTInvoiceController implements Initializable {
     private void setupInitialData() {
         if (txtInvoiceNo != null) {
             txtInvoiceNo.setEditable(false);
+            refreshInvoiceNoPreview();
         }
         if (dpInvoiceDate != null) {
             dpInvoiceDate.setValue(java.time.LocalDate.now());
@@ -1164,6 +1165,7 @@ public class GenerateGSTInvoiceController implements Initializable {
 
         boolean intraState = isIntraStateSupply();
         int sl = 1;
+        List<String> missingHsnJobNos = new ArrayList<>();
         for (model.JobSummary js : loadedJobSummaries) {
             if (!selectedJobUuids.contains(js.getUuid())) {
                 continue;
@@ -1183,6 +1185,7 @@ public class GenerateGSTInvoiceController implements Initializable {
                 combinedDesc = "PRINTING CHARGES TOWARDS\n    " + js.getJobTitle().toUpperCase();
                 if (items != null && !items.isEmpty()) {
                     String itemsText = items.stream()
+                            .filter(ji -> ji.getIncludeInInvoice() == 1)
                             .map(model.JobItem::getDescription)
                             .filter(d -> d != null && !d.isBlank())
                             .map(d -> "    " + d.toUpperCase())
@@ -1197,6 +1200,9 @@ public class GenerateGSTInvoiceController implements Initializable {
             // Try to find the first valid HSN info to use as default
             if (items != null) {
                 for (model.JobItem ji : items) {
+                    if (ji.getIncludeInInvoice() == 0) {
+                        continue;
+                    }
                     model.HsnSacInfo info = hsnSacService.lookup(ji);
                     if (info != null && info.getHsnSac() != null && !info.getHsnSac().isBlank()) {
                         hsn = info.getHsnSac();
@@ -1206,6 +1212,10 @@ public class GenerateGSTInvoiceController implements Initializable {
                         break;
                     }
                 }
+            }
+
+            if ("—".equals(hsn) || "NA".equalsIgnoreCase(hsn) || hsn == null || hsn.isBlank()) {
+                missingHsnJobNos.add(js.getJobNo());
             }
 
             itemRows.add(ItemRow.ofJob(sl++, js.getUuid(), combinedDesc, hsn, qty, "PCS", rate, gstRate, intraState));
@@ -1225,6 +1235,10 @@ public class GenerateGSTInvoiceController implements Initializable {
                 true, // isCustom
                 cr.isCharge()
             ));
+        }
+
+        if (!missingHsnJobNos.isEmpty() && tableItems != null && tableItems.getScene() != null && tableItems.getScene().getWindow() != null) {
+            utils.Toast.show((Stage) tableItems.getScene().getWindow(), "⚠️ No HSN code selected for Job No: " + String.join(", ", missingHsnJobNos));
         }
 
         refreshHsnSummaryFromItemRows();
@@ -1686,6 +1700,46 @@ public class GenerateGSTInvoiceController implements Initializable {
 
     private void processInvoiceGeneration(String status, boolean downloadPdf) {
         try {
+            if (itemRows.isEmpty()) {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Missing Items");
+                alert.setHeaderText("Nothing to generate");
+                alert.setContentText("Please select jobs or add items before generating the invoice.");
+                alert.showAndWait();
+                return;
+            }
+
+            // Validate HSN selection for each row
+            for (ItemRow r : itemRows) {
+                String hsn = r.getHsnSac();
+                if (hsn == null || hsn.isBlank() || "—".equals(hsn.trim()) || "NA".equalsIgnoreCase(hsn.trim())) {
+                    String jobNo = "";
+                    if (r.getJobUuid() != null) {
+                        for (model.JobSummary js : loadedJobSummaries) {
+                            if (js.getUuid().equals(r.getJobUuid())) {
+                                jobNo = js.getJobNo();
+                                break;
+                            }
+                        }
+                    }
+
+                    String itemLabel;
+                    if (jobNo != null && !jobNo.isBlank()) {
+                        itemLabel = "Job No: " + jobNo;
+                    } else {
+                        String descSnippet = r.getDescription() != null ? r.getDescription().split("\n")[0] : "Item";
+                        itemLabel = "Item #" + r.getSlNo() + " (" + descSnippet + ")";
+                    }
+
+                    Alert alert = new Alert(Alert.AlertType.WARNING);
+                    alert.setTitle("Missing HSN Code");
+                    alert.setHeaderText("No HSN Selected");
+                    alert.setContentText("There is no HSN selected for " + itemLabel + ".\n\nPlease select or enter a valid HSN code before proceeding.");
+                    alert.showAndWait();
+                    return;
+                }
+            }
+
             model.Invoice invoice = buildInvoiceModel();
             if (invoice == null) {
                 Alert alert = new Alert(Alert.AlertType.WARNING);
@@ -2092,7 +2146,7 @@ public class GenerateGSTInvoiceController implements Initializable {
             } else {
                 try {
                     qtyRaw.set(Double.parseDouble(v.replace(",", "").trim()));
-                } catch(Exception ignored) { qtyRaw.set(0); }
+                } catch(Exception e) { service.LoggerService.debug("Failed to parse QTY: " + e.getMessage()); qtyRaw.set(0); }
             }
             recalcTaxable();
         }
@@ -2114,7 +2168,7 @@ public class GenerateGSTInvoiceController implements Initializable {
             } else {
                 try {
                     rateRaw.set(Double.parseDouble(v.replace("₹", "").replace(",", "").trim()));
-                } catch(Exception ignored) { rateRaw.set(0); }
+                } catch(Exception e) { service.LoggerService.debug("Failed to parse Rate: " + e.getMessage()); rateRaw.set(0); }
             }
             recalcTaxable();
         }
@@ -2160,7 +2214,7 @@ public class GenerateGSTInvoiceController implements Initializable {
                     rate.set(fmtMoney(rateRaw.get()));
                 }
                 recalcTaxes(g, this.intraState);
-            } catch (Exception ignored) {}
+            } catch (Exception e) { service.LoggerService.debug("Failed to calculate total: " + e.getMessage()); }
         }
         public StringProperty totalProperty() { return total; }
     }

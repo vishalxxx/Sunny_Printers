@@ -158,9 +158,9 @@
 
 .client-ledger-root .cl-metric-card {
     -fx-padding: 10 12 12 12;
-    -fx-min-width: 112;
-    -fx-pref-width: 124;
-    -fx-max-width: 138;
+    -fx-min-width: 145;
+    -fx-pref-width: 165;
+    -fx-max-width: 240;
     -fx-background-radius: 12;
     -fx-border-radius: 12;
     -fx-border-width: 1;
@@ -599,4 +599,83 @@
 .client-ledger-root .scroll-bar .decrement-arrow {
     -fx-shape: "";
     -fx-padding: 0;
+}
+
+/* Pagination premium styling */
+.client-ledger-root .vi-pagination-bar-premium {
+    -fx-padding: 12 16;
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2DDD8;
+    -fx-border-width: 1 0 1 0;
+}
+
+.client-ledger-root .vi-page-info-taste {
+    -fx-font-size: 13px;
+    -fx-text-fill: #57534E;
+    -fx-font-weight: 600;
+    -fx-font-family: 'Inter';
+}
+
+.client-ledger-root .vi-page-btn {
+    -fx-background-color: #F1EBE5;
+    -fx-text-fill: #433934;
+    -fx-font-weight: 700;
+    -fx-background-radius: 50;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-alignment: center;
+    -fx-cursor: hand;
+}
+
+.client-ledger-root .vi-page-btn:hover {
+    -fx-background-color: #E2D9D2;
+}
+
+.client-ledger-root .vi-page-btn:disabled {
+    -fx-opacity: 0.45;
+}
+
+.client-ledger-root .vi-page-btn-active {
+    -fx-background-color: #C16738;
+    -fx-text-fill: white;
+}
+
+.client-ledger-root .vi-page-btn-active:hover {
+    -fx-background-color: #B25D3B;
+}
+
+.client-ledger-root .goto-field {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2DDD8;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 4 8;
+    -fx-text-fill: #3E312D;
+    -fx-font-weight: 600;
+}
+
+.client-ledger-root .goto-field:focused {
+    -fx-border-color: #C16738;
+}
+
+/* Page size combo styling to prevent ... */
+.client-ledger-root #pageSizeCombo {
+    -fx-padding: 2 6 2 6;
+}
+
+.client-ledger-root #pageSizeCombo .list-cell {
+    -fx-padding: 0;
+    -fx-text-fill: #3E312D;
+    -fx-alignment: center;
+}
+
+/* Hide empty TableView rows */
+.client-ledger-root .cl-ledger-table .table-row-cell:empty {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+.client-ledger-root .cl-ledger-table .table-row-cell:empty .table-cell {
+    -fx-text-fill: transparent;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
 }

@@ -32,6 +32,9 @@ public class SystemSettings {
 	private int lastSeqTkt;
 	private int lastSeqDc;
 	private int lastSeqEwb;
+	private int lastSeqRcpt;
+	private int lastSeqClient;
+	private int lastSeqSupplier;
 
 	// ================= BUSINESS HELPERS =================
 	public boolean isAuto() {
@@ -57,6 +60,9 @@ public class SystemSettings {
 		case JOB_TICKET -> lastSeqTkt;
 		case DISPATCH_CHALLAN -> lastSeqDc;
 		case EWAY_BILL_REF -> lastSeqEwb;
+		case PAYMENT_RECEIPT -> lastSeqRcpt;
+		case CLIENT -> lastSeqClient;
+		case SUPPLIER -> lastSeqSupplier;
 		};
 	}
 
@@ -76,6 +82,9 @@ public class SystemSettings {
 		case JOB_TICKET -> lastSeqTkt = v;
 		case DISPATCH_CHALLAN -> lastSeqDc = v;
 		case EWAY_BILL_REF -> lastSeqEwb = v;
+		case PAYMENT_RECEIPT -> lastSeqRcpt = v;
+		case CLIENT -> lastSeqClient = v;
+		case SUPPLIER -> lastSeqSupplier = v;
 		}
 	}
 
@@ -90,6 +99,9 @@ public class SystemSettings {
 		lastSeqTkt = 0;
 		lastSeqDc = 0;
 		lastSeqEwb = 0;
+		lastSeqRcpt = 0;
+		lastSeqClient = 0;
+		lastSeqSupplier = 0;
 	}
 
 	/** Ensure FY row matches document date; reset series when FY rolls. */
@@ -275,5 +287,29 @@ public class SystemSettings {
 
 	public void setLastSeqEwb(int lastSeqEwb) {
 		this.lastSeqEwb = lastSeqEwb;
+	}
+
+	public int getLastSeqRcpt() {
+		return lastSeqRcpt;
+	}
+
+	public void setLastSeqRcpt(int lastSeqRcpt) {
+		this.lastSeqRcpt = lastSeqRcpt;
+	}
+
+	public int getLastSeqClient() {
+		return lastSeqClient;
+	}
+
+	public void setLastSeqClient(int lastSeqClient) {
+		this.lastSeqClient = lastSeqClient;
+	}
+
+	public int getLastSeqSupplier() {
+		return lastSeqSupplier;
+	}
+
+	public void setLastSeqSupplier(int lastSeqSupplier) {
+		this.lastSeqSupplier = lastSeqSupplier;
 	}
 }

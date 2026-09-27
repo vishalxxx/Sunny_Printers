@@ -66,7 +66,7 @@ public class EnterpriseChaosAndStressSuite {
 
         // --- PHASE 1 & 2: Multi-Machine Operations ---
         // Machine A creates client
-        DBConnection.setUrl(dbA);
+        DBConnection.setTestDatabaseUrl(dbA);
         ClientRepository repoA = new ClientRepository();
         String uuidA = UUID.randomUUID().toString();
         Client clientA = new Client("Chaos Corp A", "Operator A", "9876543210", "", "opA@chaos.com", "07AAAAA0000A1Z5", "", "Delhi", "", "");
@@ -77,7 +77,7 @@ public class EnterpriseChaosAndStressSuite {
         UniversalSyncEngine.syncAllPending();
 
         // Machine B creates client concurrently
-        DBConnection.setUrl(dbB);
+        DBConnection.setTestDatabaseUrl(dbB);
         ClientRepository repoB = new ClientRepository();
         String uuidB = UUID.randomUUID().toString();
         Client clientB = new Client("Chaos Corp B", "Operator B", "9876543211", "", "opB@chaos.com", "07AAAAA0000A1Z6", "", "Delhi", "", "");
@@ -91,7 +91,7 @@ public class EnterpriseChaosAndStressSuite {
         assertEquals(2, fakeSupabase.getTableData(SupabaseEndpoints.CLIENTS).size());
 
         // Machine A soft deletes clientA
-        DBConnection.setUrl(dbA);
+        DBConnection.setTestDatabaseUrl(dbA);
         repoA.deleteByUuid(uuidA);
         UniversalSyncEngine.syncAllPending();
 
@@ -102,7 +102,7 @@ public class EnterpriseChaosAndStressSuite {
         // --- PHASE 13: Multi-Cycle Database Recovery ---
         for (int cycle = 1; cycle <= 3; cycle++) {
             String cycleDb = TestDatabaseHelper.createIsolatedDb("Chaos_MachineC_Cycle" + cycle);
-            DBConnection.setUrl(cycleDb);
+            DBConnection.setTestDatabaseUrl(cycleDb);
             RemoteToLocalSync.pullAll(fakeSupabase);
 
             try (Connection con = DBConnection.getConnection();
@@ -117,7 +117,7 @@ public class EnterpriseChaosAndStressSuite {
 
     @Test
     public void testConcurrentThreadStressAndConnectionSafety() throws Exception {
-        DBConnection.setUrl(dbA);
+        DBConnection.setTestDatabaseUrl(dbA);
         ExecutorService executor = Executors.newFixedThreadPool(5);
         for (int i = 0; i < 10; i++) {
             final int index = i;

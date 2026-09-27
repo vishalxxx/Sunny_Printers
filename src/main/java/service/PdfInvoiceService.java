@@ -305,6 +305,26 @@ public class PdfInvoiceService {
             addSubtleSpacerRow(table);
         }
 
+        // Add empty spacer rows to stretch the table to a full page height if it's short
+        int minRows = 12;
+        int currentItemRows = 0;
+        if (invoice.getJobs() != null) {
+            for (InvoiceJob job : invoice.getJobs()) {
+                currentItemRows += 1;
+                if (job.getLines() != null) {
+                    currentItemRows += job.getLines().size();
+                }
+            }
+        }
+        if (currentItemRows < minRows) {
+            for (int i = currentItemRows; i < minRows; i++) {
+                table.addCell(centerCell("", tableBodyFont));
+                table.addCell(centerCell("", tableBodyFont));
+                table.addCell(subLineDescCell("", tableBodyFont));
+                table.addCell(rightAmountCell("", tableBodyFont));
+            }
+        }
+
         // Subtly separate list from totals
         addSubtleSpacerRow(table);
 
@@ -389,10 +409,37 @@ public class PdfInvoiceService {
         forCompany.setAlignment(Element.ALIGN_RIGHT);
         sigCell.addElement(forCompany);
         
-        // Signatory line spacer
-        Paragraph spacerPara = new Paragraph("\n\n");
-        spacerPara.setLeading(8f);
-        sigCell.addElement(spacerPara);
+        String sigPath = utils.DigitalSignaturePath.get();
+        boolean hasSignature = false;
+        com.lowagie.text.Image sigImage = null;
+        if (sigPath != null && !sigPath.isBlank()) {
+            java.io.File f = new java.io.File(sigPath);
+            if (f.exists() && f.isFile()) {
+                try {
+                    sigImage = com.lowagie.text.Image.getInstance(sigPath);
+                    sigImage.scaleToFit(100f, 35f);
+                    sigImage.setAlignment(Element.ALIGN_RIGHT);
+                    hasSignature = true;
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+
+        if (hasSignature && sigImage != null) {
+            Paragraph spacerSig = new Paragraph(" ");
+            spacerSig.setLeading(3f);
+            sigCell.addElement(spacerSig);
+            sigCell.addElement(sigImage);
+            Paragraph spacerSigBottom = new Paragraph(" ");
+            spacerSigBottom.setLeading(3f);
+            sigCell.addElement(spacerSigBottom);
+        } else {
+            // Signatory line spacer
+            Paragraph spacerPara = new Paragraph("\n\n");
+            spacerPara.setLeading(8f);
+            sigCell.addElement(spacerPara);
+        }
         
         Paragraph authorizedSig = new Paragraph("Authorized Signatory", footerTitleFont);
         authorizedSig.setAlignment(Element.ALIGN_RIGHT);

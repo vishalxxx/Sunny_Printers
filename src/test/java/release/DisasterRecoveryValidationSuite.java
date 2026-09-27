@@ -11,6 +11,7 @@ import utils.ClearAllExceptSettings;
 import utils.ClearRemoteDatabase;
 import utils.MetricsExtractor;
 import utils.SchemaAndSyncChecker;
+import utils.TestEnvironment;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
@@ -46,6 +47,10 @@ public class DisasterRecoveryValidationSuite {
         recoveryDbUrl = TestDatabaseHelper.createIsolatedDb("DR_RecoveryMachine");
         fakeSupabase = new FakeSupabaseRestClient();
         SupabaseGate.setOverrideClient(fakeSupabase);
+
+        // Log test environment context
+        TestEnvironment.load();
+        TestEnvironment.logContext();
     }
 
     @AfterAll
@@ -56,7 +61,7 @@ public class DisasterRecoveryValidationSuite {
     @Test
     public void testFullDisasterRecoveryCycle() throws Exception {
         // --- PHASE 1 & 3: Local Creation & Sync to Supabase ---
-        DBConnection.setUrl(primaryDbUrl);
+        DBConnection.setTestDatabaseUrl(primaryDbUrl);
         fakeSupabase.clear();
         SupabaseReachability.invalidateCache();
 
@@ -111,7 +116,7 @@ public class DisasterRecoveryValidationSuite {
 
         // --- PHASE 4 & 5: Total SQLite Disaster Recovery Rebuild ---
         // Switch connection to completely fresh/clean SQLite recovery DB
-        DBConnection.setUrl(recoveryDbUrl);
+        DBConnection.setTestDatabaseUrl(recoveryDbUrl);
         
         // Execute full pull recovery from Supabase
         RemoteToLocalSync.pullAll(fakeSupabase);

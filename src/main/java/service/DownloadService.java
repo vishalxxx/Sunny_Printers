@@ -20,7 +20,8 @@ public class DownloadService {
     private final Path downloadDir;
 
     public DownloadService() {
-        this.downloadDir = Paths.get(System.getProperty("user.home"), ".sunny_printers", "updates", "downloads");
+        this.downloadDir = Paths.get(System.getProperty("user.home"), ".sunnyprinters", "updates", "downloads");
+
         try {
             Files.createDirectories(downloadDir);
         } catch (IOException e) {

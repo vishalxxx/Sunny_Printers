@@ -65,6 +65,7 @@ public class AddSupplierController implements Initializable {
     
     private final SupplierService supplierService = new SupplierService();
     private Supplier selectedSupplier;
+    private boolean isUpdatingLocation = false;
     
     @Override
     public void initialize(URL url, ResourceBundle rb) {
@@ -80,13 +81,139 @@ public class AddSupplierController implements Initializable {
             "Cash on Delivery", "Advance Payment", "7 Days", "15 Days", "30 Days", "45 Days", "60 Days"
         ));
         
-        stateCombo.setItems(FXCollections.observableArrayList(
-            "Maharashtra", "Delhi", "Gujarat", "Karnataka", "Tamil Nadu", "Uttar Pradesh", "West Bengal", "Telangana", "Rajasthan", "Punjab"
-        ));
+        stateCombo.getItems().addAll(utils.GSTINValidator.ALL_STATES);
+        if (stateCombo != null) {
+            stateCombo.setEditable(true);
+        }
+        if (cityCombo != null) {
+            cityCombo.setEditable(true);
+        }
         
-        cityCombo.setItems(FXCollections.observableArrayList(
-            "Mumbai", "New Delhi", "Ahmedabad", "Bengaluru", "Chennai", "Noida", "Kolkata", "Hyderabad", "Jaipur", "Ludhiana"
-        ));
+        stateCombo.valueProperty().addListener((obs, oldState, newState) -> {
+            cityCombo.getItems().clear();
+            if (newState != null) {
+                String cleanState = newState;
+                if (newState.contains("(")) {
+                    cleanState = newState.substring(0, newState.indexOf('(')).trim();
+                }
+                switch (cleanState) {
+                    case "Jammu & Kashmir":
+                        cityCombo.getItems().addAll("Srinagar", "Jammu", "Anantnag", "Baramulla");
+                        break;
+                    case "Himachal Pradesh":
+                        cityCombo.getItems().addAll("Shimla", "Dharamshala", "Solan", "Mandi");
+                        break;
+                    case "Punjab":
+                        cityCombo.getItems().addAll("Ludhiana", "Amritsar", "Jalandhar", "Patiala", "Bathinda");
+                        break;
+                    case "Chandigarh":
+                        cityCombo.getItems().addAll("Chandigarh");
+                        break;
+                    case "Uttarakhand":
+                        cityCombo.getItems().addAll("Dehradun", "Haridwar", "Roorkee", "Haldwani");
+                        break;
+                    case "Haryana":
+                        cityCombo.getItems().addAll("Gurugram", "Faridabad", "Panipat", "Ambala", "Rohtak");
+                        break;
+                    case "Delhi":
+                        cityCombo.getItems().addAll("New Delhi", "Dwarka", "Rohini");
+                        break;
+                    case "Rajasthan":
+                        cityCombo.getItems().addAll("Jaipur", "Jodhpur", "Udaipur", "Kota", "Ajmer");
+                        break;
+                    case "Uttar Pradesh":
+                        cityCombo.getItems().addAll("Noida", "Lucknow", "Kanpur", "Agra", "Varanasi", "Ghaziabad", "Allahabad");
+                        break;
+                    case "Bihar":
+                        cityCombo.getItems().addAll("Patna", "Gaya", "Bhagalpur", "Muzaffarpur");
+                        break;
+                    case "Sikkim":
+                        cityCombo.getItems().addAll("Gangtok", "Namchi", "Geyzing");
+                        break;
+                    case "Arunachal Pradesh":
+                        cityCombo.getItems().addAll("Itanagar", "Tawang", "Naharlagun");
+                        break;
+                    case "Nagaland":
+                        cityCombo.getItems().addAll("Kohima", "Dimapur", "Mokokchung");
+                        break;
+                    case "Manipur":
+                        cityCombo.getItems().addAll("Imphal", "Thoubal", "Churachandpur");
+                        break;
+                    case "Mizoram":
+                        cityCombo.getItems().addAll("Aizawl", "Lunglei", "Champhai");
+                        break;
+                    case "Tripura":
+                        cityCombo.getItems().addAll("Agartala", "Dharmanagar", "Udaipur");
+                        break;
+                    case "Meghalaya":
+                        cityCombo.getItems().addAll("Shillong", "Tura", "Jowai");
+                        break;
+                    case "Assam":
+                        cityCombo.getItems().addAll("Guwahati", "Dibrugarh", "Silchar", "Jorhat");
+                        break;
+                    case "West Bengal":
+                        cityCombo.getItems().addAll("Kolkata", "Howrah", "Durgapur", "Siliguri", "Asansol");
+                        break;
+                    case "Jharkhand":
+                        cityCombo.getItems().addAll("Ranchi", "Jamshedpur", "Dhanbad", "Bokaro");
+                        break;
+                    case "Odisha":
+                        cityCombo.getItems().addAll("Bhubaneswar", "Cuttack", "Rourkela", "Sambalpur");
+                        break;
+                    case "Chhattisgarh":
+                        cityCombo.getItems().addAll("Raipur", "Bhilai", "Bilaspur", "Korba");
+                        break;
+                    case "Madhya Pradesh":
+                        cityCombo.getItems().addAll("Bhopal", "Indore", "Gwalior", "Jabalpur", "Ujjain");
+                        break;
+                    case "Gujarat":
+                        cityCombo.getItems().addAll("Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar");
+                        break;
+                    case "Daman & Diu":
+                        cityCombo.getItems().addAll("Daman", "Diu");
+                        break;
+                    case "Dadra & Nagar Haveli":
+                        cityCombo.getItems().addAll("Silvassa");
+                        break;
+                    case "Maharashtra":
+                        cityCombo.getItems().addAll("Mumbai", "Pune", "Nagpur", "Thane", "Nashik", "Aurangabad", "Navi Mumbai", "Solapur");
+                        break;
+                    case "Karnataka":
+                        cityCombo.getItems().addAll("Bengaluru", "Mysore", "Hubli", "Mangalore", "Belgaum");
+                        break;
+                    case "Goa":
+                        cityCombo.getItems().addAll("Panaji", "Margao", "Vasco da Gama");
+                        break;
+                    case "Lakshadweep":
+                        cityCombo.getItems().addAll("Kavaratti");
+                        break;
+                    case "Kerala":
+                        cityCombo.getItems().addAll("Thiruvananthapuram", "Kochi", "Kozhikode", "Thrissur");
+                        break;
+                    case "Tamil Nadu":
+                        cityCombo.getItems().addAll("Chennai", "Coimbatore", "Madurai", "Trichy", "Salem");
+                        break;
+                    case "Puducherry":
+                        cityCombo.getItems().addAll("Puducherry", "Karaikal");
+                        break;
+                    case "Andaman & Nicobar Islands":
+                        cityCombo.getItems().addAll("Port Blair");
+                        break;
+                    case "Telangana":
+                        cityCombo.getItems().addAll("Hyderabad", "Warangal", "Nizamabad", "Karimnagar");
+                        break;
+                    case "Andhra Pradesh (New)":
+                    case "Andhra Pradesh":
+                        cityCombo.getItems().addAll("Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Tirupati");
+                        break;
+                    case "Ladakh":
+                        cityCombo.getItems().addAll("Leh", "Kargil");
+                        break;
+                    default:
+                        break;
+                }
+            }
+        });
         
         // Initial setup for default user session info if available
         utils.SessionManager session = utils.SessionManager.getInstance();
@@ -105,6 +232,70 @@ public class AddSupplierController implements Initializable {
         }
         if (phoneField != null) {
             phoneField.textProperty().addListener((obs, oldVal, newVal) -> validateAltPhoneRealtime(newVal));
+        }
+
+        if (pincodeField != null) {
+            pincodeField.textProperty().addListener((obs, oldVal, newVal) -> {
+                if (isUpdatingLocation) return;
+                if (newVal != null && newVal.trim().length() == 6) {
+                    String pin = newVal.trim();
+                    String state = null;
+                    String city = null;
+                    if (pin.startsWith("4006")) { state = "Maharashtra"; city = "Thane"; }
+                    else if (pin.startsWith("400")) { state = "Maharashtra"; city = "Mumbai"; }
+                    else if (pin.startsWith("411")) { state = "Maharashtra"; city = "Pune"; }
+                    else if (pin.startsWith("440")) { state = "Maharashtra"; city = "Nagpur"; }
+                    else if (pin.startsWith("110")) { state = "Delhi"; city = "New Delhi"; }
+                    else if (pin.startsWith("380")) { state = "Gujarat"; city = "Ahmedabad"; }
+                    else if (pin.startsWith("560")) { state = "Karnataka"; city = "Bengaluru"; }
+                    else if (pin.startsWith("600")) { state = "Tamil Nadu"; city = "Chennai"; }
+                    else if (pin.startsWith("2013")) { state = "Uttar Pradesh"; city = "Noida"; }
+                    else if (pin.startsWith("700")) { state = "West Bengal"; city = "Kolkata"; }
+                    else if (pin.startsWith("500")) { state = "Telangana"; city = "Hyderabad"; }
+                    else if (pin.startsWith("302")) { state = "Rajasthan"; city = "Jaipur"; }
+                    else if (pin.startsWith("141")) { state = "Punjab"; city = "Ludhiana"; }
+                    
+                    if (state != null) {
+                        isUpdatingLocation = true;
+                        selectStateByName(state);
+                        cityCombo.setValue(city);
+                        isUpdatingLocation = false;
+                    }
+                }
+            });
+        }
+
+        if (cityCombo != null) {
+            cityCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
+                if (isUpdatingLocation) return;
+                if (newVal != null) {
+                    String pin = null;
+                    switch (newVal) {
+                        case "Mumbai": pin = "400001"; break;
+                        case "Pune": pin = "411001"; break;
+                        case "Nagpur": pin = "440001"; break;
+                        case "Thane": pin = "400601"; break;
+                        case "New Delhi": pin = "110001"; break;
+                        case "Ahmedabad": pin = "380001"; break;
+                        case "Bengaluru": pin = "560001"; break;
+                        case "Chennai": pin = "600001"; break;
+                        case "Noida": pin = "201301"; break;
+                        case "Kolkata": pin = "700001"; break;
+                        case "Hyderabad": pin = "500001"; break;
+                        case "Jaipur": pin = "302001"; break;
+                        case "Ludhiana": pin = "141001"; break;
+                    }
+                    if (pin != null) {
+                        isUpdatingLocation = true;
+                        pincodeField.setText(pin);
+                        isUpdatingLocation = false;
+                    }
+                }
+            });
+        }
+
+        if (creditLimitField != null) {
+            creditLimitField.setDisable(true);
         }
 
         // Clear fields and set initial code to SUP-NEW
@@ -475,6 +666,20 @@ public class AddSupplierController implements Initializable {
         if (lblAltPhoneValidation != null) {
             lblAltPhoneValidation.setText("✓ Valid Alternate Phone");
             lblAltPhoneValidation.setStyle("-fx-text-fill: #2ecc71; -fx-font-size: 11px;");
+        }
+    }
+
+    private void selectStateByName(String stateName) {
+        if (stateName == null || stateCombo == null) return;
+        for (String item : stateCombo.getItems()) {
+            String clean = item;
+            if (item.contains("(")) {
+                clean = item.substring(0, item.indexOf('(')).trim();
+            }
+            if (clean.equalsIgnoreCase(stateName)) {
+                stateCombo.setValue(item);
+                break;
+            }
         }
     }
 }

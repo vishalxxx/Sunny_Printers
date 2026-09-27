@@ -56,7 +56,7 @@ public class DownloadTask extends Task<Void> {
         }
 
         HttpRequest.Builder reqBuilder = HttpRequest.newBuilder(URI.create(downloadUrl))
-                .timeout(Duration.ofSeconds(10))
+                .timeout(Duration.ofMinutes(10))
                 .GET();
 
         boolean resuming = false;

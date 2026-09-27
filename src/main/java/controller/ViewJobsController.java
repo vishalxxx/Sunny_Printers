@@ -36,6 +36,9 @@ import jakarta.mail.Session;
 import jakarta.mail.Transport;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMultipart;
+import javafx.stage.FileChooser;
 import model.EmailSettings;
 import repository.EmailSettingsRepository;
 import model.Supplier;
@@ -88,6 +91,8 @@ public class ViewJobsController {
 
     /** When set before opening View Jobs, client filter selects this client id once clients load. */
     public static volatile String pendingFilterClientUuid;
+    /** When set before opening View Jobs, status filter selects this status. */
+    public static volatile String pendingFilterStatus;
 
     private final ClientService clientService = new ClientService();
     private final JobService jobService = new JobService();
@@ -163,7 +168,13 @@ public class ViewJobsController {
         setupTableColumns();
 
         statusFilterComboBox.getItems().addAll("All", "Draft", "In Progress", "Completed", "Invoiced", "Cancelled");
-        statusFilterComboBox.getSelectionModel().selectFirst();
+        if (pendingFilterStatus != null) {
+            String statusToSelect = pendingFilterStatus;
+            pendingFilterStatus = null;
+            statusFilterComboBox.getSelectionModel().select(statusToSelect);
+        } else {
+            statusFilterComboBox.getSelectionModel().selectFirst();
+        }
         statusFilterComboBox.valueProperty().addListener((obs, oldV, newV) -> applyFilters());
 
         if (bulkCommandCombo != null) {
@@ -347,12 +358,22 @@ public class ViewJobsController {
                 bulkStartBtn.setVisible(true);   bulkStartBtn.setManaged(true);
                 bulkCompleteBtn.setVisible(true); bulkCompleteBtn.setManaged(true);
                 bulkInvoiceBtn.setVisible(true);  bulkInvoiceBtn.setManaged(true);
-                bulkCancelBtn.setVisible(true);   bulkCancelBtn.setManaged(true);
+                
+                boolean hasLinkedToInvoice = selected.stream().anyMatch(j -> {
+                    if ("Invoice Drafted".equalsIgnoreCase(j.getStatus())) return false;
+                    return j.getInvoiceUuid() != null || utils.JobWorkflow.majorFromJobStatus(j.getStatus()) == utils.JobWorkflow.Major.INVOICE;
+                });
+                boolean showCancel = !hasLinkedToInvoice;
+                bulkCancelBtn.setVisible(showCancel);
+                bulkCancelBtn.setManaged(showCancel);
 
                 long draftCount      = selected.stream().filter(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()) == utils.JobWorkflow.Major.DRAFT).count();
                 long processingCount = selected.stream().filter(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()) == utils.JobWorkflow.Major.PROCESSING).count();
                 long completedCount  = selected.stream().filter(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()) == utils.JobWorkflow.Major.COMPLETED).count();
-                long anyButCancelled = selected.stream().filter(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()) != utils.JobWorkflow.Major.CANCELLED).count();
+                long anyButCancelled = selected.stream().filter(j -> {
+                    utils.JobWorkflow.Major major = utils.JobWorkflow.majorFromJobStatus(j.getStatus());
+                    return major != utils.JobWorkflow.Major.CANCELLED && (major != utils.JobWorkflow.Major.INVOICE || "Invoice Drafted".equalsIgnoreCase(j.getStatus()));
+                }).count();
 
                 bulkStartBtn.setText("Start Processing (" + draftCount + ")");
                 bulkStartBtn.setDisable(draftCount == 0);
@@ -364,9 +385,13 @@ public class ViewJobsController {
                 bulkInvoiceBtn.setDisable(completedCount == 0);
 
                 bulkCancelBtn.setText("Cancel Job (" + anyButCancelled + ")");
-                boolean canBulkCancel = uniqueStatuses.contains(utils.JobWorkflow.Major.DRAFT) 
-                                     || uniqueStatuses.contains(utils.JobWorkflow.Major.PROCESSING) 
-                                     || uniqueStatuses.contains(utils.JobWorkflow.Major.COMPLETED);
+                boolean canBulkCancel = selected.stream().allMatch(j -> {
+                    utils.JobWorkflow.Major m = utils.JobWorkflow.majorFromJobStatus(j.getStatus());
+                    return m == utils.JobWorkflow.Major.DRAFT 
+                        || m == utils.JobWorkflow.Major.PROCESSING 
+                        || m == utils.JobWorkflow.Major.COMPLETED 
+                        || "Invoice Drafted".equalsIgnoreCase(j.getStatus());
+                });
                 bulkCancelBtn.setDisable(!canBulkCancel);
             }
         }
@@ -380,6 +405,11 @@ public class ViewJobsController {
         fromDatePicker.setValue(null);
         toDatePicker.setValue(null);
         applyFilters();
+    }
+
+    @FXML
+    private void handleAddJob() {
+        MainController.getInstance().loadAddJob();
     }
 
     @FXML
@@ -465,6 +495,8 @@ public class ViewJobsController {
 
         List<Job> toProcess = jobsToCancel.stream()
                 .filter(j -> !"Cancelled".equalsIgnoreCase(j.getStatus()))
+                .filter(j -> utils.JobWorkflow.majorFromJobStatus(j.getStatus()) != utils.JobWorkflow.Major.INVOICE 
+                          || "Invoice Drafted".equalsIgnoreCase(j.getStatus()))
                 .collect(Collectors.toList());
 
         if (toProcess.isEmpty()) return;
@@ -494,6 +526,14 @@ public class ViewJobsController {
                 if (invoice == null || !isProforma) {
                     if (invoice != null) {
                         String stat = invoice.getStatus() != null ? invoice.getStatus().toUpperCase() : "";
+                        if ("VOID".equals(stat)) {
+                            for (Job job : jobsForInv) {
+                                jobService.updateJobStatus(job.getUuid(), "Cancelled");
+                                job.setStatus("Cancelled");
+                                applyDefaultChildForNewMajor(job, "Cancelled");
+                            }
+                            continue;
+                        }
                         if (!stat.isEmpty() && !stat.startsWith("DRAFT")) {
                             Alert blockAlert = new Alert(Alert.AlertType.ERROR);
                             blockAlert.setTitle("Action Blocked");
@@ -517,11 +557,17 @@ public class ViewJobsController {
                 } else {
                     String stat = invoice.getStatus() != null ? invoice.getStatus().toUpperCase() : "";
                     if ("REVISED".equals(stat) || "CANCELLED".equals(stat) || "VOID".equals(stat)) {
-                        Alert blockAlert = new Alert(Alert.AlertType.ERROR);
-                        blockAlert.setTitle("Action Blocked");
-                        blockAlert.setHeaderText("Cannot Cancel Job");
-                        blockAlert.setContentText("Job " + jobsForInv.get(0).getJobNo() + " is linked to a Proforma Invoice (" + invoice.getInvoiceNo() + ") that is " + stat + ". Cancellation is blocked.");
-                        blockAlert.showAndWait();
+                        for (Job job : jobsForInv) {
+                            jobService.updateJobStatus(job.getUuid(), "Cancelled");
+                            job.setStatus("Cancelled");
+                            applyDefaultChildForNewMajor(job, "Cancelled");
+                        }
+                        try {
+                            List<String> jobUuidsToUnlink = jobsForInv.stream().map(Job::getUuid).collect(Collectors.toList());
+                            invoiceService.unlinkJobsAndRecalculateProforma(invUuid, jobUuidsToUnlink);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
                         continue;
                     }
                     List<Job> allLinkedJobs = jobService.getJobsByInvoice(invoice);
@@ -542,7 +588,7 @@ public class ViewJobsController {
                             invoiceService.updateInvoiceStatus(invUuid, "CANCELLED");
                         } else {
                             ButtonType btnRefund = new ButtonType("Refund Advance");
-                            ButtonType btnKeep = new ButtonType("Keep as Customer Advance");
+                            ButtonType btnKeep = new ButtonType("Keep Payment");
                             ButtonType btnCancel = new ButtonType("Cancel/Abort", ButtonBar.ButtonData.CANCEL_CLOSE);
 
                             Alert dialog = new Alert(Alert.AlertType.CONFIRMATION);
@@ -550,20 +596,46 @@ public class ViewJobsController {
                             dialog.setHeaderText("Advance Received: " + invoice.getPaidAmount() + " for Proforma " + invoice.getInvoiceNo());
                             dialog.setContentText("This proforma invoice will be cancelled. How would you like to handle the advance payment?");
                             dialog.getButtonTypes().setAll(btnRefund, btnKeep, btnCancel);
+                            dialog.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+                            dialog.getDialogPane().getStyleClass().add("atelier-alert");
+                            dialog.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+                            dialog.getDialogPane().setStyle("-fx-min-width: 550px; -fx-pref-width: 550px; -fx-max-width: 550px;");
+                            
+                            dialog.setOnShowing(dialogEvent -> {
+                                 dialog.getDialogPane().getButtonTypes().forEach(buttonType -> {
+                                     javafx.scene.control.Button btn = (javafx.scene.control.Button) dialog.getDialogPane().lookupButton(buttonType);
+                                     if (btn != null) {
+                                         btn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                                     }
+                                 });
+                             });
 
-                            Optional<ButtonType> opt = dialog.showAndWait();
-                            if (opt.isPresent()) {
-                                if (opt.get() == btnRefund) {
-                                    Alert confirmRefund = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to refund the advance amount of ₹" + invoice.getPaidAmount() + "?", ButtonType.YES, ButtonType.NO);
-                                    confirmRefund.setTitle("Confirm Refund");
-                                    Optional<ButtonType> confOpt = confirmRefund.showAndWait();
-                                    if (confOpt.isPresent() && confOpt.get() == ButtonType.YES) {
-                                        invoiceService.refundAdvanceForInvoice(invUuid, invoice.getClientUuid(), invoice.getPaidAmount());
-                                        Toast.show((javafx.stage.Stage) jobsTable.getScene().getWindow(), "Refund created for advance.");
-                                    } else {
-                                        toast("Refund cancelled.");
-                                        return;
-                                    }
+                             Optional<ButtonType> opt = dialog.showAndWait();
+                             if (opt.isPresent()) {
+                                 if (opt.get() == btnRefund) {
+                                     Alert confirmRefund = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to refund the advance amount of ₹" + invoice.getPaidAmount() + "?", ButtonType.YES, ButtonType.NO);
+                                     confirmRefund.setTitle("Confirm Refund");
+                                     confirmRefund.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+                                     confirmRefund.getDialogPane().getStyleClass().add("atelier-alert");
+                                     confirmRefund.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+                                     
+                                     confirmRefund.setOnShowing(dialogEvent -> {
+                                         confirmRefund.getDialogPane().getButtonTypes().forEach(buttonType -> {
+                                             javafx.scene.control.Button btn = (javafx.scene.control.Button) confirmRefund.getDialogPane().lookupButton(buttonType);
+                                             if (btn != null) {
+                                                 btn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                                             }
+                                         });
+                                     });
+
+                                     Optional<ButtonType> confOpt = confirmRefund.showAndWait();
+                                     if (confOpt.isPresent() && confOpt.get() == ButtonType.YES) {
+                                         invoiceService.refundAdvanceForInvoice(invUuid, invoice.getClientUuid(), invoice.getPaidAmount());
+                                         Toast.show((javafx.stage.Stage) jobsTable.getScene().getWindow(), "Refund created for advance.");
+                                     } else {
+                                         toast("Refund cancelled.");
+                                         return;
+                                     }                        
                                 } else if (opt.get() == btnKeep) {
                                     invoiceService.deallocatePaymentsForInvoice(invUuid);
                                     Toast.show((javafx.stage.Stage) jobsTable.getScene().getWindow(), "Advance deallocated (kept as Customer Advance).");
@@ -846,15 +918,15 @@ public class ViewJobsController {
                 iconBox.getStyleClass().removeAll("icon-box-orange", "icon-box-blue", "icon-box-green", "icon-box-red", "icon-box-purple");
                 icon.getStyleClass().removeAll("icon-inner-orange", "icon-inner-blue", "icon-inner-green", "icon-inner-red", "icon-inner-purple");
                 
-                String statusLower = job.getStatus() != null ? job.getStatus().toLowerCase() : "";
+                utils.JobWorkflow.Major major = utils.JobWorkflow.majorFromJobStatus(job.getStatus());
                 String type = "orange"; // Default
                 String shape = "M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zM12 18H6v-4h6v4z"; // Store
                 
-                if (statusLower.contains("draft")) { type = "orange"; shape = "M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zM12 18H6v-4h6v4z"; }
-                else if (statusLower.contains("process")) { type = "blue"; shape = "M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"; }
-                else if (statusLower.contains("complet")) { type = "green"; shape = "M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"; }
-                else if (statusLower.contains("invoice") || statusLower.contains("final")) { type = "purple"; shape = "M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"; }
-                else if (statusLower.contains("cancel")) { type = "red"; shape = "M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"; }
+                if (major == utils.JobWorkflow.Major.DRAFT) { type = "orange"; shape = "M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zM12 18H6v-4h6v4z"; }
+                else if (major == utils.JobWorkflow.Major.PROCESSING) { type = "blue"; shape = "M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"; }
+                else if (major == utils.JobWorkflow.Major.COMPLETED) { type = "green"; shape = "M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"; }
+                else if (major == utils.JobWorkflow.Major.INVOICE) { type = "purple"; shape = "M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"; }
+                else if (major == utils.JobWorkflow.Major.CANCELLED) { type = "red"; shape = "M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"; }
                 
                 iconBox.getStyleClass().add("icon-box-" + type);
                 String colorHex = type.equals("orange") ? "#FA8C16" : type.equals("blue") ? "#1890FF" : type.equals("green") ? "#52C41A" : type.equals("purple") ? "#722ED1" : "#F5222D";
@@ -1066,8 +1138,16 @@ public class ViewJobsController {
                 root.getChildren().clear();
                 
                 String statusMsg = job.getStatus() != null ? job.getStatus().toLowerCase() : "";
+                utils.JobWorkflow.Major major = utils.JobWorkflow.majorFromJobStatus(job.getStatus());
                 boolean isCancelled = statusMsg.contains("cancel");
-                boolean isInvoiced = statusMsg.contains("invoice") || statusMsg.contains("invoic") || (job.getInvoiceUuid() != null && !job.getInvoiceUuid().isBlank());
+                boolean isInvoiceDraft = false;
+                if (job.getInvoiceUuid() != null && !job.getInvoiceUuid().isBlank()) {
+                    String invStatus = job.getInvoiceStatus() != null ? job.getInvoiceStatus().trim().toUpperCase() : "";
+                    if (invStatus.startsWith("DRAFT")) {
+                        isInvoiceDraft = true;
+                    }
+                }
+                boolean isInvoiced = (major == utils.JobWorkflow.Major.INVOICE) || ((statusMsg.contains("invoice") || statusMsg.contains("invoic") || (job.getInvoiceUuid() != null && !job.getInvoiceUuid().isBlank())) && !isInvoiceDraft);
                 
                 Button primaryBtn = new Button();
                 primaryBtn.setMinHeight(24);
@@ -1076,17 +1156,17 @@ public class ViewJobsController {
                 primaryBtn.setPadding(new Insets(2, 8, 2, 8));
                 
                 if (!isInvoiced) {
-                    if (statusMsg.contains("draft") || statusMsg.contains("created")) {
+                    if (major == utils.JobWorkflow.Major.DRAFT) {
                         primaryBtn.setText("Start Processing");
                         primaryBtn.getStyleClass().setAll("row-action-btn-primary");
                         primaryBtn.setGraphic(createIcon("M8 5v14l11-7z", "white"));
                         primaryBtn.setOnAction(e -> handleStartActionForJob(job));
-                    } else if (statusMsg.contains("progress")) {
+                    } else if (major == utils.JobWorkflow.Major.PROCESSING) {
                         primaryBtn.setText("Mark Completed");
                         primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-green");
                         primaryBtn.setGraphic(createIcon("M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z", "white"));
                         primaryBtn.setOnAction(e -> handleCompleteActionForJob(job));
-                    } else if (statusMsg.contains("completed")) {
+                    } else if (major == utils.JobWorkflow.Major.COMPLETED) {
                         primaryBtn.setText("Generate Invoice");
                         primaryBtn.getStyleClass().setAll("row-action-btn-primary", "row-action-purple");
                         primaryBtn.setGraphic(createIcon("M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z", "white"));
@@ -1131,12 +1211,12 @@ public class ViewJobsController {
                         }
                     }
                 }
-                boolean canEdit = !isCancelled && !isLockedInvoice;
+                boolean canEdit = !isCancelled && !isLockedInvoice && !isInvoiced;
                 if (canEdit) {
                     root.getChildren().add(eBtn);
                 }
                 root.getChildren().add(mailBtn);
-                boolean canCancel = !isCancelled && !isLockedInvoice;
+                boolean canCancel = !isCancelled && !isLockedInvoice && !isInvoiced;
                 if (canCancel) {
                     root.getChildren().add(cancelBtn);
                 }
@@ -1167,6 +1247,24 @@ public class ViewJobsController {
         public String getName() { return name; }
         public String getEmail() { return email; }
         public String getPhone() { return phone; }
+    }
+
+    public static class MailAttachment {
+        private final File file;
+        private final boolean originalJobAttachment;
+        private final javafx.beans.property.BooleanProperty attached;
+
+        public MailAttachment(File file, boolean originalJobAttachment, boolean defaultAttached) {
+            this.file = file;
+            this.originalJobAttachment = originalJobAttachment;
+            this.attached = new javafx.beans.property.SimpleBooleanProperty(defaultAttached);
+        }
+
+        public File getFile() { return file; }
+        public boolean isOriginalJobAttachment() { return originalJobAttachment; }
+        public boolean isAttached() { return attached.get(); }
+        public void setAttached(boolean val) { attached.set(val); }
+        public javafx.beans.property.BooleanProperty attachedProperty() { return attached; }
     }
 
     private void handleSendMailPopup(Job job) {
@@ -1228,8 +1326,9 @@ public class ViewJobsController {
         
         VBox root = new VBox(15);
         root.getStyleClass().add("mail-popup-root");
-        root.setMinWidth(600);
-        root.setMaxWidth(700);
+        root.setMinWidth(920);
+        root.setMaxWidth(960);
+        root.setPrefWidth(940);
         
         // Header
         HBox header = new HBox();
@@ -1250,14 +1349,17 @@ public class ViewJobsController {
         closeBtn.setOnAction(e -> stage.close());
         header.getChildren().addAll(titleBox, spacer, closeBtn);
         
-        // Table label
+        // Left Column (Recipients & Attachments)
+        VBox leftBox = new VBox(12);
+        HBox.setHgrow(leftBox, Priority.ALWAYS);
+        leftBox.setPrefWidth(440);
+
         Label tableLabel = new Label("Select Recipient (Client or Supplier):");
         tableLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700; -fx-font-size: 12px;");
         
-        // TableView for recipients
         TableView<MailRecipient> table = new TableView<>();
         table.getStyleClass().add("mail-popup-table");
-        table.setPrefHeight(100);
+        table.setPrefHeight(150);
         
         TableColumn<MailRecipient, String> typeCol = new TableColumn<>("Role / Type");
         typeCol.setCellValueFactory(new PropertyValueFactory<>("type"));
@@ -1265,11 +1367,11 @@ public class ViewJobsController {
         
         TableColumn<MailRecipient, String> bNameCol = new TableColumn<>("Business Name");
         bNameCol.setCellValueFactory(new PropertyValueFactory<>("businessName"));
-        bNameCol.setPrefWidth(150);
+        bNameCol.setPrefWidth(130);
         
         TableColumn<MailRecipient, String> nameCol = new TableColumn<>("Contact Name");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
-        nameCol.setPrefWidth(120);
+        nameCol.setPrefWidth(100);
         
         TableColumn<MailRecipient, String> emailCol = new TableColumn<>("Email Address");
         emailCol.setCellValueFactory(new PropertyValueFactory<>("email"));
@@ -1278,8 +1380,154 @@ public class ViewJobsController {
         table.getColumns().addAll(typeCol, bNameCol, nameCol, emailCol);
         table.setItems(recipients);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        
-        // Form Fields
+
+        // Attachments Logic & UI
+        ObservableList<MailAttachment> attachmentList = FXCollections.observableArrayList();
+        if (job.getImagePath() != null && !job.getImagePath().isBlank()) {
+            String[] parts = job.getImagePath().split(",");
+            for (String p : parts) {
+                String trimmed = p.trim();
+                if (!trimmed.isEmpty()) {
+                    File f = utils.ImageStorage.resolveImageFile(trimmed);
+                    if (f != null && f.exists()) {
+                        boolean existsInList = attachmentList.stream()
+                            .anyMatch(a -> a.getFile().getAbsolutePath().equalsIgnoreCase(f.getAbsolutePath()));
+                        if (!existsInList) {
+                            attachmentList.add(new MailAttachment(f, true, true));
+                        }
+                    }
+                }
+            }
+        }
+
+        Label attachLabel = new Label("Attachments:");
+        attachLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700;");
+
+        Label attachCountBadge = new Label();
+        attachCountBadge.setStyle("-fx-text-fill: #8C8C8C; -fx-font-size: 11px; -fx-font-weight: 600;");
+
+        Button addAttachBtn = new Button("+ Add File");
+        addAttachBtn.setStyle("-fx-background-color: #FFF2E8; -fx-text-fill: #CD7B4E; -fx-border-color: #FFD596; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-font-size: 11px; -fx-font-weight: 700; -fx-padding: 3px 8px; -fx-cursor: hand;");
+
+        HBox attachHeader = new HBox(8);
+        attachHeader.setAlignment(Pos.CENTER_LEFT);
+        Region attachSpacer = new Region();
+        HBox.setHgrow(attachSpacer, Priority.ALWAYS);
+        attachHeader.getChildren().addAll(attachLabel, attachCountBadge, attachSpacer, addAttachBtn);
+
+        VBox attachContainer = new VBox(6);
+        attachContainer.setStyle("-fx-background-color: white; -fx-border-color: #EADFD4; -fx-border-width: 1.5px; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8px 10px;");
+
+        ScrollPane attachScroll = new ScrollPane(attachContainer);
+        attachScroll.setFitToWidth(true);
+        attachScroll.setPrefHeight(170);
+        attachScroll.setMaxHeight(200);
+        attachScroll.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-viewport-background: transparent; -fx-padding: 0;");
+
+        Runnable renderAttachments = new Runnable() {
+            @Override
+            public void run() {
+                attachContainer.getChildren().clear();
+                long selectedCount = attachmentList.stream().filter(MailAttachment::isAttached).count();
+                attachCountBadge.setText("(" + selectedCount + " of " + attachmentList.size() + " selected)");
+
+                if (attachmentList.isEmpty()) {
+                    Label emptyLbl = new Label("No files attached. Click '+ Add File' to attach files to this email.");
+                    emptyLbl.setStyle("-fx-text-fill: #A09893; -fx-font-style: italic; -fx-font-size: 12px;");
+                    attachContainer.getChildren().add(emptyLbl);
+                    return;
+                }
+
+                for (MailAttachment item : attachmentList) {
+                    HBox row = new HBox(8);
+                    row.setAlignment(Pos.CENTER_LEFT);
+                    row.setStyle("-fx-background-color: #FAF9F6; -fx-padding: 5px 8px; -fx-background-radius: 6px; -fx-border-color: #F1ECE6; -fx-border-radius: 6px;");
+
+                    CheckBox cb = new CheckBox();
+                    cb.setSelected(item.isAttached());
+                    cb.selectedProperty().addListener((obs, oldV, newV) -> {
+                        item.setAttached(newV);
+                        long sel = attachmentList.stream().filter(MailAttachment::isAttached).count();
+                        attachCountBadge.setText("(" + sel + " of " + attachmentList.size() + " selected)");
+                    });
+
+                    Label nameLbl = new Label(item.getFile().getName());
+                    nameLbl.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 600; -fx-font-size: 12px;");
+                    nameLbl.setMaxWidth(170);
+                    nameLbl.setTextOverrun(OverrunStyle.ELLIPSIS);
+                    nameLbl.setTooltip(new Tooltip(item.getFile().getName()));
+
+                    long bytes = item.getFile().length();
+                    String sizeStr = bytes < 1024 ? bytes + " B" : (bytes < 1024 * 1024 ? (bytes / 1024) + " KB" : String.format("%.1f MB", bytes / (1024.0 * 1024.0)));
+                    Label sizeLbl = new Label("(" + sizeStr + ")");
+                    sizeLbl.setStyle("-fx-text-fill: #8C8C8C; -fx-font-size: 11px;");
+
+                    Label tag = new Label(item.isOriginalJobAttachment() ? "Job File" : "Custom");
+                    tag.setStyle(item.isOriginalJobAttachment()
+                        ? "-fx-background-color: #E6F7FF; -fx-text-fill: #1890FF; -fx-font-size: 10px; -fx-font-weight: 700; -fx-padding: 1px 5px; -fx-background-radius: 4px;"
+                        : "-fx-background-color: #F6FFED; -fx-text-fill: #52C41A; -fx-font-size: 10px; -fx-font-weight: 700; -fx-padding: 1px 5px; -fx-background-radius: 4px;");
+
+                    Region rSpacer = new Region();
+                    HBox.setHgrow(rSpacer, Priority.ALWAYS);
+
+                    Button viewBtn = new Button("👁 View");
+                    viewBtn.setStyle("-fx-background-color: #F5F5F5; -fx-text-fill: #3E312D; -fx-border-color: #D9D9D9; -fx-border-radius: 4px; -fx-background-radius: 4px; -fx-font-size: 11px; -fx-font-weight: 600; -fx-padding: 2px 6px; -fx-cursor: hand;");
+                    viewBtn.setTooltip(new Tooltip("Open / View file"));
+                    viewBtn.setOnAction(e -> {
+                        File fileToOpen = item.getFile();
+                        if (fileToOpen != null && fileToOpen.exists()) {
+                            try {
+                                if (java.awt.Desktop.isDesktopSupported()) {
+                                    java.awt.Desktop.getDesktop().open(fileToOpen);
+                                } else {
+                                    toast("Desktop is not supported ❌");
+                                }
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                                toast("Failed to open file: " + ex.getMessage());
+                            }
+                        } else {
+                            toast("File not found on disk ❌");
+                        }
+                    });
+
+                    Button removeBtn = new Button("✕");
+                    removeBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #FF4D4F; -fx-font-size: 11px; -fx-padding: 0 4px; -fx-cursor: hand; -fx-font-weight: 700;");
+                    removeBtn.setTooltip(new Tooltip("Remove from email attachments"));
+                    removeBtn.setOnAction(e -> {
+                        attachmentList.remove(item);
+                        this.run();
+                    });
+
+                    row.getChildren().addAll(cb, nameLbl, sizeLbl, tag, rSpacer, viewBtn, removeBtn);
+                    attachContainer.getChildren().add(row);
+                }
+            }
+        };
+
+        addAttachBtn.setOnAction(e -> {
+            FileChooser fc = new FileChooser();
+            fc.setTitle("Select Attachment Files for Email");
+            List<File> chosen = fc.showOpenMultipleDialog(stage);
+            if (chosen != null) {
+                for (File f : chosen) {
+                    if (f.exists() && attachmentList.stream().noneMatch(a -> a.getFile().getAbsolutePath().equalsIgnoreCase(f.getAbsolutePath()))) {
+                        attachmentList.add(new MailAttachment(f, false, true));
+                    }
+                }
+                renderAttachments.run();
+            }
+        });
+
+        renderAttachments.run();
+
+        leftBox.getChildren().addAll(tableLabel, table, attachHeader, attachScroll);
+
+        // Right Column (Email Form Fields)
+        VBox rightBox = new VBox(8);
+        HBox.setHgrow(rightBox, Priority.ALWAYS);
+        rightBox.setPrefWidth(440);
+
         Label toLabel = new Label("To Email:");
         toLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700;");
         TextField toEmailField = new TextField();
@@ -1295,9 +1543,19 @@ public class ViewJobsController {
         messageLabel.setStyle("-fx-text-fill: #3E312D; -fx-font-weight: 700;");
         TextArea messageArea = new TextArea();
         messageArea.setPrefRowCount(10);
-        messageArea.setPrefHeight(200);
+        messageArea.setPrefHeight(230);
         messageArea.setWrapText(true);
         messageArea.getStyleClass().add("mail-area");
+
+        rightBox.getChildren().addAll(
+            toLabel, toEmailField,
+            subjectLabel, subjectField,
+            messageLabel, messageArea
+        );
+
+        // 2-Column Body Row
+        HBox bodyBox = new HBox(20);
+        bodyBox.getChildren().addAll(leftBox, rightBox);
         
         // Add listener to table
         table.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
@@ -1363,6 +1621,12 @@ public class ViewJobsController {
                 toast("❌ Please enter a valid email address!");
                 return;
             }
+
+            List<File> filesToSend = attachmentList.stream()
+                .filter(MailAttachment::isAttached)
+                .map(MailAttachment::getFile)
+                .filter(f -> f != null && f.exists())
+                .collect(Collectors.toList());
             
             sendBtn.setDisable(true);
             sendBtn.setText("Sending...");
@@ -1394,7 +1658,25 @@ public class ViewJobsController {
                     message.setFrom(new InternetAddress(senderEmail, "Sunny Printers"));
                     message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
                     message.setSubject(subject);
-                    message.setContent(messageBody.replace("\n", "<br>"), "text/html; charset=utf-8");
+
+                    if (filesToSend.isEmpty()) {
+                        message.setContent(messageBody.replace("\n", "<br>"), "text/html; charset=utf-8");
+                    } else {
+                        MimeMultipart multipart = new MimeMultipart("mixed");
+                        
+                        MimeBodyPart textPart = new MimeBodyPart();
+                        textPart.setContent(messageBody.replace("\n", "<br>"), "text/html; charset=utf-8");
+                        multipart.addBodyPart(textPart);
+                        
+                        for (File f : filesToSend) {
+                            MimeBodyPart attachPart = new MimeBodyPart();
+                            attachPart.attachFile(f);
+                            attachPart.setFileName(f.getName());
+                            multipart.addBodyPart(attachPart);
+                        }
+                        
+                        message.setContent(multipart);
+                    }
                     
                     Transport.send(message);
                     
@@ -1421,14 +1703,7 @@ public class ViewJobsController {
         actionRow.setAlignment(Pos.CENTER_RIGHT);
         actionRow.getChildren().addAll(statusInfoLabel, cancelBtn, sendBtn);
         
-        VBox formBox = new VBox(8);
-        formBox.getChildren().addAll(
-            toLabel, toEmailField,
-            subjectLabel, subjectField,
-            messageLabel, messageArea
-        );
-        
-        root.getChildren().addAll(header, tableLabel, table, formBox, actionRow);
+        root.getChildren().addAll(header, bodyBox, actionRow);
         
         Scene scene = new Scene(root);
         scene.setFill(Color.TRANSPARENT);
@@ -2022,8 +2297,14 @@ public class ViewJobsController {
             boolean matchesStatus = true;
             String statusFilter = statusFilterComboBox.getValue();
             if (statusFilter != null && !statusFilter.equals("All")) {
-                if (job.getStatus() == null || !job.getStatus().equalsIgnoreCase(statusFilter)) {
+                if (job.getStatus() == null) {
                     matchesStatus = false;
+                } else {
+                    utils.JobWorkflow.Major filterMajor = utils.JobWorkflow.majorFromJobStatus(statusFilter);
+                    utils.JobWorkflow.Major jobMajor = utils.JobWorkflow.majorFromJobStatus(job.getStatus());
+                    if (filterMajor != jobMajor) {
+                        matchesStatus = false;
+                    }
                 }
             }
 
@@ -2182,23 +2463,8 @@ public class ViewJobsController {
             return;
         }
         String status = job.getStatus() != null ? job.getStatus().toLowerCase() : "";
-        boolean isLockedInvoice = false;
         if (job.getInvoiceUuid() != null && !job.getInvoiceUuid().isBlank()) {
-            String invStatus = job.getInvoiceStatus() != null ? job.getInvoiceStatus().trim().toUpperCase() : "";
-            String invType = job.getInvoiceType() != null ? job.getInvoiceType().toUpperCase() : "";
-            boolean isProforma = invType.contains("PROFORMA") || invType.contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(invType) || "DATE_RANGE".equalsIgnoreCase(invType) || invType.contains("MONTHLY");
-            if (isProforma) {
-                if ("REVISED".equals(invStatus) || "CANCELLED".equals(invStatus) || "VOID".equals(invStatus)) {
-                    isLockedInvoice = true;
-                }
-            } else {
-                if (!invStatus.isEmpty() && !invStatus.startsWith("DRAFT")) {
-                    isLockedInvoice = true;
-                }
-            }
-        }
-        if (isLockedInvoice) {
-            toast("❌ Invoiced jobs with finalized invoices cannot be edited.");
+            toast("❌ Invoiced/Drafted jobs cannot be edited.");
             return;
         }
         if (status.contains("cancel")) {
@@ -2281,8 +2547,8 @@ public class ViewJobsController {
         if (path == null || path.isEmpty()) return;
         
         try {
-            File file = new File(path);
-            if (!file.exists()) {
+            File file = utils.ImageStorage.resolveImageFile(path);
+            if (file == null || !file.exists()) {
                 toast("Image file not found ❌");
                 return;
             }

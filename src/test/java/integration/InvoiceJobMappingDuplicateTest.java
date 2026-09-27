@@ -46,7 +46,7 @@ public class InvoiceJobMappingDuplicateTest {
     @BeforeEach
     public void setup() throws Exception {
         dbUrl = TestDatabaseHelper.createIsolatedDb("InvoiceJobMappingDuplicateTest");
-        DBConnection.setUrl(dbUrl);
+        DBConnection.setTestDatabaseUrl(dbUrl);
         
         // Setup mock data
         clientUuid = UUID.randomUUID().toString();

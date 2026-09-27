@@ -61,7 +61,7 @@ public class SoftDeleteTest {
         String clientUuid = "00000000-0000-0000-0000-000000008001";
 
         // 1. Seed on Machine A and push
-        DBConnection.setUrl(dbA);
+        DBConnection.setTestDatabaseUrl(dbA);
         ClientRepository repoA = new ClientRepository();
         Client c = new Client("Sunny Corp", "Doe", "123", "", "", "", "", "Delhi", "", "");
         c.setClientUuid(clientUuid);
@@ -76,13 +76,13 @@ public class SoftDeleteTest {
         assertFalse(remoteRow.get("is_deleted").getAsBoolean());
 
         // 2. Pull on Machine B
-        DBConnection.setUrl(dbB);
+        DBConnection.setTestDatabaseUrl(dbB);
         RemoteToLocalSync.pullAll(fakeSupabase);
         ClientRepository repoB = new ClientRepository();
         assertNotNull(repoB.findByUuid(clientUuid));
 
         // 3. Soft-delete on Machine A (simulate a non-admin soft delete)
-        DBConnection.setUrl(dbA);
+        DBConnection.setTestDatabaseUrl(dbA);
         // We write directly to SQLite to simulate setting PENDING and is_deleted
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(
@@ -100,7 +100,7 @@ public class SoftDeleteTest {
         assertEquals("2028-06-13 12:00:00", remoteRow.get("deleted_at").getAsString());
 
         // 4. Pull on Machine B
-        DBConnection.setUrl(dbB);
+        DBConnection.setTestDatabaseUrl(dbB);
         RemoteToLocalSync.pullAll(fakeSupabase);
 
         // Verify Machine B now has the row marked soft-deleted

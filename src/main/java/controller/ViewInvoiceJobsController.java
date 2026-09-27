@@ -130,12 +130,17 @@ public class ViewInvoiceJobsController {
 
         setupJobActionBarStyles();
 
+        if (btnJobEdit != null) {
+            btnJobEdit.setVisible(true);
+            btnJobEdit.setManaged(true);
+        }
+
         // ✅ Job selection logic
         jobsTable.getSelectionModel().getSelectedItems().addListener((javafx.collections.ListChangeListener<Job>) c -> {
             updateJobActionBar(new java.util.ArrayList<>(jobsTable.getSelectionModel().getSelectedItems()));
         });
 
-        // ✅ Double click to edit job
+        // ✅ Double click to view details (editing not allowed on drafted/invoiced jobs)
         jobsTable.setRowFactory(tv -> {
             TableRow<Job> row = new TableRow<>();
             row.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
@@ -176,12 +181,7 @@ public class ViewInvoiceJobsController {
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && (!row.isEmpty())) {
                     Job item = row.getItem();
-                    boolean isLocked = isInvoiceLocked(currentEditInvoice);
-                    if (isViewOnly || isLocked) {
-                        showJobDetails(item);
-                    } else {
-                        openEditJobScreen(item);
-                    }
+                    showJobDetails(item);
                 }
             });
             return row;
@@ -487,7 +487,8 @@ public class ViewInvoiceJobsController {
                     Job rowJob = row != null ? (Job) row.getItem() : null;
                     boolean isLocked = isJobLocked(rowJob);
                     boolean canEditInvoice = !isViewOnly && !isInvoiceLocked(currentEditInvoice);
-                    btnE.setDisable(!canEditInvoice || isLocked);
+                    btnE.setVisible(canEditInvoice && !isLocked);
+                    btnE.setManaged(canEditInvoice && !isLocked);
                     setGraphic(container);
                 }
             }
@@ -537,15 +538,7 @@ public class ViewInvoiceJobsController {
 
     private boolean isJobLocked(Job job) {
         if (job == null) return true;
-        if ("Cancelled".equalsIgnoreCase(job.getStatus())) {
-            return true;
-        }
-        if (currentEditInvoice != null) {
-            if (isInvoiceLocked(currentEditInvoice)) {
-                return true;
-            }
-        }
-        return false;
+        return !"Invoice Drafted".equalsIgnoreCase(job.getStatus());
     }
 
     private void updateJobActionBar(java.util.List<Job> selected) {
@@ -1194,6 +1187,96 @@ public class ViewInvoiceJobsController {
                 toast("Error: invoice has no UUID — cannot save job links.");
                 return;
             }
+
+            boolean isProforma = false;
+            if (currentEditInvoice != null) {
+                String ds = currentEditInvoice.getDocumentSeries();
+                String tp = currentEditInvoice.getType();
+                isProforma = (ds != null && ("PROFORMA_INVOICE".equalsIgnoreCase(ds) || "PROFORMA".equalsIgnoreCase(ds)))
+                          || (tp != null && (tp.toUpperCase().contains("PROFORMA") || tp.toUpperCase().contains("PERFORMA") || "JOB_SPECIFIC".equalsIgnoreCase(tp) || "DATE_RANGE".equalsIgnoreCase(tp) || tp.toUpperCase().contains("MONTHLY")))
+                          || (currentEditInvoice.getInvoiceNo() != null && currentEditInvoice.getInvoiceNo().toUpperCase().contains("/PI/"));
+            }
+
+            long activeJobsCount = tableData.stream()
+                    .filter(j -> !jobsToCancel.contains(j.getUuid()) && !jobsToUnlink.contains(j.getUuid()))
+                    .count();
+
+            if (!isProforma && activeJobsCount == 0) {
+                Alert alert = new Alert(Alert.AlertType.ERROR,
+                        "GST Invoice cannot be empty. Please add at least one job, or cancel the invoice.");
+                alert.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+                alert.getDialogPane().getStyleClass().add("alert-dialog-premium");
+                alert.showAndWait();
+                return;
+            }
+
+            if (isProforma && activeJobsCount == 0) {
+                if (currentEditInvoice.getPaidAmount() > 0) {
+                    ButtonType btnRefund = new ButtonType("Refund Advance");
+                    ButtonType btnKeep = new ButtonType("Keep as Customer Advance");
+                    ButtonType btnCancel = new ButtonType("Cancel/Abort", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+                    Alert dialog = new Alert(Alert.AlertType.CONFIRMATION);
+                    dialog.setTitle("Handle Advance Payment");
+                    dialog.setHeaderText("Advance Received: " + currentEditInvoice.getPaidAmount() + " for Proforma " + currentEditInvoice.getInvoiceNo());
+                    dialog.setContentText("This proforma invoice will be cancelled as it has no jobs. How would you like to handle the advance payment?");
+                    dialog.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+                    dialog.getDialogPane().getStyleClass().add("alert-dialog-premium");
+                    dialog.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+                    dialog.getButtonTypes().setAll(btnRefund, btnKeep, btnCancel);
+
+                    java.util.Optional<ButtonType> opt = dialog.showAndWait();
+                    if (opt.isPresent()) {
+                        if (opt.get() == btnRefund) {
+                            Alert confirmRefund = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to refund the advance amount of ₹" + currentEditInvoice.getPaidAmount() + "?", ButtonType.YES, ButtonType.NO);
+                            confirmRefund.setTitle("Confirm Refund");
+                            confirmRefund.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+                            confirmRefund.getDialogPane().getStyleClass().add("alert-dialog-premium");
+                            java.util.Optional<ButtonType> confOpt = confirmRefund.showAndWait();
+                            if (confOpt.isPresent() && confOpt.get() == ButtonType.YES) {
+                                try {
+                                    invoiceMasterService.refundAdvanceForInvoice(invoiceUuid, currentEditInvoice.getClientUuid(), currentEditInvoice.getPaidAmount());
+                                    toast("Refund created for advance.");
+                                } catch (Exception ex) {
+                                    ex.printStackTrace();
+                                    toast("Failed to refund: " + ex.getMessage());
+                                    return;
+                                }
+                            } else {
+                                toast("Refund cancelled.");
+                                return;
+                            }
+                        } else if (opt.get() == btnKeep) {
+                            try {
+                                invoiceMasterService.deallocatePaymentsForInvoice(invoiceUuid);
+                                toast("Advance deallocated (kept as Customer Advance).");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                                toast("Failed to deallocate: " + ex.getMessage());
+                                return;
+                            }
+                        } else {
+                            toast("Action aborted.");
+                            return;
+                        }
+                    } else {
+                        toast("Action aborted.");
+                        return;
+                    }
+                } else {
+                    Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                            "This Proforma Invoice will be cancelled because it contains no jobs. Do you want to proceed?",
+                            ButtonType.YES, ButtonType.NO);
+                    confirm.setTitle("Empty Proforma Invoice");
+                    confirm.getDialogPane().getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
+                    confirm.getDialogPane().getStyleClass().add("alert-dialog-premium");
+                    java.util.Optional<ButtonType> confOpt = confirm.showAndWait();
+                    if (!confOpt.isPresent() || confOpt.get() != ButtonType.YES) {
+                        toast("Action aborted.");
+                        return;
+                    }
+                }
+            }
             try {
                 utils.AtomicDB.runVoid(con -> {
                     // 1. Update Date
@@ -1258,8 +1341,7 @@ public class ViewInvoiceJobsController {
 
                     // 5. Add Jobs
                     if (hasAddedJobs) {
-                        boolean isRevision = invNo != null && invNo.contains("-R");
-                        String statusToSet = isRevision ? "Invoiced" : "Invoice Drafted";
+                        String statusToSet = "Invoiced";
                         invoiceMasterService.linkJobUuidsToInvoice(con, invoiceUuid,
                                 new java.util.ArrayList<>(jobsToAdd), statusToSet);
                     }
